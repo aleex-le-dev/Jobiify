@@ -8,9 +8,14 @@ import { ATS_LABEL, type AtsSource, type DiscoveredOffer } from "@/lib/explore";
 import { useJobs } from "@/components/jobs/job-store";
 import { useExplore } from "./explore-provider";
 
-function freshness(postedAt: string): string {
+import { useI18n } from "@/components/i18n-provider";
+
+function freshness(postedAt: string, isFr: boolean): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(postedAt)) return "";
   const days = Math.max(0, Math.round((Date.now() - new Date(postedAt + "T00:00:00Z").getTime()) / 86_400_000));
+  if (isFr) {
+    return days === 0 ? "aujourd'hui" : days === 1 ? "hier" : `il y a ${days}j`;
+  }
   return days === 0 ? "today" : days === 1 ? "1d ago" : `${days}d ago`;
 }
 
@@ -36,9 +41,12 @@ function Logo({ company }: { company: string }) {
 }
 
 // What a running worker is doing on this exact posting → the live CTA label.
-const WORKER_LABEL: Record<string, string> = { evaluate: "Evaluating…", pdf: "Preparing CV…", research: "Researching…", apply: "Filling…" };
+const WORKER_LABEL_EN: Record<string, string> = { evaluate: "Evaluating…", pdf: "Preparing CV…", research: "Researching…", apply: "Filling…" };
+const WORKER_LABEL_FR: Record<string, string> = { evaluate: "Évaluation en cours…", pdf: "Génération CV…", research: "Recherche en cours…", apply: "Remplissage…" };
 
 export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: DiscoveredOffer; inPipeline: boolean; evaluatedN?: string }) {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   const { added, adding, addToPipeline } = useExplore();
   const { jobs, startJob } = useJobs();
 
@@ -50,12 +58,13 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
   );
   const working = job?.status === "running";
   const doneEval = job?.status === "done" && job.kind === "evaluate";
-  const statusLabel = WORKER_LABEL[job?.kind ?? ""] ?? "Working…";
+  const workerMap = isFr ? WORKER_LABEL_FR : WORKER_LABEL_EN;
+  const statusLabel = workerMap[job?.kind ?? ""] ?? (isFr ? "En cours…" : "Working…");
 
   const isAdded = added.has(offer.url) || inPipeline || working || doneEval;
   const isAdding = adding.has(offer.url);
   const unverified = offer.verification === "unconfirmed";
-  const fresh = freshness(offer.postedAt) || offer.postedHint || "";
+  const fresh = freshness(offer.postedAt, isFr) || offer.postedHint || "";
 
   const evaluate = () => {
     addToPipeline([offer]); // evaluating implies it's in the pipeline — record it
@@ -91,14 +100,14 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
         {unverified && (
           <span
             className="inline-flex items-center gap-1 rounded border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5 font-medium text-amber-600 dark:text-amber-300"
-            title="Found by AI on the public web — we can't confirm it's still live without opening it. Evaluating runs a real browser check and sets the verdict."
+            title={isFr ? "Trouvé par l'IA sur le web public — statut à vérifier. L'évaluation vérifie le lien en réel." : "Found by AI on the public web — we can't confirm it's still live without opening it. Evaluating runs a real browser check and sets the verdict."}
           >
-            <ShieldQuestion className="size-3" /> unverified
+            <ShieldQuestion className="size-3" /> {isFr ? "non vérifié" : "unverified"}
           </span>
         )}
         {offer.matchedKeyword && (
-          <span className="text-faint" title="Keyword match — not yet scored. Evaluate to get an A–F fit score.">
-            · matched <span className="text-brand/80">{offer.matchedKeyword}</span>
+          <span className="text-faint" title={isFr ? "Correspondance de mot-clé — pas encore noté A-F." : "Keyword match — not yet scored. Evaluate to get an A–F fit score."}>
+            · {isFr ? "mot-clé" : "matched"} <span className="text-brand/80">{offer.matchedKeyword}</span>
           </span>
         )}
         {offer.fit && (
@@ -109,9 +118,9 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
                 ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                 : "text-faint",
             )}
-            title="Free keyword-level estimate: posting title vs your profile's target roles (config/profile.yml). Not an evaluation — Evaluate still gives the real A–F fit score."
+            title={isFr ? "Estimation par mots-clés : titre du poste vs votre profil." : "Free keyword-level estimate: posting title vs your profile's target roles (config/profile.yml). Not an evaluation — Evaluate still gives the real A–F fit score."}
           >
-            · {offer.fit.band} fit
+            · {offer.fit.band === "strong" ? (isFr ? "très pertinent" : "strong fit") : `${offer.fit.band} fit`}
           </span>
         )}
       </div>
@@ -129,13 +138,13 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
             href={evaluatedN ? `/pipeline/${evaluatedN}` : job ? `/jobs/${job.id}` : "/pipeline"}
             className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-brand-soft px-2.5 py-2 text-xs font-medium text-brand max-sm:min-h-[44px]"
           >
-            <Check className="size-3.5" /> Evaluated · view report
+            <Check className="size-3.5" /> {isFr ? "Évalué · voir le rapport" : "Evaluated · view report"}
           </a>
         ) : working ? (
           <div className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-brand/30 bg-brand-soft/60 px-2.5 py-2 text-xs font-medium text-brand">
             <Loader2 className="size-3.5 animate-spin" />
             {statusLabel}
-            <span className="text-brand/60">· in pipeline</span>
+            <span className="text-brand/60">· {isFr ? "au pipeline" : "in pipeline"}</span>
           </div>
         ) : (
           <div className="flex items-center gap-2">
@@ -149,15 +158,15 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
               )}
             >
               {isAdding ? <Loader2 className="size-3.5 animate-spin" /> : isAdded ? <Check className="size-3.5" /> : <Plus className="size-3.5" />}
-              {isAdded ? "In pipeline" : "Add to pipeline"}
+              {isAdded ? (isFr ? "Au pipeline" : "In pipeline") : (isFr ? "Ajouter au pipeline" : "Add to pipeline")}
             </button>
             <button
               type="button"
               onClick={evaluate}
-              title={unverified ? "Runs a real evaluation — and verifies the posting is live. Uses tokens." : "Runs a real A–F evaluation. Uses tokens."}
+              title={unverified ? (isFr ? "Lance une vraie évaluation et vérifie le lien. Utilise des tokens." : "Runs a real evaluation — and verifies the posting is live. Uses tokens.") : (isFr ? "Lance une vraie évaluation A-F. Utilise des tokens." : "Runs a real A–F evaluation. Uses tokens.")}
               className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-brand/30 px-2.5 py-2 text-xs font-medium text-brand transition-colors hover:bg-brand-soft max-sm:min-h-[44px]"
             >
-              Evaluate <Coins className="size-3.5 opacity-80" />
+              {isFr ? "Évaluer" : "Evaluate"} <Coins className="size-3.5 opacity-80" />
             </button>
           </div>
         )}

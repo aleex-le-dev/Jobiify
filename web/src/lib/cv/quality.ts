@@ -7,11 +7,11 @@ export type CvReadiness = { scoreable: boolean; words: number; hasExperience: bo
 export function cvReadiness(md: string): CvReadiness {
   const text = (md || "").trim();
   const words = text ? text.split(/\s+/).length : 0;
-  const hasExperience = /(^|\n)#{1,3}\s*(experience|work|employment|empleo|experiencia)/i.test(text) || /\b(20\d\d)\s*[-–—]\s*(20\d\d|present|now|actualidad)/i.test(text);
-  const hasSkills = /(^|\n)#{1,3}\s*(skills|technologies|competenc|habilidad)/i.test(text);
+  const hasExperience = /(^|\n)#{1,3}\s*(experience|work|employment|empleo|experiencia|expériences?|parcours)/i.test(text) || /\b(20\d\d)\s*[-–—]\s*(20\d\d|present|now|actualidad|présent|aujourd'hui)/i.test(text);
+  const hasSkills = /(^|\n)#{1,3}\s*(skills|technologies|competenc|habilidad|compétences?)/i.test(text);
   const scoreable = words >= 80 && (hasExperience || hasSkills || words >= 200);
   let hint: string | undefined;
-  if (!scoreable) hint = words < 40 ? "That's very short — add your experience for real matches (you can save anyway)." : "Looks thin — add a role or two for better matches (you can save anyway).";
+  if (!scoreable) hint = words < 40 ? "C'est très court — ajoutez vos expériences pour de meilleurs résultats (vous pouvez quand même enregistrer)." : "Contenu succinct — ajoutez un poste ou deux pour affiner le ciblage (vous pouvez quand même enregistrer).";
   return { scoreable, words, hasExperience, hasSkills, hint };
 }
 

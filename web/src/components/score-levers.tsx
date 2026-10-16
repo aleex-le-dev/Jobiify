@@ -1,4 +1,7 @@
+"use client";
+
 import { readMachineSummary, scoreLevers } from "@/lib/machine-summary.mjs";
+import { useI18n } from "@/components/i18n-provider";
 
 type Item = { text: string; tag?: string };
 
@@ -24,28 +27,42 @@ function ItemList({ title, hint, items, dot }: { title: string; hint: string; it
 const plain = (text: string): Item => ({ text });
 
 export function ScoreLevers({ report }: { report: string }) {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   const summary = readMachineSummary(report);
   if (!summary) return null;
   const { holding, close, verify, strengths } = scoreLevers(summary);
   if (holding.length + close.length + verify.length + strengths.length === 0) return null;
   return (
     <section data-testid="score-levers" className="mt-4 rounded-2xl border border-border bg-surface/30 px-5 py-4">
-      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-faint">What would change this score</p>
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-faint">
+        {isFr ? "Ce qui ferait évoluer ce score" : "What would change this score"}
+      </p>
       <div className="mt-3 grid gap-5 sm:grid-cols-2">
         <ItemList
-          title="Holding it down"
-          hint="Blockers and requirements with no evidence in your CV."
-          items={holding.map((l) => ({ text: l.text, tag: l.importance ?? "blocker" }))}
+          title={isFr ? "Ce qui pénalise le score" : "Holding it down"}
+          hint={isFr ? "Points bloquants et critères sans élément probant dans votre CV." : "Blockers and requirements with no evidence in your CV."}
+          items={holding.map((l) => ({ text: l.text, tag: l.importance ?? (isFr ? "bloquant" : "blocker") }))}
           dot="bg-red-500"
         />
         <ItemList
-          title="Close calls"
-          hint="Partly covered. Clearer CV evidence could raise the score."
+          title={isFr ? "Presque validé" : "Close calls"}
+          hint={isFr ? "Partiellement couvert. Une preuve plus claire dans votre CV pourrait faire monter le score." : "Partly covered. Clearer CV evidence could raise the score."}
           items={close.map((l) => ({ text: l.text, tag: l.importance ?? undefined }))}
           dot="bg-amber-500"
         />
-        <ItemList title="Working for you" hint="Your strongest matches for this role." items={strengths.map(plain)} dot="bg-emerald-500" />
-        <ItemList title="Check before you trust it" hint="Open questions behind the score." items={verify.map(plain)} dot="bg-sky-500" />
+        <ItemList
+          title={isFr ? "Vos points forts" : "Working for you"}
+          hint={isFr ? "Vos meilleures correspondances pour cette offre." : "Your strongest matches for this role."}
+          items={strengths.map(plain)}
+          dot="bg-emerald-500"
+        />
+        <ItemList
+          title={isFr ? "À vérifier avant de confirmer" : "Check before you trust it"}
+          hint={isFr ? "Questions ouvertes à éclaircir." : "Open questions behind the score."}
+          items={verify.map(plain)}
+          dot="bg-sky-500"
+        />
       </div>
     </section>
   );

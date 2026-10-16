@@ -58,13 +58,26 @@ export function FunnelRates() {
   // does not exist for them, with no way to learn that it will.
   if (!model || (state === "unavailable" && model.reason !== "no-data")) return null;
 
+const STAGES_FR: Record<string, string> = {
+  everApplied: "Postulées",
+  everResponded: "Réponses",
+  everInterview: "Entretiens",
+  everOffer: "Offres",
+};
+
+const RATES_FR: Record<string, string> = {
+  responseRate: "Taux de réponse",
+  interviewRate: "Taux d'entretien",
+  offerRate: "Taux d'offre",
+};
+
   if (state === "unavailable") {
     return (
       <section className="mt-10">
         <h2 className="font-display text-lg text-landing">Conversion</h2>
         <p className="mt-3 rounded-2xl border border-dashed border-border bg-surface/30 px-5 py-6 text-sm text-muted">
-          Nothing to convert yet — these rates come from applications you have
-          sent. Apply to a role and the funnel fills in here.
+          Rien à convertir pour l'instant — ces taux sont calculés à partir de vos candidatures envoyées.
+          Postulez à une offre pour voir l'entonnoir se remplir ici.
         </p>
       </section>
     );
@@ -78,23 +91,21 @@ export function FunnelRates() {
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 className="font-display text-lg text-landing">Conversion</h2>
         <p className="text-xs text-faint">
-          Cumulative — reaching a stage counts every stage before it, matching{" "}
+          Cumulatif — chaque étape inclut toutes les étapes précédentes, conforme à{" "}
           <code className="text-muted">stats.mjs</code>
         </p>
       </div>
 
       {model.provisional && (
-        // stats.mjs's own smallSample flag. Said plainly, because three
-        // percentages off a handful of applications look like a finding.
         <p className="mt-2 text-xs text-muted">
-          Small sample so far — these rates will move a lot with each new outcome.
+          Échantillon réduit pour l'instant — ces taux évolueront avec chaque nouvelle réponse.
         </p>
       )}
 
       <div className="mt-4 grid gap-2.5">
         {stages.map((s) => (
           <div key={s.key} className="flex items-center gap-3">
-            <span className="w-24 shrink-0 text-sm text-muted">{s.label}</span>
+            <span className="w-24 shrink-0 text-sm text-muted">{STAGES_FR[s.key] ?? s.label}</span>
             <div className="h-4 flex-1 overflow-hidden rounded-full bg-surface">
               <div className="h-full rounded-full bg-brand/70" style={{ width: `${(s.value / top) * 100}%` }} />
             </div>
@@ -106,10 +117,8 @@ export function FunnelRates() {
       <dl className="mt-5 grid grid-cols-3 gap-3">
         {rates.map((r) => (
           <div key={r.key} className="rounded-xl border border-border bg-surface/40 px-3.5 py-3">
-            <dt className="text-xs text-muted">{r.label}</dt>
+            <dt className="text-xs text-muted">{RATES_FR[r.key] ?? r.label}</dt>
             <dd className="mt-0.5 text-xl tabular-nums text-foreground">
-              {/* null, not 0: a rate with nothing to divide by is absent. An
-                  em dash says "not yet" where "0%" would say "failing". */}
               {r.value === null ? <span className="text-faint">—</span> : `${r.value}%`}
             </dd>
           </div>

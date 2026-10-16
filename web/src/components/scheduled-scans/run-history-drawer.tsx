@@ -6,6 +6,7 @@ import type { JobRun } from "@/lib/scheduled-jobs";
 import { cn } from "@/lib/cn";
 import { ScheduledOverlay } from "./scheduled-overlay";
 import { runStatusTone } from "@/lib/scheduled-run-status.mjs";
+import { useI18n } from "@/components/i18n-provider";
 
 export function RunHistoryDrawer({
   isOpen,
@@ -16,6 +17,7 @@ export function RunHistoryDrawer({
   onClose: () => void;
   runs: JobRun[];
 }) {
+  const { isFr } = useI18n();
   const closeRef = useRef<HTMLButtonElement>(null);
   if (!isOpen) return null;
 
@@ -24,12 +26,15 @@ export function RunHistoryDrawer({
         <div className="flex items-center justify-between border-b border-border p-4">
           <div className="flex items-center gap-2">
             <TerminalSquare className="size-5 text-brand" />
-            <h2 id="run-history-title" className="text-base font-semibold text-foreground">Execution Run History</h2>
+            <h2 id="run-history-title" className="text-base font-semibold text-foreground">
+              {isFr ? "Historique des exécutions" : "Execution Run History"}
+            </h2>
           </div>
           <button
             ref={closeRef}
             type="button"
             onClick={onClose}
+            aria-label={isFr ? "Fermer l'historique" : "Close history"}
             className="rounded-lg p-1.5 text-faint hover:bg-surface-hover hover:text-foreground"
           >
             <X className="size-5" />
@@ -39,7 +44,7 @@ export function RunHistoryDrawer({
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {runs.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted">
-              No scan executions recorded yet.
+              {isFr ? "Aucune exécution enregistrée pour le moment." : "No scan executions recorded yet."}
             </div>
           ) : (
             runs.map((run, i) => {
@@ -67,7 +72,7 @@ export function RunHistoryDrawer({
                         <XCircle className="size-4 text-rose-500" />
                       )}
                       <span className={cn(tone === "success" ? "text-emerald-600 dark:text-emerald-400" : tone === "failed" ? "text-rose-500" : "text-muted")}>
-                        {isSuccess ? "Success" : isRunning ? "Running" : isQueued ? "Queued" : isCancelled ? "Cancelled" : "Failed"}
+                        {isSuccess ? (isFr ? "Succès" : "Success") : isRunning ? (isFr ? "En cours" : "Running") : isQueued ? (isFr ? "En attente" : "Queued") : isCancelled ? (isFr ? "Annulé" : "Cancelled") : (isFr ? "Échec" : "Failed")}
                       </span>
                       {run.engine && (
                         <span className="rounded bg-surface-hover px-1.5 py-0.5 text-[10px] text-faint uppercase font-mono">
@@ -81,12 +86,14 @@ export function RunHistoryDrawer({
                     </span>
                   </div>
 
-                  <p className="mt-2 text-muted leading-relaxed">{run.message || "Execution completed"}</p>
+                  <p className="mt-2 text-muted leading-relaxed">{run.message || (isFr ? "Exécution terminée" : "Execution completed")}</p>
 
                   <div className="mt-2 flex items-center justify-between text-[11px] text-faint border-t border-border/40 pt-1.5">
-                    <span>Date: {new Date(run.at).toLocaleDateString()}</span>
+                    <span>Date : {new Date(run.at).toLocaleDateString()}</span>
                     {typeof run.rolesFound === "number" && (
-                      <span className="font-semibold text-foreground">{run.rolesFound} roles found</span>
+                      <span className="font-semibold text-foreground">
+                        {run.rolesFound} {isFr ? (run.rolesFound <= 1 ? "offre trouvée" : "offres trouvées") : "roles found"}
+                      </span>
                     )}
                   </div>
                 </div>

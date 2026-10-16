@@ -5,6 +5,8 @@ import { Send, Lock } from "lucide-react";
 import { useJobs } from "@/components/jobs/job-store";
 import { useApply } from "@/components/apply/apply-provider";
 
+import { useI18n } from "@/components/i18n-provider";
+
 // The "Apply" CTA. Brand fill only when the score is at/above the apply line
 // and legitimacy is not caution (#4206). Enabled ONLY when the tailored CV
 // for THIS offer is ready (the tracker's PDF column is ✅, or a pdf worker for
@@ -23,6 +25,8 @@ export function ApplyButton({
   pdfReady: boolean;
   quiet?: boolean;
 }) {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   const router = useRouter();
   const { jobs } = useJobs();
   const apply = useApply();
@@ -36,10 +40,14 @@ export function ApplyButton({
       <button
         type="button"
         disabled
-        title={!hasUrl ? "No application URL on this report" : "Generate the tailored CV (PDF) first to apply"}
+        title={
+          !hasUrl
+            ? (isFr ? "Aucune URL de candidature sur ce rapport" : "No application URL on this report")
+            : (isFr ? "Générez d'abord le CV adapté (PDF) pour postuler" : "Generate the tailored CV (PDF) first to apply")
+        }
         className="inline-flex cursor-not-allowed items-center justify-center gap-1.5 rounded-full border border-border bg-surface/40 px-3.5 py-1 text-xs font-medium text-faint max-sm:min-h-[44px]"
       >
-        <Lock className="size-3.5" /> Apply
+        <Lock className="size-3.5" /> {isFr ? "Postuler" : "Apply"}
       </button>
     );
   }
@@ -63,11 +71,15 @@ export function ApplyButton({
       }
       title={
         quiet
-          ? "Apply — below the apply line or caution; opens the form pre-filled, you review and submit yourself"
-          : "Apply — opens the form pre-filled, you review and submit yourself"
+          ? (isFr
+              ? "Postuler — en dessous du seuil ou vigilance ; ouvre le formulaire pré-rempli, vous vérifiez et envoyez vous-même"
+              : "Apply — below the apply line or caution; opens the form pre-filled, you review and submit yourself")
+          : (isFr
+              ? "Postuler — ouvre le formulaire pré-rempli, vous vérifiez et envoyez vous-même"
+              : "Apply — opens the form pre-filled, you review and submit yourself")
       }
     >
-      <Send className="size-3.5" /> Apply
+      <Send className="size-3.5" /> {isFr ? "Postuler" : "Apply"}
     </button>
   );
 }

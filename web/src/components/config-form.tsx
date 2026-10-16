@@ -14,6 +14,7 @@ import { cn } from "@/lib/cn";
 import { CadenceSettings } from "@/components/followups/cadence-settings";
 import { persistCliId, readSavedCliId } from "@/lib/saved-cli";
 import { keepIfInstalled, pickDefaultInstalled } from "@/lib/cli-pick.mjs";
+import { useI18n } from "@/components/i18n-provider";
 
 type Cli = {
   id: string;
@@ -36,6 +37,8 @@ const PROVIDERS = [
 const STORAGE_KEY = "career-ops:config";
 
 export function ConfigForm() {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   const [mode, setMode] = useState<Mode>("cli");
   const [clis, setClis] = useState<Cli[] | null>(null);
   const [cliId, setCliId] = useState<string>("");
@@ -102,37 +105,41 @@ export function ConfigForm() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10">
-      <h1 className="font-display text-2xl tracking-tight text-landing">Config</h1>
+      <h1 className="font-display text-2xl tracking-tight text-landing">
+        {isFr ? "Configuration" : "Config"}
+      </h1>
       <p className="mt-1 text-sm text-muted">
-        Run career-ops on your own AI, right on your computer. Your CV and data never leave your machine.
+        {isFr
+          ? "Exécutez Jobiify sur votre propre IA, directement sur votre ordinateur. Votre CV et vos données ne quittent jamais votre machine."
+          : "Run Jobiify on your own AI, right on your computer. Your CV and data never leave your machine."}
       </p>
 
       {/* Engine mode */}
       <label className="mt-8 mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-        AI Engine
+        {isFr ? "Moteur IA" : "AI Engine"}
       </label>
       <div className="grid gap-2 sm:grid-cols-3">
         <ModeCard
           active={mode === "cli"}
           onClick={() => setMode("cli")}
           icon={Terminal}
-          title="Use an AI tool you have"
-          hint="Recommended"
+          title={isFr ? "Utiliser un outil IA installé" : "Use an AI tool you have"}
+          hint={isFr ? "Recommandé" : "Recommended"}
         />
         <ModeCard
           active={mode === "key"}
           onClick={() => setMode("key")}
           icon={KeyRound}
-          title="Paste an AI key"
-          hint="Coming soon"
+          title={isFr ? "Clé API personnalisée" : "Paste an AI key"}
+          hint={isFr ? "Bientôt disponible" : "Coming soon"}
           disabled
         />
         <ModeCard
           active={mode === "manual"}
           onClick={() => setMode("manual")}
           icon={TerminalSquare}
-          title="No setup needed"
-          hint="Coming soon"
+          title={isFr ? "Sans configuration" : "No setup needed"}
+          hint={isFr ? "Bientôt disponible" : "Coming soon"}
           disabled
         />
       </div>
@@ -141,18 +148,24 @@ export function ConfigForm() {
         {mode === "cli" && (
           <div>
             <p className="mb-1 text-sm text-muted">
-              career-ops uses an AI tool you already have — signed in, your own usage, nothing to paste.
+              {isFr
+                ? "Jobiify utilise un outil d'IA que vous possédez déjà — connecté localement, sans rien copier-coller."
+                : "Jobiify uses an AI tool you already have — signed in, your own usage, nothing to paste."}
             </p>
-            <p className="mb-3 text-xs text-faint">Works with Claude Code, Codex, OpenCode and more — free ones work great.</p>
+            <p className="mb-3 text-xs text-faint">
+              {isFr
+                ? "Fonctionne avec Antigravity CLI, Claude Code, Codex, OpenCode, Gemini CLI et plus."
+                : "Works with Claude Code, Codex, OpenCode and more — free ones work great."}
+            </p>
             {clis === null ? (
               <div className="flex items-center gap-2 text-sm text-muted">
-                <Loader2 className="size-4 animate-spin" /> Checking what&apos;s on your computer…
+                <Loader2 className="size-4 animate-spin" /> {isFr ? "Vérification des outils sur votre machine…" : "Checking what's on your computer…"}
               </div>
             ) : installed.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border bg-surface/30 p-4 text-sm text-muted">
-                No AI tool yet? Free options like <span className="text-foreground">OpenCode</span> with Qwen or GLM work great.{" "}
+                {isFr ? "Aucun outil IA trouvé ?" : "No AI tool yet?"}{" "}
                 <a href="https://career-ops.org/docs/free-ai-engine" target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-brand hover:underline">
-                  Get one free <ExternalLink className="size-3" />
+                  {isFr ? "En installer un gratuitement" : "Get one free"} <ExternalLink className="size-3" />
                 </a>
               </div>
             ) : (
@@ -213,19 +226,20 @@ export function ConfigForm() {
                         rel="noreferrer"
                         className="inline-flex shrink-0 items-center justify-center gap-1 text-xs text-brand hover:underline max-sm:min-h-[44px]"
                       >
-                        Install <ExternalLink className="size-3" />
+                        {isFr ? "Installer" : "Install"} <ExternalLink className="size-3" />
                       </a>
                     </div>
                   );
                 })}
                 {installed.length === 0 && (
                   <p className="rounded-xl border border-dashed border-border bg-surface/30 p-4 text-xs text-muted">
-                    No supported CLI found on your PATH. Install one (e.g. Claude Code, Gemini CLI, OpenCode) to get started.
+                    {isFr ? "Aucune CLI supportée trouvée sur votre PATH." : "No supported CLI found on your PATH. Install one (e.g. Claude Code, Gemini CLI, OpenCode) to get started."}
                   </p>
                 )}
                 <p className="mt-2 text-[11px] leading-relaxed text-faint">
-                  Best on <span className="text-muted">Claude Code</span> (live progress, the agentic apply + AI search,
-                  reliable evaluation persistence). Other CLIs work for the core flows with reduced features.
+                  {isFr
+                    ? "Recommandé avec Antigravity CLI ou Claude Code. Les autres CLI fonctionnent pour les fonctionnalités essentielles."
+                    : "Best on Claude Code (live progress, the agentic apply + AI search, reliable evaluation persistence). Other CLIs work for the core flows with reduced features."}
                 </p>
               </div>
             )}
@@ -285,7 +299,7 @@ export function ConfigForm() {
 
       {/* Appearance / privacy */}
       <label className="mt-8 mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-        Appearance
+        {isFr ? "Affichage" : "Appearance"}
       </label>
       <button
         type="button"
@@ -293,10 +307,13 @@ export function ConfigForm() {
         className="flex w-full items-center justify-between gap-4 rounded-xl border border-border bg-surface/50 px-4 py-3 text-left transition-colors hover:bg-surface-hover"
       >
         <span className="min-w-0">
-          <span className="block text-sm font-medium text-foreground">Company logos</span>
+          <span className="block text-sm font-medium text-foreground">
+            {isFr ? "Logos des entreprises" : "Company logos"}
+          </span>
           <span className="mt-0.5 block text-xs text-faint">
-            Show each company&apos;s real logo. Fetched once through your local server and cached on
-            disk — only the employer domain is sent to a third party. Off = colored monograms only.
+            {isFr
+              ? "Affiche le vrai logo de chaque entreprise, mis en cache localement sur votre disque. Désactivé = monogrammes colorés."
+              : "Show each company's real logo. Fetched once through your local server and cached on disk — only the employer domain is sent to a third party. Off = colored monograms only."}
           </span>
         </span>
         <span
@@ -323,9 +340,9 @@ export function ConfigForm() {
           className="inline-flex items-center justify-center gap-2 rounded-full bg-brand px-5 py-2 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-200 max-sm:min-h-[44px]"
         >
           {saved ? <Check className="size-4" /> : null}
-          {saved ? "Saved" : "Save config"}
+          {saved ? (isFr ? "Enregistré" : "Saved") : (isFr ? "Enregistrer la configuration" : "Save config")}
         </button>
-        <span className="text-xs text-faint">Local-first · on our roadmap</span>
+        <span className="text-xs text-faint">{isFr ? "Local-first · sur votre machine" : "Local-first · on our roadmap"}</span>
       </div>
     </div>
   );

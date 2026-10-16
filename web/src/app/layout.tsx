@@ -5,14 +5,15 @@ import { AppShell } from "@/components/app-shell";
 import { RouteProgressHost } from "@/components/route-progress-host";
 import { ThemeProvider } from "@/components/theme-provider";
 import { readFollowupsEnabled } from "@/lib/followups-server";
+import { I18nProvider } from "@/components/i18n-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "career-ops — official web experience",
-  description: "The official, local-first web experience for career-ops.",
+  title: "Jobiify — expérience web officielle",
+  description: "L'expérience web officielle et locale pour Jobiify.",
   // Home-screen / standalone (iOS): let our theme-color flow up to the status bar
   // + Dynamic Island; safe-area insets handle the layout.
-  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "career-ops" },
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Jobiify" },
 };
 
 export const viewport: Viewport = {
@@ -34,7 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const followupsEnabled = readFollowupsEnabled();
   return (
     <html
-      lang="en"
+      lang="fr"
       suppressHydrationWarning
       className={`${inter.variable} ${instrumentSerif.variable} ${instrumentSerifItalic.variable}`}
     >
@@ -42,7 +43,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <RouteProgressHost />
         <ThemeProvider>
-          <AppShell followupsEnabled={followupsEnabled}>{children}</AppShell>
+          <I18nProvider>
+            <AppShell followupsEnabled={followupsEnabled}>{children}</AppShell>
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>

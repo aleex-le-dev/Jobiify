@@ -7,6 +7,7 @@ import { CompanyLogo } from "@/components/company-logo";
 import { CostBadge } from "@/components/cost/cost-badge";
 import { cn } from "@/lib/cn";
 import { formatRunCostEstimate } from "@/lib/run-cost-estimate.mjs";
+import { useI18n } from "@/components/i18n-provider";
 
 export type ShortItem = { url: string; company: string; role: string };
 
@@ -28,6 +29,7 @@ export function ShortlistTray({
   onClear: () => void;
   onScore: () => void;
 }) {
+  const { isFr } = useI18n();
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   if (items.length === 0) return null;
@@ -51,7 +53,7 @@ export function ShortlistTray({
                   <button
                     type="button"
                     onClick={() => onRemove(it.url)}
-                    aria-label={`Remove ${it.company}`}
+                    aria-label={isFr ? `Retirer ${it.company}` : `Remove ${it.company}`}
                     className="inline-flex items-center justify-center rounded-md p-1 text-faint transition-colors hover:text-foreground max-sm:min-h-[44px] max-sm:min-w-[44px]"
                   >
                     <X className="size-4" />
@@ -69,12 +71,12 @@ export function ShortlistTray({
               className="inline-flex items-center gap-1.5 text-sm font-medium max-sm:min-h-[44px]"
             >
               <ChevronDown className={cn("size-4 text-muted transition-transform", open && "rotate-180")} />
-              Shortlist <span className="tabular-nums text-brand-text">({n})</span>
+              {isFr ? "Sélection" : "Shortlist"} <span className="tabular-nums text-brand-text">({n})</span>
             </button>
 
             {open && (
               <button type="button" onClick={onClear} className="text-xs text-faint transition-colors hover:text-foreground max-sm:min-h-[44px]">
-                Clear
+                {isFr ? "Vider" : "Clear"}
               </button>
             )}
 
@@ -86,7 +88,7 @@ export function ShortlistTray({
                   className="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-200 max-sm:min-h-[44px]"
                 >
                   <Sparkles className="size-4" />
-                  <span>Score {n}</span>
+                  <span>{isFr ? `Évaluer ${n}` : `Score ${n}`}</span>
                   <span className="hidden text-xs font-normal text-brand-foreground/80 sm:inline">· {costText}</span>
                 </button>
               ) : (
@@ -98,7 +100,7 @@ export function ShortlistTray({
           {/* cost line — always visible on mobile (where it doesn't fit in the button) */}
           <div className="flex items-center gap-2 border-t border-border/60 px-3 py-1.5 text-[11px] text-muted sm:hidden">
             <CostBadge kind="spend" size="xs" />
-            <span>{costText} — the only step that spends</span>
+            <span>{costText} — {isFr ? "la seule étape qui utilise des jetons" : "the only step that spends"}</span>
           </div>
         </div>
       </div>
@@ -119,15 +121,17 @@ function ConfirmScore({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const { isFr } = useI18n();
+
   if (!hasCli) {
     return (
       <div className="flex items-center gap-2 text-xs">
-        <span className="text-muted">No AI configured.</span>
+        <span className="text-muted">{isFr ? "Aucune IA configurée." : "No AI configured."}</span>
         <Link href="/config" className="inline-flex items-center gap-1 rounded-full border border-brand/40 bg-brand-soft px-3 py-1.5 font-medium text-brand max-sm:min-h-[44px]">
-          <Settings className="size-3.5" /> Set up
+          <Settings className="size-3.5" /> {isFr ? "Configurer" : "Set up"}
         </Link>
         <button type="button" onClick={onCancel} className="text-faint hover:text-foreground max-sm:min-h-[44px]">
-          Cancel
+          {isFr ? "Annuler" : "Cancel"}
         </button>
       </div>
     );
@@ -142,10 +146,10 @@ function ConfirmScore({
         onClick={onConfirm}
         className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-200 max-sm:min-h-[44px]"
       >
-        Score {n} now
+        {isFr ? `Évaluer ${n} maintenant` : `Score ${n} now`}
       </button>
       <button type="button" onClick={onCancel} className="rounded-full px-2 py-2 text-xs text-faint transition-colors hover:text-foreground max-sm:min-h-[44px]">
-        Cancel
+        {isFr ? "Annuler" : "Cancel"}
       </button>
     </div>
   );

@@ -14,6 +14,7 @@ import { ShortlistTray, type ShortItem } from "./shortlist-tray";
 import { cn } from "@/lib/cn";
 import { estimateRunCost } from "@/lib/run-cost-estimate.mjs";
 import { createInboxSkipActions, queueInboxSkip } from "@/lib/inbox-skip-client.mjs";
+import { useI18n } from "@/components/i18n-provider";
 
 const SHORTLIST_KEY = "career-ops:shortlist";
 const HIDDEN_KEY = "career-ops:hidden";
@@ -26,6 +27,7 @@ type UndoNotice = { label: string; fn: () => Promise<void>; busy?: boolean; erro
 // it; only "Score shortlist" spends tokens. 🔴 The shell is agnostic to what makes a
 // role relevant — order is freshness with a single documented plug point.
 export function InboxTriage({ inbox }: { inbox: InboxJob[] }) {
+  const { isFr } = useI18n();
   const router = useRouter();
   const { jobs, startJob } = useJobs();
   // Serialize skip/undo per URL so a fast Undo cannot lose the race to Skip.
@@ -190,10 +192,10 @@ export function InboxTriage({ inbox }: { inbox: InboxJob[] }) {
     const actions = createInboxSkipActions((done) => persistSkip(job.url, done), () => {
       setHidden((h) => h.filter((u) => u !== job.url));
       setUndo((current) => current?.fn === notice.fn && !current.busy ? null : current);
-      setWriteError(`Could not skip ${job.company}. Please try Skip again.`);
+      setWriteError(isFr ? `Impossible d'ignorer ${job.company}. Veuillez réessayer.` : `Could not skip ${job.company}. Please try Skip again.`);
     });
     const notice: UndoNotice = {
-      label: `Skipped ${job.company}`,
+      label: isFr ? `${job.company} ignoré` : `Skipped ${job.company}`,
       fn: async () => {
         await actions.undo();
         setHidden((h) => h.filter((u) => u !== job.url));
@@ -211,7 +213,7 @@ export function InboxTriage({ inbox }: { inbox: InboxJob[] }) {
     try {
       await Promise.all(urls.map((url) => persistSkip(url, false).then(() => {
         setHidden((h) => h.filter((u) => u !== url));
-      }).catch(() => setWriteError("Some jobs could not be restored. Try restore again."))));
+      }).catch(() => setWriteError(isFr ? "Certaines offres n'ont pas pu être restaurées. Veuillez réessayer." : "Some jobs could not be restored. Try restore again."))));
     } finally {
       restoreRunning.current = false;
       setRestoring(false);
@@ -272,11 +274,15 @@ export function InboxTriage({ inbox }: { inbox: InboxJob[] }) {
       {/* batch header: fresh slice by default, or the full filtered set */}
       <div className="mt-4 flex items-baseline justify-between gap-3">
         <p className="text-sm font-medium text-foreground">
-          {capped ? "Fresh — worth a look" : anyFacet ? `${filtered.length} match${filtered.length === 1 ? "" : "es"}` : "All roles"}
+          {capped
+            ? (isFr ? "Récent — à examiner" : "Fresh — worth a look")
+            : anyFacet
+              ? (isFr ? `${filtered.length} résultat${filtered.length === 1 ? "" : "s"}` : `${filtered.length} match${filtered.length === 1 ? "" : "es"}`)
+              : (isFr ? "Toutes les offres" : "All roles")}
         </p>
         {hiddenCount > 0 && (
           <button type="button" onClick={() => void restoreHidden()} disabled={restoring} aria-busy={restoring} className="text-xs text-faint transition-colors hover:text-foreground disabled:opacity-50 max-sm:min-h-[44px]">
-            {hiddenCount} hidden · {restoring ? "restoring…" : "restore"}
+            {hiddenCount} {isFr ? "masqué(s)" : "hidden"} · {restoring ? (isFr ? "restauration…" : "restoring…") : (isFr ? "restaurer" : "restore")}
           </button>
         )}
       </div>
@@ -284,12 +290,12 @@ export function InboxTriage({ inbox }: { inbox: InboxJob[] }) {
       {/* multi-select action bar */}
       {selected.size > 0 && (
         <div className="mt-2 flex items-center gap-3 rounded-lg border border-brand/30 bg-brand-soft px-3 py-2 text-sm">
-          <span className="font-medium text-brand tabular-nums">{selected.size} selected</span>
+          <span className="font-medium text-brand tabular-nums">{selected.size} {isFr ? "sélectionné(s)" : "selected"}</span>
           <button type="button" onClick={saveSelected} className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-brand-foreground max-sm:min-h-[44px]">
-            Save to shortlist
+            {isFr ? "Ajouter à la sélection" : "Save to shortlist"}
           </button>
           <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-muted hover:text-foreground max-sm:min-h-[44px]">
-            Clear
+            {isFr ? "Effacer" : "Clear"}
           </button>
         </div>
       )}
@@ -313,8 +319,8 @@ export function InboxTriage({ inbox }: { inbox: InboxJob[] }) {
         </ul>
       ) : (
         <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface/30 px-6 py-10 text-center">
-          <p className="font-display text-lg">No matches</p>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">Loosen the filters to see more of your inbox.</p>
+          <p className="font-display text-lg">{isFr ? "Aucun résultat" : "No matches"}</p>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">{isFr ? "Assouplissez les filtres pour voir plus d'offres de votre boîte de réception." : "Loosen the filters to see more of your inbox."}</p>
         </div>
       )}
 
@@ -325,13 +331,15 @@ export function InboxTriage({ inbox }: { inbox: InboxJob[] }) {
           onClick={() => setShowAll(true)}
           className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl border border-border bg-surface/40 py-2.5 text-sm font-medium text-muted transition-colors hover:border-brand/40 hover:text-brand max-sm:min-h-[44px]"
         >
-          See all {ordered.length} in inbox →
+          {isFr ? `Voir les ${ordered.length} offres de la boîte →` : `See all ${ordered.length} in inbox →`}
         </button>
       )}
 
       {/* empty-shortlist guidance (only once there's nothing saved) */}
       {shortlist.length === 0 && (
-        <p className="mt-4 text-center text-xs text-faint">Save roles worth a look, then score them together — one token spend.</p>
+        <p className="mt-4 text-center text-xs text-faint">
+          {isFr ? "Enregistrez les offres intéressantes, puis évaluez-les ensemble en une seule fois." : "Save roles worth a look, then score them together — one token spend."}
+        </p>
       )}
       </div>
 
@@ -344,7 +352,7 @@ export function InboxTriage({ inbox }: { inbox: InboxJob[] }) {
               {undo.error && <p role="alert" className="text-red-600 dark:text-red-400">{undo.error}</p>}
             </div>
             <button type="button" onClick={() => void handleUndo(undo)} disabled={undo.busy} aria-busy={Boolean(undo.busy)} className="inline-flex shrink-0 items-center gap-1 font-medium text-brand disabled:opacity-50 max-sm:min-h-[44px]">
-              <Undo2 className="size-3.5" /> {undo.busy ? "Undoing…" : undo.error ? "Retry undo" : "Undo"}
+              <Undo2 className="size-3.5" /> {undo.busy ? (isFr ? "Annulation…" : "Undoing…") : undo.error ? (isFr ? "Réessayer l'annulation" : "Retry undo") : (isFr ? "Annuler" : "Undo")}
             </button>
           </div>
         </div>

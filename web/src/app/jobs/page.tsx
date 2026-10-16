@@ -5,6 +5,7 @@ import { Check, AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { useJobs } from "@/components/jobs/job-store";
 import { pillTone } from "@/components/jobs/worker-pills";
 import { cn } from "@/lib/cn";
+import { useI18n } from "@/components/i18n-provider";
 
 const TONE_CHIP = {
   good: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
@@ -14,15 +15,27 @@ const TONE_CHIP = {
 } as const;
 
 export default function JobsHistory() {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   const { jobs, clearFinished } = useJobs();
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="font-display text-2xl tracking-tight text-landing">Workers</h1>
+          <h1 className="font-display text-2xl tracking-tight text-landing">
+            {isFr ? "Tâches en arrière-plan" : "Workers"}
+          </h1>
           <p className="mt-1 text-sm text-muted">
-            AI runs started from this dashboard, kept in this browser. <span className="tabular-nums">{jobs.length}</span> total.
+            {isFr ? (
+              <>
+                Exécutions IA démarrées depuis ce tableau de bord, conservées dans ce navigateur. <span className="tabular-nums">{jobs.length}</span> au total.
+              </>
+            ) : (
+              <>
+                AI runs started from this dashboard, kept in this browser. <span className="tabular-nums">{jobs.length}</span> total.
+              </>
+            )}
           </p>
         </div>
         {jobs.some((j) => j.status !== "running") && (
@@ -30,21 +43,36 @@ export default function JobsHistory() {
             onClick={clearFinished}
             className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
           >
-            <Trash2 className="size-3.5" /> Clear finished
+            <Trash2 className="size-3.5" /> {isFr ? "Effacer les tâches terminées" : "Clear finished"}
           </button>
         )}
       </div>
 
       {jobs.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/30 px-6 py-12 text-center text-sm text-muted">
-          No workers yet. Hit <span className="text-foreground">Evaluate</span> on an inbox posting to start one.
-          <span className="mt-2 block">
-            Ran an evaluation from your AI CLI? It shows up in{" "}
-            <Link href="/pipeline?tab=ALL" className="text-foreground underline-offset-2 hover:underline">
-              Pipeline
-            </Link>
-            , not here.
-          </span>
+          {isFr ? (
+            <>
+              Aucune tâche pour l&apos;instant. Cliquez sur <span className="text-foreground">Évaluer</span> sur une offre pour en lancer une.
+              <span className="mt-2 block">
+                Vous avez lancé une évaluation depuis votre CLI IA ? Elle apparaît dans le{" "}
+                <Link href="/pipeline?tab=ALL" className="text-foreground underline-offset-2 hover:underline">
+                  Pipeline
+                </Link>
+                , pas ici.
+              </span>
+            </>
+          ) : (
+            <>
+              No workers yet. Hit <span className="text-foreground">Evaluate</span> on an inbox posting to start one.
+              <span className="mt-2 block">
+                Ran an evaluation from your AI CLI? It shows up in{" "}
+                <Link href="/pipeline?tab=ALL" className="text-foreground underline-offset-2 hover:underline">
+                  Pipeline
+                </Link>
+                , not here.
+              </span>
+            </>
+          )}
         </div>
       ) : (
         <ul className="mt-6 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface/40">

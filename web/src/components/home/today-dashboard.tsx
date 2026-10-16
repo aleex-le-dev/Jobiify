@@ -18,6 +18,7 @@ import { scoreNum } from "@/lib/format";
 import { pickAwaitingDecision, groupAwaiting } from "@/lib/home/awaiting.mjs";
 import { companyPresentation } from "@/lib/company-presentation.mjs";
 import { resolveHeroState, mayClaimAllClear, showsQueue, missingSourceLabel, displayCounts } from "@/lib/home/hero-state.mjs";
+import { useI18n } from "@/components/i18n-provider";
 
 // The retention "Today": a dual-loop action queue (the maintainer's
 // "N new matches this week · M follow-ups due"). SUPPLY loop = fresh free-scan
@@ -50,7 +51,9 @@ export function TodayDashboard({
   const [freshError, setFreshError] = useState(false);
   const requestGeneration = useRef(0);
   const router = useRouter();
-  const dateLabel = useMemo(() => new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }), []);
+  const { locale, t } = useI18n();
+  const isFr = locale === "fr";
+  const dateLabel = useMemo(() => new Date().toLocaleDateString(isFr ? "fr-FR" : "en-US", { weekday: "long", month: "short", day: "numeric" }), [isFr]);
 
   const refetch = useCallback(() => {
     const generation = ++requestGeneration.current;
@@ -152,54 +155,53 @@ export function TodayDashboard({
         <div aria-hidden className="pointer-events-none absolute inset-0 z-[1] bg-surface/55 backdrop-blur-[2px] dark:bg-background/45" />
         <div className="relative z-10">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
-            <span className="text-faint">//</span> today · <span className="tabular-nums">{dateLabel}</span>
+            <span className="text-faint">//</span> {isFr ? "aujourd'hui" : "today"} · <span className="tabular-nums">{dateLabel}</span>
           </p>
           <h1 className={`${instrumentSerif.className} mt-3 text-4xl leading-[1.05] text-landing md:text-5xl`}>
             {heroState === "loading" ? (
-              <>Your career queue is loading.</>
+              <>{isFr ? "Chargement de votre file d'attente..." : "Your career queue is loading."}</>
             ) : heroState === "unavailable" ? (
-              <>Some updates are unavailable.</>
+              <>{isFr ? "Certaines mises à jour sont indisponibles." : "Some updates are unavailable."}</>
             ) : allClear ? (
-              <>You&apos;re all caught up.</>
+              <>{isFr ? "Vous êtes complètement à jour." : "You're all caught up."}</>
             ) : showsQueue(heroState) ? (
               <>
                 {shown.newThisWeek > 0 && (
                   <>
-                    <span className="text-brand tabular-nums">{shown.newThisWeek}</span> new match{shown.newThisWeek === 1 ? "" : "es"} this week
+                    <span className="text-brand tabular-nums">{shown.newThisWeek}</span> {isFr ? "nouvelle(s) offre(s) cette semaine" : `new match${shown.newThisWeek === 1 ? "" : "es"} this week`}
                   </>
                 )}
                 {shown.newThisWeek > 0 && shown.overdue > 0 && <span className="text-faint"> · </span>}
                 {shown.overdue > 0 && (
                   <>
-                    <span className="text-brand tabular-nums">{shown.overdue}</span> follow-up{shown.overdue === 1 ? "" : "s"} due
+                    <span className="text-brand tabular-nums">{shown.overdue}</span> {isFr ? "relance(s) à faire" : `follow-up${shown.overdue === 1 ? "" : "s"} due`}
                   </>
                 )}
-                {/* queue-partial with work known only from the server snapshot:
-                    both loops are down but the pipeline still has decisions
-                    waiting, so the queue is real while neither count is. */}
-                {shown.newThisWeek === 0 && shown.overdue === 0 && <>Your queue is waiting.</>}
+                {shown.newThisWeek === 0 && shown.overdue === 0 && (
+                  <>{isFr ? "Votre file d'attente est prête." : "Your queue is waiting."}</>
+                )}
               </>
             ) : (
-              <>Your queue is waiting.</>
+              <>{isFr ? "Votre file d'attente est prête." : "Your queue is waiting."}</>
             )}
           </h1>
           <p className="mt-4 max-w-xl text-sm text-muted">
             {heroState === "unavailable"
-              ? "We couldn't load all of today's updates. Try again."
+              ? isFr ? "Impossible de charger les mises à jour. Veuillez réessayer." : "We couldn't load all of today's updates. Try again."
               : heroState === "queue-partial"
-                ? `${missingSources} could not be read, so this may be missing work. What loaded is below.`
+                ? isFr ? `${missingSources} n'a pas pu être chargé. Ce qui a été chargé est affiché ci-dessous.` : `${missingSources} could not be read, so this may be missing work. What loaded is below.`
                 : allClear
-                  ? "I'll keep scanning the market in the background and surface anything that fits."
+                  ? isFr ? "Je continue de scanner le marché en arrière-plan et je vous signalerai toute offre correspondante." : "I'll keep scanning the market in the background and surface anything that fits."
                   : followupsEnabled
-                    ? "Your action queue for today — discovery and follow-ups, in one place."
-                    : "Your action queue for today, in one place."}
+                    ? isFr ? "Votre plan d'action du jour — nouvelles offres et relances réunies." : "Your action queue for today — discovery and follow-ups, in one place."
+                    : isFr ? "Votre plan d'action du jour, réuni au même endroit." : "Your action queue for today, in one place."}
           </p>
           <div className="mt-6 flex flex-wrap gap-2.5">
             <Link href="/explore" className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-medium text-brand-foreground transition hover:bg-brand-200 max-sm:min-h-[44px]">
-              Find new roles <ArrowRight className="size-4" />
+              {isFr ? "Découvrir des offres" : "Find new roles"} <ArrowRight className="size-4" />
             </Link>
             <Link href="/pipeline" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-medium text-foreground transition hover:border-brand/40 hover:text-brand max-sm:min-h-[44px]">
-              Open pipeline
+              {isFr ? "Voir mes candidatures" : "Open pipeline"}
             </Link>
           </div>
           {inBetween && <QuickEvaluate />}
@@ -208,8 +210,10 @@ export function TodayDashboard({
 
       {dataError && !dataLoading && (
         <div role="alert" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface/40 px-5 py-4 text-sm text-muted">
-          <p>{missingSources} could not be loaded.</p>
-          <button type="button" onClick={refetch} className="font-medium text-brand hover:underline">Retry updates</button>
+          <p>{missingSources} {isFr ? "n'a pas pu être chargé." : "could not be loaded."}</p>
+          <button type="button" onClick={refetch} className="font-medium text-brand hover:underline">
+            {isFr ? "Réessayer" : "Retry updates"}
+          </button>
         </div>
       )}
 
@@ -219,12 +223,9 @@ export function TodayDashboard({
       ) : followupsError ? (
         null
       ) : followups.length > 0 ? (
-        <Section icon={Bell} title="Follow-ups due" hint="Keep your applications alive — a nudge beats silence">
+        <Section icon={Bell} title={isFr ? "Relances à faire" : "Follow-ups due"} hint={isFr ? "Maintenez le contact — une relance proactive fait la différence" : "Keep your applications alive — a nudge beats silence"}>
           <div className="grid gap-2.5">
             {followups.map((f) => (
-              // Refetch (not a local decrement) so the parent's followups/upcoming
-              // stay in sync with the server. Logging the LAST due item must flip this
-              // section over to "Upcoming" instead of leaving it empty.
               <FollowUpCard key={`${f.num}-${f.company}`} followup={f} onLogged={refetch} />
             ))}
           </div>
@@ -232,7 +233,7 @@ export function TodayDashboard({
       ) : null}
 
       {!followupsLoading && !followupsError && upcoming.length > 0 && (
-        <Section icon={Bell} title="Upcoming" hint="Not due yet">
+        <Section icon={Bell} title={isFr ? "Relances à venir" : "Upcoming"} hint={isFr ? "Pas encore dues" : "Not due yet"}>
           <ul className="grid gap-2">
             {upcoming.map((item) => (
               <li key={`${item.num ?? item.company}-${item.nextFollowupDate ?? ""}`}>
@@ -252,13 +253,13 @@ export function TodayDashboard({
 
       {/* B. Awaiting your decision */}
       {awaiting.length > 0 && (
-        <Section icon={CircleHelp} title="Awaiting your decision" hint="Best score first">
+        <Section icon={CircleHelp} title={isFr ? "En attente de votre décision" : "Awaiting your decision"} hint={isFr ? "Meilleur score en premier" : "Best score first"}>
           {recommended.length > 0 && (
             <Link
               href={`/pipeline/${recommended[0].n}`}
               className="mb-3 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:bg-brand-200 max-sm:min-h-[44px]"
             >
-              Apply next · {companyPresentation(recommended[0]).label} {recommended[0].score} <ArrowRight className="size-4" />
+              {isFr ? "Postuler en priorité" : "Apply next"} · {companyPresentation(recommended[0]).label} {recommended[0].score} <ArrowRight className="size-4" />
             </Link>
           )}
           {awaitingGroups.map(([label, group]) => (
@@ -276,7 +277,7 @@ export function TodayDashboard({
 
       {/* C. Fresh matches this week (supply loop) */}
       {!freshError && fresh.length > 0 && (
-        <Section icon={Sparkles} title="Fresh matches this week" hint="Found by your free scans · 0 tokens">
+        <Section icon={Sparkles} title={isFr ? "Nouvelles offres de la semaine" : "Fresh matches this week"} hint={isFr ? "Détectées par vos scans locaux · 0 token" : "Found by your free scans · 0 tokens"}>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {fresh.slice(0, 6).map((o) => (
               <DiscoveryCard key={o.url} offer={o} inPipeline={inboxUrls.has(o.url)} />
@@ -284,7 +285,7 @@ export function TodayDashboard({
           </div>
           {fresh.length > 6 && (
             <Link href="/explore?view=fresh" className="mt-3 inline-flex items-center text-sm text-muted transition hover:text-brand max-sm:min-h-[44px]">
-              See all {freshCount} →
+              {isFr ? `Voir les ${freshCount} offres →` : `See all ${freshCount} →`}
             </Link>
           )}
         </Section>
@@ -294,7 +295,31 @@ export function TodayDashboard({
         <div className="mt-8 rounded-2xl border border-border bg-surface/30 px-6 py-10 text-center">
           <Sparkles className="mx-auto size-6 text-brand" />
           <p className="mx-auto mt-3 max-w-md text-sm text-muted">
-            Nothing needs you right now. Run a <Link href="/explore" className="text-brand hover:underline">free scan</Link> to surface this week&apos;s roles, or check your <Link href="/pipeline" className="text-brand hover:underline">pipeline</Link>.
+            {isFr ? (
+              <>
+                Rien ne requiert votre attention pour le moment. Lancez un{" "}
+                <Link href="/explore" className="text-brand hover:underline">
+                  scan gratuit
+                </Link>{" "}
+                pour afficher les opportunités de la semaine, ou consultez vos{" "}
+                <Link href="/pipeline" className="text-brand hover:underline">
+                  candidatures
+                </Link>
+                .
+              </>
+            ) : (
+              <>
+                Nothing needs you right now. Run a{" "}
+                <Link href="/explore" className="text-brand hover:underline">
+                  free scan
+                </Link>{" "}
+                to surface this week&apos;s roles, or check your{" "}
+                <Link href="/pipeline" className="text-brand hover:underline">
+                  pipeline
+                </Link>
+                .
+              </>
+            )}
           </p>
         </div>
       )}

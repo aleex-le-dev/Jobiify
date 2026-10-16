@@ -25,7 +25,7 @@ const BAND_CLASS: Record<string, string> = {
 
 const REASON_COPY: Record<string, string> = {
   "no-keywords": "This report has no “Keywords extracted” block, so there is nothing to compare the CV against.",
-  "no-script": "keyword-match.mjs isn’t in this career-ops checkout.",
+  "no-script": "keyword-match.mjs isn’t in this Jobiify checkout.",
   "no-report": "The report file couldn’t be found.",
   failed: "The keyword check didn’t complete.",
   unparseable: "The keyword check returned something unreadable.",

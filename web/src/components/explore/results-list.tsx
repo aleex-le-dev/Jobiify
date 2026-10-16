@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Search, Plus } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { DiscoveredOffer } from "@/lib/explore";
+import { useI18n } from "@/components/i18n-provider";
 import { CostBadge } from "@/components/cost/cost-badge";
 import { DiscoveryCard } from "./discovery-card";
 import { useExplore } from "./explore-provider";
@@ -11,6 +12,7 @@ import { useExplore } from "./explore-provider";
 export type EnrichedOffer = DiscoveredOffer & { inPipeline: boolean; evaluatedN?: string };
 
 export function ResultsList({ offers }: { offers: EnrichedOffer[] }) {
+  const { isFr } = useI18n();
   const { companiesScanned, partial, error, addToPipeline, added, mode, running } = useExplore();
   const isAi = mode === "ai";
   const [sort, setSort] = useState<"fresh" | "company">("fresh");
@@ -33,13 +35,24 @@ export function ResultsList({ offers }: { offers: EnrichedOffer[] }) {
       <div className="flex flex-wrap items-center gap-3">
         <div>
           <p className="text-sm text-foreground">
-            <span className="font-semibold">{offers.length}</span> {isAi ? `candidate${offers.length === 1 ? "" : "s"}` : `fresh role${offers.length === 1 ? "" : "s"}`}
+            <span className="font-semibold">{offers.length}</span>{" "}
+            {isFr
+              ? isAi
+                ? `offre${offers.length > 1 ? "s" : ""} candidate${offers.length > 1 ? "s" : ""}`
+                : `offre${offers.length > 1 ? "s" : ""} récente${offers.length > 1 ? "s" : ""}`
+              : isAi
+                ? `candidate${offers.length === 1 ? "" : "s"}`
+                : `fresh role${offers.length === 1 ? "" : "s"}`}
             <CostBadge kind={isAi ? "spend" : "free-network"} size="xs" className="ml-2 align-middle" />
           </p>
           <p className="text-[12px] text-faint">
             {isAi
-              ? "found by AI on the open web · unverified until you evaluate"
-              : `${companiesScanned > 0 ? `${companiesScanned.toLocaleString()} companies scanned · ` : ""}0 tokens spent${partial ? " · some boards were unreachable (normal for public directories)" : ""}`}
+              ? isFr
+                ? "trouvé par l'IA sur le web public · non vérifié avant évaluation"
+                : "found by AI on the open web · unverified until you evaluate"
+              : isFr
+                ? `${companiesScanned > 0 ? `${companiesScanned.toLocaleString()} entreprises scannées · ` : ""}0 jeton consommé${partial ? " · certaines sources étaient inaccessibles (normal pour les annuaires publics)" : ""}`
+                : `${companiesScanned > 0 ? `${companiesScanned.toLocaleString()} companies scanned · ` : ""}0 tokens spent${partial ? " · some boards were unreachable (normal for public directories)" : ""}`}
           </p>
           {!isAi && error && <p className="text-[12px] text-amber-700 dark:text-amber-300">{error}</p>}
         </div>
@@ -50,7 +63,7 @@ export function ResultsList({ offers }: { offers: EnrichedOffer[] }) {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Filter results…"
+              placeholder={isFr ? "Filtrer les résultats…" : "Filter results…"}
               className="w-32 bg-transparent text-[13px] outline-none placeholder:text-faint"
             />
           </div>
@@ -62,7 +75,7 @@ export function ResultsList({ offers }: { offers: EnrichedOffer[] }) {
                 onClick={() => setSort(s)}
                 className={cn("rounded-md px-2.5 py-1 font-medium capitalize transition-colors", sort === s ? "bg-brand-soft text-brand" : "text-muted hover:text-foreground")}
               >
-                {s}
+                {isFr ? (s === "fresh" ? "Récents" : "Entreprise") : s}
               </button>
             ))}
           </div>
@@ -72,7 +85,7 @@ export function ResultsList({ offers }: { offers: EnrichedOffer[] }) {
               onClick={() => addToPipeline(addable)}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface/40 px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-brand-soft hover:text-brand"
             >
-              <Plus className="size-3.5" /> Add all {addable.length}
+              <Plus className="size-3.5" /> {isFr ? `Tout ajouter (${addable.length})` : `Add all ${addable.length}`}
             </button>
           )}
         </div>
@@ -85,7 +98,9 @@ export function ResultsList({ offers }: { offers: EnrichedOffer[] }) {
       </div>
 
       {view.length === 0 && (q.trim() || !running) && (
-        <p className="py-10 text-center text-sm text-faint">No results match “{q}”.</p>
+        <p className="py-10 text-center text-sm text-faint">
+          {isFr ? `Aucun résultat ne correspond à « ${q} ».` : `No results match “${q}”.`}
+        </p>
       )}
     </div>
   );

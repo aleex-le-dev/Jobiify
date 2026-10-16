@@ -5,6 +5,7 @@ import Link from "next/link";
 import { GraduationCap, TriangleAlert } from "lucide-react";
 import { skillGapModel, barPct, blockerText } from "@/lib/skill-gaps.mjs";
 import type { SkillGapModel } from "@/lib/skill-gaps.mjs";
+import { useI18n } from "@/components/i18n-provider";
 
 // What keeps costing you roles, from the core's upskill.mjs via /api/upskill.
 //
@@ -23,6 +24,7 @@ const TIER_CLASS: Record<string, string> = {
 };
 
 export function SkillGaps() {
+  const { isFr } = useI18n();
   const [model, setModel] = useState<SkillGapModel | null>(null);
   // One counter for every in-flight load, not a per-call `alive` flag. Each
   // call owning its own flag meant two saves in quick succession raced: the
@@ -72,23 +74,24 @@ export function SkillGaps() {
   if (model.gaps.length === 0) {
     return (
       <section className="mt-8 rounded-2xl border border-border bg-surface/40 px-5 py-4">
-        <Header />
+        <Header isFr={isFr} />
         <p className="mt-2 text-sm text-muted">
-          No recurring gaps yet. These are read from each report&apos;s Machine Summary and Gap table, so they appear
-          once a few evaluations are in.
+          {isFr
+            ? "Aucune lacune récurrente pour le moment. Elles sont extraites des synthèses et tableaux d'évaluation, elles apparaîtront après quelques évaluations."
+            : "No recurring gaps yet. These are read from each report's Machine Summary and Gap table, so they appear once a few evaluations are in."}
         </p>
         {/* The caveats belong here too. "No gaps" read off a CV whose skills
             could not be recognised, or off a fraction of the reports, is the
             most believable wrong answer this panel can give. */}
         <Caveats caveats={model.caveats} />
-        <SkipBlockers blockers={model.blockers} skips={model.skips} />
+        <SkipBlockers blockers={model.blockers} skips={model.skips} isFr={isFr} />
       </section>
     );
   }
 
   return (
     <section className="mt-8 rounded-2xl border border-border bg-surface/40 px-5 py-4">
-      <Header />
+      <Header isFr={isFr} />
 
       <Caveats caveats={model.caveats} />
 
@@ -105,31 +108,36 @@ export function SkillGaps() {
               {g.tier ?? "—"}
             </span>
             <span className="w-24 shrink-0 text-right text-xs tabular-nums text-faint">
-              {g.reports} report{g.reports === 1 ? "" : "s"}
+              {g.reports} {isFr ? (g.reports <= 1 ? "fiche" : "fiches") : `report${g.reports === 1 ? "" : "s"}`}
             </span>
           </div>
         ))}
       </div>
 
       <p className="mt-4 text-xs text-faint">
-        Weighted by fit — a low-scoring role says more about a gap than a high-scoring one. Nothing here is added to your
-        CV; close the gap first, then write it.{" "}
+        {isFr
+          ? "Pondéré selon l'adéquation — un poste mal noté est plus révélateur d'un manque qu'un poste bien noté. Rien n'est ajouté automatiquement à votre CV ; comblez d'abord la compétence avant de l'indiquer."
+          : "Weighted by fit — a low-scoring role says more about a gap than a high-scoring one. Nothing here is added to your CV; close the gap first, then write it."}{" "}
         <Link href="/pipeline" className="text-muted underline-offset-2 hover:underline">
-          See the reports
+          {isFr ? "Voir les fiches" : "See the reports"}
         </Link>
       </p>
 
-      <SkipBlockers blockers={model.blockers} skips={model.skips} />
+      <SkipBlockers blockers={model.blockers} skips={model.skips} isFr={isFr} />
     </section>
   );
 }
 
-function SkipBlockers({ blockers, skips }: { blockers: SkillGapModel["blockers"]; skips: number }) {
+function SkipBlockers({ blockers, skips, isFr }: { blockers: SkillGapModel["blockers"]; skips: number; isFr: boolean }) {
   if (blockers.length === 0) return null;
   return (
     <div className="mt-5 border-t border-border pt-4">
-      <h3 className="text-sm text-foreground">What blocked your last {skips} skips</h3>
-      <p className="mt-0.5 text-xs text-faint">Critical or high requirements the evaluator marked missing or partial.</p>
+      <h3 className="text-sm text-foreground">
+        {isFr ? `Ce qui a bloqué vos ${skips} derniers écarts` : `What blocked your last ${skips} skips`}
+      </h3>
+      <p className="mt-0.5 text-xs text-faint">
+        {isFr ? "Exigences critiques ou majeures signalées manquantes ou partielles par l'évaluateur." : "Critical or high requirements the evaluator marked missing or partial."}
+      </p>
       <ul className="mt-3 grid gap-3">
         {blockers.map((b) => {
           const { verdict, nudge } = blockerText(b);
@@ -138,7 +146,7 @@ function SkipBlockers({ blockers, skips }: { blockers: SkillGapModel["blockers"]
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span className="text-sm text-foreground">{b.label}</span>
                 <span className="text-xs tabular-nums text-brand-text">
-                  {b.skips} of {skips}
+                  {b.skips} {isFr ? "sur" : "of"} {skips}
                 </span>
                 <span className="text-xs text-muted">{verdict}</span>
                 <span className="ml-auto flex gap-2 text-xs tabular-nums text-faint">
@@ -172,12 +180,16 @@ function Caveats({ caveats }: { caveats: SkillGapModel["caveats"] }) {
   );
 }
 
-function Header() {
+function Header({ isFr }: { isFr: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <GraduationCap className="size-4 text-brand" />
-      <h2 className="font-display text-base text-landing">What keeps costing you roles</h2>
-      <span className="text-xs text-faint">across your tracked evaluations</span>
+      <h2 className="font-display text-base text-landing">
+        {isFr ? "Ce qui vous fait manquer des opportunités" : "What keeps costing you roles"}
+      </h2>
+      <span className="text-xs text-faint">
+        {isFr ? "sur l'ensemble de vos évaluations" : "across your tracked evaluations"}
+      </span>
     </div>
   );
 }

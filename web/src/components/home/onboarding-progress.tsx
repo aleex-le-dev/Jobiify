@@ -11,27 +11,32 @@ import { readSavedCliId } from "@/lib/saved-cli";
 // (co-onboarding-changed) and after every finished worker (co-job-done), so a
 // section flips to filled the moment its confirm card is accepted.
 
+import { useI18n } from "@/components/i18n-provider";
+
 type Doctor = { available: boolean; onboardingNeeded: boolean; missing: string[] };
 type Section = { id: string; heading: string; state: "filled" | "template" | "missing" };
 
-// The same four keys /api/doctor reports in `missing`, so the panel cannot
-// count itself done while doctor still says onboarding is incomplete.
-// modes/_profile.md has no `ask` of its own: when it is absent its eight
-// sections are all "missing", and the personalization line below asks for them.
-const PREREQS: { key: string; label: string; ask?: string }[] = [
+const PREREQS_EN: { key: string; label: string; ask?: string }[] = [
   { key: "cv.md", label: "Your CV", ask: "my CV" },
   { key: "config/profile.yml", label: "Profile — target roles, comp, location", ask: "my profile (target roles, comp, location)" },
   { key: "modes/_profile.md", label: "Personalization file" },
   { key: "portals.yml", label: "Companies and roles to scan", ask: "the roles and companies to scan" },
 ];
 
-// Same reader the rest of the app uses, so "configured" cannot mean one thing
-// here and another in Config (an empty-string cliId is not configured).
+const PREREQS_FR: { key: string; label: string; ask?: string }[] = [
+  { key: "cv.md", label: "Votre CV", ask: "mon CV" },
+  { key: "config/profile.yml", label: "Profil — postes visés, rémunération, lieu", ask: "mon profil (postes cibles, salaire, lieu)" },
+  { key: "modes/_profile.md", label: "Fichier de personnalisation" },
+  { key: "portals.yml", label: "Entreprises et postes à scanner", ask: "les postes et entreprises à scanner" },
+];
+
 function hasCli(): boolean {
   return !!readSavedCliId();
 }
 
 export function OnboardingProgress({ compact = false }: { compact?: boolean }) {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [sections, setSections] = useState<Section[] | null>(null);
   const [cli, setCli] = useState(true);
@@ -58,23 +63,28 @@ export function OnboardingProgress({ compact = false }: { compact?: boolean }) {
   // doctor.available=false means "could not determine" — say nothing rather than guess.
   if (!doctor.available) return null;
 
+  const prereqs = isFr ? PREREQS_FR : PREREQS_EN;
   const missing = new Set(doctor.missing);
   const generic = sections.filter((s) => s.state !== "filled");
-  const prereqDone = PREREQS.filter((p) => !missing.has(p.key)).length;
-  const total = PREREQS.length + sections.length;
+  const prereqDone = prereqs.filter((p) => !missing.has(p.key)).length;
+  const total = prereqs.length + sections.length;
   const done = prereqDone + (sections.length - generic.length);
   if (done === total) return null; // fully personalized: the panel has done its job
 
   const asks = [
-    ...PREREQS.filter((p) => missing.has(p.key)).flatMap((p) => (p.ask ? [p.ask] : [])),
-    ...(generic.length ? [`my personalization (${generic.map((s) => s.heading.replace(/^## Your /, "").toLowerCase()).join(", ")})`] : []),
+    ...prereqs.filter((p) => missing.has(p.key)).flatMap((p) => (p.ask ? [p.ask] : [])),
+    ...(generic.length ? [`${isFr ? "ma personnalisation" : "my personalization"} (${generic.map((s) => s.heading.replace(/^## Your /, "").toLowerCase()).join(", ")})`] : []),
   ];
-  const kickoff = `Let's finish setting me up. Still to do: ${asks.join("; ")}. Walk me through it like a recruiter building my brief — one or two things at a time, propose what you infer from my CV, and let me confirm each piece. Don't ask for anything already on file.`;
+  const kickoff = isFr
+    ? `Finalisons ma configuration. Reste à faire : ${asks.join(" ; ")}. Guide-moi comme un recruteur construisant mon dossier — un ou deux points à la fois, propose ce que tu déduis de mon CV, et laisse-moi confirmer chaque élément.`
+    : `Let's finish setting me up. Still to do: ${asks.join("; ")}. Walk me through it like a recruiter building my brief — one or two things at a time, propose what you infer from my CV, and let me confirm each piece. Don't ask for anything already on file.`;
 
   return (
-    <aside className={`rounded-2xl border border-border bg-surface/40 ${compact ? "p-4" : "p-5"}`} aria-label="Setup progress">
+    <aside className={`rounded-2xl border border-border bg-surface/40 ${compact ? "p-4" : "p-5"}`} aria-label={isFr ? "Progression de la configuration" : "Setup progress"}>
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-sm font-medium text-foreground">Your profile, as it takes shape</h2>
+        <h2 className="text-sm font-medium text-foreground">
+          {isFr ? "Votre profil prend forme" : "Your profile, as it takes shape"}
+        </h2>
         <span className="font-mono text-xs text-muted">{done}/{total}</span>
       </div>
       <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-surface-hover">
@@ -82,12 +92,14 @@ export function OnboardingProgress({ compact = false }: { compact?: boolean }) {
       </div>
 
       <ul className="mt-4 space-y-1.5 text-sm">
-        {PREREQS.map((p) => (
-          <Row key={p.key} state={missing.has(p.key) ? "missing" : "filled"} label={p.label} />
+        {prereqs.map((p) => (
+          <Row key={p.key} state={missing.has(p.key) ? "missing" : "filled"} label={p.label} isFr={isFr} />
         ))}
-        <li className="pt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-faint">personalization — what evaluations score against</li>
+        <li className="pt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
+          {isFr ? "personnalisation — critères d'évaluation des offres" : "personalization — what evaluations score against"}
+        </li>
         {sections.map((s) => (
-          <Row key={s.id} state={s.state} label={s.heading.replace(/^## Your /, "")} />
+          <Row key={s.id} state={s.state} label={s.heading.replace(/^## Your /, "")} isFr={isFr} />
         ))}
       </ul>
 
@@ -96,21 +108,33 @@ export function OnboardingProgress({ compact = false }: { compact?: boolean }) {
           onClick={() => window.dispatchEvent(new CustomEvent("co-assistant", { detail: { message: kickoff } }))}
           className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-200"
         >
-          <Sparkles className="size-4" /> Continue with the assistant
+          <Sparkles className="size-4" /> {isFr ? "Continuer avec l'assistant" : "Continue with the assistant"}
         </button>
       ) : (
         <p className="mt-4 text-xs text-muted">
-          Connect your AI CLI in <a href="/config" className="text-foreground underline-offset-2 hover:underline">Config</a> and the assistant fills this in with you.
+          {isFr ? (
+            <>
+              Connectez votre CLI IA dans <a href="/config" className="text-foreground underline-offset-2 hover:underline">Config</a> et l&apos;assistant remplira cela avec vous.
+            </>
+          ) : (
+            <>
+              Connect your AI CLI in <a href="/config" className="text-foreground underline-offset-2 hover:underline">Config</a> and the assistant fills this in with you.
+            </>
+          )}
         </p>
       )}
     </aside>
   );
 }
 
-function Row({ state, label }: { state: "filled" | "template" | "missing"; label: string }) {
+function Row({ state, label, isFr }: { state: "filled" | "template" | "missing"; label: string; isFr?: boolean }) {
   const Icon = state === "filled" ? Check : state === "template" ? CircleDashed : Circle;
   const tone = state === "filled" ? "text-foreground" : "text-muted";
-  const hint = state === "template" ? "still the example" : state === "missing" ? "not yet" : "";
+  const hint = state === "template"
+    ? (isFr ? "exemple par défaut" : "still the example")
+    : state === "missing"
+      ? (isFr ? "à faire" : "not yet")
+      : "";
   return (
     <li className={`flex items-center gap-2 ${tone}`}>
       <Icon className={`size-3.5 shrink-0 ${state === "filled" ? "text-brand" : "text-faint"}`} aria-hidden />

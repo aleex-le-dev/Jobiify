@@ -20,11 +20,36 @@ import { PageFrame } from "@/components/page-frame";
 import { PIPELINE_TABS, pipelineQuery, pipelineTab } from "@/lib/pipeline-navigation.mjs";
 import { COMPARE_MAX } from "@/lib/pipeline-compare.mjs";
 import { postingHref, postingLabel } from "@/lib/posting-url.mjs";
+import { useI18n } from "@/components/i18n-provider";
 
 type Tab = (typeof PIPELINE_TABS)[number];
 
 const SORT_KEYS = ["tracker", "company", "role", "score", "status", "date"] as const;
 type SortKey = (typeof SORT_KEYS)[number];
+
+const TAB_LABELS_FR: Record<string, string> = {
+  INBOX: "À trier",
+  ALL: "Tous",
+  EVALUATED: "Évalués",
+  APPLIED: "Candidatés",
+  RESPONDED: "Réponses",
+  ASSESSMENT: "Tests",
+  INTERVIEW: "Entretiens",
+  OFFER: "Offres",
+  HIRED: "Embauché",
+  REJECTED: "Refusés",
+  DISCARDED: "Ignorés",
+  SKIP: "Passés",
+};
+
+const SORT_LABELS_FR: Record<SortKey, string> = {
+  tracker: "N°",
+  company: "Entreprise",
+  role: "Poste",
+  score: "Score",
+  status: "Statut",
+  date: "Date",
+};
 
 export function PipelineView({
   applications,
@@ -38,6 +63,8 @@ export function PipelineView({
   const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   const [isPending, startNavigation] = useTransition();
   const [pendingTab, setPendingTab] = useState<Tab | null>(null);
   // Starts AFTER the POST succeeds. React replays the confirmed save over
@@ -155,10 +182,10 @@ export function PipelineView({
     <PageFrame>
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl tracking-tight text-landing">Pipeline</h1>
+          <h1 className="font-display text-2xl tracking-tight text-landing">{isFr ? "Candidatures & Pipeline" : "Pipeline"}</h1>
           <p className="mt-1 text-sm text-muted">
-            <span className="tabular-nums">{inboxCount}</span> in inbox ·{" "}
-            <span className="tabular-nums">{visibleApplications.length}</span> tracked
+            <span className="tabular-nums">{inboxCount}</span> {isFr ? "dans la boîte d'entrée" : "in inbox"} ·{" "}
+            <span className="tabular-nums">{visibleApplications.length}</span> {isFr ? "suivies" : "tracked"}
           </p>
         </div>
         {/* the tracker has its own search; the inbox brings its own facet filters */}
@@ -168,7 +195,7 @@ export function PipelineView({
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search company or role…"
+              placeholder={isFr ? "Rechercher une entreprise ou un poste…" : "Search company or role…"}
               className="w-full rounded-md border border-border bg-surface/60 py-2 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-faint focus:border-brand/50 focus-visible:ring-2 focus-visible:ring-brand/40"
             />
           </div>
@@ -198,7 +225,7 @@ export function PipelineView({
                   : "border-transparent text-muted hover:text-foreground",
               )}
             >
-              {t} <span className="text-faint tabular-nums">{count}</span>
+              {isFr ? (TAB_LABELS_FR[t] ?? t) : t} <span className="text-faint tabular-nums">{count}</span>
             </button>
           );
         })}
@@ -208,12 +235,12 @@ export function PipelineView({
 
       {visibleTab !== "INBOX" && minFilter != null && (
         <div className="mt-3 flex items-center gap-2">
-          <span className="text-xs text-faint">Filtered:</span>
+          <span className="text-xs text-faint">{isFr ? "Filtré :" : "Filtered:"}</span>
           <button
             type="button"
             onClick={() => setParams({ min: null })}
             className="inline-flex items-center gap-1.5 rounded-full border border-brand/40 bg-brand-soft px-2.5 py-1 text-xs font-medium text-brand transition-colors hover:bg-brand/15"
-            title="Clear score filter"
+            title={isFr ? "Effacer le filtre de score" : "Clear score filter"}
           >
             score ≥ {minFilter.toFixed(1)}
             <X className="size-3" />
@@ -223,7 +250,9 @@ export function PipelineView({
 
       {visibleTab !== "INBOX" && selectedRows.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface/60 px-3 py-2 text-sm">
-          <span className="tabular-nums">{selectedRows.length} selected</span>
+          <span className="tabular-nums">
+            {selectedRows.length} {isFr ? "sélectionné(s)" : "selected"}
+          </span>
           <select
             aria-label="Status for selected applications"
             value={bulkStatus}
@@ -231,7 +260,7 @@ export function PipelineView({
             disabled={bulkBusy}
             className="rounded-md border border-border bg-surface px-2 py-1 text-sm"
           >
-            <option value="">Set status…</option>
+            <option value="">{isFr ? "Définir le statut…" : "Set status…"}</option>
             {CANONICAL_STATES.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
@@ -242,18 +271,18 @@ export function PipelineView({
             disabled={!bulkStatus || bulkBusy}
             className="rounded-md border border-brand/40 bg-brand-soft px-2.5 py-1 text-xs font-medium text-brand disabled:opacity-50"
           >
-            {bulkBusy ? "Saving…" : "Apply"}
+            {bulkBusy ? (isFr ? "Enregistrement…" : "Saving…") : (isFr ? "Appliquer" : "Apply")}
           </button>
           {selectedRows.length >= 2 && selectedRows.length <= COMPARE_MAX && (
             <Link
               href={`/pipeline/compare?n=${selectedRows.map((r) => r.n).join(",")}`}
               className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:border-brand/40 hover:text-brand"
             >
-              Compare
+              {isFr ? "Comparer" : "Compare"}
             </Link>
           )}
           <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-muted hover:text-foreground">
-            Clear
+            {isFr ? "Désélectionner" : "Clear"}
           </button>
           {bulkError && <span role="alert" className="text-xs text-red-500">{bulkError}</span>}
         </div>
@@ -310,7 +339,7 @@ export function PipelineView({
                       className="inline-flex cursor-pointer select-none items-center gap-1 uppercase tracking-wide hover:text-foreground"
                       onClick={() => setParams({ sort: k, dir: sort.key === k ? sort.dir * -1 : -1 })}
                     >
-                      {k}
+                      {isFr ? (SORT_LABELS_FR[k] ?? k) : k}
                       <ChevronsUpDown aria-hidden="true" className="size-3" />
                     </button>
                   </th>
@@ -401,8 +430,10 @@ export function PipelineView({
         </div>
       ) : (
         <div className="mt-4 rounded-2xl border border-dashed border-border bg-surface/30 px-6 py-12 text-center">
-          <p className="font-display text-lg">No matches</p>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">Try a different tab or clear the search.</p>
+          <p className="font-display text-lg">{isFr ? "Aucun résultat" : "No matches"}</p>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
+            {isFr ? "Essayez un autre onglet ou effacez la recherche." : "Try a different tab or clear the search."}
+          </p>
         </div>
       )}
     </PageFrame>
@@ -412,37 +443,72 @@ export function PipelineView({
 // Empty inbox. Self-sufficient for the mainstream user (a primary in-web action),
 // honest for devs (the CLI/file path stays, demoted to progressive transparency).
 function InboxEmpty({ tracked }: { tracked: number }) {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   return (
     <div className="dot-bg mt-4 overflow-hidden rounded-2xl border border-border bg-surface/50 bg-origin-border bg-gradient-to-tr from-brand/10 via-transparent to-transparent shadow-lg">
       <div className="flex items-center gap-2 border-b border-foreground/10 px-5 py-3">
         <span className="size-2.5 rounded-full bg-foreground/15" aria-hidden="true" />
         <span className="size-2.5 rounded-full bg-foreground/15" aria-hidden="true" />
         <span className="size-2.5 rounded-full bg-foreground/15" aria-hidden="true" />
-        <span className="ml-3 font-mono text-xs tracking-wide text-muted">career-ops · inbox</span>
+        <span className="ml-3 font-mono text-xs tracking-wide text-muted">Jobiify · inbox</span>
       </div>
       <div className="px-6 py-10 text-center">
         <p className="font-display text-lg">
-          Your <span className="text-brand">inbox</span> is empty.
+          {isFr ? (
+            <>Votre <span className="text-brand">boîte de réception</span> est vide.</>
+          ) : (
+            <>Your <span className="text-brand">inbox</span> is empty.</>
+          )}
         </p>
         {tracked > 0 && (
           <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
-            New postings land here. Your{" "}
-            <Link href="/pipeline?tab=ALL" className="font-medium text-brand-text underline-offset-2 hover:underline">
-              {tracked} tracked role{tracked === 1 ? "" : "s"}
-            </Link>{" "}
-            {tracked === 1 ? "is" : "are"} under All.
+            {isFr ? (
+              <>
+                Les nouvelles opportunités arrivent ici. Vos{" "}
+                <Link href="/pipeline?tab=ALL" className="font-medium text-brand-text underline-offset-2 hover:underline">
+                  {tracked} offre{tracked > 1 ? "s suivies sont" : " suivie est"}
+                </Link>{" "}
+                sous l&apos;onglet Tous.
+              </>
+            ) : (
+              <>
+                New postings land here. Your{" "}
+                <Link href="/pipeline?tab=ALL" className="font-medium text-brand-text underline-offset-2 hover:underline">
+                  {tracked} tracked role{tracked === 1 ? "" : "s"}
+                </Link>{" "}
+                {tracked === 1 ? "is" : "are"} under All.
+              </>
+            )}
           </p>
         )}
-        <p className="mx-auto mt-2 max-w-sm text-sm text-muted">Find roles that match your CV — free, no tokens spent.</p>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
+          {isFr
+            ? "Découvrez des offres adaptées à votre profil — gratuit, aucun token dépensé."
+            : "Find roles that match your CV — free, no tokens spent."}
+        </p>
         <Link
           href="/explore?run=1"
           className="mt-5 inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-medium text-brand-foreground shadow-sm transition-all duration-200 hover:bg-brand-200 hover:-translate-y-0.5 hover:shadow-md"
         >
-          <Compass className="size-4" /> {tracked > 0 ? "Run a free scan" : "Run your first free scan"} <ArrowRight className="size-4" />
+          <Compass className="size-4" />{" "}
+          {tracked > 0
+            ? (isFr ? "Lancer un scan gratuit" : "Run a free scan")
+            : (isFr ? "Lancer votre premier scan gratuit" : "Run your first free scan")}{" "}
+          <ArrowRight className="size-4" />
         </Link>
         <p className="mx-auto mt-4 max-w-sm text-xs text-muted">
-          Prefer the terminal? Run <code className="rounded bg-surface-hover px-1 py-0.5 font-mono">career-ops scan</code>, or add job URLs to{" "}
-          <code className="rounded bg-surface-hover px-1 py-0.5 font-mono">data/pipeline.md</code>.
+          {isFr ? (
+            <>
+              Vous préférez le terminal ? Lancez <code className="rounded bg-surface-hover px-1 py-0.5 font-mono">career-ops scan</code>, ou ajoutez des URL dans{" "}
+              <code className="rounded bg-surface-hover px-1 py-0.5 font-mono">data/pipeline.md</code>.
+            </>
+          ) : (
+            <>
+              Prefer the terminal? Run <code className="rounded bg-surface-hover px-1 py-0.5 font-mono">career-ops scan</code>, or add job URLs to{" "}
+              <code className="rounded bg-surface-hover px-1 py-0.5 font-mono">data/pipeline.md</code>.
+            </>
+          )}
         </p>
       </div>
     </div>

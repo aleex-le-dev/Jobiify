@@ -7,6 +7,7 @@ import { DEFAULT_FILTERS, type ExploreFilters } from "@/lib/explore";
 import { FilterBuilder } from "@/components/explore/filter-builder";
 import { ScheduledOverlay } from "./scheduled-overlay";
 import { cadenceMinimum, cadenceValueForUnit, createScheduledJobRequest } from "@/lib/scheduled-job-client.mjs";
+import { useI18n } from "@/components/i18n-provider";
 
 export function CreateJobModal({
   isOpen,
@@ -17,7 +18,8 @@ export function CreateJobModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [name, setName] = useState("Scheduled scan");
+  const { isFr } = useI18n();
+  const [name, setName] = useState(isFr ? "Scan programmé" : "Scheduled scan");
   const [engine, setEngine] = useState<ScanEngine>("full");
   const [every, setEvery] = useState(6);
   const [unit, setUnit] = useState<"minutes" | "hours" | "days">("hours");
@@ -44,7 +46,7 @@ export function CreateJobModal({
       onCreated();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error creating job");
+      setError(err instanceof Error ? err.message : (isFr ? "Erreur lors de la création du scan" : "Error creating job"));
     } finally {
       setSubmitting(false);
     }
@@ -58,13 +60,18 @@ export function CreateJobModal({
               <CalendarPlus className="size-5" />
             </div>
             <div>
-              <h2 id="create-scheduled-scan-title" className="text-lg font-semibold text-foreground">Create Scheduled Scan</h2>
-              <p className="text-xs text-muted">Configure a persistent background job for automatic role discovery.</p>
+              <h2 id="create-scheduled-scan-title" className="text-lg font-semibold text-foreground">
+                {isFr ? "Créer un scan programmé" : "Create Scheduled Scan"}
+              </h2>
+              <p className="text-xs text-muted">
+                {isFr ? "Configurez une tâche d'arrière-plan pour découvrir des offres automatiquement." : "Configure a persistent background job for automatic role discovery."}
+              </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
+            aria-label={isFr ? "Fermer" : "Close"}
             className="rounded-lg p-1.5 text-faint transition-colors hover:bg-surface-hover hover:text-foreground"
           >
             <X className="size-5" />
@@ -76,7 +83,9 @@ export function CreateJobModal({
 
           {/* ─── Name + Engine + Cadence ─── */}
           <div>
-            <label className="mb-1 block text-[13px] font-medium text-foreground">Scan Name</label>
+            <label className="mb-1 block text-[13px] font-medium text-foreground">
+              {isFr ? "Nom du scan" : "Scan Name"}
+            </label>
             <input
               ref={nameRef}
               type="text"
@@ -84,30 +93,38 @@ export function CreateJobModal({
               onChange={(e) => setName(e.target.value)}
               required
               className="w-full rounded-xl border border-border bg-surface-hover/60 px-3.5 py-2 text-sm text-foreground outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/20"
-              placeholder="e.g. Roles matching my profile"
+              placeholder={isFr ? "ex. Offres correspondant à mon profil" : "e.g. Roles matching my profile"}
             />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-[13px] font-medium text-foreground">Scan Engine</label>
+              <label className="mb-1 block text-[13px] font-medium text-foreground">
+                {isFr ? "Moteur de recherche" : "Scan Engine"}
+              </label>
               <select
                 value={engine}
                 onChange={(e) => setEngine(e.target.value as ScanEngine)}
                 className="w-full rounded-xl border border-border bg-surface-hover/60 px-3.5 py-2 text-sm text-foreground outline-none focus:border-brand/60"
               >
-                <option value="full">Full ATS Dataset Sweep</option>
-                <option value="portals">Zero-Token Portals.yml</option>
+                <option value="full">{isFr ? "Scan complet des bases ATS" : "Full ATS Dataset Sweep"}</option>
+                <option value="portals">{isFr ? "Portails portals.yml (0 jeton)" : "Zero-Token Portals.yml"}</option>
               </select>
               <p className="mt-1 text-[11px] text-faint">
-                {engine === "full"
-                  ? "Sweeps public Greenhouse/Lever/Ashby datasets."
-                  : "Scans pre-configured portals.yml companies (0 AI cost)."}
+                {isFr
+                  ? (engine === "full"
+                    ? "Parcourt les jeux de données publics Greenhouse, Lever, Ashby, etc."
+                    : "Scanne les entreprises configurées dans portals.yml (0 coût IA).")
+                  : (engine === "full"
+                    ? "Sweeps public Greenhouse/Lever/Ashby datasets."
+                    : "Scans pre-configured portals.yml companies (0 AI cost).")}
               </p>
             </div>
 
             <div>
-              <label className="mb-1 block text-[13px] font-medium text-foreground">Repeat Cadence</label>
+              <label className="mb-1 block text-[13px] font-medium text-foreground">
+                {isFr ? "Fréquence de répétition" : "Repeat Cadence"}
+              </label>
               <div className="flex gap-2">
                 <input
                   type="number"
@@ -125,9 +142,9 @@ export function CreateJobModal({
                   }}
                   className="flex-1 rounded-xl border border-border bg-surface-hover/60 px-3.5 py-2 text-sm text-foreground outline-none focus:border-brand/60"
                 >
-                  <option value="hours">Hours</option>
-                  <option value="days">Days</option>
-                  <option value="minutes">Minutes</option>
+                  <option value="hours">{isFr ? "Heures" : "Hours"}</option>
+                  <option value="days">{isFr ? "Jours" : "Days"}</option>
+                  <option value="minutes">{isFr ? "Minutes" : "Minutes"}</option>
                 </select>
               </div>
             </div>
@@ -145,7 +162,7 @@ export function CreateJobModal({
               onClick={onClose}
               className="rounded-xl border border-border px-4 py-2 text-xs font-medium text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
             >
-              Cancel
+              {isFr ? "Annuler" : "Cancel"}
             </button>
             <button
               type="submit"
@@ -153,7 +170,7 @@ export function CreateJobModal({
               className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2 text-xs font-medium text-brand-foreground shadow transition-colors hover:bg-brand-200 disabled:opacity-50"
             >
               {submitting ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-              {submitting ? "Creating…" : "Save Scheduled Scan"}
+              {submitting ? (isFr ? "Création…" : "Creating…") : (isFr ? "Enregistrer le scan" : "Save Scheduled Scan")}
             </button>
           </div>
         </form>

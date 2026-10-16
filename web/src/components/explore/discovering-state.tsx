@@ -27,6 +27,8 @@ html.dark .co-ledger{color:hsl(158 64% 62%)}
 @media (prefers-reduced-motion: reduce){.co-src__orb,.co-disc__skelcard::after{animation:none}}
 `;
 
+import { useI18n } from "@/components/i18n-provider";
+
 export function useCountUp(target: number): number {
   const [val, setVal] = useState(target);
   const raf = useRef(0);
@@ -45,7 +47,7 @@ export function useCountUp(target: number): number {
   return Math.round(val);
 }
 
-function SourceChip({ ats, s }: { ats: AtsSource; s?: SourceState }) {
+function SourceChip({ ats, s, isFr }: { ats: AtsSource; s?: SourceState; isFr: boolean }) {
   const state = s?.state ?? "queued";
   const pct = s?.total ? Math.min(100, Math.round(((s.done ?? 0) / s.total) * 100)) : state === "swept" || state === "noisy" ? 100 : 0;
   return (
@@ -59,7 +61,7 @@ function SourceChip({ ats, s }: { ats: AtsSource; s?: SourceState }) {
       )}
       <span className="text-[13px] font-medium text-foreground">{ATS_LABEL[ats]}</span>
       <div className="ml-auto flex flex-col items-end gap-1">
-        {state === "noisy" && <span className="text-[10px] text-faint">~{s?.unreachable} skipped</span>}
+        {state === "noisy" && <span className="text-[10px] text-faint">~{s?.unreachable} {isFr ? "ignoré(s)" : "skipped"}</span>}
         <div className="co-src__track">
           <div className="co-src__bar" style={{ width: `${pct}%` }} />
         </div>
@@ -69,6 +71,7 @@ function SourceChip({ ats, s }: { ats: AtsSource; s?: SourceState }) {
 }
 
 export function DiscoveringState() {
+  const { isFr } = useI18n();
   const { sources, matchCount, companiesScanned, status, phase } = useExplore();
   const shown = useCountUp(matchCount);
   const companies = useCountUp(companiesScanned);
@@ -81,25 +84,29 @@ export function DiscoveringState() {
 
         <div className="co-ledger">
           <span className="size-1.5 rounded-full bg-emerald-500" />
-          0 tokens · $0.00 {companies > 0 && <span className="opacity-70">· {companies.toLocaleString()} companies</span>}
+          0 jetons · 0,00 € {companies > 0 && <span className="opacity-70">· {companies.toLocaleString()} {isFr ? "entreprises" : "companies"}</span>}
         </div>
 
         <div>
           <div className={`${instrumentSerif.className} co-disc__counter text-foreground`}>{shown}</div>
           <p className="mt-1 text-sm text-muted">
-            {phase === "revealing" ? "fresh roles found — free" : matchCount > 0 ? "fresh roles and counting…" : "scanning the network…"}
+            {phase === "revealing"
+              ? (isFr ? "offres récentes trouvées — gratuit" : "fresh roles found — free")
+              : matchCount > 0
+                ? (isFr ? "offres récentes et ça continue…" : "fresh roles and counting…")
+                : (isFr ? "exploration du réseau en cours…" : "scanning the network…")}
           </p>
         </div>
 
         <div className="co-src">
           {ATS_SOURCES.map((a) => (
-            <SourceChip key={a} ats={a} s={sources[a]} />
+            <SourceChip key={a} ats={a} s={sources[a]} isFr={isFr} />
           ))}
         </div>
 
         <p className="flex items-center gap-2 text-[13px] text-faint">
           <Loader2 className="size-3.5 animate-spin" />
-          {status || "Casting the net across the ATS network…"}
+          {status || (isFr ? "Balayage des bases de recrutement ATS en cours…" : "Casting the net across the ATS network…")}
         </p>
       </div>
     </>

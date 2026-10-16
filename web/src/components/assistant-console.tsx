@@ -49,13 +49,13 @@ const PANEL_CLASS: Record<PanelSize, string> = {
 // The composer grows with its content (a pasted CV, a long answer) up to a cap
 // that scales with the panel, instead of staying a one-line box that scrolls.
 const INPUT_MAX_PX: Record<PanelSize, number> = { compact: 128, wide: 240, full: 360 };
-const SIZE_LABEL: Record<PanelSize, string> = { compact: "Wider", wide: "Full screen", full: "Compact" };
+const SIZE_LABEL: Record<PanelSize, string> = { compact: "Agrandir", wide: "Plein écran", full: "Réduire" };
 // back-compat shims — the old directives still work, mapped onto the registry
 const NAV_RE = /<<\s*go:\s*(\/[a-z0-9/_-]*)\s*>>/gi;
 const REMEMBER_RE = /<<\s*remember:\s*([^>]+?)\s*>>/gi;
 
 const GREETING =
-  "Hi — I'm your career-ops assistant. I can walk you through onboarding, answer questions about your pipeline, or take you where you need to go. What would you like to do?";
+  "Bonjour — Je suis votre assistant Jobiify. Je peux vous guider dans votre configuration, répondre à vos questions sur votre pipeline ou vous orienter dans vos démarches. Que souhaitez-vous faire ?";
 
 // ── envelope parsing: act ONLY on complete <<act:ID {json}>> envelopes ────────
 function codeRanges(s: string): [number, number][] {
@@ -161,10 +161,10 @@ export function AssistantConsole() {
   const latestReplyIndex = messages.findLastIndex((m) => m.role === "assistant");
   const latestReply = messages[latestReplyIndex];
   const pendingConfirmations = messages.reduce((count, m) => count + (m.role === "assistant" ? m.parts.filter((p) => p.type === "confirm" && p.state === "pending").length : 0), 0);
-  const confirmationText = pendingConfirmations ? ` ${pendingConfirmations} ${pendingConfirmations === 1 ? "action needs" : "actions need"} confirmation.` : "";
-  const feedbackText = requestFeedback?.phase === "working" ? `Processing your request.${confirmationText}`
-    : requestFeedback?.phase === "error" ? "Request failed. Review the error."
-    : requestFeedback?.phase === "ready" ? `Reply ready.${confirmationText}` : "";
+  const confirmationText = pendingConfirmations ? ` ${pendingConfirmations} action(s) nécessite(nt) confirmation.` : "";
+  const feedbackText = requestFeedback?.phase === "working" ? `Traitement de votre demande...${confirmationText}`
+    : requestFeedback?.phase === "error" ? "Échec de la requête. Vérifiez l'erreur."
+    : requestFeedback?.phase === "ready" ? `Réponse prête.${confirmationText}` : "";
 
   // Only request transitions notify. Tokens, card decisions and history mounts
   // do not. Mark closed-panel events consumed so reopening never replays them.
@@ -737,28 +737,28 @@ export function AssistantConsole() {
     const chips: { label: string; send: string }[] = [];
     const rep = pathname.match(/^\/pipeline\/(.+)$/);
     if (rep) {
-      chips.push({ label: "Why this score?", send: "Walk me through why this offer scored the way it did — strengths and red flags." });
-      chips.push({ label: "Should I apply?", send: "Given my profile, should I apply to this one? Be honest." });
-      chips.push({ label: "Draft a cover letter", send: "Draft a short, sharp cover letter for this role." });
+      chips.push({ label: "Pourquoi ce score ?", send: "Explique-moi pourquoi cette offre a obtenu ce score — points forts et points de vigilance." });
+      chips.push({ label: "Dois-je postuler ?", send: "Vu mon profil, devrais-je postuler à cette offre ? Sois honnête." });
+      chips.push({ label: "Rédiger une lettre", send: "Rédige une lettre de motivation courte et percutante pour ce poste." });
       return chips;
     }
     const pending = pipeline.inbox.filter((j) => !j.done);
     if (!pipeline.applications.length && !pending.length) {
       return [
-        { label: "Help me get set up", send: "Help me get started with career-ops — what do you need from me?" },
-        { label: "Improve my CV", send: "Look at my CV and suggest the highest-impact improvements." },
+        { label: "Aide-moi à démarrer", send: "Aide-moi à démarrer avec Jobiify — de quoi as-tu besoin ?" },
+        { label: "Améliorer mon CV", send: "Regarde mon CV et suggère les améliorations ayant le plus d'impact." },
       ];
     }
     if (pending.length) {
       const counts = new Map<string, number>();
       for (const j of pending) counts.set(j.company, (counts.get(j.company) ?? 0) + 1);
       const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
-      if (top && top[1] > 1) chips.push({ label: `Evaluate all ${top[0]} (${top[1]})`, send: `Evaluate all the pending ${top[0]} postings in my inbox.` });
-      chips.push({ label: `Triage inbox (${pending.length})`, send: `I have ${pending.length} postings in my inbox — which should I evaluate first, and why?` });
+      if (top && top[1] > 1) chips.push({ label: `Évaluer tout ${top[0]} (${top[1]})`, send: `Évalue toutes les offres de ${top[0]} en attente dans ma boîte.` });
+      chips.push({ label: `Trier la boîte (${pending.length})`, send: `J'ai ${pending.length} offres en attente — lesquelles devrais-je évaluer en premier, et pourquoi ?` });
     }
     const strong = pipeline.applications.filter((a) => scoreNum(a.score) >= 4.5).length;
-    if (strong) chips.push({ label: "Strong matches to act on", send: "Show me my strongest matches (4.5+) I haven't applied to yet, and tell me which to prioritise." });
-    chips.push({ label: "What should I do today?", send: "Look at my pipeline and tell me the 3 highest-leverage things I should do today." });
+    if (strong) chips.push({ label: "Meilleures opportunités", send: "Montre-moi mes meilleures opportunités (4.5+) auxquelles je n'ai pas encore postulé et dis-moi lesquelles prioriser." });
+    chips.push({ label: "Que faire aujourd'hui ?", send: "Regarde mon pipeline et dis-moi les 3 actions prioritaires à mener aujourd'hui." });
     return chips.slice(0, 4);
   }, [pathname, pipeline.inbox, pipeline.applications]);
 
@@ -770,10 +770,10 @@ export function AssistantConsole() {
           ref={openerRef}
           onClick={(e) => openAssistant(e.currentTarget)}
           className="fixed bottom-5 right-5 z-50 flex items-center justify-center gap-2 rounded-full border border-border bg-surface/90 py-1.5 pl-1.5 pr-4 shadow-lg backdrop-blur transition-colors hover:bg-surface-hover max-sm:min-h-[44px]"
-          aria-label="Open assistant"
+          aria-label="Ouvrir l'assistant"
         >
           <CoMark size={26} />
-          <span className="text-sm font-medium">Ask</span>
+          <span className="text-sm font-medium">Assistant</span>
         </button>
       )}
 
@@ -795,26 +795,26 @@ export function AssistantConsole() {
             <CoMark size={26} />
             <div className="flex-1">
               <div id={panelTitleId} className="text-sm font-semibold tracking-tight">Assistant</div>
-              <div className="text-xs text-faint">{cliId ? `via ${cliId}` : "no CLI configured"}</div>
+              <div className="text-xs text-faint">{cliId ? `via ${cliId}` : "aucun outil IA configuré"}</div>
             </div>
             <Button variant="ghost" size="icon" onClick={cycleSize} className="text-muted" aria-label={SIZE_LABEL[size]} title={SIZE_LABEL[size]}>
               {size === "full" ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => void selectChat()} disabled={busy || chatPending || !chatReady} className="text-muted" aria-label="New chat" title="New chat">
+            <Button variant="ghost" size="icon" onClick={() => void selectChat()} disabled={busy || chatPending || !chatReady} className="text-muted" aria-label="Nouvelle discussion" title="Nouvelle discussion">
               <RotateCcw className="size-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={closeAssistant} className="text-muted" aria-label="Close assistant">
+            <Button variant="ghost" size="icon" onClick={closeAssistant} className="text-muted" aria-label="Fermer l'assistant">
               <X className="size-4" />
             </Button>
           </header>
 
           <div className="flex gap-2 border-b border-border px-4 py-2">
-            <select aria-label="Conversation history" className="min-w-0 flex-1 bg-surface text-sm" value={chats.some(c => c.id === activeChat.current.id) ? activeChat.current.id : ""} disabled={busy || chatPending || !chatReady} onChange={e => void selectChat(e.target.value || undefined)}>
-              <option value="">New chat</option>
+            <select aria-label="Historique des discussions" className="min-w-0 flex-1 bg-surface text-sm" value={chats.some(c => c.id === activeChat.current.id) ? activeChat.current.id : ""} disabled={busy || chatPending || !chatReady} onChange={e => void selectChat(e.target.value || undefined)}>
+              <option value="">Nouvelle discussion</option>
               {chats.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>
-            <button className="text-xs text-muted disabled:opacity-40" disabled={busy || chatPending || !activeChat.current.revision} onClick={() => void renameChat()}>Rename</button>
-            <button className="text-xs text-muted disabled:opacity-40" disabled={busy || chatPending || !activeChat.current.revision} onClick={() => void removeChat()}>Delete</button>
+            <button className="text-xs text-muted disabled:opacity-40" disabled={busy || chatPending || !activeChat.current.revision} onClick={() => void renameChat()}>Renommer</button>
+            <button className="text-xs text-muted disabled:opacity-40" disabled={busy || chatPending || !activeChat.current.revision} onClick={() => void removeChat()}>Supprimer</button>
           </div>
           {chatWarnings.map(warning => <div key={warning.id} role="alert" className="px-4 py-2 text-sm text-amber-600">{warning.error}. Other conversations are still available.</div>)}
           {saveError && <div role="alert" className="space-y-2 px-4 py-2 text-sm text-amber-600">
@@ -883,13 +883,13 @@ export function AssistantConsole() {
               onClick={() => setOpen(false)}
               className="mx-4 mb-2 flex items-center gap-2 rounded-lg border border-border bg-surface/50 px-3 py-2 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
             >
-              <Settings className="size-3.5" /> Pick a CLI in Config to enable the assistant →
+              <Settings className="size-3.5" /> Choisissez un outil IA dans Configuration pour activer l'assistant →
             </Link>
           )}
 
           <div className="border-t border-border p-3">
-            <label htmlFor={inputId} className="sr-only">Message to assistant</label>
-            <p id={inputHelpId} className="sr-only">Enter sends your message. Shift+Enter adds a new line.</p>
+            <label htmlFor={inputId} className="sr-only">Message à l'assistant</label>
+            <p id={inputHelpId} className="sr-only">Entrée envoie votre message. Maj+Entrée ajoute une ligne.</p>
             <div className="flex items-end gap-2">
               <textarea
                 id={inputId}
@@ -903,7 +903,7 @@ export function AssistantConsole() {
                     send();
                   }
                 }}
-                placeholder={cliId ? "Ask anything…" : "Configure a CLI first"}
+                placeholder={cliId ? "Posez une question…" : "Configurez un outil IA d'abord"}
                 rows={1}
                 disabled={!cliId}
                 style={{ maxHeight: INPUT_MAX_PX[size] }}
@@ -916,7 +916,7 @@ export function AssistantConsole() {
                 }}
                 disabled={busy || chatPending || !chatReady || !input.trim() || !cliId}
                 className="rounded-xl bg-brand p-2 text-brand-foreground transition-colors hover:bg-brand-200 disabled:opacity-40"
-                aria-label="Send"
+                aria-label="Envoyer"
               >
                 {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               </button>
@@ -1055,23 +1055,23 @@ function ConfirmationCard({ part, onConfirm }: {
       {part.state === "pending" ? (
         <div className="mt-2 flex gap-2">
           <button
-            aria-label={`Confirm: ${part.summary}`}
+            aria-label={`Confirmer : ${part.summary}`}
             onClick={(e) => decide(e.currentTarget, true)}
             className="rounded-full bg-brand px-3 py-1 text-xs font-medium text-brand-foreground transition-colors hover:bg-brand-200"
           >
-            Confirm
+            Confirmer
           </button>
           <button
-            aria-label={`Cancel: ${part.summary}`}
+            aria-label={`Annuler : ${part.summary}`}
             onClick={(e) => decide(e.currentTarget, false)}
             className="rounded-full border border-border px-3 py-1 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
           >
-            Cancel
+            Annuler
           </button>
         </div>
       ) : (
         <div ref={resultRef} tabIndex={-1} aria-labelledby={`${summaryId} ${resultId}`} className="mt-1 rounded text-xs text-faint focus-visible:outline-2 focus-visible:outline-brand">
-          <span id={resultId}>{part.state === "done" ? "✓ started" : "cancelled"}</span>
+          <span id={resultId}>{part.state === "done" ? "✓ démarré" : "annulé"}</span>
         </div>
       )}
     </div>

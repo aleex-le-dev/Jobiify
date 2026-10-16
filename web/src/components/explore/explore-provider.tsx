@@ -267,8 +267,8 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
           typeof msg === "string" && msg
             ? msg
             : sawScannerMissing
-              ? "The scanner isn't available."
-              : `Discovery failed (${status}).`;
+              ? "Le scanner n'est pas disponible."
+              : `L'exploration a échoué (${status}).`;
       }
     } catch (e) {
       aborted = isAbortError(e);
@@ -276,7 +276,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
         ? "Discover was interrupted before it finished. Run it again."
         : e instanceof Error
           ? e.message
-          : "stream error";
+          : "Erreur de flux";
     }
 
     // The run has settled, so the URL can carry the search again (shareable, and
@@ -347,14 +347,14 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
       const r = await fetch(`/api/whats-new?limit=${MAX_OFFER_LIMIT}`);
       if (!runs.current.owns(run)) return;
       if (!r.ok) {
-        setError(`Couldn't load fresh matches (${r.status}).`);
+        setError(`Impossible de charger les nouvelles offres (${r.status}).`);
         setPhase("failed");
         return;
       }
       const d = await r.json().catch(() => null);
       if (!runs.current.owns(run)) return;
       if (!d || !Array.isArray(d.offers)) {
-        setError("Couldn't load fresh matches — unexpected response.");
+        setError("Impossible de charger les nouvelles offres — réponse inattendue.");
         setPhase("failed");
         return;
       }
@@ -518,9 +518,9 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
       if (!r.ok) {
         const d = await r.json().catch(() => ({}));
         sawScannerMissing = isScannerMissing(d);
-        sawError = d.error || (sawScannerMissing ? "AI search isn't available." : `AI search failed (${r.status}).`);
+        sawError = d.error || (sawScannerMissing ? "La recherche par IA n'est pas disponible." : `La recherche par IA a échoué (${r.status}).`);
       } else if (!r.body) {
-        sawError = "No response stream.";
+        sawError = "Aucun flux de réponse.";
       } else {
         const reader = r.body.getReader();
         const dec = new TextDecoder();
@@ -533,7 +533,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (e) {
       aborted = isAbortError(e);
-      if (!aborted) sawError = e instanceof Error ? e.message : "stream error";
+      if (!aborted) sawError = e instanceof Error ? e.message : "Erreur de flux";
     }
 
     if (!runs.current.owns(run)) return;
@@ -542,7 +542,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
     if (acc.length > 0) {
       setMatchCount(acc.length);
       setPhase("revealing");
-      setStatus(`${acc.length} candidate${acc.length === 1 ? "" : "s"} found.`);
+      setStatus(`${acc.length} offre${acc.length > 1 ? "s" : ""} trouvée${acc.length > 1 ? "s" : ""}.`);
       window.setTimeout(() => {
         if (runs.current.owns(run)) setPhase("results");
       }, 850);

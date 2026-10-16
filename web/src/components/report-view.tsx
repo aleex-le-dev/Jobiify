@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft, FileText, ExternalLink, ChevronDown } from "lucide-react";
 import type { Application } from "@/lib/career-ops";
@@ -28,6 +30,7 @@ import { KeywordCoverage } from "@/components/keyword-coverage";
 import { CompanyEvidence } from "@/components/company-evidence";
 import { companyPresentation } from "@/lib/company-presentation.mjs";
 import { PageFrame } from "@/components/page-frame";
+import { useI18n } from "@/components/i18n-provider";
 
 // Progressive disclosure of the report. Current oferta.md writes letter F as
 // Interview Plan (STAR+R), not a verdict — never promote by letter (#3416).
@@ -67,6 +70,8 @@ export function ReportView({
   coverReady?: boolean;
   backHref?: string;
 }) {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   const meta = report ? parseReport(report) : null;
   const field = (label: string) => meta?.fields.find((f) => f.label === label)?.value;
   const score = app?.score || field("Score");
@@ -82,13 +87,17 @@ export function ReportView({
   const company = app ? companyPresentation(app) : null;
   const companyName = company?.label ?? app?.company ?? meta?.title ?? id;
 
+  const lineLabel = isFr
+    ? (line === "Recommended" ? "Recommandé" : line === "Below the apply line" ? "En-dessous du seuil" : line)
+    : line;
+
   return (
     <PageFrame className="max-w-3xl xl:max-w-5xl 2xl:max-w-[1600px]">
       <Link
         href={backHref}
         className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-brand"
       >
-        <ArrowLeft className="size-4" /> Pipeline
+        <ArrowLeft className="size-4" /> {isFr ? "Pipeline" : "Pipeline"}
       </Link>
 
       <header className="mt-5">
@@ -112,7 +121,7 @@ export function ReportView({
               rel="noreferrer"
               className="inline-flex items-center justify-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-500/15 dark:text-emerald-400 max-sm:min-h-[44px]"
             >
-              <FileText className="size-3.5" /> View cover
+              <FileText className="size-3.5" /> {isFr ? "Voir la lettre" : "View cover"}
             </a>
           )}
         </div>
@@ -134,7 +143,7 @@ export function ReportView({
                 rel="noreferrer"
                 className="inline-flex items-center justify-center gap-1 text-brand hover:underline max-sm:min-h-[44px]"
               >
-                posting <ExternalLink className="size-3" />
+                {isFr ? "offre originale" : "posting"} <ExternalLink className="size-3" />
               </a>
             )}
           </div>
@@ -159,18 +168,24 @@ export function ReportView({
               : "border-border bg-surface/50";
             const callout = (
               <div className={`rounded-2xl border px-5 py-5 ${verdictClass}`}>
-                <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-faint">Verdict</p>
+                <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-faint">
+                  {isFr ? "Verdict" : "Verdict"}
+                </p>
                 <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-1">
                   {score ? (
                     <p className="font-display text-4xl tabular-nums tracking-tight text-landing">{score}</p>
                   ) : (
-                    <p className="text-sm text-muted">No score on this report.</p>
+                    <p className="text-sm text-muted">
+                      {isFr ? "Aucun score sur ce rapport." : "No score on this report."}
+                    </p>
                   )}
-                  <p className="pb-1 text-xs text-muted">Apply line is {APPLY_LINE.toFixed(1)}</p>
+                  <p className="pb-1 text-xs text-muted">
+                    {isFr ? `Seuil de candidature : ${APPLY_LINE.toFixed(1)}` : `Apply line is ${APPLY_LINE.toFixed(1)}`}
+                  </p>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {score && <Badge tone={scoreTone(score)}>{score}</Badge>}
-                  {line && <Badge tone={recommended ? "good" : line === "Below the apply line" ? "muted" : "warn"}>{line}</Badge>}
+                  {line && <Badge tone={recommended ? "good" : line === "Below the apply line" ? "muted" : "warn"}>{lineLabel}</Badge>}
                   {decision && <Badge tone="info">{decision}</Badge>}
                   {meta?.legitimacy && <Badge tone={legitimacyTone(meta.legitimacy)}>{meta.legitimacy}</Badge>}
                 </div>
@@ -231,7 +246,7 @@ export function ReportView({
                   <>
                     <div className="mt-6 flex items-center gap-3 text-[11px] uppercase tracking-[0.14em] text-faint">
                       <span className="h-px flex-1 bg-border" />
-                      Technical details · for developers
+                      {isFr ? "Détails techniques · développeurs" : "Technical details · for developers"}
                       <span className="h-px flex-1 bg-border" />
                     </div>
                     {machine.map((s, i) => (

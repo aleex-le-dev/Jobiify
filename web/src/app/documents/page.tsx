@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, FileText, File, Calendar, Loader2 } from "lucide-react";
+import { useI18n } from "@/components/i18n-provider";
 
 type DocumentItem = {
   id: string;
@@ -17,6 +18,8 @@ type DocumentItem = {
 };
 
 export default function DocumentsPage() {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,14 +56,16 @@ export default function DocumentsPage() {
         <div className="mb-4 rounded-full bg-red-500/10 p-3 text-red-500">
           <File className="h-6 w-6" />
         </div>
-        <h2 className="text-lg font-medium text-foreground">Failed to load</h2>
+        <h2 className="text-lg font-medium text-foreground">
+          {isFr ? "Échec du chargement" : "Failed to load"}
+        </h2>
         <p className="mt-1 text-sm text-muted">{error}</p>
         <Button
           variant="outline"
           className="mt-4"
           onClick={() => window.location.reload()}
         >
-          Try again
+          {isFr ? "Réessayer" : "Try again"}
         </Button>
       </div>
     );
@@ -72,9 +77,13 @@ export default function DocumentsPage() {
         <div className="mb-4 rounded-full bg-surface-hover p-3 text-muted">
           <FileText className="h-6 w-6" />
         </div>
-        <h2 className="text-lg font-medium text-foreground">No documents found</h2>
+        <h2 className="text-lg font-medium text-foreground">
+          {isFr ? "Aucun document trouvé" : "No documents found"}
+        </h2>
         <p className="mt-1 text-sm text-muted">
-          Generated CVs and cover letters will appear here.
+          {isFr
+            ? "Les CV et lettres de motivation générés apparaîtront ici."
+            : "Generated CVs and cover letters will appear here."}
         </p>
       </div>
     );
@@ -84,10 +93,12 @@ export default function DocumentsPage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Documents
+          {isFr ? "Documents" : "Documents"}
         </h1>
         <p className="mt-1 text-sm text-muted">
-          Browse your generated CVs and cover letters.
+          {isFr
+            ? "Consultez vos CV et lettres de motivation générés."
+            : "Browse your generated CVs and cover letters."}
         </p>
       </div>
 
@@ -114,7 +125,7 @@ export default function DocumentsPage() {
               
               <div className="mt-4 flex flex-wrap gap-2">
                 <Badge tone="info" className="capitalize">
-                  {doc.kind === "cv" ? "CV" : doc.kind === "cover" ? "Cover Letter" : "Document"}
+                  {doc.kind === "cv" ? "CV" : doc.kind === "cover" ? (isFr ? "Lettre de motivation" : "Cover Letter") : "Document"}
                 </Badge>
                 {doc.date && (
                   <Badge tone="muted" className="flex items-center gap-1 font-normal">
@@ -136,7 +147,7 @@ export default function DocumentsPage() {
                 className="w-full justify-between"
                 onClick={() => window.open(`/api/documents?id=${doc.id}`, "_blank")}
               >
-                Open PDF
+                {isFr ? "Ouvrir le PDF" : "Open PDF"}
                 <ExternalLink className="h-4 w-4 text-muted" />
               </Button>
             </div>

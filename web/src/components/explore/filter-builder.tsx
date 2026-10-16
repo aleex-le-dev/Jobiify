@@ -4,13 +4,22 @@ import { useState } from "react";
 import { X, Ban, Clock, MapPin, ChevronDown, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { ATS_LABEL, ATS_SOURCES, cleanChips, type AtsSource, type ExploreFilters } from "@/lib/explore";
+import { useI18n } from "@/components/i18n-provider";
 
-const RECENCY = [
+const RECENCY_EN = [
   { label: "24h", days: 1 },
   { label: "3d", days: 3 },
   { label: "7d", days: 7 },
   { label: "14d", days: 14 },
   { label: "30d", days: 30 },
+];
+
+const RECENCY_FR = [
+  { label: "24 h", days: 1 },
+  { label: "3 j", days: 3 },
+  { label: "7 j", days: 7 },
+  { label: "14 j", days: 14 },
+  { label: "30 j", days: 30 },
 ];
 
 const STYLE = `
@@ -110,6 +119,8 @@ export function FilterBuilder({
   onChange: (f: ExploreFilters) => void;
   seededFrom?: string[];
 }) {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   const [advanced, setAdvanced] = useState(false);
   const set = (patch: Partial<ExploreFilters>) => onChange({ ...filters, ...patch });
   const toggleAts = (a: AtsSource) => {
@@ -117,48 +128,67 @@ export function FilterBuilder({
     const next = has ? filters.ats.filter((x) => x !== a) : [...filters.ats, a];
     set({ ats: next.length ? next : filters.ats });
   };
+  const recencyList = isFr ? RECENCY_FR : RECENCY_EN;
 
   return (
     <div className="space-y-4">
       <style>{STYLE}</style>
 
       <div>
-        <Label hint={filters.positive.length === 0 ? "empty = every fresh posting" : undefined}>Roles to find</Label>
-        <KeywordField ariaLabel="Roles to find" values={filters.positive} tone="inc" placeholder="AI platform, ML infrastructure, staff engineer…" onChange={(v) => set({ positive: v })} />
+        <Label hint={filters.positive.length === 0 ? (isFr ? "vide = toutes les offres récentes" : "empty = every fresh posting") : undefined}>
+          {isFr ? "Postes à rechercher" : "Roles to find"}
+        </Label>
+        <KeywordField
+          ariaLabel={isFr ? "Postes à rechercher" : "Roles to find"}
+          values={filters.positive}
+          tone="inc"
+          placeholder={isFr ? "Développeur web, Support IT, Technicien informatique, Logistique…" : "AI platform, ML infrastructure, staff engineer…"}
+          onChange={(v) => set({ positive: v })}
+        />
         {seededFrom.length > 0 && filters.positive.length > 0 && (
-          <p className="mt-1 text-[11px] text-faint">Seeded from your {seededFrom.join(" + ")} — edit freely.</p>
+          <p className="mt-1 text-[11px] text-faint">
+            {isFr
+              ? `Pré-rempli depuis votre ${seededFrom.join(" + ")} — modifiable librement.`
+              : `Seeded from your ${seededFrom.join(" + ")} — edit freely.`}
+          </p>
         )}
       </div>
 
       <div>
-        <Label>Exclude</Label>
-        <KeywordField ariaLabel="Exclude" values={filters.negative} tone="exc" placeholder="manager, sales, contract…" onChange={(v) => set({ negative: v })} />
+        <Label>{isFr ? "Mots-clés à exclure" : "Exclude"}</Label>
+        <KeywordField
+          ariaLabel={isFr ? "Mots-clés à exclure" : "Exclude"}
+          values={filters.negative}
+          tone="exc"
+          placeholder={isFr ? "manager, commercial, freelance, alternance…" : "manager, sales, contract…"}
+          onChange={(v) => set({ negative: v })}
+        />
       </div>
 
       <div>
-        <Label hint="matches any city, region, country, or Remote">
+        <Label hint={isFr ? "correspond à toute ville, département, région ou Télétravail" : "matches any city, region, country, or Remote"}>
           <span className="inline-flex items-center gap-1.5">
-            <MapPin className="size-3.5 text-muted" /> City or location
+            <MapPin className="size-3.5 text-muted" /> {isFr ? "Ville ou localisation" : "City or location"}
           </span>
         </Label>
         <KeywordField
           values={filters.allow}
           tone="inc"
-          placeholder="Toronto, New York, Remote…"
-          ariaLabel="City or location"
+          placeholder={isFr ? "Béthune, Lens, Lille, Arras, Télétravail…" : "Toronto, New York, Remote…"}
+          ariaLabel={isFr ? "Ville ou localisation" : "City or location"}
           onChange={(v) => set({ allow: v })}
         />
       </div>
 
       <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
         <div className="min-w-[18rem]">
-          <Label hint="postings published in this window">
+          <Label hint={isFr ? "offres publiées durant cette période" : "postings published in this window"}>
             <span className="inline-flex items-center gap-1.5">
-              <Clock className="size-3.5 text-muted" /> Posted within
+              <Clock className="size-3.5 text-muted" /> {isFr ? "Publié depuis" : "Posted within"}
             </span>
           </Label>
           <div className="inline-flex rounded-lg border border-border bg-surface/40 p-0.5">
-            {RECENCY.map((r) => (
+            {recencyList.map((r) => (
               <button
                 key={r.days}
                 type="button"
@@ -175,7 +205,9 @@ export function FilterBuilder({
         </div>
 
         <div>
-          <Label hint={filters.ats.length === 0 ? "pick at least one" : undefined}>Sources</Label>
+          <Label hint={filters.ats.length === 0 ? (isFr ? "choisissez au moins une source" : "pick at least one") : undefined}>
+            {isFr ? "Sources d'offres" : "Sources"}
+          </Label>
           <div className="flex flex-wrap gap-1.5">
             {ATS_SOURCES.map((a) => {
               const on = filters.ats.includes(a);
@@ -203,7 +235,7 @@ export function FilterBuilder({
         className="inline-flex items-center gap-1.5 text-[12px] text-muted hover:text-foreground transition-colors max-sm:min-h-[44px]"
       >
         <SlidersHorizontal className="size-3.5" />
-        More location controls &amp; scan depth
+        {isFr ? "Filtres géographiques avancés & profondeur de scan" : "More location controls & scan depth"}
         <ChevronDown className={cn("size-3.5 transition-transform", advanced && "rotate-180")} />
       </button>
 
@@ -211,27 +243,35 @@ export function FilterBuilder({
         <div className="space-y-3 rounded-xl border border-border bg-surface/30 p-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label hint="rescues a multi-location posting">Always include</Label>
-              <KeywordField ariaLabel="Always include" values={filters.alwaysAllow} tone="inc" placeholder="Toronto…" onChange={(v) => set({ alwaysAllow: v })} />
+              <Label hint={isFr ? "sauve une offre multi-localisations" : "rescues a multi-location posting"}>
+                {isFr ? "Toujours inclure" : "Always include"}
+              </Label>
+              <KeywordField ariaLabel={isFr ? "Toujours inclure" : "Always include"} values={filters.alwaysAllow} tone="inc" placeholder={isFr ? "Hauts-de-France…" : "Toronto…"} onChange={(v) => set({ alwaysAllow: v })} />
             </div>
             <div>
-              <Label hint="unless Always include also matches">Exclude locations</Label>
-              <KeywordField ariaLabel="Exclude locations" values={filters.block} tone="exc" placeholder="India…" onChange={(v) => set({ block: v })} />
+              <Label hint={isFr ? "sauf si Toujours inclure correspond aussi" : "unless Always include also matches"}>
+                {isFr ? "Exclure des lieux" : "Exclude locations"}
+              </Label>
+              <KeywordField ariaLabel={isFr ? "Exclure des lieux" : "Exclude locations"} values={filters.block} tone="exc" placeholder="Paris, Île-de-France…" onChange={(v) => set({ block: v })} />
             </div>
           </div>
           <div>
-            <Label hint="hard reject — overrides Always include">Never include</Label>
-            <KeywordField ariaLabel="Never include" values={filters.blockHard} tone="exc" placeholder="USA, Brazil…" onChange={(v) => set({ blockHard: v })} />
+            <Label hint={isFr ? "rejet strict — prioritaire sur Toujours inclure" : "hard reject — overrides Always include"}>
+              {isFr ? "Ne jamais inclure" : "Never include"}
+            </Label>
+            <KeywordField ariaLabel={isFr ? "Ne jamais inclure" : "Never include"} values={filters.blockHard} tone="exc" placeholder="International, USA…" onChange={(v) => set({ blockHard: v })} />
           </div>
           <div>
-            <Label hint={`${filters.limitPerAts} companies / source`}>Scan depth</Label>
+            <Label hint={`${filters.limitPerAts} ${isFr ? "entreprises / source" : "companies / source"}`}>
+              {isFr ? "Profondeur de scan" : "Scan depth"}
+            </Label>
             <input
               type="range"
               min={50}
               max={500}
               step={50}
               value={filters.limitPerAts}
-              aria-label="Scan depth"
+              aria-label={isFr ? "Profondeur de scan" : "Scan depth"}
               onChange={(e) => set({ limitPerAts: Number(e.target.value) })}
               className="w-full accent-brand"
             />

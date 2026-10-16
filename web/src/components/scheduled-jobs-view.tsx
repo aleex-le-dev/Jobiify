@@ -23,6 +23,7 @@ import type { ScheduledJob, JobRun } from "@/lib/scheduled-jobs";
 import { instrumentSerif } from "@/lib/fonts";
 import { updateScheduledJobRequest } from "@/lib/scheduled-job-client.mjs";
 import { isSchedulerStatusPayload } from "@/lib/scheduled-scheduler-status.mjs";
+import { useI18n } from "@/components/i18n-provider";
 
 type Store = { jobs: ScheduledJob[]; runs: JobRun[] };
 type SchedulerStatus = {
@@ -39,6 +40,8 @@ function formatTaskTime(value: string | null) {
 }
 
 export function ScheduledJobsView() {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   const [store, setStore] = useState<Store>({ jobs: [], runs: [] });
   const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
   const [loading, setLoading] = useState(false);
@@ -149,10 +152,14 @@ export function ScheduledJobsView() {
         <div>
           <div className="flex items-center gap-2.5">
             <CalendarClock className="size-6 text-brand" />
-            <h1 className={`${instrumentSerif.className} text-3xl text-foreground`}>Scheduled Scans</h1>
+            <h1 className={`${instrumentSerif.className} text-3xl text-foreground`}>
+              {isFr ? "Scans programmés" : "Scheduled Scans"}
+            </h1>
           </div>
           <p className="mt-1.5 max-w-2xl text-sm text-muted">
-            Persistent, automated crawler jobs supporting Zero-Token and Full ATS Dataset sweeps.
+            {isFr
+              ? "Tâches automatisées de recherche d'offres en continu (0-token et jeux de données ATS complets)."
+              : "Persistent, automated crawler jobs supporting Zero-Token and Full ATS Dataset sweeps."}
           </p>
         </div>
 
@@ -163,7 +170,7 @@ export function ScheduledJobsView() {
             className="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground shadow-lg transition-all hover:bg-brand-200"
           >
             <CalendarPlus className="size-4" />
-            New Scheduled Scan
+            {isFr ? "Nouveau scan programmé" : "New Scheduled Scan"}
           </button>
           <button
             type="button"
@@ -171,14 +178,14 @@ export function ScheduledJobsView() {
             className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/60 px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-hover"
           >
             <History className="size-4 text-brand" />
-            Run Logs ({store.runs.length})
+            {isFr ? "Journaux d'exécution" : "Run Logs"} ({store.runs.length})
           </button>
           <button
             type="button"
             onClick={loadData}
             disabled={loading}
             className="inline-flex size-9 items-center justify-center rounded-full border border-border bg-surface/60 text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
-            title="Refresh list"
+            title={isFr ? "Actualiser la liste" : "Refresh list"}
           >
             <RefreshCw className={`size-4 ${loading ? "animate-spin text-brand" : ""}`} />
           </button>
@@ -188,10 +195,30 @@ export function ScheduledJobsView() {
 
       {/* Stats Cards */}
       <div className="grid gap-3.5 sm:grid-cols-4">
-        <StatCard label="Active Scans" value={activeJobs.length} subtitle={`${jobsList.length} total jobs`} icon={<Zap className="size-4 text-emerald-500" />} />
-        <StatCard label="Executed Runs" value={totalRuns} subtitle={`${successRuns} successful`} icon={<Layers className="size-4 text-brand" />} />
-        <StatCard label="Roles Discovered" value={totalRolesFound} subtitle="Pushed to pipeline" icon={<Sparkles className="size-4 text-amber-500" />} />
-        <StatCard label="Success Rate" value={successRate} subtitle={`${failedRuns} failed runs`} icon={<CheckCircle2 className="size-4 text-emerald-500" />} />
+        <StatCard
+          label={isFr ? "Scans actifs" : "Active Scans"}
+          value={activeJobs.length}
+          subtitle={isFr ? `${jobsList.length} tâche${jobsList.length > 1 ? "s" : ""} au total` : `${jobsList.length} total jobs`}
+          icon={<Zap className="size-4 text-emerald-500" />}
+        />
+        <StatCard
+          label={isFr ? "Exécutions totales" : "Executed Runs"}
+          value={totalRuns}
+          subtitle={isFr ? `${successRuns} réussie${successRuns > 1 ? "s" : ""}` : `${successRuns} successful`}
+          icon={<Layers className="size-4 text-brand" />}
+        />
+        <StatCard
+          label={isFr ? "Offres découvertes" : "Roles Discovered"}
+          value={totalRolesFound}
+          subtitle={isFr ? "Ajoutées au pipeline" : "Pushed to pipeline"}
+          icon={<Sparkles className="size-4 text-amber-500" />}
+        />
+        <StatCard
+          label={isFr ? "Taux de succès" : "Success Rate"}
+          value={successRate}
+          subtitle={isFr ? `${failedRuns} échec${failedRuns > 1 ? "s" : ""}` : `${failedRuns} failed runs`}
+          icon={<CheckCircle2 className="size-4 text-emerald-500" />}
+        />
       </div>
 
       {/* OS Task Scheduler Banner */}
@@ -204,7 +231,9 @@ export function ScheduledJobsView() {
               </div>
               <div>
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  {scheduler.platform === "win32" ? "Windows Task Scheduler Integration" : "Manual scans"}
+                  {scheduler.platform === "win32"
+                    ? (isFr ? "Intégration Planificateur de tâches Windows" : "Windows Task Scheduler Integration")
+                    : (isFr ? "Scans manuels" : "Manual scans")}
                   <span
                     className={
                       scheduler.task.exists && scheduler.task.enabled
@@ -213,18 +242,20 @@ export function ScheduledJobsView() {
                     }
                   >
                     {scheduler.platform !== "win32"
-                      ? "No automatic schedule"
+                      ? (isFr ? "Pas de planification auto" : "No automatic schedule")
                       : scheduler.task.exists
-                        ? scheduler.task.enabled ? "Task enabled" : "Task disabled"
-                        : "Task not installed"}
+                        ? scheduler.task.enabled
+                          ? (isFr ? "Tâche activée" : "Task enabled")
+                          : (isFr ? "Tâche désactivée" : "Task disabled")
+                        : (isFr ? "Tâche non installée" : "Task not installed")}
                   </span>
                 </div>
                 <div className="mt-0.5 text-xs text-muted">
                   {scheduler.platform !== "win32"
-                    ? "On macOS and Linux, saved scans only run when you choose Run now."
+                    ? (isFr ? "Sur macOS et Linux, les scans sauvegardés ne tournent que lorsque vous cliquez sur Lancer." : "On macOS and Linux, saved scans only run when you choose Run now.")
                     : scheduler.task.exists
-                      ? "Next OS check: " + formatTaskTime(scheduler.task.nextRun) + " · Last OS check: " + formatTaskTime(scheduler.task.lastRun)
-                      : "Install the Windows task with web/scripts/install-scan-schedule.ps1 to run due jobs automatically."}
+                      ? (isFr ? `Prochaine exécution : ${formatTaskTime(scheduler.task.nextRun)} · Dernière : ${formatTaskTime(scheduler.task.lastRun)}` : "Next OS check: " + formatTaskTime(scheduler.task.nextRun) + " · Last OS check: " + formatTaskTime(scheduler.task.lastRun))
+                      : (isFr ? "Installez la tâche Windows avec web/scripts/install-scan-schedule.ps1 pour automatiser les scans." : "Install the Windows task with web/scripts/install-scan-schedule.ps1 to run due jobs automatically.")}
                 </div>
               </div>
             </div>
@@ -235,7 +266,7 @@ export function ScheduledJobsView() {
               className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-surface-hover disabled:opacity-50"
             >
               {osRunning ? <Loader2 className="size-3.5 animate-spin text-brand" /> : <Zap className="size-3.5 text-brand" />}
-              {osRunning ? "Checking..." : "Check due jobs now"}
+              {osRunning ? (isFr ? "Vérification…" : "Checking...") : (isFr ? "Vérifier les tâches maintenant" : "Check due jobs now")}
             </button>}
           </div>
         </div>
@@ -251,7 +282,7 @@ export function ScheduledJobsView() {
               filterTab === "all" ? "bg-brand text-brand-foreground shadow" : "text-muted hover:text-foreground"
             }`}
           >
-            All Scans ({jobsList.length})
+            {isFr ? "Tous les scans" : "All Scans"} ({jobsList.length})
           </button>
           <button
             type="button"
@@ -260,7 +291,7 @@ export function ScheduledJobsView() {
               filterTab === "active" ? "bg-brand text-brand-foreground shadow" : "text-muted hover:text-foreground"
             }`}
           >
-            Active ({activeJobs.length})
+            {isFr ? "Actifs" : "Active"} ({activeJobs.length})
           </button>
           <button
             type="button"
@@ -269,7 +300,7 @@ export function ScheduledJobsView() {
               filterTab === "paused" ? "bg-brand text-brand-foreground shadow" : "text-muted hover:text-foreground"
             }`}
           >
-            Paused ({pausedJobs.length})
+            {isFr ? "En pause" : "Paused"} ({pausedJobs.length})
           </button>
         </div>
 
@@ -279,7 +310,7 @@ export function ScheduledJobsView() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search scans or keywords…"
+            placeholder={isFr ? "Rechercher un scan, un mot-clé…" : "Search scans or keywords…"}
             className="w-full rounded-full border border-border bg-surface/60 pl-8 pr-3 py-1.5 text-xs text-foreground outline-none focus:border-brand/60"
           />
         </div>

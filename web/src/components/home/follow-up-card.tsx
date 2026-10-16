@@ -5,6 +5,7 @@ import { Check, Clock, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { CompanyLogo } from "@/components/company-logo";
 import { NextDateDialog } from "@/components/followups/next-date-dialog";
+import { useI18n } from "@/components/i18n-provider";
 
 export type FollowUp = {
   num?: number;
@@ -25,6 +26,8 @@ export type FollowUp = {
 // table row to data/follow-ups.md (append-only) so the core cadence advances;
 // "Snooze" pins a date through the same persisted schedule as /followups.
 export function FollowUpCard({ followup, onLogged }: { followup: FollowUp; onLogged?: () => void }) {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   const [state, setState] = useState<"idle" | "logging" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showNextDate, setShowNextDate] = useState(false);
@@ -72,7 +75,7 @@ export function FollowUpCard({ followup, onLogged }: { followup: FollowUp; onLog
             {followup.role && <span className="text-muted"> · {followup.role}</span>}
           </p>
           <p className="flex items-center gap-1 text-[11px] text-faint">
-            <Clock className="size-3" /> {followup.appliedDate ? `applied ${followup.appliedDate}` : "follow-up due"}
+            <Clock className="size-3" /> {followup.appliedDate ? (isFr ? `candidaté le ${followup.appliedDate}` : `applied ${followup.appliedDate}`) : (isFr ? "relance due" : "follow-up due")}
           </p>
         </div>
       </div>
@@ -88,11 +91,15 @@ export function FollowUpCard({ followup, onLogged }: { followup: FollowUp; onLog
           )}
         >
           {state === "logging" ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}{" "}
-          <span className="hidden max-w-48 truncate sm:inline">{state === "error" ? `${errorMsg ?? "Failed"} — retry` : "Mark followed up"}</span>
-          <span className="sm:hidden">{state === "error" ? "Retry" : "Followed up"}</span>
+          <span className="hidden max-w-48 truncate sm:inline">
+            {state === "error" ? (isFr ? `${errorMsg ?? "Échec"} — réessayer` : `${errorMsg ?? "Failed"} — retry`) : (isFr ? "Marquer comme relancé" : "Mark followed up")}
+          </span>
+          <span className="sm:hidden">
+            {state === "error" ? (isFr ? "Réessayer" : "Retry") : (isFr ? "Relancé" : "Followed up")}
+          </span>
         </button>
         {followup.num != null && (
-          <a href={`/pipeline/${followup.num}`} title="Open report" className="inline-flex shrink-0 items-center justify-center rounded p-1 text-faint transition hover:text-brand max-sm:min-h-[44px] max-sm:min-w-[44px]">
+          <a href={`/pipeline/${followup.num}`} title={isFr ? "Ouvrir le rapport" : "Open report"} className="inline-flex shrink-0 items-center justify-center rounded p-1 text-faint transition hover:text-brand max-sm:min-h-[44px] max-sm:min-w-[44px]">
             <FileText className="size-4" />
           </a>
         )}
@@ -100,10 +107,10 @@ export function FollowUpCard({ followup, onLogged }: { followup: FollowUp; onLog
           type="button"
           disabled={state === "logging" || followup.num == null}
           onClick={() => setShowNextDate(true)}
-          title={followup.num == null ? "An application number is required to snooze this follow-up." : "Choose the next follow-up date"}
+          title={followup.num == null ? (isFr ? "Un numéro de candidature est requis pour reporter." : "An application number is required to snooze this follow-up.") : (isFr ? "Définir la prochaine date de relance" : "Choose the next follow-up date")}
           className="inline-flex shrink-0 items-center justify-center text-[11px] text-faint transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60 max-sm:min-h-[44px] max-sm:min-w-[44px]"
         >
-          Snooze
+          {isFr ? "Reporter" : "Snooze"}
         </button>
       </div>
       {showNextDate && followup.num != null && (

@@ -6,6 +6,23 @@ import { Check, Pencil, X } from "lucide-react";
 import { CANONICAL_STATES, statusDot } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { saveStatus } from "@/lib/pipeline-status.mjs";
+import { useI18n } from "@/components/i18n-provider";
+
+export const STATE_LABELS_FR: Record<string, string> = {
+  Evaluated: "Évalué",
+  Applied: "Candidaté",
+  Interview: "Entretien",
+  Offer: "Offre",
+  Discarded: "Écarté",
+  Active: "Actif",
+  Review: "À trier",
+  Archived: "Archivé",
+  Screen: "Entretien RH",
+  Assignment: "Test technique",
+  Rejected: "Refusé",
+  Accepted: "Accepté",
+  Withdrawn: "Désisté",
+};
 
 // Status writeback control. Updates the existing tracker row (status cell) via
 // /api/status — never adds rows. Reverts on failure; confirms with the
@@ -23,6 +40,7 @@ export function StatusSelect(props: StatusSelectProps) {
 }
 
 function StatusEditor({ n, current, inline = false, applicationLabel, onSaved }: StatusSelectProps) {
+  const { isFr } = useI18n();
   const [status, setStatus] = useState(current);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -35,7 +53,7 @@ function StatusEditor({ n, current, inline = false, applicationLabel, onSaved }:
   const select = useRef<HTMLSelectElement>(null);
   const router = useRouter();
   const id = useId();
-  const label = applicationLabel ?? `application #${n}`;
+  const label = applicationLabel ?? (isFr ? `candidature n°${n}` : `application #${n}`);
 
   useEffect(() => {
     if (!saving.current) setStatus(current);
@@ -93,7 +111,7 @@ function StatusEditor({ n, current, inline = false, applicationLabel, onSaved }:
     } catch (cause) {
       if (!mounted.current) return;
       setStatus(prev); // revert on failure
-      setError(cause instanceof Error ? cause.message : "Could not save status. Please try again.");
+      setError(cause instanceof Error ? cause.message : (isFr ? "Impossible d'enregistrer le statut. Veuillez réessayer." : "Could not save status. Please try again."));
     } finally {
       saving.current = false;
       if (mounted.current) setBusy(false);
@@ -107,7 +125,7 @@ function StatusEditor({ n, current, inline = false, applicationLabel, onSaved }:
     <select
       ref={select}
       id={id}
-      aria-label={inline ? `Status for ${label}` : undefined}
+      aria-label={inline ? (isFr ? `Statut pour ${label}` : `Status for ${label}`) : undefined}
       aria-invalid={error ? true : undefined}
       aria-describedby={error ? `${id}-error` : undefined}
       value={shown}
@@ -121,8 +139,8 @@ function StatusEditor({ n, current, inline = false, applicationLabel, onSaved }:
       disabled={busy}
       className="rounded-md border border-border bg-surface px-2.5 py-1 text-sm text-foreground outline-none transition-colors focus:border-brand/50 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-50 max-sm:min-h-[44px]"
     >
-      {!known && <option value={shown}>{shown}</option>}
-      {CANONICAL_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+      {!known && <option value={shown}>{isFr ? (STATE_LABELS_FR[shown] ?? shown) : shown}</option>}
+      {CANONICAL_STATES.map((s) => <option key={s} value={s}>{isFr ? (STATE_LABELS_FR[s] ?? s) : s}</option>)}
     </select>
   );
   return (
@@ -130,7 +148,7 @@ function StatusEditor({ n, current, inline = false, applicationLabel, onSaved }:
       {inline ? editing ? (
         <>
           {control}
-          <button type="button" aria-label={`Cancel editing status for ${label}`} title="Cancel" onClick={cancel} disabled={busy} className={buttonClass}>
+          <button type="button" aria-label={isFr ? `Annuler la modification du statut pour ${label}` : `Cancel editing status for ${label}`} title={isFr ? "Annuler" : "Cancel"} onClick={cancel} disabled={busy} className={buttonClass}>
             <X aria-hidden="true" className="size-3.5" />
           </button>
         </>
@@ -138,22 +156,22 @@ function StatusEditor({ n, current, inline = false, applicationLabel, onSaved }:
         <>
           <span className="inline-flex items-center gap-1.5">
             <span aria-hidden="true" className={cn("size-1.5 shrink-0 rounded-full", statusDot(shown))} />
-            {shown}
+            {isFr ? (STATE_LABELS_FR[shown] ?? shown) : shown}
           </span>
-          <button ref={pencil} type="button" aria-label={`Edit status for ${label}`} title="Edit status" onClick={() => { setError(""); setEditing(true); }} className={buttonClass}>
+          <button ref={pencil} type="button" aria-label={isFr ? `Modifier le statut pour ${label}` : `Edit status for ${label}`} title={isFr ? "Modifier le statut" : "Edit status"} onClick={() => { setError(""); setEditing(true); }} className={buttonClass}>
             <Pencil aria-hidden="true" className="size-4" />
           </button>
         </>
       ) : (
         <>
-          <label htmlFor={id} className="text-xs text-faint">status</label>
+          <label htmlFor={id} className="text-xs text-faint">{isFr ? "statut" : "status"}</label>
           {control}
         </>
       )}
-      {busy && <span role="status" className="text-xs text-faint">saving…</span>}
+      {busy && <span role="status" className="text-xs text-faint">{isFr ? "enregistrement…" : "saving…"}</span>}
       {saved && (
         <span role="status" className="animate-terminal-popup inline-flex items-center gap-1 text-xs font-medium text-brand">
-          <Check aria-hidden="true" className="size-3" /> saved
+          <Check aria-hidden="true" className="size-3" /> {isFr ? "enregistré" : "saved"}
         </span>
       )}
       {error && <span id={`${id}-error`} role="alert" className="basis-full whitespace-normal text-xs text-red-600">{error}</span>}
