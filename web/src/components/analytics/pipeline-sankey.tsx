@@ -75,7 +75,7 @@ export function PipelineSankey({
       <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-surface/50 p-3">
         <svg
           viewBox={`0 0 ${layout.width} ${layout.height}`}
-          className="h-auto w-full min-w-[720px]"
+          className="h-auto w-full min-w-180"
           role="img"
           aria-labelledby="sankey-title sankey-desc"
         >

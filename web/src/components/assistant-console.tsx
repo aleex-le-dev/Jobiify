@@ -860,7 +860,7 @@ export function AssistantConsole() {
             }
             openAssistant(e.currentTarget);
           }}
-          className="fixed bottom-5 right-5 z-50 flex items-center justify-center gap-2 rounded-full border border-border bg-surface/90 px-3.5 py-2 shadow-lg backdrop-blur transition-colors hover:bg-surface-hover max-sm:min-h-[44px]"
+          className="fixed bottom-5 right-5 z-50 flex items-center justify-center gap-2 rounded-full border border-border bg-surface/90 px-3.5 py-2 shadow-lg backdrop-blur transition-colors hover:bg-surface-hover max-sm:min-h-11"
           aria-label={cliId ? "Ouvrir l'assistant" : "Configurer un outil IA"}
           title={cliId ? "Ouvrir l'assistant" : "Cliquez pour configurer un outil IA"}
         >
@@ -1104,7 +1104,7 @@ function PartView({
   if (part.type === "text") {
     if (!part.text.trim()) return null;
     return (
-      <div className="report-prose text-sm [&_*]:my-1 [&>:first-child]:mt-0 [&>:last-child]:mb-0">
+      <div className="report-prose text-sm **:my-1 *:first:mt-0 *:last:mb-0">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{part.text}</ReactMarkdown>
       </div>
     );

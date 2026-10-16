@@ -56,7 +56,7 @@ export function OnboardingBanner() {
     : `Help me finish setting up Jobiify. I still need to add ${items.join(", ")} — walk me through just those, conversationally, and write the files for me. Don't ask me for anything that's already set up (for example, don't ask for my CV if it's already saved).`;
 
   return (
-    <div className="dot-bg relative mb-6 overflow-hidden rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/10 via-surface/40 to-transparent p-5">
+    <div className="dot-bg relative mb-6 overflow-hidden rounded-2xl border border-brand/30 bg-linear-to-br from-brand/10 via-surface/40 to-transparent p-5">
       <button
         onClick={() => setDismissed(true)}
         className="absolute right-3 top-3 text-faint transition-colors hover:text-foreground"

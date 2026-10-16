@@ -219,7 +219,7 @@ export function PipelineView({
               className={cn(
                 // gap-1, not a whitespace text node: flex containers drop
                 // whitespace-only anonymous items, which rendered "INBOX0".
-                "-mb-px inline-flex items-center justify-center gap-1 border-b-2 px-3 py-2 text-xs font-medium transition-colors max-sm:min-h-[44px]",
+                "-mb-px inline-flex items-center justify-center gap-1 border-b-2 px-3 py-2 text-xs font-medium transition-colors max-sm:min-h-11",
                 visibleTab === t
                   ? "border-brand text-foreground"
                   : "border-transparent text-muted hover:text-foreground",
@@ -294,7 +294,7 @@ export function PipelineView({
           {inbox === null ? (
             <div role="status" className="mt-4 overflow-x-auto rounded-2xl border border-border">
               <span className="sr-only">Loading inbox…</span>
-              <table aria-hidden="true" className="w-full min-w-[44rem] text-sm">
+              <table aria-hidden="true" className="w-full min-w-176 text-sm">
                 <tbody className="divide-y divide-border">
                   <PipelineTableRowsSkeleton />
                 </tbody>
@@ -314,7 +314,7 @@ export function PipelineView({
            of being silently cut off. min-w keeps the columns readable rather
            than letting w-full crush them on a phone. */
         <div className="mt-4 overflow-x-auto rounded-2xl border border-border">
-          <table className="w-full min-w-[44rem] text-sm">
+          <table className="w-full min-w-176 text-sm">
             <thead className="bg-surface/60 text-left text-xs uppercase tracking-wide text-faint">
               <tr>
                 <th className="w-8 px-3 py-2.5">
@@ -446,7 +446,7 @@ function InboxEmpty({ tracked }: { tracked: number }) {
   const { locale } = useI18n();
   const isFr = locale === "fr";
   return (
-    <div className="dot-bg mt-4 overflow-hidden rounded-2xl border border-border bg-surface/50 bg-origin-border bg-gradient-to-tr from-brand/10 via-transparent to-transparent shadow-lg">
+    <div className="dot-bg mt-4 overflow-hidden rounded-2xl border border-border bg-surface/50 bg-origin-border bg-linear-to-tr from-brand/10 via-transparent to-transparent shadow-lg">
       <div className="flex items-center gap-2 border-b border-foreground/10 px-5 py-3">
         <span className="size-2.5 rounded-full bg-foreground/15" aria-hidden="true" />
         <span className="size-2.5 rounded-full bg-foreground/15" aria-hidden="true" />

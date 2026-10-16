@@ -4,7 +4,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import * as yaml from "js-yaml";
 import { careerOpsRoot } from "@/lib/career-ops";
-import { DEFAULT_FILTERS, cleanChips, type ExploreFilters } from "@/lib/explore";
+import { DEFAULT_FILTERS, cleanChips, type ExploreFilters, type AtsSource } from "@/lib/explore";
 import { profileTargetKeywords } from "@/lib/profile-keywords.mjs";
 
 /**
@@ -77,6 +77,11 @@ export function seedExploreFilters(): { filters: ExploreFilters; seededFrom: str
     filters.block = listFrom(lf.block);
     filters.alwaysAllow = listFrom(lf.always_allow);
     filters.blockHard = listFrom(lf.block_hard);
+    if (Array.isArray(portals.explore_ats)) {
+      const valid = new Set(["greenhouse", "lever", "ashby", "workday"]);
+      const chosen = listFrom(portals.explore_ats).filter((a): a is AtsSource => valid.has(a));
+      if (chosen.length > 0) filters.ats = chosen;
+    }
     if (filters.positive.length || filters.allow.length || filters.block.length || filters.blockHard.length) seededFrom.push("portals.yml");
   }
 

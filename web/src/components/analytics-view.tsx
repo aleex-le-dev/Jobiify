@@ -230,7 +230,7 @@ export function StatsPanel({ metrics, insights }: { metrics: StatsMetrics; insig
               {metrics.archetypes.map((row, index) => (
                 <div key={row.label} className="grid grid-cols-[minmax(0,1fr)_minmax(100px,0.8fr)_auto] items-center gap-3 text-sm">
                   <div className="min-w-0">
-                    <div className="break-words text-foreground">{row.label}</div>
+                    <div className="wrap-break-word text-foreground">{row.label}</div>
                     <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-hover">
                       <div className={`h-full rounded-full ${BAR_TONES[index % BAR_TONES.length]}`} style={{ width: `${Math.max(row.pct, row.count ? 3 : 0)}%` }} />
                     </div>
@@ -335,7 +335,7 @@ function BarRow({ label, count, pct, widthPct, tone }: { label: string; count: n
   const accessibleValue = pct === undefined ? `${label}: ${count}` : `${label}: ${count}, ${Math.round(pct)} percent`;
   return (
     <div className="grid grid-cols-[minmax(94px,0.45fr)_minmax(80px,1fr)_auto] items-center gap-3">
-      <span className="break-words text-xs text-muted" title={label}>{label}</span>
+      <span className="wrap-break-word text-xs text-muted" title={label}>{label}</span>
       <div className="h-2 overflow-hidden rounded-full bg-surface-hover" role="img" aria-label={accessibleValue}>
         <div className={`h-full rounded-full ${tone} transition-[width] duration-500`} style={{ width: `${Math.min(100, Math.max(0, widthPct))}%` }} />
       </div>
@@ -377,7 +377,7 @@ function BreakdownList({ rows, icon, emptyLabel, isFr }: { rows: { label: string
       {rows.map((row) => (
         <div key={row.label} className="flex items-center gap-2 text-sm">
           <span className="text-brand">{icon}</span>
-          <span className="min-w-0 flex-1 break-words text-muted">{row.label}</span>
+          <span className="min-w-0 flex-1 wrap-break-word text-muted">{row.label}</span>
           <span className="font-mono text-xs tabular-nums text-foreground">{row.count}</span>
           <span className="w-12 text-right font-mono text-[11px] tabular-nums text-faint">{Math.round(row.pct)}%</span>
         </div>

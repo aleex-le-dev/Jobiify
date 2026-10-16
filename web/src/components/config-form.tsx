@@ -222,7 +222,7 @@ export function ConfigForm() {
                       <button
                         type="button"
                         disabled
-                        className="flex flex-1 items-center gap-2 text-left max-sm:min-h-[44px] cursor-default"
+                        className="flex flex-1 items-center gap-2 text-left max-sm:min-h-11 cursor-default"
                       >
                         <span className="font-medium text-muted">
                           {c.name}
@@ -233,7 +233,7 @@ export function ConfigForm() {
                         href={c.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex shrink-0 items-center justify-center gap-1 text-xs text-brand hover:underline max-sm:min-h-[44px]"
+                        className="inline-flex shrink-0 items-center justify-center gap-1 text-xs text-brand hover:underline max-sm:min-h-11"
                       >
                         {isFr ? "Installer" : "Install"} <ExternalLink className="size-3" />
                       </a>
@@ -334,7 +334,7 @@ export function ConfigForm() {
           <span
             className={cn(
               "absolute top-0.5 size-5 rounded-full bg-white shadow transition-transform",
-              logos ? "translate-x-[1.375rem]" : "translate-x-0.5",
+              logos ? "translate-x-5.5" : "translate-x-0.5",
             )}
           />
         </span>
@@ -346,7 +346,7 @@ export function ConfigForm() {
         <button
           type="button"
           onClick={save}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-brand px-5 py-2 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-200 max-sm:min-h-[44px]"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-brand px-5 py-2 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-200 max-sm:min-h-11"
         >
           {saved ? <Check className="size-4" /> : null}
           {saved ? (isFr ? "Enregistré" : "Saved") : (isFr ? "Enregistrer la configuration" : "Save config")}

@@ -237,7 +237,7 @@ export function CvEditor() {
           onClick={save}
           disabled={saving || !dirty}
           className={cn(
-            "inline-flex items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-colors max-sm:min-h-[44px]",
+            "inline-flex items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-colors max-sm:min-h-11",
             dirty
               ? "bg-brand text-brand-foreground hover:bg-brand-200"
               : "border border-border bg-surface text-muted",
@@ -257,7 +257,7 @@ export function CvEditor() {
           <button
             type="button"
             onClick={loadTemplate}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-brand/30 bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand transition hover:bg-brand/20 max-sm:min-h-[44px]"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-brand/30 bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand transition hover:bg-brand/20 max-sm:min-h-11"
             title={isFr ? "Charger un modèle de CV complet prêt à remplir" : "Load full ready-to-fill CV template"}
           >
             <Sparkles className="size-3.5" />
@@ -266,7 +266,7 @@ export function CvEditor() {
           <button
             type="button"
             onClick={() => insertSnippet(SNIPPET_EXPERIENCE)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground transition hover:border-brand/40 hover:text-brand max-sm:min-h-[44px]"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground transition hover:border-brand/40 hover:text-brand max-sm:min-h-11"
             title={isFr ? "Ajouter un bloc d'expérience professionnelle" : "Add an experience block"}
           >
             <Briefcase className="size-3.5" />
@@ -275,7 +275,7 @@ export function CvEditor() {
           <button
             type="button"
             onClick={() => insertSnippet(SNIPPET_EDUCATION)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground transition hover:border-brand/40 hover:text-brand max-sm:min-h-[44px]"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground transition hover:border-brand/40 hover:text-brand max-sm:min-h-11"
             title={isFr ? "Ajouter une ligne de formation / diplôme" : "Add an education line"}
           >
             <GraduationCap className="size-3.5" />
@@ -284,7 +284,7 @@ export function CvEditor() {
           <button
             type="button"
             onClick={() => insertSnippet(SNIPPET_PROJECT)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground transition hover:border-brand/40 hover:text-brand max-sm:min-h-[44px]"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground transition hover:border-brand/40 hover:text-brand max-sm:min-h-11"
             title={isFr ? "Ajouter une ligne de projet" : "Add a project line"}
           >
             <Plus className="size-3.5" />

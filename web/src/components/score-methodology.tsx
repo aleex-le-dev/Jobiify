@@ -107,7 +107,7 @@ export function ScoreMethodology() {
           target="_blank"
           rel="noreferrer"
           aria-label={isFr ? "Méthodologie complète (nouvel onglet)" : "Full methodology (opens in a new tab)"}
-          className="inline-flex min-h-[24px] items-center gap-1 text-xs text-brand transition-colors hover:underline max-sm:min-h-[44px]"
+          className="inline-flex min-h-6 items-center gap-1 text-xs text-brand transition-colors hover:underline max-sm:min-h-11"
         >
           {isFr ? "Méthodologie complète" : "Full methodology"} <ExternalLink className="size-3" aria-hidden="true" />
         </a>

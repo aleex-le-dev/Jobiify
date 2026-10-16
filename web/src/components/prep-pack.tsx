@@ -13,7 +13,7 @@ export function PrepPack({ report, company }: { report: string; company: string 
   if (questions.length === 0) return null;
   return (
     <details data-testid="prep-pack" className="group mt-3 overflow-hidden rounded-xl border border-border bg-surface/30">
-      <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 px-4 py-3 transition-colors hover:bg-surface-hover">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-3 transition-colors hover:bg-surface-hover">
         <span className="text-sm font-medium">Préparation entretien</span>
         <span className="hidden truncate text-xs text-faint sm:inline">
           {questions.length} question{questions.length === 1 ? "" : "s"} probable{questions.length === 1 ? "" : "s"} selon les critères clés de ce poste

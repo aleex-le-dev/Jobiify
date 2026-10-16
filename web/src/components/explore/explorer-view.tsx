@@ -232,7 +232,7 @@ export function ExplorerView({
       )}
 
       {showScanList && (
-        <div className={scanRunning ? "relative z-[1] mx-auto max-w-5xl px-5 pb-10 md:px-8" : undefined}>
+        <div className={scanRunning ? "relative z-1 mx-auto max-w-5xl px-5 pb-10 md:px-8" : undefined}>
           <ResultsList offers={enriched} />
         </div>
       )}
@@ -291,7 +291,7 @@ function DiscoverBar({ canDiscover, onDiscover, label, filters }: { canDiscover:
         type="button"
         disabled={!canDiscover}
         onClick={onDiscover}
-        className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground shadow-sm transition-all hover:brightness-110 disabled:opacity-50 max-sm:min-h-[44px]"
+        className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground shadow-sm transition-all hover:brightness-110 disabled:opacity-50 max-sm:min-h-11"
       >
         <Compass className="size-4" /> {label}
       </button>
