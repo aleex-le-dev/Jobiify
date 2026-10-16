@@ -18,15 +18,68 @@ const STATUS: Record<string, "live" | "empty" | "broken" | "skipped"> = {
   "➖": "skipped",
 };
 
+async function probeUrl(url: string): Promise<{ ok: boolean; status?: number; error?: string }> {
+  try {
+    const https = await import("node:https");
+    const http = await import("node:http");
+    const u = new URL(url);
+    const mod = u.protocol === "https:" ? https : http;
+    return await new Promise((resolve) => {
+      const req = mod.request(
+        u,
+        {
+          method: "GET",
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          },
+          rejectUnauthorized: false,
+          timeout: 7000,
+        },
+        (res) => {
+          const code = res.statusCode ?? 0;
+          resolve({ ok: code >= 200 && code < 400, status: code });
+          res.resume();
+        },
+      );
+      req.on("timeout", () => {
+        req.destroy();
+        resolve({ ok: false, error: "délai dépassé (timeout)" });
+      });
+      req.on("error", (err) => resolve({ ok: false, error: err.message }));
+      req.end();
+    });
+  } catch (err: any) {
+    return { ok: false, error: err?.message || "URL invalide" };
+  }
+}
+
 export async function GET() {
   const root = careerOpsRoot();
   const verifyPortals = rootScript("verify-portals");
   if (!fs.existsSync(verifyPortals)) {
     return Response.json({ available: false, configured: false, companies: [] });
   }
-  if (!fs.existsSync(path.join(root, "portals.yml"))) {
+  const portalsPath = path.join(root, "portals.yml");
+  if (!fs.existsSync(portalsPath)) {
     return Response.json({ available: true, configured: false, companies: [] });
   }
+
+  // Read portals.yml to map company names to careers_url for reachability fallback
+  const urlByName = new Map<string, string>();
+  try {
+    const yaml = await import("js-yaml");
+    const raw = fs.readFileSync(portalsPath, "utf8");
+    const doc = yaml.load(raw) as any;
+    if (Array.isArray(doc?.tracked_companies)) {
+      for (const c of doc.tracked_companies) {
+        if (c?.name && (c.careers_url || c.api)) {
+          urlByName.set(String(c.name).trim(), String(c.careers_url || c.api).trim());
+        }
+      }
+    }
+  } catch {}
 
   // process.execPath + windowsHide: see api/doctor/route.ts. And a run that did
   // not finish is reported as a failure, never parsed: the old callback dropped
@@ -71,10 +124,49 @@ export async function GET() {
     return Response.json({ available: false, configured: false, companies: [], error });
   }
 
-  const companies: { name: string; status: string; detail: string }[] = [];
+  const companies: { name: string; status: "live" | "empty" | "broken" | "skipped"; detail: string }[] = [];
+  const probeTasks: Promise<void>[] = [];
+
   for (const line of stdout.split("\n")) {
     const m = line.match(/^\s*(✅|🟡|❌|➖)\s+(.+?)\s+—\s+(.*)$/);
-    if (m) companies.push({ name: m[2].trim(), status: STATUS[m[1]] ?? "unknown", detail: m[3].trim() });
+    if (!m) continue;
+    const name = m[2].trim();
+    const rawStatus = STATUS[m[1]] ?? "skipped";
+    let detail = m[3].trim();
+
+    // When an entry is not claimed by any SaaS ATS provider (Greenhouse/Ashby/Lever/Workday),
+    // probe its careers_url directly so public-sector and enterprise custom career sites
+    // are genuinely checked for uptime rather than remaining silently "skipped".
+    if (rawStatus === "skipped") {
+      const url = urlByName.get(name);
+      if (url) {
+        const entry: { name: string; status: "live" | "empty" | "broken" | "skipped"; detail: string } = {
+          name,
+          status: "skipped",
+          detail,
+        };
+        companies.push(entry);
+        probeTasks.push(
+          probeUrl(url).then((probe) => {
+            if (probe.ok) {
+              entry.status = "live";
+              entry.detail = `site officiel en ligne (HTTP ${probe.status}) · veille active`;
+            } else {
+              entry.status = "broken";
+              entry.detail = `site inaccessible (${probe.status ? `HTTP ${probe.status}` : probe.error}) · lien à vérifier`;
+            }
+          }),
+        );
+        continue;
+      }
+    }
+
+    companies.push({ name, status: rawStatus, detail });
   }
+
+  if (probeTasks.length > 0) {
+    await Promise.all(probeTasks);
+  }
+
   return Response.json({ available: true, configured: true, companies });
 }

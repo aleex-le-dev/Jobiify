@@ -23,7 +23,7 @@ const TONE_FR: Record<string, { dot: string; label: string; chip: string }> = {
   live: { dot: "bg-emerald-500", label: "actif", chip: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" },
   empty: { dot: "bg-amber-500", label: "actif · vide", chip: "bg-amber-500/15 text-amber-700 dark:text-amber-400" },
   broken: { dot: "bg-red-500", label: "inaccessible", chip: "bg-red-500/15 text-red-700 dark:text-red-400" },
-  skipped: { dot: "bg-zinc-400", label: "sans ATS", chip: "bg-surface-hover text-muted" },
+  skipped: { dot: "bg-sky-500", label: "veille active", chip: "bg-sky-500/15 text-sky-700 dark:text-sky-400" },
 };
 
 const ORDER: Record<string, number> = { broken: 0, empty: 1, live: 2, skipped: 3 };
@@ -49,7 +49,7 @@ export function PortalsView({ watched, initialError }: { watched: WatchedCompany
 
   function check() {
     setLoading(true);
-    fetch("/api/portals/verify")
+    fetch("/api/portals/verify", { cache: "no-store" })
       .then((r) => r.json())
       .then(setRes)
       .catch(() => setRes({ available: false, configured: false, companies: [] }))
@@ -102,7 +102,7 @@ export function PortalsView({ watched, initialError }: { watched: WatchedCompany
         </button>
         {loading && (
           <span className="text-xs text-faint">
-            {isFr ? "Test des ATS de chaque entreprise… (~30–60s)" : "Probing each company's ATS… (~30–60s)"}
+            {isFr ? "Vérification en direct de chaque portail… (~2–4s)" : "Checking portals live… (~2–4s)"}
           </span>
         )}
       </div>
@@ -133,10 +133,22 @@ export function PortalsView({ watched, initialError }: { watched: WatchedCompany
       {res && res.configured && (
         <div className="mt-5">
           <p className="text-sm text-muted">
-            <span className="tabular-nums text-emerald-600 dark:text-emerald-400">{liveN}</span> {isFr ? "actifs" : "live"} ·{" "}
-            <span className="tabular-nums text-red-600 dark:text-red-400">{broken.length}</span> {isFr ? "inaccessibles" : "broken"} ·{" "}
-            <span className="tabular-nums">{companies.length}</span> {isFr ? "suivis" : "tracked"}
+            <span className="tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">{liveN}</span> {isFr ? "actifs (en ligne)" : "live"} ·{" "}
+            <span className="tabular-nums font-semibold text-red-600 dark:text-red-400">{broken.length}</span> {isFr ? "inaccessibles" : "broken"} ·{" "}
+            <span className="tabular-nums font-semibold">{companies.length}</span> {isFr ? "suivis" : "tracked"}
           </p>
+          {broken.length === 0 && companies.length > 0 && (
+            <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm">
+              <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                {isFr ? "Tous les portails répondent parfaitement" : "All portals are responding"}
+              </span>{" "}
+              <span className="text-muted">
+                {isFr
+                  ? `— les ${companies.length} sites officiels locaux sont en ligne, vérifiés et prêts pour la détection.`
+                  : `— all ${companies.length} local career boards are live and reachable.`}
+              </span>
+            </div>
+          )}
           {broken.length > 0 && (
             <div className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm">
               <span className="font-medium text-red-700 dark:text-red-400">
