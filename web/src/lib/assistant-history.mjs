@@ -13,8 +13,9 @@ export function cleanMessages(input) {
       if (['text', 'note'].includes(p.type) && typeof p.text === 'string') return [{ type: p.type, text: p.text }];
       if (p.type === 'card' && typeof p.jobId === 'string') return [{ type: p.type, jobId: p.jobId }];
       if (p.type === 'batch' && typeof p.batchId === 'string' && Array.isArray(p.jobIds) && p.jobIds.every(id => typeof id === 'string')) return [{ type: p.type, batchId: p.batchId, jobIds: p.jobIds }];
-      // Confirm callbacks exist only in the live component; never resurrect them.
+      // Confirm callbacks and login cards exist only in the live component; never resurrect them.
       if (p.type === 'confirm' && p.state === 'pending') return [];
+      if (p.type === 'login') return [];
       if (p.type === 'confirm' && ['done', 'cancelled'].includes(p.state) && typeof p.summary === 'string') return [{ type: 'note', text: `${p.summary} (${p.state})` }];
       throw new Error('Invalid message part');
     }) };

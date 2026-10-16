@@ -248,19 +248,28 @@ export async function POST(req: Request) {
           }
         }
       });
+      let authErrorEmitted = false;
       child.stderr.on("data", (d: Buffer) => {
         const s = d.toString();
+        if (/401\s*Unauthorized|Missing bearer|no Codex credentials|not authenticated|please log in|sign[ -]?in required/i.test(s)) {
+          if (!authErrorEmitted) {
+            authErrorEmitted = true;
+            emitted = true;
+            safeEnqueue(`\n\n⚠️ **Connexion requise pour ${spec.name}**\n\n${spec.name} n'est pas encore connecté à votre compte. Vous pouvez lancer la connexion automatique en 1 clic ci-dessous :\n\n<<act:cliLogin {"cli":"${spec.id}"}>>\n\n`);
+          }
+          return;
+        }
         if (/error|not found|denied|fatal/i.test(s)) {
           safeEnqueue(`\n[${spec.name}] ${s.trim()}\n`);
         }
       });
       child.on("error", (e) => {
-        safeEnqueue(`\n[error launching ${spec.name}: ${e.message}]`);
+        safeEnqueue(`\n[Erreur de lancement de ${spec.name} : ${e.message}]`);
         safeClose();
       });
       child.on("close", () => {
         if (!emitted) {
-          safeEnqueue("_(no output — is the CLI authenticated?)_");
+          safeEnqueue(`\n\n⚠️ **Aucune réponse reçue** : ${spec.name} n'a pas pu répondre. Vérifiez que votre outil IA est bien connecté dans la [Configuration](/config).\n`);
         }
         safeClose();
       });

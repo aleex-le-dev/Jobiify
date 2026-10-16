@@ -15,6 +15,7 @@ import { CadenceSettings } from "@/components/followups/cadence-settings";
 import { persistCliId, readSavedCliId } from "@/lib/saved-cli";
 import { keepIfInstalled, pickDefaultInstalled } from "@/lib/cli-pick.mjs";
 import { useI18n } from "@/components/i18n-provider";
+import { CliAuthCard } from "@/components/cli-auth-card";
 
 type Cli = {
   id: string;
@@ -183,24 +184,28 @@ export function ConfigForm() {
 
                   if (c.installed) {
                     return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => setCliId(c.id)}
-                        aria-pressed={selected}
-                        className={cn(rowClassName, "w-full cursor-pointer text-left")}
-                      >
-                        <Check className="size-4 shrink-0 text-emerald-400" />
-                        <span className="flex min-w-0 flex-1 items-center gap-2">
-                          <span className={cn("font-medium", selected ? "text-foreground" : "")}>
-                            {c.name}
+                      <div key={c.id} className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => setCliId(c.id)}
+                          aria-pressed={selected}
+                          className={cn(rowClassName, "w-full cursor-pointer text-left")}
+                        >
+                          <Check className="size-4 shrink-0 text-emerald-400" />
+                          <span className="flex min-w-0 flex-1 items-center gap-2">
+                            <span className={cn("font-medium", selected ? "text-foreground" : "")}>
+                              {c.name}
+                            </span>
+                            <span className="font-mono text-xs text-faint">{c.run}</span>
                           </span>
-                          <span className="font-mono text-xs text-faint">{c.run}</span>
-                        </span>
-                        <span className="hidden max-w-[40%] shrink-0 truncate text-xs text-faint sm:block">
-                          {c.path}
-                        </span>
-                      </button>
+                          <span className="hidden max-w-[40%] shrink-0 truncate text-xs text-faint sm:block">
+                            {c.path}
+                          </span>
+                        </button>
+                        {selected && c.id === "codex" && (
+                          <CliAuthCard cliId={c.id} cliName={c.name} />
+                        )}
+                      </div>
                     );
                   }
 

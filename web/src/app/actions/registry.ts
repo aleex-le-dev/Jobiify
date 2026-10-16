@@ -378,6 +378,14 @@ const ACTIONS: Record<string, ActionDef> = {
       };
     },
   },
+
+  cliLogin: {
+    sideEffect: "none",
+    run: (raw) => {
+      const cli = typeof raw.cli === "string" ? raw.cli : "codex";
+      return { status: "done", note: `cliLogin:${cli}` };
+    },
+  },
 };
 
 export function actionExists(id: string): boolean {

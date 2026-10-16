@@ -6,7 +6,6 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Send, X, Loader2, Settings, RotateCcw, ArrowUpRight, Sparkles, Maximize2, Minimize2 } from "lucide-react";
-import { CoMark } from "@/components/co-mark";
 import { useJobs } from "@/components/jobs/job-store";
 import { usePipeline } from "@/components/pipeline/pipeline-provider";
 import { useApply } from "@/components/apply/apply-provider";
@@ -19,6 +18,7 @@ import { scoreNum } from "@/lib/format";
 import { pendingActOpenerStart } from "@/lib/act-envelope.mjs";
 import { cleanMessages } from "@/lib/assistant-history.mjs";
 import { cn } from "@/lib/cn";
+import { CliAuthCard } from "@/components/cli-auth-card";
 
 // ── message model: messages are PART arrays so a live worker card can render
 // inline next to text, both fed by the single JobsProvider store ──────────────
@@ -27,7 +27,8 @@ type Part =
   | { type: "note"; text: string }
   | { type: "card"; jobId: string }
   | { type: "batch"; batchId: string; jobIds: string[] }
-  | { type: "confirm"; cid: string; summary: string; state: "pending" | "done" | "cancelled" };
+  | { type: "confirm"; cid: string; summary: string; state: "pending" | "done" | "cancelled" }
+  | { type: "login"; cliId: string };
 type Msg = { role: "user" | "assistant"; parts: Part[] };
 type RequestFeedback = { id: number; phase: "working" | "ready" | "error"; announce: boolean };
 
@@ -286,6 +287,25 @@ export function AssistantConsole() {
     window.addEventListener("storage", read);
     return () => window.removeEventListener("storage", read);
   }, []);
+
+  const [cliAuthenticated, setCliAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!cliId || cliId !== "codex") {
+      setCliAuthenticated(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/clis/auth?cli=${encodeURIComponent(cliId)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled) setCliAuthenticated(!!d.authenticated);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [cliId, open]);
 
   async function chatRequest(url: string, init?: RequestInit) {
     const response = await fetch(url, init);
@@ -561,6 +581,11 @@ export function AssistantConsole() {
   }
 
   function runDispatch(id: string, args: Record<string, unknown>) {
+    if (id === "cliLogin") {
+      const cli = typeof args.cli === "string" ? args.cli : "codex";
+      appendParts([{ type: "login", cliId: cli }]);
+      return true;
+    }
     const res = dispatch(id, args, buildCtx());
     if (res.status === "done") appendCards(res);
     else if (res.status === "ignored") {
@@ -704,11 +729,11 @@ export function AssistantConsole() {
       // action-only response still counts, without approving its confirmation.
       if (!display.trim() && !hasActionOutput) {
         failed = true;
-        setStreamText("_(no output — is the CLI authenticated?)_");
+        setStreamText("_(Aucune réponse reçue — vérifiez que votre outil IA est bien connecté dans la [Configuration](/config))_");
       }
     } catch (error) {
       failed = true;
-      setStreamText(reachedAssistant ? "⚠️ Connection error." : `⚠️ Request not sent: ${error instanceof Error ? error.message : "conversation could not be saved"}`);
+      setStreamText(reachedAssistant ? "⚠️ Erreur de connexion." : `⚠️ Message non envoyé : ${error instanceof Error ? error.message : "impossible d'enregistrer la discussion"}`);
     } finally {
       // flushChat already exposes save failures via its existing alert.
       setRequestFeedback({ id: requestId, phase: failed ? "error" : "ready", announce: reachedAssistant });
@@ -768,12 +793,24 @@ export function AssistantConsole() {
       {!open && (
         <button
           ref={openerRef}
-          onClick={(e) => openAssistant(e.currentTarget)}
-          className="fixed bottom-5 right-5 z-50 flex items-center justify-center gap-2 rounded-full border border-border bg-surface/90 py-1.5 pl-1.5 pr-4 shadow-lg backdrop-blur transition-colors hover:bg-surface-hover max-sm:min-h-[44px]"
-          aria-label="Ouvrir l'assistant"
+          onClick={(e) => {
+            if (!cliId) {
+              router.push("/config");
+              return;
+            }
+            openAssistant(e.currentTarget);
+          }}
+          className="fixed bottom-5 right-5 z-50 flex items-center justify-center gap-2 rounded-full border border-border bg-surface/90 px-3.5 py-2 shadow-lg backdrop-blur transition-colors hover:bg-surface-hover max-sm:min-h-[44px]"
+          aria-label={cliId ? "Ouvrir l'assistant" : "Configurer un outil IA"}
+          title={cliId ? "Ouvrir l'assistant" : "Cliquez pour configurer un outil IA"}
         >
-          <CoMark size={26} />
+          <Sparkles className="size-4 text-brand" />
           <span className="text-sm font-medium">Assistant</span>
+          {!cliId && (
+            <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-300">
+              Connexion requise
+            </span>
+          )}
         </button>
       )}
 
@@ -792,10 +829,18 @@ export function AssistantConsole() {
           className={cn("fixed z-50 flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl", PANEL_CLASS[size])}
         >
           <header className="flex items-center gap-2.5 border-b border-border px-4 py-3">
-            <CoMark size={26} />
+            <Sparkles className="size-4 text-brand" />
             <div className="flex-1">
               <div id={panelTitleId} className="text-sm font-semibold tracking-tight">Assistant</div>
-              <div className="text-xs text-faint">{cliId ? `via ${cliId}` : "aucun outil IA configuré"}</div>
+              <Link
+                href="/config"
+                onClick={() => setOpen(false)}
+                className="inline-flex items-center gap-1 text-xs text-muted transition-colors hover:text-brand hover:underline"
+                title="Gérer ou changer l'outil IA dans Configuration"
+              >
+                <span>{cliId ? `via ${cliId}` : "aucun outil IA configuré"}</span>
+                <Settings className="size-3 opacity-70" />
+              </Link>
             </div>
             <Button variant="ghost" size="icon" onClick={cycleSize} className="text-muted" aria-label={SIZE_LABEL[size]} title={SIZE_LABEL[size]}>
               {size === "full" ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
@@ -816,15 +861,25 @@ export function AssistantConsole() {
             <button className="text-xs text-muted disabled:opacity-40" disabled={busy || chatPending || !activeChat.current.revision} onClick={() => void renameChat()}>Renommer</button>
             <button className="text-xs text-muted disabled:opacity-40" disabled={busy || chatPending || !activeChat.current.revision} onClick={() => void removeChat()}>Supprimer</button>
           </div>
-          {chatWarnings.map(warning => <div key={warning.id} role="alert" className="px-4 py-2 text-sm text-amber-600">{warning.error}. Other conversations are still available.</div>)}
+          {chatWarnings.map(warning => <div key={warning.id} role="alert" className="px-4 py-2 text-sm text-amber-600">{warning.error}. Les autres conversations restent accessibles.</div>)}
           {saveError && <div role="alert" className="space-y-2 px-4 py-2 text-sm text-amber-600">
             <p>{saveError}</p>
             {chatReady ? <div className="flex flex-wrap gap-3">
-              <button className="underline" disabled={busy || chatPending} onClick={() => void flushChat().catch(() => {})}>Retry save</button>
-              <button className="underline" disabled={busy || chatPending} onClick={exportChat}>Export conversation</button>
-              <button className="underline" disabled={busy || chatPending} onClick={() => void discardAndStartChat()}>Discard unsaved changes and start new chat</button>
-            </div> : <button className="underline" onClick={() => window.location.reload()}>Reload</button>}
+              <button className="underline" disabled={busy || chatPending} onClick={() => void flushChat().catch(() => {})}>Réessayer la sauvegarde</button>
+              <button className="underline" disabled={busy || chatPending} onClick={exportChat}>Exporter la conversation</button>
+              <button className="underline" disabled={busy || chatPending} onClick={() => void discardAndStartChat()}>Ignorer et démarrer un nouveau chat</button>
+            </div> : <button className="underline" onClick={() => window.location.reload()}>Recharger</button>}
           </div>}
+          {cliId === "codex" && cliAuthenticated === false && (
+            <div className="border-b border-border bg-amber-500/5 px-4 py-2.5">
+              <CliAuthCard
+                cliId="codex"
+                cliName="Codex"
+                compact
+                onSuccess={() => setCliAuthenticated(true)}
+              />
+            </div>
+          )}
           <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
             {messages.map((m, i) => {
               const hasVisible = m.parts.some((p) => (p.type === "text" && p.text.trim()) || p.type !== "text");
@@ -929,12 +984,12 @@ export function AssistantConsole() {
                     latestReplyRef.current?.focus({ preventScroll: true });
                     latestReplyRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
                   }} className="text-brand-text underline">
-                    {requestFeedback?.phase === "error" ? "Review error" : "Read latest reply"}
+                    {requestFeedback?.phase === "error" ? "Voir l'erreur" : "Lire la dernière réponse"}
                   </button>
                 )}
                 {pendingConfirmations > 0 && (
                   <button type="button" onClick={() => scrollRef.current?.querySelector<HTMLElement>('[data-assistant-confirmation="pending"]')?.focus()} className="text-brand-text underline">
-                    Review pending actions
+                    Voir les actions en attente
                   </button>
                 )}
               </div>
@@ -1019,6 +1074,15 @@ function PartView({
   }
   if (part.type === "confirm") {
     return <ConfirmationCard key={part.cid} part={part} onConfirm={onConfirm} />;
+  }
+  if (part.type === "login") {
+    return (
+      <CliAuthCard
+        cliId={part.cliId}
+        cliName={part.cliId === "codex" ? "Codex" : part.cliId}
+        compact
+      />
+    );
   }
   return null;
 }
