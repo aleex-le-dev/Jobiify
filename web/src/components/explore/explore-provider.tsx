@@ -182,7 +182,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
     setPartial(false);
     setError("");
     setScannerMissing(false);
-    setStatus("Casting the net across the ATS network…");
+    setStatus("Exploration du réseau et de vos portails en cours…");
     const init: Partial<Record<AtsSource, SourceState>> = {};
     for (const a of f.ats) init[a] = { state: "queued" };
     setSources(init);
@@ -202,11 +202,17 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
       if (!runs.current.owns(run)) return;
       const ev = raw as ScanEvent;
       switch (ev.kind) {
-        case "atsStart":
+        case "atsStart": {
           setPhase("scanning");
-          setStatus(`Walking ${ATS_LABEL[ev.ats as AtsSource] ?? ev.ats} — ${ev.companies.toLocaleString()} companies`);
+          const atsName = ATS_LABEL[ev.ats as AtsSource] ?? ev.ats;
+          setStatus(
+            ev.ats === "portals"
+              ? `Balayage de vos ${ev.companies} portails locaux & bourses territoriales…`
+              : `Exploration : ${atsName} — ${ev.companies.toLocaleString()} entreprises…`,
+          );
           setSources((s) => ({ ...s, [ev.ats]: { ...s[ev.ats as AtsSource], state: "active", companies: ev.companies } }));
           break;
+        }
         case "progress":
           setMatchCount((m) => Math.max(m, ev.matches));
           setSources((s) => ({ ...s, [ev.ats]: { ...s[ev.ats as AtsSource], state: "active", done: ev.scanned, total: ev.total } }));

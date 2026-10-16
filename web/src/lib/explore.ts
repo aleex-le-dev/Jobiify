@@ -4,9 +4,10 @@
 // can never drift between the two halves. Server-only logic (spawning the scanner,
 // writing temp files) lives in lib/core/{scan,portals,pipeline}.ts.
 
-export type AtsSource = "greenhouse" | "lever" | "ashby" | "workday";
-export const ATS_SOURCES: AtsSource[] = ["greenhouse", "lever", "ashby", "workday"];
+export type AtsSource = "portals" | "greenhouse" | "lever" | "ashby" | "workday";
+export const ATS_SOURCES: AtsSource[] = ["portals", "workday", "greenhouse", "lever", "ashby"];
 export const ATS_LABEL: Record<AtsSource, string> = {
+  portals: "Portails locaux 62",
   greenhouse: "Greenhouse",
   lever: "Lever",
   ashby: "Ashby",
@@ -36,7 +37,7 @@ export const DEFAULT_FILTERS: ExploreFilters = {
   blockHard: [],
   alwaysAllow: [],
   sinceDays: 7,
-  ats: [...ATS_SOURCES],
+  ats: ["portals"],
   limitPerAts: 150,
 };
 

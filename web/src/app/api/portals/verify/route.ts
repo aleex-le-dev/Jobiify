@@ -130,9 +130,20 @@ export async function GET() {
   for (const line of stdout.split("\n")) {
     const m = line.match(/^\s*(✅|🟡|❌|➖)\s+(.+?)\s+—\s+(.*)$/);
     if (!m) continue;
-    const name = m[2].trim();
+    let name = m[2].trim();
     const rawStatus = STATUS[m[1]] ?? "skipped";
     let detail = m[3].trim();
+
+    // In case company name contains an em-dash, find exact key from urlByName
+    if (!urlByName.has(name)) {
+      for (const known of urlByName.keys()) {
+        if (line.includes(` ${known} —`)) {
+          name = known;
+          detail = line.slice(line.indexOf(` ${known} —`) + known.length + 3).trim();
+          break;
+        }
+      }
+    }
 
     // When an entry is not claimed by any SaaS ATS provider (Greenhouse/Ashby/Lever/Workday),
     // probe its careers_url directly so public-sector and enterprise custom career sites

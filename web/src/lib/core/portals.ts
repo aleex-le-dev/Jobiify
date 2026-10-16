@@ -78,7 +78,7 @@ export function seedExploreFilters(): { filters: ExploreFilters; seededFrom: str
     filters.alwaysAllow = listFrom(lf.always_allow);
     filters.blockHard = listFrom(lf.block_hard);
     if (Array.isArray(portals.explore_ats)) {
-      const valid = new Set(["greenhouse", "lever", "ashby", "workday"]);
+      const valid = new Set(["portals", "greenhouse", "lever", "ashby", "workday"]);
       const chosen = listFrom(portals.explore_ats).filter((a): a is AtsSource => valid.has(a));
       if (chosen.length > 0) filters.ats = chosen;
     }

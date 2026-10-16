@@ -146,8 +146,8 @@ export function ExplorerView({
                 ? "Décrivez le poste en langage naturel — une IA parcourt le web public pour vous. Les résultats sont vérifiés lors de l'évaluation."
                 : "Describe the role in plain language — an AI hunts the open web for it, on your own AI. Candidates are unverified until you evaluate.")
               : (isFr
-                ? "Scannez le réseau d'ATS publics — Greenhouse, Lever, Ashby, Workday. Des offres adaptées à votre profil, 0 token dépensé. Vous ne dépensez que lors de l'évaluation."
-                : "Scan the public ATS network — Greenhouse, Lever, Ashby, Workday. Fresh postings matched to you, zero tokens. You only spend when you choose to evaluate one.")}
+                ? "Explorez vos portails locaux (collectivités, hôpitaux, entreprises du Pas-de-Calais) et les bourses d'emploi. Des offres ciblées pour votre profil dans le 62, 0 jeton dépensé. Vous ne dépensez que lors de l'évaluation."
+                : "Scan your local portals, territorial public entities, and recruiting boards. Targeted jobs matched to your area in Pas-de-Calais, zero tokens. You only spend when you choose to evaluate.")}
           </p>
         )}
       </header>

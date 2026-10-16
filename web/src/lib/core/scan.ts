@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import * as yaml from "js-yaml";
-import { careerOpsRoot, rootScript } from "@/lib/career-ops";
+import { careerOpsRoot, rootScript, readInbox } from "@/lib/career-ops";
 import { writeTempPortals, cleanupTempPortals } from "./portals";
 import { profileTargetKeywords } from "@/lib/profile-keywords.mjs";
 import { titleFit } from "@/lib/title-fit.mjs";
@@ -373,11 +373,163 @@ function runScanner(
   });
 }
 
+import { loadServicePublicDiscoveredOffers } from "./service-public";
+import { loadWttjDiscoveredOffers } from "./wttj";
+import { loadFranceTravailDiscoveredOffers } from "./france-travail";
+import { loadAdzunaDiscoveredOffers } from "./adzuna";
+import { loadJoobleDiscoveredOffers } from "./jooble";
+import { loadLaBonneBoiteDiscoveredOffers } from "./la-bonne-boite";
+
+function matchesKeyword(text: string, kw: string): boolean {
+  return text.toLowerCase().includes(kw.toLowerCase().trim());
+}
+
+function matchesTitle(title: string, positive: string[], negative: string[]): boolean {
+  if (negative.some((n) => n && matchesKeyword(title, n))) return false;
+  if (positive.length === 0) return true;
+  return positive.some((p) => p && matchesKeyword(title, p));
+}
+
+function matchesLocation(location: string, allow: string[], block: string[], blockHard: string[]): boolean {
+  if (blockHard.some((b) => b && matchesKeyword(location, b))) return false;
+  if (block.some((b) => b && matchesKeyword(location, b))) return false;
+  if (allow.length === 0) return true;
+  return allow.some((a) => a && matchesKeyword(location, a));
+}
+
+async function scanLocalPortals(
+  filters: ExploreFilters,
+  onEvent: (e: ScanEvent) => void,
+  sink: { offers: DiscoveredOffer[]; seen: Set<string> },
+  roleTargets: string[],
+): Promise<number> {
+  let trackedCount = 14;
+  try {
+    const raw = fs.readFileSync(path.join(careerOpsRoot(), "portals.yml"), "utf8");
+    const parsed = yaml.load(raw) as { tracked_companies?: unknown[]; job_boards?: unknown[] };
+    if (Array.isArray(parsed?.tracked_companies)) {
+      trackedCount = parsed.tracked_companies.length;
+    }
+    if (Array.isArray(parsed?.job_boards)) {
+      trackedCount += parsed.job_boards.length;
+    }
+  } catch {
+    /* fallback to 14 */
+  }
+
+  onEvent({ kind: "atsStart", ats: "portals", companies: trackedCount });
+
+  // 1. Inbox local jobs
+  const inbox = readInbox();
+  for (const job of inbox) {
+    if (sink.seen.has(job.url)) continue;
+    const titleMatch = matchesTitle(job.role, filters.positive, filters.negative);
+    const locMatch = matchesLocation(job.location || "", filters.allow, filters.block, filters.blockHard);
+    if (!titleMatch || !locMatch) continue;
+
+    sink.seen.add(job.url);
+    const offer: DiscoveredOffer = {
+      company: job.company,
+      title: job.role,
+      location: job.location || "",
+      postedAt: job.postedAt || new Date().toISOString().slice(0, 10),
+      ats: "portals",
+      source: "portals-local",
+      url: job.url,
+      matchedKeyword: firstMatch(job.role, filters.positive),
+      ...fitField(job.role, roleTargets),
+    };
+    sink.offers.push(offer);
+    onEvent({ kind: "offer", offer });
+  }
+
+  // 2. Open Data Choisir le Service Public & Emploi Territorial (data.gouv.fr)
+  try {
+    const spOffers = await loadServicePublicDiscoveredOffers(filters, roleTargets);
+    for (const spOffer of spOffers) {
+      if (sink.seen.has(spOffer.url)) continue;
+      sink.seen.add(spOffer.url);
+      sink.offers.push(spOffer);
+      onEvent({ kind: "offer", offer: spOffer });
+    }
+  } catch (err) {
+    console.error("Erreur lors de la récupération du Service Public:", err);
+  }
+
+  // 3. Welcome to the Jungle (WTTJ)
+  try {
+    const wttjOffers = await loadWttjDiscoveredOffers(filters, roleTargets);
+    for (const wOffer of wttjOffers) {
+      if (sink.seen.has(wOffer.url)) continue;
+      sink.seen.add(wOffer.url);
+      sink.offers.push(wOffer);
+      onEvent({ kind: "offer", offer: wOffer });
+    }
+  } catch (err) {
+    console.error("Erreur lors de la récupération de WTTJ:", err);
+  }
+
+  // 4. France Travail (si configuré dans .env)
+  try {
+    const ftOffers = await loadFranceTravailDiscoveredOffers(filters, roleTargets);
+    for (const ftOffer of ftOffers) {
+      if (sink.seen.has(ftOffer.url)) continue;
+      sink.seen.add(ftOffer.url);
+      sink.offers.push(ftOffer);
+      onEvent({ kind: "offer", offer: ftOffer });
+    }
+  } catch (err) {
+    console.error("Erreur lors de la récupération de France Travail:", err);
+  }
+
+  // 5. Adzuna (agrégateur Indeed, Meteojob, HelloWork si configuré dans .env)
+  try {
+    const adzOffers = await loadAdzunaDiscoveredOffers(filters, roleTargets);
+    for (const adzOffer of adzOffers) {
+      if (sink.seen.has(adzOffer.url)) continue;
+      sink.seen.add(adzOffer.url);
+      sink.offers.push(adzOffer);
+      onEvent({ kind: "offer", offer: adzOffer });
+    }
+  } catch (err) {
+    console.error("Erreur lors de la récupération d'Adzuna:", err);
+  }
+
+  // 6. Jooble (offres de PME et petits cabinets si JOOBLE_API_KEY dans .env)
+  try {
+    const joobleOffers = await loadJoobleDiscoveredOffers(filters, roleTargets);
+    for (const jOffer of joobleOffers) {
+      if (sink.seen.has(jOffer.url)) continue;
+      sink.seen.add(jOffer.url);
+      sink.offers.push(jOffer);
+      onEvent({ kind: "offer", offer: jOffer });
+    }
+  } catch (err) {
+    console.error("Erreur lors de la récupération de Jooble:", err);
+  }
+
+  // 7. La Bonne Boîte (France Travail : détection des PME/TPE qui recrutent sans annonce)
+  try {
+    const lbbOffers = await loadLaBonneBoiteDiscoveredOffers(filters, roleTargets);
+    for (const lbbOffer of lbbOffers) {
+      if (sink.seen.has(lbbOffer.url)) continue;
+      sink.seen.add(lbbOffer.url);
+      sink.offers.push(lbbOffer);
+      onEvent({ kind: "offer", offer: lbbOffer });
+    }
+  } catch (err) {
+    console.error("Erreur lors de la récupération de La Bonne Boîte:", err);
+  }
+
+  onEvent({ kind: "atsDone", ats: "portals", unreachable: 0 });
+  return trackedCount;
+}
+
 const NO_OUTPUT = "The scanner returned no readable output.";
 
 export async function runDiscovery(filters: ExploreFilters, onEvent: (e: ScanEvent) => void): Promise<DiscoveredOffer[]> {
   const tempPortals = writeTempPortals(filters);
-  const ats = (filters.ats.length ? filters.ats : [...ATS_SOURCES]).filter((a) => (ATS_SOURCES as readonly string[]).includes(a));
+  const allAts = (filters.ats.length ? filters.ats : [...ATS_SOURCES]).filter((a) => (ATS_SOURCES as readonly string[]).includes(a));
   const useJson = scannerSupportsJson();
   // Read once per run: every child gets the same budget, and the copy quotes it
   // exactly (a 1.5s budget must not read as 2s).
@@ -390,11 +542,30 @@ export async function runDiscovery(filters: ExploreFilters, onEvent: (e: ScanEve
   const sink = { offers: [] as DiscoveredOffer[], seen: new Set<string>() };
 
   try {
+    const scanPortals = allAts.includes("portals");
+    let localCount = 0;
+    if (scanPortals) {
+      localCount = await scanLocalPortals(filters, onEvent, sink, roleTargets);
+    }
+
+    const remoteAts = allAts.filter((a) => a !== "portals");
+    if (remoteAts.length === 0) {
+      onEvent({
+        kind: "summary",
+        companiesScanned: localCount,
+        unreachable: 0,
+        matches: sink.offers.length,
+        companiesAvailable: localCount,
+        capHit: false,
+      });
+      return sink.offers;
+    }
+
     if (!useJson) {
       // Older checkouts: one child, human-stdout parse. It streams offers as they
       // arrive, so the ones collected so far are returned; a deadline kill still
       // says so instead of ending silently.
-      const run = await runScanner(ats, false, filters, tempPortals, onEvent, sink, timeoutMs, roleTargets);
+      const run = await runScanner(remoteAts, false, filters, tempPortals, onEvent, sink, timeoutMs, roleTargets);
       if (run.failed) onEvent({ kind: "error", message: run.failed });
       else if (run.timedOut) onEvent({ kind: "error", message: scanTimeoutMessage(timeoutMs) });
       return sink.offers;
@@ -403,6 +574,7 @@ export async function runDiscovery(filters: ExploreFilters, onEvent: (e: ScanEve
     // --json: one child per source, in parallel (see scan-merge.mjs for why).
     // Dry runs write no scanner state and each source caches its own dataset
     // file, so the children don't contend.
+    const ats = remoteAts;
     const runs = await Promise.all(
       ats.map((a) => runScanner([a], true, filters, tempPortals, onEvent, sink, timeoutMs, roleTargets)),
     );
@@ -423,6 +595,17 @@ export async function runDiscovery(filters: ExploreFilters, onEvent: (e: ScanEve
     const incomplete = ats.filter((_, i) => !runs[i].json || stopped[i]);
 
     if (finished.length === 0) {
+      if (sink.offers.length > 0) {
+        onEvent({
+          kind: "summary",
+          companiesScanned: localCount,
+          unreachable: 0,
+          matches: sink.offers.length,
+          companiesAvailable: localCount,
+          capHit: false,
+        });
+        return sink.offers;
+      }
       const failed = runs.find((r) => r.failed)?.failed;
       onEvent({
         kind: "error",
@@ -437,9 +620,12 @@ export async function runDiscovery(filters: ExploreFilters, onEvent: (e: ScanEve
       // printed nothing. Otherwise it is a note beside the sources that finished.
       onEvent(incomplete.length === ats.length ? { kind: "error", message } : { kind: "log", line: message });
     }
+    const merged = mergeScanResults(finished, offers.length);
     onEvent({
       kind: "summary",
-      ...mergeScanResults(finished, offers.length),
+      ...merged,
+      companiesScanned: merged.companiesScanned + localCount,
+      companiesAvailable: (merged.companiesAvailable ?? 0) + localCount,
       ...(incomplete.length ? { incomplete } : {}),
     });
     return offers;

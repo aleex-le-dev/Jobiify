@@ -20,7 +20,7 @@ export function CreateJobModal({
 }) {
   const { isFr } = useI18n();
   const [name, setName] = useState(isFr ? "Scan programmé" : "Scheduled scan");
-  const [engine, setEngine] = useState<ScanEngine>("full");
+  const [engine, setEngine] = useState<ScanEngine>("portals");
   const [every, setEvery] = useState(6);
   const [unit, setUnit] = useState<"minutes" | "hours" | "days">("hours");
   const [filters, setFilters] = useState<ExploreFilters>({
@@ -107,17 +107,17 @@ export function CreateJobModal({
                 onChange={(e) => setEngine(e.target.value as ScanEngine)}
                 className="w-full rounded-xl border border-border bg-surface-hover/60 px-3.5 py-2 text-sm text-foreground outline-none focus:border-brand/60"
               >
-                <option value="full">{isFr ? "Scan complet des bases ATS" : "Full ATS Dataset Sweep"}</option>
-                <option value="portals">{isFr ? "Portails portals.yml (0 jeton)" : "Zero-Token Portals.yml"}</option>
+                <option value="portals">{isFr ? "Portails locaux 62 (0 jeton)" : "Local Portals (0 tokens)"}</option>
+                <option value="full">{isFr ? "Scan des bases de recrutement ATS" : "Full ATS Sweep"}</option>
               </select>
               <p className="mt-1 text-[11px] text-faint">
                 {isFr
-                  ? (engine === "full"
-                    ? "Parcourt les jeux de données publics Greenhouse, Lever, Ashby, etc."
-                    : "Scanne les entreprises configurées dans portals.yml (0 coût IA).")
-                  : (engine === "full"
-                    ? "Sweeps public Greenhouse/Lever/Ashby datasets."
-                    : "Scans pre-configured portals.yml companies (0 AI cost).")}
+                  ? (engine === "portals"
+                    ? "Scanne vos 14 portails locaux et bourses territoriales (0 coût IA)."
+                    : "Parcourt les bases de recrutement publiques ATS.")
+                  : (engine === "portals"
+                    ? "Scans your local portals and territorial boards (0 AI cost)."
+                    : "Sweeps public ATS job boards.")}
               </p>
             </div>
 

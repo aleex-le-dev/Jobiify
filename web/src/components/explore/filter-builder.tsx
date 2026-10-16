@@ -166,7 +166,7 @@ export function FilterBuilder({
       </div>
 
       <div>
-        <Label hint={isFr ? "correspond à toute ville, département, région ou Télétravail" : "matches any city, region, country, or Remote"}>
+        <Label hint={isFr ? "correspond à toute ville, communauté d'agglomération ou département (62)" : "matches any city, territory or department"}>
           <span className="inline-flex items-center gap-1.5">
             <MapPin className="size-3.5 text-muted" /> {isFr ? "Ville ou localisation" : "City or location"}
           </span>
@@ -174,7 +174,7 @@ export function FilterBuilder({
         <KeywordField
           values={filters.allow}
           tone="inc"
-          placeholder={isFr ? "Béthune, Lens, Lille, Arras, Télétravail…" : "Toronto, New York, Remote…"}
+          placeholder={isFr ? "Béthune, Bruay, Lens, Arras, Saint-Omer, Pas-de-Calais, 62…" : "Toronto, New York, London…"}
           ariaLabel={isFr ? "Ville ou localisation" : "City or location"}
           onChange={(v) => set({ allow: v })}
         />
