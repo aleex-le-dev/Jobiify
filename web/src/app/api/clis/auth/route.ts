@@ -22,15 +22,12 @@ let activeSession: SessionState | null = null;
 function checkCodexStatus(binPath: string): Promise<{ authenticated: boolean; user: string | null; raw: string }> {
   return new Promise((resolve) => {
     execFile(binPath, ["login", "status"], { shell: true, timeout: 5000 }, (err, stdout, stderr) => {
-      const out = (stdout || "").trim();
-      const errOut = (stderr || "").trim();
-      const combined = `${out}\n${errOut}`.trim();
-      if (!err && out.toLowerCase().includes("logged in")) {
-        // e.g. "Logged in as alex@example.com"
-        const match = out.match(/logged in as\s+([^\r\n]+)/i);
-        resolve({ authenticated: true, user: match ? match[1].trim() : null, raw: out });
-      } else if (!err && !errOut.toLowerCase().includes("not logged in") && out) {
-        resolve({ authenticated: true, user: null, raw: out });
+      const combined = `${stdout || ""}\n${stderr || ""}`.trim();
+      if (!err && combined.toLowerCase().includes("logged in")) {
+        const match = combined.match(/logged in (?:as|using)\s+([^\r\n]+)/i);
+        resolve({ authenticated: true, user: match ? match[1].trim() : "ChatGPT", raw: combined });
+      } else if (!err && !combined.toLowerCase().includes("not logged in") && combined.length > 0) {
+        resolve({ authenticated: true, user: null, raw: combined });
       } else {
         resolve({ authenticated: false, user: null, raw: combined });
       }
@@ -96,7 +93,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const body = await readJsonObject<{ cli?: string; action?: "start" | "cancel" | "terminal" }>(req);
+  const body = await readJsonObject<{ cli?: string; action?: "start" | "cancel" | "terminal" | "logout" }>(req);
   const cli = body?.cli || "codex";
   const action = body?.action || "start";
 
@@ -111,6 +108,19 @@ export async function POST(req: Request) {
       activeSession = null;
     }
     return NextResponse.json({ success: true, cancelled: true });
+  }
+
+  if (action === "logout") {
+    if (activeSession && activeSession.cli === cli) {
+      try { activeSession.child.kill(); } catch { /* ignore */ }
+      activeSession = null;
+    }
+    if (cli === "codex") {
+      await new Promise<void>((resolve) => {
+        execFile(resolved.binPath, ["logout"], { shell: true, timeout: 5000 }, () => resolve());
+      });
+    }
+    return NextResponse.json({ success: true, loggedOut: true });
   }
 
   if (action === "terminal") {

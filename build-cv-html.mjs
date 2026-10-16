@@ -429,10 +429,10 @@ function buildExperience(entries, partial) {
         : '';
       return `<div class="job">
     <div class="job-header">
-      <span class="job-company">${escapeHtml(e.company)}</span>
+      <span class="job-role">${escapeHtml(e.role)}</span>
       <span class="job-period">${escapeHtml(e.dates || e.period || '')}</span>
     </div>
-    <div class="job-role">${escapeHtml(e.role)}</div>${context}${location}
+    <div class="job-company">${escapeHtml(e.company)}${location ? ` <span class="job-location">· ${escapeHtml(e.location)}</span>` : ''}</div>${context}
     <ul>
 ${bullets}
     </ul>

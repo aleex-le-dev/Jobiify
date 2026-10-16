@@ -16,7 +16,7 @@
  */
 
 const ENTRY_CLASSES = ["job", "project", "edu-item", "cert-item", "award-item", "skill-item"];
-const ENTRY_LABEL_CLASS = { job: "job-company", project: "project-title", "edu-item": "edu-title", "cert-item": "cert-title", "award-item": "award-title", "skill-item": "skill-category" };
+const ENTRY_LABEL_CLASS = { job: "job-role", project: "project-title", "edu-item": "edu-title", "cert-item": "cert-title", "award-item": "award-title", "skill-item": "skill-category" };
 
 const KIND_BY_CLASS = [
   ["summary-text", "summary"],
@@ -126,7 +126,7 @@ export function parseBlocks(html) {
       const cls = ENTRY_CLASSES.find((c) => new RegExp(`class="${c}"`).test(body));
       if (cls) {
         items = elementsWithClass(html, el.open, el.end, "div", cls).map((e, k) => {
-          const labelMatch = new RegExp(`class="${ENTRY_LABEL_CLASS[cls]}"[^>]*>([\\s\\S]*?)</`).exec(html.slice(e.open, e.end));
+          const labelMatch = new RegExp(`class="(?:${ENTRY_LABEL_CLASS[cls]}|job-company)"[^>]*>([\\s\\S]*?)</`).exec(html.slice(e.open, e.end));
           const label = htmlText(labelMatch ? labelMatch[1].split("<")[0] : html.slice(e.open, e.end)).slice(0, 80);
           return { id: `${id}i${k}`, kind: "entry", label: label.replace(/:$/, ""), start: e.start, end: e.end, bullets: bulletsIn(html, e.open, e.end, `${id}i${k}`) };
         });

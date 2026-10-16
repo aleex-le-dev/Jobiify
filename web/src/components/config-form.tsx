@@ -203,7 +203,11 @@ export function ConfigForm() {
                           </span>
                         </button>
                         {selected && c.id === "codex" && (
-                          <CliAuthCard cliId={c.id} cliName={c.name} />
+                          <CliAuthCard
+                            cliId={c.id}
+                            cliName={c.name}
+                            onSuccess={() => window.location.reload()}
+                          />
                         )}
                       </div>
                     );

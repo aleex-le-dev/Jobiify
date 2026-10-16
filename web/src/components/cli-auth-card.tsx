@@ -8,6 +8,7 @@ type CliAuthCardProps = {
   cliId: string;
   cliName?: string;
   onSuccess?: () => void;
+  onLogout?: () => void;
   className?: string;
   compact?: boolean;
 };
@@ -27,6 +28,7 @@ export function CliAuthCard({
   cliId,
   cliName = "Codex",
   onSuccess,
+  onLogout,
   className,
   compact = false,
 }: CliAuthCardProps) {
@@ -36,9 +38,12 @@ export function CliAuthCard({
     installed: true,
   });
   const [connecting, setConnecting] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
   const pollTimer = useRef<NodeJS.Timeout | null>(null);
+  const wasUnauthenticatedRef = useRef(false);
+  const isFirstCheckRef = useRef(true);
 
   // Check auth status
   async function checkStatus() {
@@ -46,9 +51,13 @@ export function CliAuthCard({
       const res = await fetch(`/api/clis/auth?cli=${encodeURIComponent(cliId)}`);
       if (!res.ok) throw new Error("Impossible de vérifier le statut");
       const data = await res.json();
+      const isAuth = !!data.authenticated;
+      const isFirst = isFirstCheckRef.current;
+      isFirstCheckRef.current = false;
+
       setStatus({
         loading: false,
-        authenticated: !!data.authenticated,
+        authenticated: isAuth,
         installed: data.installed !== false,
         user: data.user,
         message: data.message,
@@ -56,15 +65,20 @@ export function CliAuthCard({
         authUrl: data.authUrl,
       });
 
-      if (data.authenticated) {
-        if (connecting) {
-          setConnecting(false);
-          setAuthUrl(null);
+      if (isAuth) {
+        setConnecting(false);
+        setAuthUrl(null);
+        stopPolling();
+        // Ne déclencher onSuccess que si c'est une connexion nouvellement acquise
+        if (!isFirst && (connecting || wasUnauthenticatedRef.current)) {
+          wasUnauthenticatedRef.current = false;
           onSuccess?.();
         }
-        stopPolling();
-      } else if (data.activeSession && data.authUrl) {
-        setAuthUrl(data.authUrl);
+      } else {
+        wasUnauthenticatedRef.current = true;
+        if (data.activeSession && data.authUrl) {
+          setAuthUrl(data.authUrl);
+        }
       }
     } catch (e) {
       setStatus((prev) => ({
@@ -89,12 +103,18 @@ export function CliAuthCard({
 
   useEffect(() => {
     checkStatus();
-    return () => stopPolling();
+    const onFocus = () => checkStatus();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      stopPolling();
+    };
   }, [cliId]);
 
   // Launch 1-click browser login
   async function handleOneClickLogin() {
     setConnecting(true);
+    wasUnauthenticatedRef.current = true;
     setStepError(null);
     try {
       const res = await fetch("/api/clis/auth", {
@@ -108,6 +128,7 @@ export function CliAuthCard({
       if (data.authenticated) {
         setStatus((prev) => ({ ...prev, authenticated: true, user: data.user }));
         setConnecting(false);
+        wasUnauthenticatedRef.current = false;
         onSuccess?.();
         return;
       }
@@ -162,6 +183,24 @@ export function CliAuthCard({
     }
   }
 
+  // Logout
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await fetch("/api/clis/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cli: cliId, action: "logout" }),
+      });
+      setStatus((prev) => ({ ...prev, authenticated: false, user: null }));
+      onLogout?.();
+    } catch {
+      /* ignore */
+    } finally {
+      setLoggingOut(false);
+    }
+  }
+
   if (status.loading) {
     return (
       <div className={cn("flex items-center gap-2 text-xs text-muted py-2", className)}>
@@ -186,13 +225,16 @@ export function CliAuthCard({
             {status.user ? ` (${status.user})` : ""}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={handleOneClickLogin}
-          className="text-emerald-700 dark:text-emerald-400 hover:underline shrink-0 font-medium"
-        >
-          Re-connecter
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="text-muted hover:text-rose-600 dark:hover:text-rose-400 hover:underline shrink-0 font-medium transition-colors"
+          >
+            {loggingOut ? "Déconnexion…" : "Se déconnecter"}
+          </button>
+        </div>
       </div>
     );
   }

@@ -135,8 +135,27 @@ function msgText(m: Msg): string {
   return m.parts.filter((p): p is Extract<Part, { type: "text" }> => p.type === "text").map((p) => p.text).join(" ").trim();
 }
 
+const OPEN_STORAGE_KEY = "career_ops_assistant_open";
+
 export function AssistantConsole() {
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(OPEN_STORAGE_KEY) === "true") {
+        setOpen(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(OPEN_STORAGE_KEY, open ? "true" : "false");
+    } catch {
+      /* ignore */
+    }
+  }, [open]);
   const [cliId, setCliId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [chats, setChats] = useState<{ id: string; title: string; revision: number }[]>([]);
@@ -289,23 +308,62 @@ export function AssistantConsole() {
   }, []);
 
   const [cliAuthenticated, setCliAuthenticated] = useState<boolean | null>(null);
+  const wasUnauthenticatedRef = useRef(false);
+  const isFirstCheckRef = useRef(true);
 
   useEffect(() => {
     if (!cliId || cliId !== "codex") {
       setCliAuthenticated(null);
       return;
     }
+    const activeId = cliId;
     let cancelled = false;
-    fetch(`/api/clis/auth?cli=${encodeURIComponent(cliId)}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!cancelled) setCliAuthenticated(!!d.authenticated);
-      })
-      .catch(() => {});
+    function check() {
+      fetch(`/api/clis/auth?cli=${encodeURIComponent(activeId)}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (!cancelled && typeof d.authenticated === "boolean") {
+            const isFirst = isFirstCheckRef.current;
+            isFirstCheckRef.current = false;
+
+            if (d.authenticated === false) {
+              wasUnauthenticatedRef.current = true;
+              setCliAuthenticated(false);
+            } else if (d.authenticated === true) {
+              if (!isFirst && wasUnauthenticatedRef.current) {
+                wasUnauthenticatedRef.current = false;
+                setCliAuthenticated(true);
+                window.location.reload();
+                return;
+              }
+              setCliAuthenticated(true);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
+    check();
+
+    const onFocus = () => check();
+    window.addEventListener("focus", onFocus);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") check();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    let timer: NodeJS.Timeout | null = null;
+    if (open && cliAuthenticated !== true) {
+      timer = setInterval(check, 1500);
+    }
+
     return () => {
       cancelled = true;
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (timer) clearInterval(timer);
     };
-  }, [cliId, open]);
+  }, [cliId, open, cliAuthenticated]);
 
   async function chatRequest(url: string, init?: RequestInit) {
     const response = await fetch(url, init);
@@ -422,7 +480,7 @@ export function AssistantConsole() {
       confirmRuns.current.clear();
       setRequestFeedback(null);
       setAnnouncement("");
-    } catch (e) { setSaveError(e instanceof Error ? e.message : "Could not switch conversations"); }
+    } catch (e) { setSaveError(e instanceof Error ? e.message : "Impossible de changer de conversation"); }
     finally { setChatPending(false); }
   }
   function exportChat() {
@@ -437,7 +495,7 @@ export function AssistantConsole() {
   }
   async function discardAndStartChat() {
     if (busy || chatPending || !chatReady) return;
-    if (!window.confirm("Discard unsaved changes and start a new conversation? Saved conversations stay on disk. Export this conversation first if you want to keep the unsaved text.")) return;
+    if (!window.confirm("Abandonner les modifications non enregistrées et démarrer une nouvelle discussion ? Les conversations enregistrées restent sur le disque.")) return;
     setChatPending(true);
     try {
       // Let writes already in flight finish before changing the active id.
@@ -454,14 +512,14 @@ export function AssistantConsole() {
     } finally { setChatPending(false); }
   }
   async function renameChat() {
-    const title = window.prompt("Conversation name", activeChat.current.title || "");
+    const title = window.prompt("Nom de la discussion", activeChat.current.title || "");
     if (!title?.trim()) return;
     setChatPending(true);
     try { await flushChat(title.trim()); } catch { /* shown by flushChat */ }
     finally { setChatPending(false); }
   }
   async function removeChat() {
-    if (!window.confirm("Delete this conversation?")) return;
+    if (!window.confirm("Supprimer cette discussion ?")) return;
     setChatPending(true);
     try {
       await flushChat();
@@ -475,7 +533,7 @@ export function AssistantConsole() {
       setRequestFeedback(null);
       setAnnouncement("");
       await refreshChats();
-    } catch (e) { setSaveError(e instanceof Error ? e.message : "Could not delete conversation"); }
+    } catch (e) { setSaveError(e instanceof Error ? e.message : "Impossible de supprimer la discussion"); }
     finally { setChatPending(false); }
   }
 
@@ -575,7 +633,7 @@ export function AssistantConsole() {
             // The onboarding panel listens for this to refetch section state.
             window.dispatchEvent(new CustomEvent("co-onboarding-changed"));
           })
-          .catch((e) => appendParts([{ type: "note", text: `Your personalization was NOT saved: ${e instanceof Error ? e.message : "the request failed"}` }]));
+          .catch((e) => appendParts([{ type: "note", text: `Votre personnalisation n'a PAS été enregistrée : ${e instanceof Error ? e.message : "la requête a échoué"}` }]));
       },
     };
   }
@@ -667,7 +725,7 @@ export function AssistantConsole() {
       if (!res.ok || !res.body) {
         failed = true;
         const err = await res.json().catch(() => ({}));
-        setStreamText(`⚠️ ${err.error || "Assistant unavailable."}`);
+        setStreamText(`⚠️ ${err.error || "Assistant indisponible."}`);
         return;
       }
       const reader = res.body.getReader();
@@ -696,6 +754,8 @@ export function AssistantConsole() {
           shimRems.push(String(f).trim());
           return "";
         });
+        // Filtrer les avertissements techniques pour garder le chat propre et en français
+        display = display.replace(/^⚠️\s*[^\n]*(?:cannot be permission-restricted|is only partly restricted|partiellement restreint)[^\n]*\n*/i, "");
         setStreamText(display.trimStart());
 
         for (const e of complete) {
@@ -853,148 +913,177 @@ export function AssistantConsole() {
             </Button>
           </header>
 
-          <div className="flex gap-2 border-b border-border px-4 py-2">
-            <select aria-label="Historique des discussions" className="min-w-0 flex-1 bg-surface text-sm" value={chats.some(c => c.id === activeChat.current.id) ? activeChat.current.id : ""} disabled={busy || chatPending || !chatReady} onChange={e => void selectChat(e.target.value || undefined)}>
-              <option value="">Nouvelle discussion</option>
-              {chats.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-            </select>
-            <button className="text-xs text-muted disabled:opacity-40" disabled={busy || chatPending || !activeChat.current.revision} onClick={() => void renameChat()}>Renommer</button>
-            <button className="text-xs text-muted disabled:opacity-40" disabled={busy || chatPending || !activeChat.current.revision} onClick={() => void removeChat()}>Supprimer</button>
-          </div>
-          {chatWarnings.map(warning => <div key={warning.id} role="alert" className="px-4 py-2 text-sm text-amber-600">{warning.error}. Les autres conversations restent accessibles.</div>)}
-          {saveError && <div role="alert" className="space-y-2 px-4 py-2 text-sm text-amber-600">
-            <p>{saveError}</p>
-            {chatReady ? <div className="flex flex-wrap gap-3">
-              <button className="underline" disabled={busy || chatPending} onClick={() => void flushChat().catch(() => {})}>Réessayer la sauvegarde</button>
-              <button className="underline" disabled={busy || chatPending} onClick={exportChat}>Exporter la conversation</button>
-              <button className="underline" disabled={busy || chatPending} onClick={() => void discardAndStartChat()}>Ignorer et démarrer un nouveau chat</button>
-            </div> : <button className="underline" onClick={() => window.location.reload()}>Recharger</button>}
-          </div>}
-          {cliId === "codex" && cliAuthenticated === false && (
-            <div className="border-b border-border bg-amber-500/5 px-4 py-2.5">
-              <CliAuthCard
-                cliId="codex"
-                cliName="Codex"
-                compact
-                onSuccess={() => setCliAuthenticated(true)}
-              />
+          {!cliId ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
+              <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-surface-hover text-muted">
+                <Settings className="size-6" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Aucun outil IA configuré</h2>
+                <p className="mt-1 text-xs text-muted max-w-xs leading-relaxed">
+                  Choisissez un outil IA (comme Codex) dans la configuration pour activer l'assistant.
+                </p>
+              </div>
+              <Link
+                href="/config"
+                onClick={() => setOpen(false)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-xs font-medium text-brand-foreground hover:bg-brand-200 transition-colors"
+              >
+                Ouvrir la Configuration →
+              </Link>
             </div>
-          )}
-          <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-            {messages.map((m, i) => {
-              const hasVisible = m.parts.some((p) => (p.type === "text" && p.text.trim()) || p.type !== "text");
-              const isLast = i === messages.length - 1;
-              return (
-                <div
-                  key={i}
-                  ref={i === latestReplyIndex ? latestReplyRef : undefined}
-                  role={m.role === "assistant" ? "group" : undefined}
-                  aria-label={m.role === "assistant" ? (i === latestReplyIndex ? "Latest assistant reply" : "Assistant reply") : undefined}
-                  tabIndex={m.role === "assistant" ? -1 : undefined}
-                  className={cn("flex rounded focus-visible:outline-2 focus-visible:outline-brand", m.role === "user" ? "justify-end" : "justify-start")}
-                >
-                  <div
-                    className={cn(
-                      "max-w-[88%] rounded-2xl px-3.5 py-2 text-sm",
-                      m.role === "user" ? "bg-brand text-brand-foreground" : "w-full bg-surface-hover text-foreground",
-                    )}
-                  >
-                    {m.role === "user" ? (
-                      msgText(m)
-                    ) : !hasVisible && busy && isLast ? (
-                      <Loader2 className="size-4 animate-spin text-muted" />
-                    ) : (
-                      <div className="space-y-2">
-                        {m.parts.map((p, j) => (
-                          <PartView key={j} part={p} jobs={jobs} onConfirm={resolveConfirm} onOpen={() => {}} />
-                        ))}
+          ) : cliId === "codex" && cliAuthenticated === null ? (
+            <div className="flex-1 flex items-center justify-center text-xs text-muted gap-2">
+              <Loader2 className="size-4 animate-spin text-brand" /> Vérification de la connexion…
+            </div>
+          ) : cliId === "codex" && cliAuthenticated === false ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <div className="w-full max-w-sm space-y-4">
+                <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  <Sparkles className="size-6" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">Connexion à Codex requise</h2>
+                  <p className="mt-1 text-xs text-muted leading-relaxed">
+                    Pour discuter avec votre assistant et analyser vos offres, votre compte OpenAI doit être connecté.
+                  </p>
+                </div>
+                <CliAuthCard
+                  cliId="codex"
+                  cliName="Codex"
+                  onSuccess={() => {
+                    setCliAuthenticated(true);
+                    window.location.reload();
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex gap-2 border-b border-border px-4 py-2">
+                <select aria-label="Historique des discussions" className="min-w-0 flex-1 bg-surface text-sm" value={chats.some(c => c.id === activeChat.current.id) ? activeChat.current.id : ""} disabled={busy || chatPending || !chatReady} onChange={e => void selectChat(e.target.value || undefined)}>
+                  <option value="">Nouvelle discussion</option>
+                  {chats.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                </select>
+                <button className="text-xs text-muted disabled:opacity-40" disabled={busy || chatPending || !activeChat.current.revision} onClick={() => void renameChat()}>Renommer</button>
+                <button className="text-xs text-muted disabled:opacity-40" disabled={busy || chatPending || !activeChat.current.revision} onClick={() => void removeChat()}>Supprimer</button>
+              </div>
+              {chatWarnings.map(warning => <div key={warning.id} role="alert" className="px-4 py-2 text-sm text-amber-600">{warning.error}. Les autres conversations restent accessibles.</div>)}
+              {saveError && <div role="alert" className="space-y-2 px-4 py-2 text-sm text-amber-600">
+                <p>{saveError}</p>
+                {chatReady ? <div className="flex flex-wrap gap-3">
+                  <button className="underline" disabled={busy || chatPending} onClick={() => void flushChat().catch(() => {})}>Réessayer la sauvegarde</button>
+                  <button className="underline" disabled={busy || chatPending} onClick={exportChat}>Exporter la conversation</button>
+                  <button className="underline" disabled={busy || chatPending} onClick={() => void discardAndStartChat()}>Ignorer et démarrer un nouveau chat</button>
+                </div> : <button className="underline" onClick={() => window.location.reload()}>Recharger</button>}
+              </div>}
+              <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+                {messages.map((m, i) => {
+                  const hasVisible = m.parts.some((p) => (p.type === "text" && p.text.trim()) || p.type !== "text");
+                  const isLast = i === messages.length - 1;
+                  return (
+                    <div
+                      key={i}
+                      ref={i === latestReplyIndex ? latestReplyRef : undefined}
+                      role={m.role === "assistant" ? "group" : undefined}
+                      aria-label={m.role === "assistant" ? (i === latestReplyIndex ? "Latest assistant reply" : "Assistant reply") : undefined}
+                      tabIndex={m.role === "assistant" ? -1 : undefined}
+                      className={cn("flex rounded focus-visible:outline-2 focus-visible:outline-brand", m.role === "user" ? "justify-end" : "justify-start")}
+                    >
+                      <div
+                        className={cn(
+                          "max-w-[88%] rounded-2xl px-3.5 py-2 text-sm",
+                          m.role === "user" ? "bg-brand text-brand-foreground" : "w-full bg-surface-hover text-foreground",
+                        )}
+                      >
+                        {m.role === "user" ? (
+                          msgText(m)
+                        ) : !hasVisible && busy && isLast ? (
+                          <Loader2 className="size-4 animate-spin text-muted" />
+                        ) : (
+                          <div className="space-y-2">
+                            {m.parts.map((p, j) => (
+                              <PartView key={j} part={p} jobs={jobs} onConfirm={resolveConfirm} onOpen={() => {}} />
+                            ))}
+                          </div>
+                        )}
                       </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* proactive suggestion chips — onboarding + offer-driven next steps */}
+              {cliId && !busy && suggestions.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 px-3 pb-1 pt-0.5">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => send(s.send)}
+                      className="inline-flex items-center gap-1 rounded-full border border-border bg-surface/60 px-2.5 py-1 text-xs text-muted transition-colors hover:border-brand/40 hover:bg-brand-soft hover:text-brand"
+                    >
+                      <Sparkles className="size-3 text-brand/70" />
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="border-t border-border p-3">
+                <label htmlFor={inputId} className="sr-only">Message à l'assistant</label>
+                <p id={inputHelpId} className="sr-only">Entrée envoie votre message. Maj+Entrée ajoute une ligne.</p>
+                <div className="flex items-end gap-2">
+                  <textarea
+                    id={inputId}
+                    aria-describedby={inputHelpId}
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+                        e.preventDefault();
+                        send();
+                      }
+                    }}
+                    placeholder={cliId ? "Posez une question…" : "Configurez un outil IA d'abord"}
+                    rows={1}
+                    disabled={!cliId}
+                    style={{ maxHeight: INPUT_MAX_PX[size] }}
+                    className="flex-1 resize-none rounded-xl border border-border bg-surface/60 px-3 py-2 text-sm outline-none transition-colors placeholder:text-faint focus:border-brand/50 disabled:opacity-50"
+                  />
+                  <button
+                    onClick={(e) => {
+                      if (document.activeElement === e.currentTarget) inputRef.current?.focus();
+                      void send();
+                    }}
+                    disabled={busy || chatPending || !chatReady || !input.trim() || !cliId}
+                    className="rounded-xl bg-brand p-2 text-brand-foreground transition-colors hover:bg-brand-200 disabled:opacity-40"
+                    aria-label="Envoyer"
+                  >
+                    {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                  </button>
+                </div>
+                <div className="mt-2 space-y-1 text-xs">
+                  {feedbackText && <p id={feedbackId} className="text-muted">{feedbackText}</p>}
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
+                    {!busy && latestReply?.parts.some((p) => p.type !== "text" || p.text.trim()) && (
+                      <button type="button" aria-describedby={feedbackText ? feedbackId : undefined} onClick={() => {
+                        latestReplyRef.current?.focus({ preventScroll: true });
+                        latestReplyRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
+                      }} className="text-brand-text underline">
+                        {requestFeedback?.phase === "error" ? "Voir l'erreur" : "Lire la dernière réponse"}
+                      </button>
+                    )}
+                    {pendingConfirmations > 0 && (
+                      <button type="button" onClick={() => scrollRef.current?.querySelector<HTMLElement>('[data-assistant-confirmation="pending"]')?.focus()} className="text-brand-text underline">
+                        Voir les actions en attente
+                      </button>
                     )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-
-          {/* proactive suggestion chips — onboarding + offer-driven next steps */}
-          {cliId && !busy && suggestions.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 px-3 pb-1 pt-0.5">
-              {suggestions.map((s, i) => (
-                <button
-                  key={i}
-                  onClick={() => send(s.send)}
-                  className="inline-flex items-center gap-1 rounded-full border border-border bg-surface/60 px-2.5 py-1 text-xs text-muted transition-colors hover:border-brand/40 hover:bg-brand-soft hover:text-brand"
-                >
-                  <Sparkles className="size-3 text-brand/70" />
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {!cliId && (
-            <Link
-              href="/config"
-              onClick={() => setOpen(false)}
-              className="mx-4 mb-2 flex items-center gap-2 rounded-lg border border-border bg-surface/50 px-3 py-2 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
-            >
-              <Settings className="size-3.5" /> Choisissez un outil IA dans Configuration pour activer l'assistant →
-            </Link>
-          )}
-
-          <div className="border-t border-border p-3">
-            <label htmlFor={inputId} className="sr-only">Message à l'assistant</label>
-            <p id={inputHelpId} className="sr-only">Entrée envoie votre message. Maj+Entrée ajoute une ligne.</p>
-            <div className="flex items-end gap-2">
-              <textarea
-                id={inputId}
-                aria-describedby={inputHelpId}
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) {
-                    e.preventDefault();
-                    send();
-                  }
-                }}
-                placeholder={cliId ? "Posez une question…" : "Configurez un outil IA d'abord"}
-                rows={1}
-                disabled={!cliId}
-                style={{ maxHeight: INPUT_MAX_PX[size] }}
-                className="flex-1 resize-none rounded-xl border border-border bg-surface/60 px-3 py-2 text-sm outline-none transition-colors placeholder:text-faint focus:border-brand/50 disabled:opacity-50"
-              />
-              <button
-                onClick={(e) => {
-                  if (document.activeElement === e.currentTarget) inputRef.current?.focus();
-                  void send();
-                }}
-                disabled={busy || chatPending || !chatReady || !input.trim() || !cliId}
-                className="rounded-xl bg-brand p-2 text-brand-foreground transition-colors hover:bg-brand-200 disabled:opacity-40"
-                aria-label="Envoyer"
-              >
-                {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-              </button>
-            </div>
-            <div className="mt-2 space-y-1 text-xs">
-              {feedbackText && <p id={feedbackId} className="text-muted">{feedbackText}</p>}
-              <div className="flex flex-wrap gap-x-3 gap-y-1">
-                {!busy && latestReply?.parts.some((p) => p.type !== "text" || p.text.trim()) && (
-                  <button type="button" aria-describedby={feedbackText ? feedbackId : undefined} onClick={() => {
-                    latestReplyRef.current?.focus({ preventScroll: true });
-                    latestReplyRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
-                  }} className="text-brand-text underline">
-                    {requestFeedback?.phase === "error" ? "Voir l'erreur" : "Lire la dernière réponse"}
-                  </button>
-                )}
-                {pendingConfirmations > 0 && (
-                  <button type="button" onClick={() => scrollRef.current?.querySelector<HTMLElement>('[data-assistant-confirmation="pending"]')?.focus()} className="text-brand-text underline">
-                    Voir les actions en attente
-                  </button>
-                )}
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       )}
     </>
@@ -1028,7 +1117,7 @@ function PartView({
     if (!job)
       return (
         <Link href={`/jobs/${part.jobId}`} className="block rounded-xl border border-border bg-surface/40 p-2.5 text-xs text-faint hover:text-foreground">
-          Worker finished earlier — open log →
+          Tâche terminée plus tôt — ouvrir le journal →
         </Link>
       );
     return (
@@ -1036,7 +1125,7 @@ function PartView({
         job={job}
         variant="inline"
         trailing={
-          <Link href={`/jobs/${job.id}`} className="text-faint transition-colors hover:text-brand" aria-label="Open worker">
+          <Link href={`/jobs/${job.id}`} className="text-faint transition-colors hover:text-brand" aria-label="Ouvrir la tâche">
             <ArrowUpRight className="size-3.5" />
           </Link>
         }
@@ -1050,9 +1139,9 @@ function PartView({
       <div className="rounded-xl border border-border bg-surface/40 p-2.5">
         <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium">
           <Sparkles className="size-3.5 text-brand" />
-          {part.jobIds.length} evaluations
+          {part.jobIds.length} évaluations
           <span className="ml-auto tabular-nums text-faint">
-            {done}/{part.jobIds.length} done
+            {done}/{part.jobIds.length} terminées
           </span>
         </div>
         <div className="space-y-1.5">
@@ -1062,7 +1151,7 @@ function PartView({
               job={j!}
               variant="inline"
               trailing={
-                <Link href={`/jobs/${j!.id}`} className="text-faint transition-colors hover:text-brand" aria-label="Open worker">
+                <Link href={`/jobs/${j!.id}`} className="text-faint transition-colors hover:text-brand" aria-label="Ouvrir la tâche">
                   <ArrowUpRight className="size-3.5" />
                 </Link>
               }

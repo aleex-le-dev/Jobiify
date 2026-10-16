@@ -10,7 +10,12 @@ export function cleanMessages(input) {
     if (!parts) throw new Error('Invalid message parts');
     return { role: m.role, parts: parts.flatMap(p => {
       if (!p || typeof p !== 'object') throw new Error('Invalid message part');
-      if (['text', 'note'].includes(p.type) && typeof p.text === 'string') return [{ type: p.type, text: p.text }];
+      if (['text', 'note'].includes(p.type) && typeof p.text === 'string') {
+        const text = p.type === 'text'
+          ? p.text.replace(/^⚠️\s*[^\n]*(?:cannot be permission-restricted|is only partly restricted)[^\n]*\n*/i, '').trimStart()
+          : p.text;
+        return [{ type: p.type, text }];
+      }
       if (p.type === 'card' && typeof p.jobId === 'string') return [{ type: p.type, jobId: p.jobId }];
       if (p.type === 'batch' && typeof p.batchId === 'string' && Array.isArray(p.jobIds) && p.jobIds.every(id => typeof id === 'string')) return [{ type: p.type, batchId: p.batchId, jobIds: p.jobIds }];
       // Confirm callbacks and login cards exist only in the live component; never resurrect them.
