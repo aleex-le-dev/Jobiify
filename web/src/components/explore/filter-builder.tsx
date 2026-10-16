@@ -194,7 +194,7 @@ export function FilterBuilder({
                 type="button"
                 onClick={() => set({ sinceDays: r.days })}
                 className={cn(
-                  "rounded-md px-2.5 py-1 text-xs font-medium transition-colors max-sm:min-h-[44px]",
+                  "rounded-md px-2.5 py-1 text-xs font-medium transition-colors max-sm:min-h-11",
                   filters.sinceDays === r.days ? "bg-brand-soft text-brand" : "text-muted hover:text-foreground",
                 )}
               >
@@ -217,7 +217,7 @@ export function FilterBuilder({
                   type="button"
                   onClick={() => toggleAts(a)}
                   className={cn(
-                    "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors max-sm:min-h-[44px]",
+                    "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors max-sm:min-h-11",
                     on ? "border-brand/40 bg-brand-soft text-brand" : "border-border text-muted hover:text-foreground",
                   )}
                 >
@@ -232,7 +232,7 @@ export function FilterBuilder({
       <button
         type="button"
         onClick={() => setAdvanced((v) => !v)}
-        className="inline-flex items-center gap-1.5 text-[12px] text-muted hover:text-foreground transition-colors max-sm:min-h-[44px]"
+        className="inline-flex items-center gap-1.5 text-[12px] text-muted hover:text-foreground transition-colors max-sm:min-h-11"
       >
         <SlidersHorizontal className="size-3.5" />
         {isFr ? "Filtres géographiques avancés & profondeur de scan" : "More location controls & scan depth"}

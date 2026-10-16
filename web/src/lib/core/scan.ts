@@ -376,9 +376,9 @@ function runScanner(
 import { loadServicePublicDiscoveredOffers } from "./service-public";
 import { loadWttjDiscoveredOffers } from "./wttj";
 import { loadFranceTravailDiscoveredOffers } from "./france-travail";
-import { loadAdzunaDiscoveredOffers } from "./adzuna";
 import { loadJoobleDiscoveredOffers } from "./jooble";
 import { loadLaBonneBoiteDiscoveredOffers } from "./la-bonne-boite";
+import { loadSireneDiscoveredOffers } from "./sirene-it";
 
 function matchesKeyword(text: string, kw: string): boolean {
   return text.toLowerCase().includes(kw.toLowerCase().trim());
@@ -482,20 +482,7 @@ async function scanLocalPortals(
     console.error("Erreur lors de la récupération de France Travail:", err);
   }
 
-  // 5. Adzuna (agrégateur Indeed, Meteojob, HelloWork si configuré dans .env)
-  try {
-    const adzOffers = await loadAdzunaDiscoveredOffers(filters, roleTargets);
-    for (const adzOffer of adzOffers) {
-      if (sink.seen.has(adzOffer.url)) continue;
-      sink.seen.add(adzOffer.url);
-      sink.offers.push(adzOffer);
-      onEvent({ kind: "offer", offer: adzOffer });
-    }
-  } catch (err) {
-    console.error("Erreur lors de la récupération d'Adzuna:", err);
-  }
-
-  // 6. Jooble (offres de PME et petits cabinets si JOOBLE_API_KEY dans .env)
+  // 5. Jooble (offres de PME et petits cabinets si JOOBLE_API_KEY dans .env)
   try {
     const joobleOffers = await loadJoobleDiscoveredOffers(filters, roleTargets);
     for (const jOffer of joobleOffers) {
@@ -519,6 +506,19 @@ async function scanLocalPortals(
     }
   } catch (err) {
     console.error("Erreur lors de la récupération de La Bonne Boîte:", err);
+  }
+
+  // 8. Répertoire SIRENE (INSEE : cartographie de toutes les PME / TPE IT du 62)
+  try {
+    const sireneOffers = await loadSireneDiscoveredOffers(filters);
+    for (const sOffer of sireneOffers) {
+      if (sink.seen.has(sOffer.url)) continue;
+      sink.seen.add(sOffer.url);
+      sink.offers.push(sOffer);
+      onEvent({ kind: "offer", offer: sOffer });
+    }
+  } catch (err) {
+    console.error("Erreur lors de la récupération du répertoire SIRENE:", err);
   }
 
   onEvent({ kind: "atsDone", ats: "portals", unreachable: 0 });
@@ -624,6 +624,7 @@ export async function runDiscovery(filters: ExploreFilters, onEvent: (e: ScanEve
     onEvent({
       kind: "summary",
       ...merged,
+      datasetStatus: merged.datasetStatus as Record<string, "ok" | "stale" | "empty">,
       companiesScanned: merged.companiesScanned + localCount,
       companiesAvailable: (merged.companiesAvailable ?? 0) + localCount,
       ...(incomplete.length ? { incomplete } : {}),

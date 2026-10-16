@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { careerOpsRoot, rootScript } from "@/lib/career-ops";
+import { getApisStatus } from "@/lib/core/api-status";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -121,7 +122,7 @@ export async function GET() {
     );
   });
   if (error) {
-    return Response.json({ available: false, configured: false, companies: [], error });
+    return Response.json({ available: false, configured: false, companies: [], apis: getApisStatus(), error });
   }
 
   const companies: { name: string; status: "live" | "empty" | "broken" | "skipped"; detail: string }[] = [];
@@ -179,5 +180,5 @@ export async function GET() {
     await Promise.all(probeTasks);
   }
 
-  return Response.json({ available: true, configured: true, companies });
+  return Response.json({ available: true, configured: true, companies, apis: getApisStatus() });
 }

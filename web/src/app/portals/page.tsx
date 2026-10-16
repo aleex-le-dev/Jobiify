@@ -16,11 +16,14 @@ function readWatched(): { watched: WatchedCompany[]; error: string | null } {
   }
 }
 
+import { getApisStatus } from "@/lib/core/api-status";
+
 export default function PortalsPage() {
   const { watched, error } = readWatched();
+  const apis = getApisStatus();
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
-      <PortalsView watched={watched} initialError={error} />
+      <PortalsView watched={watched} initialApis={apis} initialError={error} />
     </div>
   );
 }

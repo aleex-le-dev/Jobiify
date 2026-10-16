@@ -48,7 +48,7 @@ export async function fetchAndCacheJoobleJobs(): Promise<JoobleRawJob[]> {
     const allJobs = new Map<string, JoobleRawJob>();
 
     for (const kw of keywords) {
-      const url = `https://fr.jooble.org/api/${encodeURIComponent(apiKey)}`;
+      const url = `https://jooble.org/api/${encodeURIComponent(apiKey)}`;
       const res = await fetch(url, {
         method: "POST",
         headers: {
@@ -57,7 +57,7 @@ export async function fetchAndCacheJoobleJobs(): Promise<JoobleRawJob[]> {
         },
         body: JSON.stringify({
           keywords: kw,
-          location: "Pas-de-Calais",
+          location: "Pas-de-Calais, France",
           page: 1,
         }),
       });
