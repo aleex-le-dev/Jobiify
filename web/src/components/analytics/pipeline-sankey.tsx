@@ -1,3 +1,5 @@
+"use client";
+
 import { buildPipelineSankey, layoutSankey } from "@/lib/pipeline-sankey.mjs";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/components/i18n-provider";
