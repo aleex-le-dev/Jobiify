@@ -426,9 +426,7 @@ async function scanLocalPortals(
     const spOffers = await loadServicePublicDiscoveredOffers(filters, roleTargets);
     for (const spOffer of spOffers) {
       if (sink.seen.has(spOffer.url)) continue;
-      // Pour les filtres ultra-courts (24h ou 3j), filtrer strictement la date.
-      // Dès 7 jours, 14 jours, 30 jours ou Toutes, conserver tous les postes ouverts de la fonction publique territoriale.
-      if (filters.sinceDays && filters.sinceDays <= 3 && spOffer.postedAt && !isOfferWithinSinceDays(spOffer.postedAt, filters.sinceDays)) continue;
+      if (filters.sinceDays && spOffer.postedAt && !isOfferWithinSinceDays(spOffer.postedAt, filters.sinceDays)) continue;
       sink.seen.add(spOffer.url);
       sink.offers.push(spOffer);
       onEvent({ kind: "offer", offer: spOffer });
@@ -470,7 +468,7 @@ async function scanLocalPortals(
     const joobleOffers = await loadJoobleDiscoveredOffers(filters, roleTargets);
     for (const jOffer of joobleOffers) {
       if (sink.seen.has(jOffer.url)) continue;
-      if (filters.sinceDays && filters.sinceDays <= 3 && jOffer.postedAt && !isOfferWithinSinceDays(jOffer.postedAt, filters.sinceDays)) continue;
+      if (filters.sinceDays && jOffer.postedAt && !isOfferWithinSinceDays(jOffer.postedAt, filters.sinceDays)) continue;
       sink.seen.add(jOffer.url);
       sink.offers.push(jOffer);
       onEvent({ kind: "offer", offer: jOffer });
@@ -488,7 +486,7 @@ async function scanLocalPortals(
     const effectiveDate = job.postedAt || scanDates.get(job.url) || "";
     // N'inclure que les offres ayant une date de publication réelle
     if (!effectiveDate) continue;
-    if (filters.sinceDays && filters.sinceDays <= 3 && !isOfferWithinSinceDays(effectiveDate, filters.sinceDays)) continue;
+    if (filters.sinceDays && !isOfferWithinSinceDays(effectiveDate, filters.sinceDays)) continue;
     const titleMatch = matchesTitle(job.role, filters.positive, filters.negative);
     const locMatch = matchesLocation(job.location || "", filters.allow, filters.block, filters.blockHard);
     if (!titleMatch || !locMatch) continue;

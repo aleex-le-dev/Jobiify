@@ -25,9 +25,40 @@ function normalizeUrl(ref: string): string {
   return `https://choisirleservicepublic.gouv.fr/offre-emploi/${encodeURIComponent(ref)}/`;
 }
 
+function isDateFutureOrToday(dateStr: string): boolean {
+  if (!dateStr) return false;
+  const parts = dateStr.split("/");
+  if (parts.length !== 3) return false;
+  const day = Number(parts[0]);
+  const month = Number(parts[1]) - 1;
+  const year = Number(parts[2]);
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return false;
+  const end = new Date(year, month, day, 23, 59, 59);
+  return end.getTime() >= Date.now();
+}
+
+async function isUrlActive(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+    });
+    if (res.status === 404 || res.status === 410) return false;
+    if (res.url.includes("/offre-depubliee")) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchAndCacheServicePublicJobs(): Promise<RawSpJob[]> {
   const cacheDir = path.join(careerOpsRoot(), "data", "cache");
   const cacheFile = path.join(cacheDir, "service-public-62.json");
+  const localCsv = path.join(cacheDir, "offres-sp.csv");
 
   try {
     if (fs.existsSync(cacheFile)) {
@@ -35,7 +66,7 @@ export async function fetchAndCacheServicePublicJobs(): Promise<RawSpJob[]> {
       if (Date.now() - stat.mtimeMs < CACHE_TTL_MS) {
         const raw = fs.readFileSync(cacheFile, "utf8");
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed as RawSpJob[];
         }
       }
@@ -45,23 +76,35 @@ export async function fetchAndCacheServicePublicJobs(): Promise<RawSpJob[]> {
   }
 
   try {
-    // 1. Récupérer l'URL de la dernière ressource CSV Choisir le Service Public
-    const dsRes = await fetch("https://www.data.gouv.fr/api/1/datasets/6322e99e12175f7eb26ff465/");
-    if (!dsRes.ok) return [];
-    const dsData = (await dsRes.json()) as { resources?: Array<{ format?: string; url?: string; title?: string }> };
-    const csvResource = dsData.resources?.find(
-      (r) => r.format?.toLowerCase() === "csv" && r.title?.includes("offres-datagouv-"),
-    );
-    const csvUrl = csvResource?.url;
-    if (!csvUrl) return [];
+    let csvText = "";
+    if (fs.existsSync(localCsv) && Date.now() - fs.statSync(localCsv).mtimeMs < CACHE_TTL_MS) {
+      csvText = fs.readFileSync(localCsv, "utf8");
+    } else {
+      // 1. Récupérer l'URL de la dernière ressource CSV Choisir le Service Public
+      const dsRes = await fetch("https://www.data.gouv.fr/api/1/datasets/6322e99e12175f7eb26ff465/");
+      if (!dsRes.ok) return [];
+      const dsData = (await dsRes.json()) as { resources?: Array<{ format?: string; url?: string; title?: string }> };
+      const csvResource = dsData.resources?.find(
+        (r) => r.format?.toLowerCase() === "csv" && r.title?.includes("offres-datagouv-"),
+      );
+      const csvUrl = csvResource?.url;
+      if (!csvUrl) return [];
 
-    // 2. Télécharger le CSV
-    const csvRes = await fetch(csvUrl);
-    if (!csvRes.ok) return [];
-    const csvText = await csvRes.text();
+      // 2. Télécharger le CSV
+      const csvRes = await fetch(csvUrl);
+      if (!csvRes.ok) return [];
+      csvText = await csvRes.text();
+      if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+      try {
+        fs.writeFileSync(localCsv, csvText, "utf8");
+      } catch {
+        /* ignore local csv write error */
+      }
+    }
+
     const lines = csvText.split("\n");
+    const candidates: RawSpJob[] = [];
 
-    const jobs: RawSpJob[] = [];
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
       if (!line) continue;
@@ -101,6 +144,10 @@ export async function fetchAndCacheServicePublicJobs(): Promise<RawSpJob[]> {
           lower.includes("data")
         ) {
           const cols = line.split(";");
+          const dateFin = cleanText(cols[14]);
+          // Rejeter d'office les offres dont la date de fin de publication est échue
+          if (!isDateFutureOrToday(dateFin)) continue;
+
           const ref = cleanText(cols[1]);
           const title = cleanText(cols[7]);
           const employer = cleanText(cols[19] || cols[0]);
@@ -110,9 +157,25 @@ export async function fetchAndCacheServicePublicJobs(): Promise<RawSpJob[]> {
           const date = cleanText(cols[13] || cols[15]);
 
           if (ref && title) {
-            jobs.push({ ref, title, employer, location, lieu, lieuSansGeo, date });
+            candidates.push({ ref, title, employer, location, lieu, lieuSansGeo, date });
           }
         }
+      }
+    }
+
+    // Tester la liveness en direct pour chaque candidat : éliminer toute offre dépubliée ou 404
+    const jobs: RawSpJob[] = [];
+    const checks = await Promise.all(
+      candidates.map(async (cand) => {
+        const url = normalizeUrl(cand.ref);
+        const live = await isUrlActive(url);
+        return { cand, live };
+      }),
+    );
+
+    for (const { cand, live } of checks) {
+      if (live) {
+        jobs.push(cand);
       }
     }
 
