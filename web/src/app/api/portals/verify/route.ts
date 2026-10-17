@@ -21,6 +21,23 @@ const STATUS: Record<string, "live" | "empty" | "broken" | "skipped"> = {
 
 async function probeUrl(url: string): Promise<{ ok: boolean; status?: number; error?: string }> {
   try {
+    // 1. Essai avec fetch natif (supporte TLS moderne, HTTP/2, et ciphers récents)
+    try {
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+        signal: AbortSignal.timeout(7000),
+      });
+      const code = res.status;
+      if (code >= 200 && code < 400) {
+        return { ok: true, status: code };
+      }
+    } catch {}
+
+    // 2. Fallback avec node:https (autorise certificats non signés rejectUnauthorized: false)
     const https = await import("node:https");
     const http = await import("node:http");
     const u = new URL(url);
