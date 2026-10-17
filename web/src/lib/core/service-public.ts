@@ -49,11 +49,16 @@ async function isUrlActive(url: string): Promise<boolean> {
     });
     if (res.status === 404 || res.status === 410) return false;
     if (res.url.includes("/offre-depubliee")) return false;
+    const text = await res.text();
+    if (/offre[- ]d[eé]publi[eé]e|cette offre n'est plus|offre expir[eé]e/i.test(text)) return false;
     return true;
   } catch {
     return false;
   }
 }
+
+const NON_IT_REGEX =
+  /\b(automobile|véhicule|vehicule|espaces?\s+verts?|ferme|cantine|voirie|enfance|puériculture|social|scolaire|médical|soignant|gestion administrative|entretien de locaux|repas|restauration|vrd|assainissement|bâtiments?|patrimoine|juridique|finances?)\b/i;
 
 export async function fetchAndCacheServicePublicJobs(): Promise<RawSpJob[]> {
   const cacheDir = path.join(careerOpsRoot(), "data", "cache");
@@ -150,6 +155,8 @@ export async function fetchAndCacheServicePublicJobs(): Promise<RawSpJob[]> {
 
           const ref = cleanText(cols[1]);
           const title = cleanText(cols[7]);
+          if (NON_IT_REGEX.test(title)) continue;
+
           const employer = cleanText(cols[19] || cols[0]);
           const location = cleanText(cols[8]);
           const lieu = cleanText(cols[9]);
@@ -204,8 +211,6 @@ function fitField(title: string, targets: string[]): { fit: { band: FitBand; sco
 function matchesKeyword(text: string, kw: string): boolean {
   return text.toLowerCase().includes(kw.toLowerCase().trim());
 }
-
-const NON_IT_REGEX = /\b(automobile|véhicule|vehicule|espaces?\s+verts?|ferme|cantine|voirie|enfance|puériculture|social|scolaire|médical|soignant)\b/i;
 
 function matchesFilters(
   title: string,

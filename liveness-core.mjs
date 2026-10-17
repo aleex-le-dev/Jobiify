@@ -75,8 +75,9 @@ const HARD_EXPIRED_PATTERNS = [
   /\boferta cerrada el \d{1,2}\/\d{1,2}\/\d{4}/i,
   // French closure banners. Spelled accent-free on purpose: normalizeForMatch
   // strips diacritics, so "expiree" here matches "expirée" on the page.
-  /offre (expiree|n'est plus disponible)/i,
+  /offre (expiree|n'est plus disponible|depubliee)/i,
   /(cette )?offre n'est plus (disponible|en ligne|active)/i,
+  /(cette )?offre a ete depubliee/i,
   /(offre|poste|annonce) (deja )?pourvu(e)?/i,
   /offre (cloturee|desactivee|terminee)/i,
   /ce poste n'est plus (disponible|a pourvoir|ouvert)/i,
@@ -135,6 +136,7 @@ export const BOT_CHALLENGE_PATTERNS = [
 
 const EXPIRED_URL_PATTERNS = [
   /[?&]error=true/i,
+  /\/offre-depubliee/i,
 ];
 
 const APPLY_PATTERNS = [
