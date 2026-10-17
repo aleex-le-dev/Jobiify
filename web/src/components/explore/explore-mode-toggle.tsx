@@ -5,6 +5,8 @@ import { cn } from "@/lib/cn";
 import { CostBadge } from "@/components/cost/cost-badge";
 import type { ExploreMode } from "@/lib/explore";
 
+import { useI18n } from "@/components/i18n-provider";
+
 // Cost honesty rendered at the POINT OF CHOICE: free deterministic Scan (default)
 // vs token-spending AI search. The AI segment stays selectable even with no CLI —
 // selecting it reveals the blocked state (more discoverable than a dead tab).
@@ -17,6 +19,9 @@ export function ExploreModeToggle({
   onChange: (m: ExploreMode) => void;
   cliConfigured: boolean;
 }) {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
+
   return (
     <div className="flex w-full rounded-xl border border-border bg-surface/40 p-1 sm:inline-flex sm:w-auto">
       <button
@@ -29,7 +34,7 @@ export function ExploreModeToggle({
         )}
       >
         <Compass className="size-4" />
-        <span className="font-medium">Scan</span>
+        <span className="font-medium">{isFr ? "Scan gratuit" : "Scan"}</span>
         <span className="hidden sm:inline-flex">
           <CostBadge kind="free-network" size="xs" />
         </span>
@@ -44,11 +49,11 @@ export function ExploreModeToggle({
         )}
       >
         <Sparkles className="size-4" />
-        <span className="font-medium">AI search</span>
+        <span className="font-medium">{isFr ? "Recherche IA" : "AI search"}</span>
         <span className="hidden sm:inline-flex">
           <CostBadge kind="spend" size="xs" />
         </span>
-        {!cliConfigured && <span className="text-[10px] text-faint">needs a CLI</span>}
+        {!cliConfigured && <span className="text-[10px] text-faint">{isFr ? "nécessite une CLI" : "needs a CLI"}</span>}
       </button>
     </div>
   );

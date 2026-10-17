@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { careerOpsRoot } from "@/lib/career-ops";
 import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
+import { formatLocationCity, normalizeDateToIso, toTitleCase } from "@/lib/format";
 import { titleFit } from "@/lib/title-fit.mjs";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 heures
@@ -12,6 +13,7 @@ interface RawSpJob {
   employer: string;
   location: string;
   lieu: string;
+  lieuSansGeo?: string;
   date: string;
 }
 
@@ -104,10 +106,11 @@ export async function fetchAndCacheServicePublicJobs(): Promise<RawSpJob[]> {
           const employer = cleanText(cols[19] || cols[0]);
           const location = cleanText(cols[8]);
           const lieu = cleanText(cols[9]);
+          const lieuSansGeo = cleanText(cols[25]);
           const date = cleanText(cols[13] || cols[15]);
 
           if (ref && title) {
-            jobs.push({ ref, title, employer, location, lieu, date });
+            jobs.push({ ref, title, employer, location, lieu, lieuSansGeo, date });
           }
         }
       }
@@ -139,11 +142,14 @@ function matchesKeyword(text: string, kw: string): boolean {
   return text.toLowerCase().includes(kw.toLowerCase().trim());
 }
 
+const NON_IT_REGEX = /\b(automobile|véhicule|vehicule|espaces?\s+verts?|ferme|cantine|voirie|enfance|puériculture|social|scolaire|médical|soignant)\b/i;
+
 function matchesFilters(
   title: string,
   location: string,
   filters: ExploreFilters,
 ): boolean {
+  if (NON_IT_REGEX.test(title)) return false;
   if (filters.negative.some((n) => n && matchesKeyword(title, n))) return false;
   if (filters.positive.length > 0 && !filters.positive.some((p) => p && matchesKeyword(title, p))) return false;
 
@@ -155,6 +161,63 @@ function matchesFilters(
   return true;
 }
 
+function cleanSpTitleAndEmployer(
+  rawTitle: string,
+  rawEmployer: string,
+  cleanCity: string,
+  lieuSansGeo?: string,
+): { title: string; employer: string; cityOverride?: string } {
+  let title = rawTitle.trim();
+  let employer = (rawEmployer || "").trim();
+  let cityOverride: string | undefined = undefined;
+
+  // Pattern 1: Title ends with " - MAIRIE DE ..." or " - CONSEIL DEPARTEMENTAL..."
+  const dashMatch = title.match(
+    /^(.+?)\s+-\s+(MAIRIE\s+DE\s+.+|CONSEIL\s+DEPARTEMENTAL\s+.+|COMMUNAUTE\s+D['’]AGGLOMERATION\s+.+|SDIS\s+.+|CENTRE\s+DE\s+GESTION\s+.+|PREFECTURE\s+.+|CTE\s+DE\s+CMES\s+.+|SYNDICAT\s+.+)$/i,
+  );
+  if (dashMatch) {
+    title = dashMatch[1].trim();
+    employer = toTitleCase(dashMatch[2].trim());
+  }
+
+  // Pattern 2: Police Nationale titles: "CPN Béthune - Technicien..." or "DIPN ARRAS - Technicien..." or "DIPN - Antenne Coquelles..."
+  const policeMatch = title.match(
+    /^(?:CPN|DIPN)(?:\s*-\s*|\s+)(?:Antenne\s+)?([A-Za-zÀ-ÖØ-öø-ÿ\s-]+?)\s*-\s*(.+)$/i,
+  );
+  if (policeMatch) {
+    const rawTown = policeMatch[1].trim();
+    const town = toTitleCase(rawTown);
+    title = policeMatch[2].trim();
+    if (town && !/^(?:nord|police|nationale|pole|littoral|artois)$/i.test(town)) {
+      cityOverride = `${town} (62)`;
+    }
+  }
+
+  // Remove trailing gender markers from title: H/F, (H/F), F/H, (F/H)
+  title = title.replace(/\s*\(?[HF]\s*\/\s*[HF]\)?\s*$/i, "").trim();
+
+  // If employer is still generic "Communes"
+  if (/^communes?$/i.test(employer)) {
+    const effectiveCity = cityOverride || cleanCity;
+    const pureCity = effectiveCity.replace(/\s*\(\d+\)/, "").trim();
+    employer = pureCity ? `Mairie de ${toTitleCase(pureCity)}` : "Mairie";
+  } else if (/^structures? de coop[ée]ration.*$/i.test(employer)) {
+    employer = "Intercommunalité (62)";
+  } else if (/^conseils? d[ée]partementaux.*$/i.test(employer)) {
+    employer = "Conseil Départemental du Pas-de-Calais";
+  }
+
+  // Fallback: check lieuSansGeo if cityOverride is not set
+  if (!cityOverride && lieuSansGeo) {
+    const candidate = formatLocationCity(lieuSansGeo);
+    if (candidate && !/^pas-de-calais/i.test(candidate) && !/^dipn/i.test(candidate)) {
+      cityOverride = candidate;
+    }
+  }
+
+  return { title, employer: employer || "Service Public (62)", cityOverride };
+}
+
 export async function loadServicePublicDiscoveredOffers(
   filters: ExploreFilters,
   roleTargets: string[],
@@ -163,19 +226,39 @@ export async function loadServicePublicDiscoveredOffers(
   const offers: DiscoveredOffer[] = [];
 
   for (const job of rawJobs) {
-    const fullLoc = `${job.lieu ? job.lieu + " — " : ""}${job.location}`;
+    if (NON_IT_REGEX.test(job.title)) continue;
+
+    const fullLoc = `${job.lieu ? job.lieu + " — " : ""}${job.lieuSansGeo ? job.lieuSansGeo + " — " : ""}${job.location}`;
     if (!matchesFilters(job.title, fullLoc, filters)) continue;
 
+    const fitData = fitField(job.title, roleTargets);
+    // Exclude jobs that are classified as weak fit (e.g. non-matching roles)
+    if (fitData.fit && fitData.fit.band === "weak") continue;
+
+    const initialCity = formatLocationCity(job.lieu || job.lieuSansGeo || job.location) || job.location;
+    const isoDate = normalizeDateToIso(job.date) || job.date || new Date().toISOString().slice(0, 10);
+    const { title: cleanTitle, employer: cleanEmployer, cityOverride } = cleanSpTitleAndEmployer(
+      job.title,
+      job.employer,
+      initialCity,
+      job.lieuSansGeo,
+    );
+
+    let finalCity = cityOverride || (initialCity && !/^dipn/i.test(initialCity) ? initialCity : "Pas-de-Calais (62)");
+    if (finalCity && !finalCity.includes("(") && !/pas-de-calais/i.test(finalCity)) {
+      finalCity = `${finalCity} (62)`;
+    }
+
     offers.push({
-      company: job.employer || "Service Public (Pas-de-Calais)",
-      title: job.title,
-      location: job.lieu || job.location,
-      postedAt: job.date || new Date().toISOString().slice(0, 10),
+      company: cleanEmployer,
+      title: cleanTitle,
+      location: finalCity,
+      postedAt: isoDate,
       ats: "portals",
       source: "service-public-62",
       url: normalizeUrl(job.ref),
       matchedKeyword: firstMatch(job.title, filters.positive),
-      ...fitField(job.title, roleTargets),
+      ...fitData,
     });
   }
 

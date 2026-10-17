@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { careerOpsRoot } from "@/lib/career-ops";
 import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
+import { formatLocationCity, toTitleCase } from "@/lib/format";
 import { titleFit } from "@/lib/title-fit.mjs";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 heures
@@ -138,7 +139,8 @@ export async function loadLaBonneBoiteDiscoveredOffers(
   const offers: DiscoveredOffer[] = [];
 
   for (const c of companies) {
-    const loc = `${c.city || ""} (${c.postcode || "62"})`.trim();
+    const cityName = c.city ? toTitleCase(c.city) : "";
+    const loc = cityName ? `${cityName} (${c.postcode || "62"})` : formatLocationCity(c.address || `Pas-de-Calais (${c.postcode || "62"})`);
     if (!matchesLocation(loc, filters.allow, filters.block, filters.blockHard)) continue;
 
     const url = c.url || `https://labonneboite.francetravail.fr/entreprise/${c.siret}`;

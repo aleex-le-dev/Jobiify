@@ -18,11 +18,16 @@ export function QuickEvaluate() {
 
   function run() {
     const u = url.trim();
-    if (!/^https?:\/\//i.test(u)) {
-      setHint(isFr ? "Collez une URL d'offre valide (https://…)." : "Paste a full job-posting URL (https://…).");
+    if (!u) return;
+    const isUrl = /^https?:\/\//i.test(u);
+    if (!isUrl && u.length < 30) {
+      setHint(isFr ? "Collez une URL d'offre (https://…) ou le texte du descriptif de poste." : "Paste a full job URL (https://…) or the job description text.");
       return;
     }
-    startJob({ title: isFr ? "Évaluation · URL collée" : "Evaluate · pasted URL", subtitle: u, kind: "evaluate", input: u, page: "/" });
+    const title = isUrl
+      ? (isFr ? "Évaluation · URL collée" : "Evaluate · pasted URL")
+      : (isFr ? "Évaluation · Descriptif collé" : "Evaluate · pasted text");
+    startJob({ title, subtitle: isUrl ? u : (u.slice(0, 60) + "…"), kind: "evaluate", input: u, page: "/" });
     setUrl("");
     setHint(isFr ? "Évaluation lancée — suivez la progression dans le panneau Workers." : "Evaluating — watch it in the Workers tray.");
   }
@@ -40,7 +45,7 @@ export function QuickEvaluate() {
           onKeyDown={(e) => {
             if (e.key === "Enter") run();
           }}
-          placeholder={isFr ? "Collez une URL d'offre à évaluer..." : "Paste a job URL to evaluate…"}
+          placeholder={isFr ? "Collez une URL ou le descriptif complet d'une offre..." : "Paste a job URL or job description text to evaluate…"}
           className="min-w-0 flex-1 bg-transparent py-1.5 text-sm outline-none placeholder:text-faint"
         />
         <button

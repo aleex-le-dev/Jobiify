@@ -14,6 +14,27 @@ export const ATS_LABEL: Record<AtsSource, string> = {
   workday: "Workday",
 };
 
+/** Returns a precise, human-readable source label (e.g. "Service Public (62)", "France Travail") */
+export function offerSourceLabel(offer: DiscoveredOffer, isFr = true): string {
+  if (offer.source === "service-public-62") {
+    return isFr ? "Service Public (62)" : "Public Sector (62)";
+  }
+  if (offer.source === "sirene-pme-62") {
+    return isFr ? "PME Locale (SIRENE)" : "Local SME (SIRENE)";
+  }
+  if (offer.source === "france-travail") {
+    return "France Travail";
+  }
+  if (offer.source === "la-bonne-boite-pme") {
+    return "La Bonne Boîte";
+  }
+  if (offer.source?.startsWith("wttj")) {
+    return "Welcome to the Jungle";
+  }
+  const atsKey = (offer.ats || "").replace(/-full$/, "") as AtsSource;
+  return ATS_LABEL[atsKey] ?? offer.ats ?? (isFr ? "Portail local 62" : "Local Portal 62");
+}
+
 /** The full UI filter state. The keyword/location lists mirror scan.mjs's
  *  buildTitleFilter / buildLocationFilter semantics; sinceDays/ats/limitPerAts map
  *  to scan-ats-full.mjs's --since / --ats / --limit. */

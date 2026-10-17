@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ExternalLink, Plus, Check, Loader2, ShieldQuestion, Sparkles, Coins } from "lucide-react";
+import { ExternalLink, Plus, Check, Loader2, Coins, MapPin, Calendar } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { instrumentSerif } from "@/lib/fonts";
-import { ATS_LABEL, type AtsSource, type DiscoveredOffer } from "@/lib/explore";
+import type { DiscoveredOffer } from "@/lib/explore";
 import { useJobs } from "@/components/jobs/job-store";
 import { useExplore } from "./explore-provider";
+import { formatLocationCity, formatPublicationDate } from "@/lib/format";
 
 import { useI18n } from "@/components/i18n-provider";
 
@@ -63,8 +63,45 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
 
   const isAdded = added.has(offer.url) || inPipeline || working || doneEval;
   const isAdding = adding.has(offer.url);
-  const unverified = offer.verification === "unconfirmed";
   const fresh = freshness(offer.postedAt, isFr) || offer.postedHint || "";
+  const city = useMemo(() => formatLocationCity(offer.location), [offer.location]);
+  const pubInfo = useMemo(() => formatPublicationDate(offer.postedAt, isFr), [offer.postedAt, isFr]);
+  const displayTitle = useMemo(() => {
+    let t = (offer.title || "").trim();
+    // Enlever préfixes administratifs / police incluant villes composées (ex: CPN Berck-sur-Mer -, CPN Béthune -)
+    t = t.replace(/^(?:CPN|DIPN)\b[^-]*-\s*/i, "");
+    // Enlever les suffixes de collectivité/lieu en majuscules (ex: - MAIRIE DE COURRIERES, - COMMUNAUTE D'AGGLOMERATION...)
+    t = t.replace(
+      /\s+-\s+(?:MAIRIE\s+DE\s+|VILLE\s+DE\s+|COMMUNAUTE\s+D['’]AGGLOMERATION\s+|COMMUNAUTE\s+DE\s+COMMUNES\s+|CONSEIL\s+DEPARTEMENTAL\s+|CONSEIL\s+REGIONAL\s+|CENTRE\s+DE\s+GESTION\s+|SDIS\s+|PREFECTURE\s+|SYNDICAT\s+|CU\s+D['’]|CA\s+|SGC\s+|CDG\s+|EHPAD\s+|CH\s+|METROPOLE\s+).+$/i,
+      "",
+    );
+    t = t.replace(/\s+-\s+.*(?:MAIRIE|AGGLOMERATION|COMMUNAUTE|DEPARTEMENT|PREFECTURE|VILLE|LE TOUQUET|MONTREUIL).*$/i, "");
+    // Enlever les mentions de genre (H/F, F/H, (H/F), etc.)
+    t = t.replace(/\s*\(?[HF]\s*\/\s*[HF]\)?\s*$/i, "").trim();
+
+    // Si le titre restant était tout en majuscules, le passer en casse naturelle avec majuscule initiale
+    if (t.length > 3 && t === t.toUpperCase()) {
+      t = t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+    } else if (t.length > 0) {
+      t = t.charAt(0).toUpperCase() + t.slice(1);
+    }
+    return t;
+  }, [offer.title]);
+
+  const displayCompany = useMemo(() => {
+    const raw = (offer.company || "").trim();
+    if (/^communes?$/i.test(raw)) {
+      const pureCity = (city || "").replace(/\s*\(\d+\)/, "").trim();
+      return pureCity ? `Mairie de ${pureCity}` : "Mairie";
+    }
+    if (/^structures? de coop[ée]ration.*$/i.test(raw)) {
+      return "Intercommunalité (62)";
+    }
+    if (/^conseils? d[ée]partementaux.*$/i.test(raw)) {
+      return "Conseil Départemental du Pas-de-Calais";
+    }
+    return raw;
+  }, [offer.company, city]);
 
   const evaluate = () => {
     addToPipeline([offer]); // evaluating implies it's in the pipeline — record it
@@ -76,11 +113,21 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
       <div className="flex items-start gap-3">
         <Logo company={offer.company} />
         <a href={offer.url} target="_blank" rel="noopener noreferrer" className="block min-w-0 flex-1 max-sm:min-h-[44px]">
-          <h3 className={`${instrumentSerif.className} truncate text-[17px] leading-tight text-foreground transition-colors group-hover:text-brand`}>{offer.title}</h3>
-          <p className="mt-0.5 truncate text-[13px] text-muted">
-            {offer.company}
-            {offer.location && <span className="text-faint"> · {offer.location}</span>}
+          <h3 className="text-[14px] sm:text-[14.5px] font-semibold leading-snug break-words text-foreground transition-colors group-hover:text-brand">
+            {displayTitle}
+          </h3>
+          <p className="mt-1 text-[12.5px] font-normal leading-snug break-words text-foreground/80" title={displayCompany}>
+            {displayCompany}
           </p>
+          {city && (
+            <p
+              className="mt-0.5 flex items-start gap-1.5 text-[11.5px] leading-snug text-muted break-words"
+              title={offer.location && offer.location !== city ? offer.location : undefined}
+            >
+              <MapPin className="mt-0.5 size-3 shrink-0 text-brand" />
+              <span className="break-words">{city}</span>
+            </p>
+          )}
         </a>
         <a
           href={offer.url}
@@ -94,43 +141,21 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
         </a>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-        <span className="rounded border border-border px-1.5 py-0.5 font-medium text-muted">{ATS_LABEL[offer.ats as AtsSource] ?? offer.ats}</span>
-        {fresh && <span className="text-faint">{fresh}</span>}
-        {unverified && (
+      {pubInfo.label ? (
+        <div className="flex items-center gap-1.5 text-[11.5px]">
           <span
-            className="inline-flex items-center gap-1 rounded border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5 font-medium text-amber-600 dark:text-amber-300"
-            title={isFr ? "Trouvé par l'IA sur le web public — statut à vérifier. L'évaluation vérifie le lien en réel." : "Found by AI on the public web — we can't confirm it's still live without opening it. Evaluating runs a real browser check and sets the verdict."}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-hover/70 px-2 py-0.5 font-medium text-foreground/85"
+            title={pubInfo.formattedDate ? (isFr ? `Date de publication : ${pubInfo.formattedDate}` : `Publication date: ${pubInfo.formattedDate}`) : undefined}
           >
-            <ShieldQuestion className="size-3" /> {isFr ? "non vérifié" : "unverified"}
+            <Calendar className="size-3 text-brand shrink-0" />
+            {pubInfo.label}
           </span>
-        )}
-        {offer.matchedKeyword && (
-          <span className="text-faint" title={isFr ? "Correspondance de mot-clé — pas encore noté A-F." : "Keyword match — not yet scored. Evaluate to get an A–F fit score."}>
-            · {isFr ? "mot-clé" : "matched"} <span className="text-brand/80">{offer.matchedKeyword}</span>
-          </span>
-        )}
-        {offer.fit && (
-          <span
-            className={cn(
-              "rounded border px-1 py-0.5 text-[11px] font-medium",
-              offer.fit.band === "strong"
-                ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                : "text-faint",
-            )}
-            title={isFr ? "Estimation par mots-clés : titre du poste vs votre profil." : "Free keyword-level estimate: posting title vs your profile's target roles (config/profile.yml). Not an evaluation — Evaluate still gives the real A–F fit score."}
-          >
-            · {offer.fit.band === "strong" ? (isFr ? "très pertinent" : "strong fit") : `${offer.fit.band} fit`}
-          </span>
-        )}
-      </div>
-
-      {offer.why && (
-        <p className="flex items-start gap-1.5 text-[12px] leading-snug text-brand/80">
-          <Sparkles className="mt-0.5 size-3 shrink-0" />
-          {offer.why}
-        </p>
-      )}
+        </div>
+      ) : fresh ? (
+        <div className="flex items-center gap-1.5 text-[11.5px]">
+          <span className="text-faint">{fresh}</span>
+        </div>
+      ) : null}
 
       <div className="mt-0.5">
         {evaluatedN || doneEval ? (
@@ -144,7 +169,7 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
           <div className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-brand/30 bg-brand-soft/60 px-2.5 py-2 text-xs font-medium text-brand">
             <Loader2 className="size-3.5 animate-spin" />
             {statusLabel}
-            <span className="text-brand/60">· {isFr ? "au pipeline" : "in pipeline"}</span>
+            <span className="text-brand/60">· {isFr ? "dans ma sélection" : "in selection"}</span>
           </div>
         ) : (
           <div className="flex items-center gap-2">
@@ -158,12 +183,12 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
               )}
             >
               {isAdding ? <Loader2 className="size-3.5 animate-spin" /> : isAdded ? <Check className="size-3.5" /> : <Plus className="size-3.5" />}
-              {isAdded ? (isFr ? "Au pipeline" : "In pipeline") : (isFr ? "Ajouter au pipeline" : "Add to pipeline")}
+              {isAdded ? (isFr ? "Dans ma sélection" : "In selection") : (isFr ? "Ajouter à ma sélection" : "Add to selection")}
             </button>
             <button
               type="button"
               onClick={evaluate}
-              title={unverified ? (isFr ? "Lance une vraie évaluation et vérifie le lien. Utilise des tokens." : "Runs a real evaluation — and verifies the posting is live. Uses tokens.") : (isFr ? "Lance une vraie évaluation A-F. Utilise des tokens." : "Runs a real A–F evaluation. Uses tokens.")}
+              title={isFr ? "Lance une évaluation complète A-F." : "Runs an A–F evaluation."}
               className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-brand/30 px-2.5 py-2 text-xs font-medium text-brand transition-colors hover:bg-brand-soft max-sm:min-h-[44px]"
             >
               {isFr ? "Évaluer" : "Evaluate"} <Coins className="size-3.5 opacity-80" />

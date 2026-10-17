@@ -28,7 +28,7 @@ const SORT_KEYS = ["tracker", "company", "role", "score", "status", "date"] as c
 type SortKey = (typeof SORT_KEYS)[number];
 
 const TAB_LABELS_FR: Record<string, string> = {
-  INBOX: "À trier",
+  INBOX: "Ma sélection",
   ALL: "Tous",
   EVALUATED: "Évalués",
   APPLIED: "Candidatés",
@@ -182,9 +182,9 @@ export function PipelineView({
     <PageFrame>
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl tracking-tight text-landing">{isFr ? "Candidatures & Pipeline" : "Pipeline"}</h1>
+          <h1 className="font-display text-2xl tracking-tight text-landing">{isFr ? "Candidatures & Ma sélection" : "Pipeline"}</h1>
           <p className="mt-1 text-sm text-muted">
-            <span className="tabular-nums">{inboxCount}</span> {isFr ? "dans la boîte d'entrée" : "in inbox"} ·{" "}
+            <span className="tabular-nums">{inboxCount}</span> {isFr ? "dans ma sélection" : "in inbox"} ·{" "}
             <span className="tabular-nums">{visibleApplications.length}</span> {isFr ? "suivies" : "tracked"}
           </p>
         </div>

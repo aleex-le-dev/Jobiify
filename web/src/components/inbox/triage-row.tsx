@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bookmark, BookmarkCheck, Loader2, X } from "lucide-react";
+import { Bookmark, BookmarkCheck, Loader2, X, MapPin } from "lucide-react";
 import type { InboxJob } from "@/lib/career-ops";
 import type { AtsSource } from "@/lib/explore";
 import { ATS_LABEL } from "@/lib/explore";
@@ -11,6 +11,7 @@ import { CompanyLogo } from "@/components/company-logo";
 import { cn } from "@/lib/cn";
 import { inboxScoreTarget } from "@/lib/inbox-score-target.mjs";
 import { useI18n } from "@/components/i18n-provider";
+import { formatLocationCity } from "@/lib/format";
 
 export type RowScore = { score: number | null; tone: "good" | "warn" | "bad" | "muted"; jobId: string; running: boolean; reportN?: number | null };
 
@@ -93,7 +94,15 @@ export function TriageRow({
           )}
         </p>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-faint">
-          {job.location && <span className="truncate">{job.location}</span>}
+          {job.location && (
+            <span
+              className="inline-flex items-center gap-0.5 truncate"
+              title={job.location !== formatLocationCity(job.location) ? job.location : undefined}
+            >
+              <MapPin className="size-2.5 text-brand shrink-0" />
+              {formatLocationCity(job.location)}
+            </span>
+          )}
           {source && <span className="rounded bg-surface-hover px-1 py-px font-medium text-muted">{ATS_LABEL[source]}</span>}
           {ago && <span>{ago}</span>}
           {/* 🔴 CRUDA: honest "not scored" — no fabricated match%. */}

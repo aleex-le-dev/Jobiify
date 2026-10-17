@@ -62,7 +62,7 @@ export function getApisStatus(): ApiInfo[] {
   // 5. Jooble
   const hasJooble = Boolean(env.JOOBLE_API_KEY?.trim());
 
-  return [
+  const list: ApiInfo[] = [
     {
       id: "service-public",
       name: "Choisir le Service Public & Emploi Territorial",
@@ -141,4 +141,6 @@ export function getApisStatus(): ApiInfo[] {
       free: true,
     },
   ];
+
+  return list.sort((a, b) => a.name.localeCompare(b.name, "fr", { sensitivity: "base" }));
 }

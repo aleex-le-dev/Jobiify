@@ -25,6 +25,7 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import { CODEX_REQUIRED_EXEC_FLAGS, CODEX_REQUIRED_GLOBAL_FLAGS } from "./cli-fencing.mjs";
+import { prepareCliLaunch } from "./cli-launch.mjs";
 
 /**
  * The stat fields that together say "this is still the same executable".
@@ -82,7 +83,8 @@ function readCliHelp(binPath, args) {
     const appendBounded = (current, chunk) => (current + chunk.toString()).slice(-HELP_CAPTURE_BYTES);
 
     // NO_COLOR so flag names are matched as written, not around ANSI escapes.
-    const child = spawn(binPath, args, { env: { ...process.env, NO_COLOR: "1" } });
+    const launch = prepareCliLaunch(binPath, args);
+    const child = spawn(launch.command, launch.args, { env: { ...process.env, NO_COLOR: "1" }, windowsHide: true });
     child.stdin?.end();
 
     child.stdout.on("data", (chunk) => {

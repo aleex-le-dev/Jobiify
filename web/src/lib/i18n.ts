@@ -14,7 +14,7 @@ export const DICTIONARY: Record<Locale, Record<string, string>> = {
     nav_today: "Aujourd'hui",
     nav_explore: "Explorer",
     nav_scheduled_scans: "Scans planifiés",
-    nav_pipeline: "Candidatures",
+    nav_pipeline: "Ma sélection",
     nav_followups: "Relances",
     nav_portals: "Portails",
     nav_analytics: "Statistiques",
@@ -60,8 +60,8 @@ export const DICTIONARY: Record<Locale, Record<string, string>> = {
     cv_ready: "CV adapté disponible",
 
     // Pipeline
-    pipeline_title: "Suivi des candidatures",
-    pipeline_subtitle: "Visualisez et pilotez votre entonnoir de recherche",
+    pipeline_title: "Candidatures & Ma sélection",
+    pipeline_subtitle: "Visualisez vos offres sélectionnées et pilotez vos candidatures",
     search_placeholder: "Rechercher par entreprise, poste, mot-clé...",
     filter_all: "Toutes les étapes",
     col_company: "Entreprise",

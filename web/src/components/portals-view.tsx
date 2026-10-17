@@ -84,7 +84,13 @@ export function PortalsView({
   const companies = res?.companies ?? [];
   const broken = companies.filter((c) => c.status === "broken");
   const liveN = companies.filter((c) => c.status === "live" || c.status === "empty").length;
-  const sorted = [...companies].sort((a, b) => (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9));
+  const sorted = useMemo(() => {
+    return [...companies].sort((a, b) => {
+      const orderDiff = (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9);
+      if (orderDiff !== 0) return orderDiff;
+      return a.name.localeCompare(b.name, "fr", { sensitivity: "base" });
+    });
+  }, [companies]);
 
   return (
     <div className="space-y-8">
@@ -245,6 +251,9 @@ export function PortalsView({
 function ApisSection({ apis, onRefresh }: { apis: ApiInfo[]; onRefresh: () => void }) {
   const [configuringApi, setConfiguringApi] = useState<ApiInfo | null>(null);
   const activeCount = apis.filter((a) => a.status === "live" || a.status === "configured").length;
+  const sortedApis = useMemo(() => {
+    return [...apis].sort((a, b) => a.name.localeCompare(b.name, "fr", { sensitivity: "base" }));
+  }, [apis]);
 
   return (
     <div>
@@ -267,7 +276,7 @@ function ApisSection({ apis, onRefresh }: { apis: ApiInfo[]; onRefresh: () => vo
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {apis.map((api) => {
+        {sortedApis.map((api) => {
           const t = TONE[api.status] ?? TONE.unconfigured;
           const hasConfigAction = Boolean(api.envKeys || api.id === "la-bonne-boite");
 
@@ -367,16 +376,19 @@ function FixAffordance({ company, job, onFix }: { company: string; job?: Job; on
 }
 
 function WatchedList({ watched }: { watched: WatchedCompany[] }) {
-  const scanned = watched.filter((c) => c.enabled).length;
+  const sortedWatched = useMemo(() => {
+    return [...watched].sort((a, b) => a.name.localeCompare(b.name, "fr", { sensitivity: "base" }));
+  }, [watched]);
+  const scanned = sortedWatched.filter((c) => c.enabled).length;
   return (
     <div className="mt-4">
       <p className="text-sm text-muted mb-3">
         <span className="tabular-nums text-foreground">{scanned}</span> scannées ·{" "}
-        <span className="tabular-nums">{watched.length - scanned}</span> en pause ·{" "}
+        <span className="tabular-nums">{sortedWatched.length - scanned}</span> en pause ·{" "}
         lancez une vérification pour voir quels portails répondent
       </p>
       <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface/40">
-        {watched.map((c, i) => (
+        {sortedWatched.map((c, i) => (
           <li key={`${i}-${c.name}`} className={cn("flex items-center gap-3 px-4 py-2.5", !c.enabled && "opacity-60")}>
             <CompanyLogo name={c.name} size={20} />
             <span className="shrink-0 text-sm font-medium">{c.name}</span>

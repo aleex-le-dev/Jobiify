@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { careerOpsRoot } from "@/lib/career-ops";
 import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
+import { formatLocationCity, toTitleCase } from "@/lib/format";
 
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours de cache
 
@@ -16,6 +17,7 @@ interface SireneCompany {
     adresse?: string;
     code_postal?: string;
     commune?: string;
+    libelle_commune?: string;
   };
 }
 
@@ -115,8 +117,8 @@ export async function loadSireneDiscoveredOffers(
 
   for (const c of companies) {
     const cp = c.siege?.code_postal || "62";
-    const commune = c.siege?.commune || "Pas-de-Calais";
-    const loc = `${commune} (${cp})`.trim();
+    const communeName = c.siege?.libelle_commune ? toTitleCase(c.siege.libelle_commune) : "";
+    const loc = communeName ? `${communeName} (${cp})` : formatLocationCity(c.siege?.adresse || `${c.siege?.commune || "Pas-de-Calais"} (${cp})`);
 
     if (!matchesLocation(loc, filters.allow, filters.block, filters.blockHard)) continue;
 

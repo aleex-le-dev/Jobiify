@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { careerOpsRoot } from "@/lib/career-ops";
 import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
+import { formatLocationCity, normalizeDateToIso } from "@/lib/format";
 import { titleFit } from "@/lib/title-fit.mjs";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 heures
@@ -177,11 +178,15 @@ export async function loadFranceTravailDiscoveredOffers(
     const directUrl = `https://candidat.francetravail.fr/offres/recherche/detail/${encodeURIComponent(job.id)}`;
     const finalUrl = partnerUrl || originUrl || directUrl;
 
+    const cleanCity = formatLocationCity(loc) || loc;
+    const rawDate = (job.dateActualisation || job.dateCreation || "").slice(0, 10);
+    const postedAt = normalizeDateToIso(rawDate) || rawDate || new Date().toISOString().slice(0, 10);
+
     offers.push({
       company: job.entreprise?.nom || "France Travail (Employeur confidentiel)",
       title: job.intitule,
-      location: loc,
-      postedAt: (job.dateActualisation || job.dateCreation || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
+      location: cleanCity,
+      postedAt,
       ats: "portals",
       source: "france-travail",
       url: finalUrl,

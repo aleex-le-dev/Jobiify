@@ -4,10 +4,18 @@ import { useRef } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { CostBadge } from "@/components/cost/cost-badge";
 
-const EXAMPLES = [
+import { useI18n } from "@/components/i18n-provider";
+
+const EXAMPLES_EN = [
   "AI infra roles at climate startups, remote EU",
   "Forward-deployed engineer at Series A devtools, US-remote",
   "Head of Applied AI at healthtech, posted this week",
+];
+
+const EXAMPLES_FR = [
+  "Technicien informatique réseaux, Pas-de-Calais ou présentiel",
+  "Support informatique proximité, secteur Béthune ou Arras",
+  "Administrateur systèmes et réseaux junior, CDI Hauts-de-France",
 ];
 
 // The "magic" natural-language box: a soft contained halo at rest that intensifies
@@ -38,6 +46,10 @@ export function AiSearchBox({
   cliName?: string;
   onRunScan: () => void;
 }) {
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
+  const examples = isFr ? EXAMPLES_FR : EXAMPLES_EN;
+
   const ref = useRef<HTMLTextAreaElement>(null);
   const grow = () => {
     const t = ref.current;
@@ -52,7 +64,10 @@ export function AiSearchBox({
       <style>{STYLE}</style>
       <div className="co-aibox p-4">
         <div className="mb-2 flex items-center gap-2 text-[12px] font-medium text-brand">
-          <Sparkles className="size-3.5" /> Describe the role — an AI hunts the open web for it
+          <Sparkles className="size-3.5" />{" "}
+          {isFr
+            ? "Décrivez le poste recherché — l'IA explore le web public pour vous"
+            : "Describe the role — an AI hunts the open web for it"}
         </div>
         <textarea
           ref={ref}
@@ -68,14 +83,26 @@ export function AiSearchBox({
               if (intent.trim()) onSubmit();
             }
           }}
-          placeholder="“AI infra at climate startups, remote EU, not staff-level” — plain language, your words"
+          placeholder={
+            isFr
+              ? "« Technicien informatique de proximité ou réseaux dans le Pas-de-Calais » — en langage naturel, avec vos propres mots"
+              : "“AI infra at climate startups, remote EU, not staff-level” — plain language, your words"
+          }
         />
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <span className="text-[12px] text-muted">
             {cliConfigured ? (
-              <>
-                Reads the public web with <span className="text-foreground">{cliName || "your CLI"}</span> — it costs your tokens.
-              </>
+              isFr ? (
+                <>
+                  Explore le web public avec <span className="text-foreground">{cliName || "votre CLI"}</span> — consomme vos jetons d'IA.
+                </>
+              ) : (
+                <>
+                  Reads the public web with <span className="text-foreground">{cliName || "your CLI"}</span> — it costs your tokens.
+                </>
+              )
+            ) : isFr ? (
+              "Connectez une CLI d'IA dans la Configuration pour utiliser la recherche IA."
             ) : (
               "Connect an AI CLI in Config to use AI search."
             )}
@@ -86,7 +113,7 @@ export function AiSearchBox({
             onClick={onSubmit}
             className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground shadow-sm transition hover:brightness-110 disabled:opacity-50"
           >
-            Search the open web
+            {isFr ? "Explorer le web public" : "Search the open web"}
             <CostBadge kind="spend" size="xs" />
             <ArrowRight className="size-4" />
           </button>
@@ -94,7 +121,7 @@ export function AiSearchBox({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {EXAMPLES.map((ex) => (
+        {examples.map((ex) => (
           <button
             key={ex}
             type="button"
@@ -105,7 +132,7 @@ export function AiSearchBox({
           </button>
         ))}
         <button type="button" onClick={onRunScan} className="ml-auto inline-flex items-center gap-1 text-[12px] text-faint transition hover:text-foreground">
-          or run the free Scan instead →
+          {isFr ? "ou lancer le Scan gratuit à la place →" : "or run the free Scan instead →"}
         </button>
       </div>
     </div>
