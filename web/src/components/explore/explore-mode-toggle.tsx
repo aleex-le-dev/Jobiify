@@ -34,10 +34,7 @@ export function ExploreModeToggle({
         )}
       >
         <Compass className="size-4" />
-        <span className="font-medium">{isFr ? "Scan gratuit" : "Scan"}</span>
-        <span className="hidden sm:inline-flex">
-          <CostBadge kind="free-network" size="xs" />
-        </span>
+        <span className="font-medium">{isFr ? "Scan des portails" : "Scan"}</span>
       </button>
       <button
         type="button"

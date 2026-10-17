@@ -8,6 +8,7 @@ const {
   normalizeDateToIso,
   formatLocationCity,
   formatPublicationDate,
+  isOfferWithinSinceDays,
 } = await import("../../src/lib/format.ts");
 
 describe("toTitleCase", () => {
@@ -99,4 +100,71 @@ describe("formatPublicationDate", () => {
     const res = formatPublicationDate("hier", true);
     assert.equal(res.label, "Publié hier");
   });
+
+  it("includes publication time for offers published today only when time is explicitly present, omitting the date", () => {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, "0");
+    const m = String(now.getMinutes()).padStart(2, "0");
+    const expectedTime = `${h}:${m}`;
+
+    const res = formatPublicationDate(now.toISOString(), true);
+    assert.equal(res.time, expectedTime);
+    assert.equal(res.label, `Publié aujourd'hui à ${expectedTime}`);
+  });
+
+  it("does not invent time when postedAt only has the date YYYY-MM-DD for today", () => {
+    const now = new Date();
+    const todayYmd = now.toISOString().slice(0, 10);
+
+    const res = formatPublicationDate(todayYmd, true);
+    assert.equal(res.time, undefined);
+    assert.equal(res.label, "Publié aujourd'hui");
+  });
+
+  it("returns empty object for missing, empty or null date", () => {
+    assert.deepEqual(formatPublicationDate("", true), {});
+    assert.deepEqual(formatPublicationDate(null, true), {});
+  });
 });
+
+describe("isOfferWithinSinceDays", () => {
+  it("accepts offers published within sinceDays window", () => {
+    const now = new Date();
+    assert.equal(isOfferWithinSinceDays(now.toISOString(), 3), true);
+    assert.equal(isOfferWithinSinceDays(now.toISOString().slice(0, 10), 3), true);
+
+    const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString();
+    assert.equal(isOfferWithinSinceDays(twoDaysAgo, 3), true);
+  });
+
+  it("rejects offers older than sinceDays window", () => {
+    const fourDaysAgo = new Date(Date.now() - 4 * 86_400_000).toISOString();
+    assert.equal(isOfferWithinSinceDays(fourDaysAgo, 3), false);
+
+    const oldDate = "2025-01-01";
+    assert.equal(isOfferWithinSinceDays(oldDate, 7), false);
+  });
+
+  it("handles French DD/MM/YYYY date strings properly", () => {
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, "0");
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const year = today.getFullYear();
+    const todayFr = `${day}/${month}/${year}`;
+
+    assert.equal(isOfferWithinSinceDays(todayFr, 1), true);
+    assert.equal(isOfferWithinSinceDays("01/01/2024", 30), false);
+  });
+
+  it("rejects empty or missing dates when a recency window is specified", () => {
+    assert.equal(isOfferWithinSinceDays("", 3), false);
+    assert.equal(isOfferWithinSinceDays(null, 7), false);
+    assert.equal(isOfferWithinSinceDays(undefined, 1), false);
+  });
+
+  it("accepts all when sinceDays is unset or 0", () => {
+    assert.equal(isOfferWithinSinceDays("", 0), true);
+    assert.equal(isOfferWithinSinceDays("2020-01-01", 0), true);
+  });
+});
+

@@ -299,7 +299,7 @@ export function TodayDashboard({
               <>
                 Rien ne requiert votre attention pour le moment. Lancez un{" "}
                 <Link href="/explore" className="text-brand hover:underline">
-                  scan gratuit
+                  scan des offres
                 </Link>{" "}
                 pour afficher les opportunités de la semaine, ou consultez vos{" "}
                 <Link href="/pipeline" className="text-brand hover:underline">
@@ -311,7 +311,7 @@ export function TodayDashboard({
               <>
                 Nothing needs you right now. Run a{" "}
                 <Link href="/explore" className="text-brand hover:underline">
-                  free scan
+                  scan
                 </Link>{" "}
                 to surface this week&apos;s roles, or check your{" "}
                 <Link href="/pipeline" className="text-brand hover:underline">

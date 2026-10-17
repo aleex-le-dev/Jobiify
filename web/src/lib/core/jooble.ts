@@ -126,7 +126,7 @@ export async function loadJoobleDiscoveredOffers(
       company: job.company || "Entreprise / PME (via Jooble)",
       title: job.title.replace(/<[^>]*>?/gm, ""), // Retirer d'éventuelles balises
       location: loc,
-      postedAt: (job.updated || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
+      postedAt: job.updated || "",
       ats: "portals",
       source: "jooble-pme",
       url: job.link,

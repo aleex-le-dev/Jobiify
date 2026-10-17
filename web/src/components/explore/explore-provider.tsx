@@ -67,11 +67,13 @@ type ExploreCtx = {
   scannerMissing: boolean;
   added: Set<string>;
   adding: Set<string>;
+  removed: Set<string>;
   discover: () => Promise<void>;
   /** Load the SUPPLY-loop offers Today's "Fresh matches this week" already
    *  fetched from /api/whats-new, straight into the results phase — no scan. */
   loadFresh: () => Promise<void>;
   addToPipeline: (offers: DiscoveredOffer[]) => Promise<number>;
+  removeFromPipeline: (urls: string[]) => Promise<number>;
   applyPatch: (raw: Record<string, unknown>, opts?: { merge?: boolean; run?: boolean }) => void;
   reset: () => void;
   // ── AI search (modes/discover.md) ──
@@ -145,6 +147,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
   const [scannerMissing, setScannerMissing] = useState(false);
   const [added, setAdded] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState<Set<string>>(new Set());
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [mode, setModeState] = useState<ExploreMode>("scan");
   const [aiIntent, setAiIntent] = useState("");
   const [aiTrace, setAiTrace] = useState<AiTraceChunk[]>([]);
@@ -214,7 +217,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
           break;
         }
         case "progress":
-          setMatchCount((m) => Math.max(m, ev.matches));
+          setMatchCount((m) => Math.max(m, acc.length, ev.matches));
           setSources((s) => ({ ...s, [ev.ats]: { ...s[ev.ats as AtsSource], state: "active", done: ev.scanned, total: ev.total } }));
           break;
         case "atsDone":
@@ -382,6 +385,11 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
     const fresh = list.filter((o) => !added.has(o.url));
     if (fresh.length === 0) return 0;
     setAdding((s) => new Set([...s, ...fresh.map((o) => o.url)]));
+    setRemoved((s) => {
+      const next = new Set(s);
+      for (const o of fresh) next.delete(o.url);
+      return next;
+    });
     try {
       const r = await fetch("/api/explore/add", {
         method: "POST",
@@ -411,6 +419,38 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }, [added, router]);
+
+  const removeFromPipeline = useCallback(async (urls: string[]) => {
+    if (urls.length === 0) return 0;
+    setAdding((s) => new Set([...s, ...urls]));
+    setRemoved((s) => new Set([...s, ...urls]));
+    setAdded((s) => {
+      const next = new Set(s);
+      for (const u of urls) next.delete(u);
+      return next;
+    });
+    try {
+      const r = await fetch("/api/explore/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urls }),
+      });
+      const d = (await r.json()) as { removed?: number };
+      router.refresh();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("co-job-done", { detail: { kind: "explore-remove" } }));
+      }
+      return d.removed ?? 0;
+    } catch {
+      return 0;
+    } finally {
+      setAdding((s) => {
+        const next = new Set(s);
+        for (const u of urls) next.delete(u);
+        return next;
+      });
+    }
+  }, [router]);
 
   const applyPatch = useCallback((raw: Record<string, unknown>, opts?: { merge?: boolean; run?: boolean }) => {
     const next = parseExplorePatch(raw, filtersRef.current, opts?.merge ?? false);
@@ -631,11 +671,11 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
     () => ({
       filters, setFilters, initFilters, phase,
       running: phase === "casting" || phase === "scanning" || phase === "revealing" || phase === "hunting",
-      offers, sources, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, status, partial, error, scannerMissing, added, adding,
-      discover, loadFresh, addToPipeline, applyPatch, reset,
+      offers, sources, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, status, partial, error, scannerMissing, added, adding, removed,
+      discover, loadFresh, addToPipeline, removeFromPipeline, applyPatch, reset,
       mode, setMode, aiIntent, setAiIntent, discoverAI, aiTrace, aiCost,
     }),
-    [filters, setFilters, initFilters, phase, offers, sources, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, status, partial, error, scannerMissing, added, adding, discover, loadFresh, addToPipeline, applyPatch, reset, mode, setMode, aiIntent, discoverAI, aiTrace, aiCost],
+    [filters, setFilters, initFilters, phase, offers, sources, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, status, partial, error, scannerMissing, added, adding, removed, discover, loadFresh, addToPipeline, removeFromPipeline, applyPatch, reset, mode, setMode, aiIntent, discoverAI, aiTrace, aiCost],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

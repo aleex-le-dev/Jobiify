@@ -236,7 +236,7 @@ export async function loadServicePublicDiscoveredOffers(
     if (fitData.fit && fitData.fit.band === "weak") continue;
 
     const initialCity = formatLocationCity(job.lieu || job.lieuSansGeo || job.location) || job.location;
-    const isoDate = normalizeDateToIso(job.date) || job.date || new Date().toISOString().slice(0, 10);
+    const isoDate = normalizeDateToIso(job.date) || "";
     const { title: cleanTitle, employer: cleanEmployer, cityOverride } = cleanSpTitleAndEmployer(
       job.title,
       job.employer,

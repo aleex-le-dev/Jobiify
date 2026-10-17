@@ -22,16 +22,18 @@ export type AddResult = { added: number; error?: string };
 export function addOffersToPipeline(offers: DiscoveredOffer[]): Promise<AddResult> {
   const clean = offers
     .filter((o) => o && typeof o.url === "string" && /^https?:\/\//i.test(o.url))
-    .map((o) => ({
-      url: o.url,
-      company: o.company || "",
-      title: o.title || "",
-      location: o.location || "",
-      source: o.source || o.ats || "explorer",
-      // Preserve the optional per-offer signal so it survives to pipeline.md.
-      // The core writer treats an empty note as absent (byte-identical output).
-      note: o.note || "",
-    }));
+    .map((o) => {
+      const parsedTime = o.postedAt ? Date.parse(o.postedAt) : NaN;
+      return {
+        url: o.url,
+        company: o.company || "",
+        title: o.title || "",
+        location: o.location || "",
+        source: o.source || o.ats || "explorer",
+        postedAt: Number.isFinite(parsedTime) && parsedTime > 0 ? parsedTime : undefined,
+        note: o.note || "",
+      };
+    });
   if (clean.length === 0) return Promise.resolve({ added: 0 });
 
   // Data-only / pre-scan-ats checkout has no scan.mjs writers → fail with an
@@ -51,9 +53,6 @@ process.stdin.on("data", (d) => { input += d; });
 process.stdin.on("end", async () => {
   try {
     const offers = JSON.parse(input);
-    // LOCAL calendar day, not the UTC one — west of Greenwich, an evening
-    // add would otherwise stamp scan-history.tsv's first_seen a day ahead,
-    // opening scan.mjs's recheck/cooldown gate a day late for this row (#3070).
     const date = localToday();
     await appendToPipeline(offers);
     await appendToScanHistory(offers, date, "added");
@@ -85,4 +84,55 @@ process.stdin.on("end", async () => {
     child.stdin.write(JSON.stringify(clean));
     child.stdin.end();
   });
+}
+
+export type RemoveResult = { removed: number; error?: string };
+
+export async function removeOffersFromPipeline(urls: string[]): Promise<RemoveResult> {
+  const cleanUrls = urls
+    .map((u) => (typeof u === "string" ? u.trim() : ""))
+    .filter((u) => /^https?:\/\//i.test(u));
+
+  if (cleanUrls.length === 0) return { removed: 0 };
+
+  const pipelinePath = path.join(careerOpsRoot(), "data", "pipeline.md");
+  if (!fs.existsSync(pipelinePath)) return { removed: 0 };
+
+  const lockModule = path.join(careerOpsRoot(), "pipeline-lock.mjs");
+
+  const run = () => {
+    let md = fs.readFileSync(pipelinePath, "utf8");
+    const nl = md.includes("\r\n") ? "\r\n" : "\n";
+    const lines = md.split(/\r?\n/);
+    let removed = 0;
+    const kept = lines.filter((line) => {
+      const isCheckbox = /^\s*-\s*\[([ xX])\]/.test(line);
+      if (!isCheckbox) return true;
+      const match = cleanUrls.some((u) => line.includes(u));
+      if (match) {
+        removed++;
+        return false;
+      }
+      return true;
+    });
+
+    if (removed > 0) {
+      fs.writeFileSync(pipelinePath, kept.join(nl), "utf8");
+    }
+    return { removed };
+  };
+
+  if (!fs.existsSync(lockModule)) {
+    return run();
+  }
+
+  try {
+    const mod = await import(pathToFileURL(lockModule).href);
+    if (typeof mod.withPipelineLock === "function") {
+      return await mod.withPipelineLock(pipelinePath, run, { timeoutMs: 5000, retryMs: 50 });
+    }
+  } catch {
+    /* fallback to plain run */
+  }
+  return run();
 }

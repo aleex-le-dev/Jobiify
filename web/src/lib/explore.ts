@@ -50,6 +50,26 @@ export type ExploreFilters = {
   limitPerAts: number;
 };
 
+export type RecencyOption = { label: string; days: number };
+
+export const RECENCY_FR: RecencyOption[] = [
+  { label: "24 h", days: 1 },
+  { label: "3 j", days: 3 },
+  { label: "7 j", days: 7 },
+  { label: "14 j", days: 14 },
+  { label: "30 j", days: 30 },
+  { label: "Toutes", days: 0 },
+];
+
+export const RECENCY_EN: RecencyOption[] = [
+  { label: "24h", days: 1 },
+  { label: "3d", days: 3 },
+  { label: "7d", days: 7 },
+  { label: "14d", days: 14 },
+  { label: "30d", days: 30 },
+  { label: "All", days: 0 },
+];
+
 export const DEFAULT_FILTERS: ExploreFilters = {
   positive: [],
   negative: [],
@@ -57,8 +77,8 @@ export const DEFAULT_FILTERS: ExploreFilters = {
   block: [],
   blockHard: [],
   alwaysAllow: [],
-  sinceDays: 7,
-  ats: ["portals"],
+  sinceDays: 0,
+  ats: [...ATS_SOURCES],
   limitPerAts: 150,
 };
 
@@ -71,7 +91,7 @@ export type DiscoveredOffer = {
   company: string;
   title: string;
   location: string;
-  /** YYYY-MM-DD, or "" when the engine reported n/a (AI offers always "") */
+  /** YYYY-MM-DD or full ISO timestamp, or "" when the engine reported n/a (AI offers always "") */
   postedAt: string;
   ats: string;
   source: string;
@@ -171,8 +191,8 @@ export function parseExplorePatch(
     const incoming = cleanChips(raw[key]);
     next[field] = (merge ? cleanChips([...(base[field] as string[]), ...incoming]) : incoming) as never;
   }
-  if (raw.since !== undefined) next.sinceDays = clampNum(raw.since, 1, 60, base.sinceDays);
-  if (raw.sinceDays !== undefined) next.sinceDays = clampNum(raw.sinceDays, 1, 60, base.sinceDays);
+  if (raw.since !== undefined) next.sinceDays = clampNum(raw.since, 0, 60, base.sinceDays);
+  if (raw.sinceDays !== undefined) next.sinceDays = clampNum(raw.sinceDays, 0, 60, base.sinceDays);
   if (raw.limit !== undefined) next.limitPerAts = clampNum(raw.limit, 50, 500, base.limitPerAts);
   if (raw.limitPerAts !== undefined) next.limitPerAts = clampNum(raw.limitPerAts, 50, 500, base.limitPerAts);
   if (raw.ats !== undefined) next.ats = cleanAts(raw.ats);

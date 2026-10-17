@@ -484,8 +484,8 @@ function InboxEmpty({ tracked }: { tracked: number }) {
         )}
         <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
           {isFr
-            ? "Découvrez des offres adaptées à votre profil — gratuit, aucun token dépensé."
-            : "Find roles that match your CV — free, no tokens spent."}
+            ? "Découvrez des offres adaptées à votre profil."
+            : "Find roles that match your CV."}
         </p>
         <Link
           href="/explore?run=1"
@@ -493,8 +493,8 @@ function InboxEmpty({ tracked }: { tracked: number }) {
         >
           <Compass className="size-4" />{" "}
           {tracked > 0
-            ? (isFr ? "Lancer un scan gratuit" : "Run a free scan")
-            : (isFr ? "Lancer votre premier scan gratuit" : "Run your first free scan")}{" "}
+            ? (isFr ? "Lancer un scan" : "Run a scan")
+            : (isFr ? "Lancer votre premier scan" : "Run your first scan")}{" "}
           <ArrowRight className="size-4" />
         </Link>
         <p className="mx-auto mt-4 max-w-sm text-xs text-muted">

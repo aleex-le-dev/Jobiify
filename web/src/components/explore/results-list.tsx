@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, Plus } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { Search, Plus, Coins } from "lucide-react";
 import type { DiscoveredOffer } from "@/lib/explore";
 import { useI18n } from "@/components/i18n-provider";
-import { CostBadge } from "@/components/cost/cost-badge";
+import { parseOfferTimestamp } from "@/lib/format";
 import { DiscoveryCard } from "./discovery-card";
 import { useExplore } from "./explore-provider";
 
@@ -13,46 +12,49 @@ export type EnrichedOffer = DiscoveredOffer & { inPipeline: boolean; evaluatedN?
 
 export function ResultsList({ offers }: { offers: EnrichedOffer[] }) {
   const { isFr } = useI18n();
-  const { companiesScanned, partial, error, addToPipeline, added, mode, running } = useExplore();
+  const { error, addToPipeline, added, removed, mode, running, filters } = useExplore();
   const isAi = mode === "ai";
-  const [sort, setSort] = useState<"fresh" | "company">("fresh");
   const [q, setQ] = useState("");
 
   const view = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    let list = offers;
-    if (needle) list = list.filter((o) => o.title.toLowerCase().includes(needle) || o.company.toLowerCase().includes(needle));
-    const sorted = [...list].sort((a, b) =>
-      sort === "fresh" ? (b.postedAt || "").localeCompare(a.postedAt || "") : a.company.localeCompare(b.company),
-    );
-    return sorted;
-  }, [offers, q, sort]);
+    // Ne conserver que les offres possédant une date de publication réelle
+    let list = offers.filter((o) => typeof o.postedAt === "string" && o.postedAt.trim().length > 0);
 
-  const addable = offers.filter((o) => !o.inPipeline && !o.evaluatedN && !added.has(o.url));
+    if (needle) {
+      list = list.filter((o) => o.title.toLowerCase().includes(needle) || o.company.toLowerCase().includes(needle));
+    }
+    // Toujours trier par défaut du plus récent au plus ancien
+    const sorted = [...list].sort((a, b) => {
+      const timeA = parseOfferTimestamp(a.postedAt);
+      const timeB = parseOfferTimestamp(b.postedAt);
+      if (timeA !== timeB) {
+        return timeB - timeA;
+      }
+      return a.title.localeCompare(b.title);
+    });
+    return sorted;
+  }, [offers, q, filters?.sinceDays, isAi]);
+
+  const addable = view.filter((o) => {
+    const inSel = (added.has(o.url) || o.inPipeline) && !removed?.has(o.url);
+    return !inSel && !o.evaluatedN;
+  });
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <div>
           <p className="text-sm text-foreground">
-            <span className="font-semibold">{offers.length}</span>{" "}
+            <span className="font-semibold">{view.length}</span>{" "}
             {isFr
-              ? isAi
-                ? `offre${offers.length > 1 ? "s" : ""} candidate${offers.length > 1 ? "s" : ""}`
-                : `offre${offers.length > 1 ? "s" : ""} récente${offers.length > 1 ? "s" : ""}`
-              : isAi
-                ? `candidate${offers.length === 1 ? "" : "s"}`
-                : `fresh role${offers.length === 1 ? "" : "s"}`}
-            <CostBadge kind={isAi ? "spend" : "free-network"} size="xs" className="ml-2 align-middle" />
-          </p>
-          <p className="text-[12px] text-faint">
-            {isAi
-              ? isFr
-                ? "trouvé par l'IA sur le web public · non vérifié avant évaluation"
-                : "found by AI on the open web · unverified until you evaluate"
-              : isFr
-                ? `${companiesScanned > 0 ? `${companiesScanned.toLocaleString()} entreprises scannées · ` : ""}0 jeton consommé${partial ? " · certaines sources étaient inaccessibles (normal pour les annuaires publics)" : ""}`
-                : `${companiesScanned > 0 ? `${companiesScanned.toLocaleString()} companies scanned · ` : ""}0 tokens spent${partial ? " · some boards were unreachable (normal for public directories)" : ""}`}
+              ? `offre${view.length > 1 ? "s" : ""} trouvée${view.length > 1 ? "s" : ""}`
+              : `role${view.length === 1 ? "" : "s"} found`}
+            {isAi && (
+              <span className="ml-2 inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                <Coins className="size-3" /> {isFr ? "Consomme des jetons IA" : "Uses AI tokens"}
+              </span>
+            )}
           </p>
           {!isAi && error && <p className="text-[12px] text-amber-700 dark:text-amber-300">{error}</p>}
         </div>
@@ -67,18 +69,7 @@ export function ResultsList({ offers }: { offers: EnrichedOffer[] }) {
               className="w-32 bg-transparent text-[13px] outline-none placeholder:text-faint"
             />
           </div>
-          <div className="inline-flex rounded-lg border border-border bg-surface/40 p-0.5 text-xs">
-            {(["fresh", "company"] as const).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setSort(s)}
-                className={cn("rounded-md px-2.5 py-1 font-medium capitalize transition-colors", sort === s ? "bg-brand-soft text-brand" : "text-muted hover:text-foreground")}
-              >
-                {isFr ? (s === "fresh" ? "Récents" : "Entreprise") : s}
-              </button>
-            ))}
-          </div>
+
           {addable.length > 1 && (
             <button
               type="button"

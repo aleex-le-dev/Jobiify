@@ -149,6 +149,62 @@ export function normalizeDateToIso(rawDate?: string | null): string {
   return "";
 }
 
+/** Parses any offer publication date format into a numeric millisecond timestamp for sorting. */
+export function parseOfferTimestamp(rawDate?: string | null): number {
+  if (!rawDate) return 0;
+  const s = String(rawDate).trim();
+  if (!s) return 0;
+
+  // 1. Direct ISO with time or epoch number
+  if (/^\d{13}$/.test(s)) return parseInt(s, 10);
+  if (/^\d{10}$/.test(s)) return parseInt(s, 10) * 1000;
+  if (/T\d{2}:\d{2}/.test(s) || /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/.test(s)) {
+    const parsed = Date.parse(s);
+    if (!isNaN(parsed)) return parsed;
+  }
+
+  // 2. Format français : DD/MM/YYYY avec heure optionnelle HH:mm[:ss]
+  const fr = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[\sT]+(\d{1,2})[:h](\d{2})(?::(\d{2}))?)?/);
+  if (fr) {
+    const day = parseInt(fr[1], 10);
+    const month = parseInt(fr[2], 10) - 1;
+    const year = parseInt(fr[3], 10);
+    const hours = fr[4] ? parseInt(fr[4], 10) : 0;
+    const minutes = fr[5] ? parseInt(fr[5], 10) : 0;
+    const seconds = fr[6] ? parseInt(fr[6], 10) : 0;
+    const t = new Date(year, month, day, hours, minutes, seconds).getTime();
+    if (!isNaN(t)) return t;
+  }
+
+  // 3. Format ISO partiel : YYYY-MM-DD
+  const iso = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (iso) {
+    const year = parseInt(iso[1], 10);
+    const month = parseInt(iso[2], 10) - 1;
+    const day = parseInt(iso[3], 10);
+    const t = Date.UTC(year, month, day);
+    if (!isNaN(t)) return t;
+  }
+
+  // 4. Date parse direct (RFC standard ou autre)
+  const parsed = Date.parse(s);
+  if (!isNaN(parsed)) return parsed;
+
+  // 5. Formats relatifs
+  if (/aujourd['’]hui|today/i.test(s)) return Date.now();
+  if (/hier|yesterday/i.test(s)) return Date.now() - 86_400_000;
+  const relDays = s.match(/(?:il y a\s+)?(\d+)\s*(?:j|jours?|d|days?)/i);
+  if (relDays) {
+    return Date.now() - parseInt(relDays[1], 10) * 86_400_000;
+  }
+  const relMonths = s.match(/(?:il y a\s+)?(\d+)\s*(?:mois|months?)/i);
+  if (relMonths) {
+    return Date.now() - parseInt(relMonths[1], 10) * 30 * 86_400_000;
+  }
+
+  return 0;
+}
+
 function isStreetPrefix(s: string): boolean {
   return /^(?:\d+\s+)?(?:rue|boulevard|bld|bd|avenue|av|chemin|route|all[ée]e|impasse|place|quai|residence|parc)\b/i.test(s.trim());
 }
@@ -223,24 +279,52 @@ export function formatLocationCity(raw?: string | null): string {
   return toTitleCase(s);
 }
 
-/** Formats publication date to a clean, readable localized label (date + relative age). */
+/** Formats publication date to a clean, readable localized label (date + relative age + optional time). */
 export function formatPublicationDate(
   rawDate?: string | null,
   isFr: boolean = true,
-): { formattedDate?: string; relativeAge?: string; label?: string } {
+): { formattedDate?: string; relativeAge?: string; label?: string; time?: string } {
   if (!rawDate) return {};
   const trimmed = String(rawDate).trim();
   if (!trimmed) return {};
 
   let d: Date | null = null;
-  const frMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  let hasTime = false;
+
+  // 1. Format français : DD/MM/YYYY avec heure optionnelle HH:mm
+  const frMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[\sT]+(\d{1,2})[:h](\d{2}))?/);
   if (frMatch) {
     const day = parseInt(frMatch[1], 10);
     const month = parseInt(frMatch[2], 10) - 1;
     const year = parseInt(frMatch[3], 10);
-    d = new Date(Date.UTC(year, month, day));
-  } else if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
-    d = new Date(trimmed.slice(0, 10) + "T00:00:00Z");
+    if (frMatch[4] && frMatch[5]) {
+      hasTime = true;
+      d = new Date(year, month, day, parseInt(frMatch[4], 10), parseInt(frMatch[5], 10));
+    } else {
+      d = new Date(Date.UTC(year, month, day));
+    }
+  } else {
+    // 2. Format ISO avec heure ou epoch
+    if (/^\d{10,13}$/.test(trimmed)) {
+      const ms = trimmed.length === 10 ? parseInt(trimmed, 10) * 1000 : parseInt(trimmed, 10);
+      d = new Date(ms);
+      hasTime = true;
+    } else if (/T\d{2}:\d{2}/.test(trimmed) || /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/.test(trimmed)) {
+      const parsed = Date.parse(trimmed);
+      if (!isNaN(parsed)) {
+        d = new Date(parsed);
+        hasTime = true;
+      }
+    } else if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+      // Date seule sans heure : ne pas inventer d'heure
+      d = new Date(trimmed.slice(0, 10) + "T00:00:00Z");
+      hasTime = false;
+    } else {
+      const parsed = Date.parse(trimmed);
+      if (!isNaN(parsed)) {
+        d = new Date(parsed);
+      }
+    }
   }
 
   if (!d || isNaN(d.getTime())) {
@@ -250,8 +334,21 @@ export function formatPublicationDate(
     };
   }
 
+  // Extraire l'heure UNIQUEMENT si la source a explicitement fourni une heure
+  let timeStr = "";
+  if (hasTime) {
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    timeStr = `${h}:${m}`;
+  }
+
   const now = Date.now();
-  const diffDays = Math.max(0, Math.round((now - d.getTime()) / 86_400_000));
+  // Comparaison par rapport au jour calendrier (minuit local)
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const targetDayStart = new Date(d);
+  targetDayStart.setHours(0, 0, 0, 0);
+  const diffDays = Math.max(0, Math.round((todayStart.getTime() - targetDayStart.getTime()) / 86_400_000));
 
   let relativeAge = "";
   if (isFr) {
@@ -264,15 +361,16 @@ export function formatPublicationDate(
     day: "numeric",
     month: "short",
     year: "numeric",
-    timeZone: "UTC",
   }).format(d);
 
   let label = "";
   if (isFr) {
     if (diffDays === 0) {
-      label = `Publié aujourd'hui (${formattedDate})`;
+      label = timeStr ? `Publié aujourd'hui à ${timeStr}` : `Publié aujourd'hui`;
     } else if (diffDays === 1) {
-      label = `Publié hier (${formattedDate})`;
+      label = timeStr
+        ? `Publié hier à ${timeStr} (${formattedDate})`
+        : `Publié hier (${formattedDate})`;
     } else if (diffDays <= 30) {
       label = `Publié le ${formattedDate} (${relativeAge})`;
     } else {
@@ -280,9 +378,11 @@ export function formatPublicationDate(
     }
   } else {
     if (diffDays === 0) {
-      label = `Posted today (${formattedDate})`;
+      label = timeStr ? `Posted today at ${timeStr}` : `Posted today`;
     } else if (diffDays === 1) {
-      label = `Posted yesterday (${formattedDate})`;
+      label = timeStr
+        ? `Posted yesterday at ${timeStr} (${formattedDate})`
+        : `Posted yesterday (${formattedDate})`;
     } else if (diffDays <= 30) {
       label = `Posted ${formattedDate} (${relativeAge})`;
     } else {
@@ -290,5 +390,24 @@ export function formatPublicationDate(
     }
   }
 
-  return { formattedDate, relativeAge, label };
+  return { formattedDate, relativeAge, label, time: timeStr || undefined };
+}
+
+/**
+ * Checks if an offer's publication date falls within sinceDays calendar days from today.
+ * If rawDate is missing or empty, returns false for recent filters,
+ * because undated entries (directories/SIRENE) must not pollute fresh job searches.
+ */
+export function isOfferWithinSinceDays(rawDate?: string | null, sinceDays?: number): boolean {
+  if (!sinceDays || sinceDays <= 0) return true;
+  if (!rawDate || !String(rawDate).trim()) return false;
+
+  const t = parseOfferTimestamp(rawDate);
+  if (!t || t <= 0) return false;
+
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  const cutoffMs = today.getTime() - sinceDays * 86_400_000;
+
+  return t >= cutoffMs;
 }

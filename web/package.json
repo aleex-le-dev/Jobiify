@@ -2,6 +2,7 @@
   "name": "@jobiify/web",
   "version": "0.15.0",
   "private": true,
+  "type": "module",
   "description": "Official web experience for Jobiify — local-first.",
   "scripts": {
     "dev": "node server.mjs dev",

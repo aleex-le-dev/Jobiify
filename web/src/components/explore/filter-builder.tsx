@@ -1,26 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { X, Ban, Clock, MapPin, ChevronDown, SlidersHorizontal } from "lucide-react";
+import { X, Ban, Clock, MapPin, Trash2, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { ATS_LABEL, ATS_SOURCES, cleanChips, type AtsSource, type ExploreFilters } from "@/lib/explore";
+import { cleanChips, RECENCY_FR, RECENCY_EN, type ExploreFilters } from "@/lib/explore";
 import { useI18n } from "@/components/i18n-provider";
-
-const RECENCY_EN = [
-  { label: "24h", days: 1 },
-  { label: "3d", days: 3 },
-  { label: "7d", days: 7 },
-  { label: "14d", days: 14 },
-  { label: "30d", days: 30 },
-];
-
-const RECENCY_FR = [
-  { label: "24 h", days: 1 },
-  { label: "3 j", days: 3 },
-  { label: "7 j", days: 7 },
-  { label: "14 j", days: 14 },
-  { label: "30 j", days: 30 },
-];
 
 const STYLE = `
 .co-fb__chip{display:inline-flex;align-items:center;gap:.3rem;border-radius:999px;padding:.2rem .5rem .2rem .6rem;font-size:12.5px;line-height:1.2;border:1px solid transparent}
@@ -101,11 +85,111 @@ function KeywordField({
   );
 }
 
-function Label({ children, hint }: { children: React.ReactNode; hint?: string }) {
+const PRESET_CATEGORIES = [
+  {
+    id: "web",
+    labelFr: "🌐 Dév Web",
+    labelEn: "🌐 Web Dev",
+    roles: [
+      "Développeur Web",
+      "Développeur Front",
+      "Développeur Frontend",
+      "Frontend Developer",
+      "Développeur Fullstack",
+      "Développeur Full Stack",
+      "Fullstack Developer",
+      "Développeur PHP",
+      "Développeur React",
+      "Développeur JavaScript",
+      "Intégrateur Web",
+      "UI/UX Designer",
+    ],
+  },
+  {
+    id: "support",
+    labelFr: "🖥️ Support IT & Proximité",
+    labelEn: "🖥️ IT Support",
+    roles: [
+      "Technicien Informatique",
+      "Technicien Support",
+      "Technicien Helpdesk",
+      "Support Informatique",
+      "Technicien de Proximité",
+      "Technicien de Maintenance Informatique",
+      "Technicien Poste de Travail",
+      "Technicien Déploiement",
+      "Technicien Bureautique",
+    ],
+  },
+  {
+    id: "systems",
+    labelFr: "🔌 Réseaux & Systèmes",
+    labelEn: "🔌 Systems & Networks",
+    roles: [
+      "Technicien Réseau",
+      "Technicien Systèmes et Réseaux",
+      "Administrateur Système",
+      "Gestionnaire de Parc Informatique",
+      "Technicien Parc Informatique",
+      "Technicien Télécoms",
+    ],
+  },
+  {
+    id: "erp",
+    labelFr: "📦 Support ERP / Logistique",
+    labelEn: "📦 ERP / Logistics Support",
+    roles: [
+      "Référent Informatique",
+      "Référent Digital",
+      "Support Applicatif",
+      "Gestionnaire de Parc",
+    ],
+  },
+];
+
+type FilterKey = "positive" | "negative" | "allow" | "alwaysAllow" | "block" | "blockHard";
+
+function Label({
+  children,
+  count = 0,
+  restorableCount = 0,
+  onClear,
+  onRestore,
+  isFr = true,
+}: {
+  children: React.ReactNode;
+  count?: number;
+  restorableCount?: number;
+  onClear?: () => void;
+  onRestore?: () => void;
+  isFr?: boolean;
+}) {
   return (
     <div className="mb-1.5 flex items-baseline justify-between gap-4">
-      <span className="text-[13px] font-medium text-foreground">{children}</span>
-      {hint && <span className="ml-4 text-right text-[11px] text-faint">{hint}</span>}
+      <div className="flex items-center gap-2">
+        <span className="text-[13px] font-medium text-foreground">{children}</span>
+        {count > 0 && onClear ? (
+          <button
+            type="button"
+            onClick={onClear}
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-colors"
+            title={isFr ? "Effacer cette catégorie de filtre" : "Clear this category"}
+          >
+            <X className="size-3" />
+            <span>{isFr ? `Effacer (${count})` : `Clear (${count})`}</span>
+          </button>
+        ) : restorableCount > 0 && onRestore ? (
+          <button
+            type="button"
+            onClick={onRestore}
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium text-brand hover:underline hover:bg-brand-soft/50 transition-colors"
+            title={isFr ? "Restaurer les éléments précédemment effacés" : "Restore cleared items"}
+          >
+            <RotateCcw className="size-3" />
+            <span>{isFr ? `Restaurer (${restorableCount})` : `Restore (${restorableCount})`}</span>
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -121,23 +205,127 @@ export function FilterBuilder({
 }) {
   const { locale } = useI18n();
   const isFr = locale === "fr";
-  const [advanced, setAdvanced] = useState(false);
+  const [history, setHistory] = useState<{
+    all?: ExploreFilters;
+    positive?: string[];
+    negative?: string[];
+    allow?: string[];
+    alwaysAllow?: string[];
+    block?: string[];
+    blockHard?: string[];
+  }>({});
+
   const set = (patch: Partial<ExploreFilters>) => onChange({ ...filters, ...patch });
-  const toggleAts = (a: AtsSource) => {
-    const has = filters.ats.includes(a);
-    const next = has ? filters.ats.filter((x) => x !== a) : [...filters.ats, a];
-    set({ ats: next.length ? next : filters.ats });
-  };
   const recencyList = isFr ? RECENCY_FR : RECENCY_EN;
+
+  const hasAnyFilter =
+    filters.positive.length > 0 ||
+    filters.negative.length > 0 ||
+    filters.allow.length > 0 ||
+    filters.alwaysAllow.length > 0 ||
+    filters.block.length > 0 ||
+    filters.blockHard.length > 0;
+
+  const clearCategory = (key: FilterKey) => {
+    setHistory((prev) => ({ ...prev, [key]: [...filters[key]] }));
+    set({ [key]: [] });
+  };
+
+  const restoreCategory = (key: FilterKey) => {
+    const saved = history[key];
+    if (saved && saved.length > 0) {
+      set({ [key]: saved });
+      setHistory((prev) => ({ ...prev, [key]: undefined }));
+    }
+  };
+
+  const clearAllFilters = () => {
+    setHistory((prev) => ({ ...prev, all: { ...filters } }));
+    onChange({
+      ...filters,
+      positive: [],
+      negative: [],
+      allow: [],
+      alwaysAllow: [],
+      block: [],
+      blockHard: [],
+      ats: ["portals"],
+    });
+  };
+
+  const restoreAllFilters = () => {
+    if (history.all) {
+      onChange({ ...history.all });
+      setHistory((prev) => ({ ...prev, all: undefined }));
+    }
+  };
 
   return (
     <div className="space-y-4">
       <style>{STYLE}</style>
 
+      <div className="flex items-center justify-between border-b border-border/50 pb-2">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+          {isFr ? "Filtres de recherche" : "Search filters"}
+        </span>
+        {hasAnyFilter ? (
+          <button
+            type="button"
+            onClick={clearAllFilters}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors"
+          >
+            <Trash2 className="size-3.5" />
+            <span>{isFr ? "Effacer tous les filtres" : "Clear all filters"}</span>
+          </button>
+        ) : history.all ? (
+          <button
+            type="button"
+            onClick={restoreAllFilters}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-brand/30 bg-brand-soft px-2.5 py-1 text-xs font-medium text-brand hover:brightness-110 transition-colors"
+          >
+            <RotateCcw className="size-3.5" />
+            <span>{isFr ? "Restaurer les filtres" : "Restore filters"}</span>
+          </button>
+        ) : null}
+      </div>
+
       <div>
-        <Label hint={filters.positive.length === 0 ? (isFr ? "vide = toutes les offres récentes" : "empty = every fresh posting") : undefined}>
+        <Label
+          count={filters.positive.length}
+          restorableCount={history.positive?.length || 0}
+          onClear={() => clearCategory("positive")}
+          onRestore={() => restoreCategory("positive")}
+          isFr={isFr}
+        >
           {isFr ? "Postes à rechercher" : "Roles to find"}
         </Label>
+
+        {/* Boutons de sélection rapide par catégorie métier */}
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-medium text-muted mr-0.5">
+            {isFr ? "Catégories rapides :" : "Quick categories:"}
+          </span>
+          {PRESET_CATEGORIES.map((cat) => {
+            const hasAny = cat.roles.some((r) => filters.positive.includes(r));
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => set({ positive: [...cat.roles] })}
+                className={cn(
+                  "rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",
+                  hasAny
+                    ? "border-brand/40 bg-brand-soft text-brand font-semibold"
+                    : "border-border/70 bg-surface/50 text-muted hover:text-foreground hover:border-brand/30",
+                )}
+                title={isFr ? `Filtrer uniquement sur ${cat.labelFr}` : `Filter by ${cat.labelEn}`}
+              >
+                {isFr ? cat.labelFr : cat.labelEn}
+              </button>
+            );
+          })}
+        </div>
+
         <KeywordField
           ariaLabel={isFr ? "Postes à rechercher" : "Roles to find"}
           values={filters.positive}
@@ -145,17 +333,18 @@ export function FilterBuilder({
           placeholder={isFr ? "Développeur web, Support IT, Technicien informatique, Logistique…" : "AI platform, ML infrastructure, staff engineer…"}
           onChange={(v) => set({ positive: v })}
         />
-        {seededFrom.length > 0 && filters.positive.length > 0 && (
-          <p className="mt-1 text-[11px] text-faint">
-            {isFr
-              ? `Pré-rempli depuis votre ${seededFrom.join(" + ")} — modifiable librement.`
-              : `Seeded from your ${seededFrom.join(" + ")} — edit freely.`}
-          </p>
-        )}
       </div>
 
       <div>
-        <Label>{isFr ? "Mots-clés à exclure" : "Exclude"}</Label>
+        <Label
+          count={filters.negative.length}
+          restorableCount={history.negative?.length || 0}
+          onClear={() => clearCategory("negative")}
+          onRestore={() => restoreCategory("negative")}
+          isFr={isFr}
+        >
+          {isFr ? "Mots-clés à exclure" : "Exclude"}
+        </Label>
         <KeywordField
           ariaLabel={isFr ? "Mots-clés à exclure" : "Exclude"}
           values={filters.negative}
@@ -166,7 +355,13 @@ export function FilterBuilder({
       </div>
 
       <div>
-        <Label hint={isFr ? "correspond à toute ville, communauté d'agglomération ou département (62)" : "matches any city, territory or department"}>
+        <Label
+          count={filters.allow.length}
+          restorableCount={history.allow?.length || 0}
+          onClear={() => clearCategory("allow")}
+          onRestore={() => restoreCategory("allow")}
+          isFr={isFr}
+        >
           <span className="inline-flex items-center gap-1.5">
             <MapPin className="size-3.5 text-muted" /> {isFr ? "Ville ou localisation" : "City or location"}
           </span>
@@ -180,104 +375,49 @@ export function FilterBuilder({
         />
       </div>
 
-      <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
-        <div className="min-w-[18rem]">
-          <Label hint={isFr ? "offres publiées durant cette période" : "postings published in this window"}>
-            <span className="inline-flex items-center gap-1.5">
-              <Clock className="size-3.5 text-muted" /> {isFr ? "Publié depuis" : "Posted within"}
-            </span>
-          </Label>
-          <div className="inline-flex rounded-lg border border-border bg-surface/40 p-0.5">
-            {recencyList.map((r) => (
-              <button
-                key={r.days}
-                type="button"
-                onClick={() => set({ sinceDays: r.days })}
-                className={cn(
-                  "rounded-md px-2.5 py-1 text-xs font-medium transition-colors max-sm:min-h-11",
-                  filters.sinceDays === r.days ? "bg-brand-soft text-brand" : "text-muted hover:text-foreground",
-                )}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <Label hint={filters.ats.length === 0 ? (isFr ? "choisissez au moins une source" : "pick at least one") : undefined}>
-            {isFr ? "Sources d'offres" : "Sources"}
-          </Label>
-          <div className="flex flex-wrap gap-1.5">
-            {ATS_SOURCES.map((a) => {
-              const on = filters.ats.includes(a);
-              return (
-                <button
-                  key={a}
-                  type="button"
-                  onClick={() => toggleAts(a)}
-                  className={cn(
-                    "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors max-sm:min-h-11",
-                    on ? "border-brand/40 bg-brand-soft text-brand" : "border-border text-muted hover:text-foreground",
-                  )}
-                >
-                  {ATS_LABEL[a]}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      <div>
+        <Label
+          count={filters.block.length}
+          restorableCount={history.block?.length || 0}
+          onClear={() => clearCategory("block")}
+          onRestore={() => restoreCategory("block")}
+          isFr={isFr}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <Ban className="size-3.5 text-muted" /> {isFr ? "Lieux à exclure" : "Exclude locations"}
+          </span>
+        </Label>
+        <KeywordField
+          values={filters.block}
+          tone="exc"
+          placeholder={isFr ? "Lille, Roubaix, Paris…" : "Paris, London…"}
+          ariaLabel={isFr ? "Lieux à exclure" : "Exclude locations"}
+          onChange={(v) => set({ block: v })}
+        />
       </div>
 
-      <button
-        type="button"
-        onClick={() => setAdvanced((v) => !v)}
-        className="inline-flex items-center gap-1.5 text-[12px] text-muted hover:text-foreground transition-colors max-sm:min-h-11"
-      >
-        <SlidersHorizontal className="size-3.5" />
-        {isFr ? "Filtres géographiques avancés & profondeur de scan" : "More location controls & scan depth"}
-        <ChevronDown className={cn("size-3.5 transition-transform", advanced && "rotate-180")} />
-      </button>
-
-      {advanced && (
-        <div className="space-y-3 rounded-xl border border-border bg-surface/30 p-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label hint={isFr ? "sauve une offre multi-localisations" : "rescues a multi-location posting"}>
-                {isFr ? "Toujours inclure" : "Always include"}
-              </Label>
-              <KeywordField ariaLabel={isFr ? "Toujours inclure" : "Always include"} values={filters.alwaysAllow} tone="inc" placeholder={isFr ? "Hauts-de-France…" : "Toronto…"} onChange={(v) => set({ alwaysAllow: v })} />
-            </div>
-            <div>
-              <Label hint={isFr ? "sauf si Toujours inclure correspond aussi" : "unless Always include also matches"}>
-                {isFr ? "Exclure des lieux" : "Exclude locations"}
-              </Label>
-              <KeywordField ariaLabel={isFr ? "Exclure des lieux" : "Exclude locations"} values={filters.block} tone="exc" placeholder="Paris, Île-de-France…" onChange={(v) => set({ block: v })} />
-            </div>
-          </div>
-          <div>
-            <Label hint={isFr ? "rejet strict — prioritaire sur Toujours inclure" : "hard reject — overrides Always include"}>
-              {isFr ? "Ne jamais inclure" : "Never include"}
-            </Label>
-            <KeywordField ariaLabel={isFr ? "Ne jamais inclure" : "Never include"} values={filters.blockHard} tone="exc" placeholder="International, USA…" onChange={(v) => set({ blockHard: v })} />
-          </div>
-          <div>
-            <Label hint={`${filters.limitPerAts} ${isFr ? "entreprises / source" : "companies / source"}`}>
-              {isFr ? "Profondeur de scan" : "Scan depth"}
-            </Label>
-            <input
-              type="range"
-              min={50}
-              max={500}
-              step={50}
-              value={filters.limitPerAts}
-              aria-label={isFr ? "Profondeur de scan" : "Scan depth"}
-              onChange={(e) => set({ limitPerAts: Number(e.target.value) })}
-              className="w-full accent-brand"
-            />
-          </div>
+      <div>
+        <Label>
+          <span className="inline-flex items-center gap-1.5">
+            <Clock className="size-3.5 text-muted" /> {isFr ? "Publié depuis" : "Posted within"}
+          </span>
+        </Label>
+        <div className="inline-flex rounded-lg border border-border bg-surface/40 p-0.5">
+          {recencyList.map((r) => (
+            <button
+              key={r.days}
+              type="button"
+              onClick={() => set({ sinceDays: r.days })}
+              className={cn(
+                "rounded-md px-2.5 py-1 text-xs font-medium transition-colors max-sm:min-h-11",
+                (filters.sinceDays || 0) === r.days ? "bg-brand-soft text-brand font-semibold" : "text-muted hover:text-foreground",
+              )}
+            >
+              {r.label}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }

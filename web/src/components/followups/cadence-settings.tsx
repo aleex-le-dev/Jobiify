@@ -5,22 +5,68 @@ import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { PROFILE_CADENCE_KEYS, type ProfileCadenceKey } from "@/lib/followups";
 import { cn } from "@/lib/cn";
+import { useI18n } from "@/components/i18n-provider";
 
 // Follow-up cadence knobs → config/profile.yml (followup_cadence). Server-
 // persisted (unlike the localStorage engine prefs above) because the core
 // followup-cadence.mjs reads the same keys — the CLI and the web must agree.
 
-const FIELDS: { key: ProfileCadenceKey; label: string; hint: string }[] = [
-  { key: "applied_first_days", label: "First follow-up", hint: "days after applying before the 1st nudge is due" },
-  { key: "applied_subsequent_days", label: "Between follow-ups", hint: "days between nudges while Applied" },
-  { key: "applied_max_followups", label: "Max follow-ups", hint: "after this many with no reply the lead goes cold" },
-  { key: "responded_initial_days", label: "Reply window", hint: "answer a company response within this many days" },
-  { key: "responded_subsequent_days", label: "Responded / assessment cadence", hint: "days between touches while in Responded or Assessment" },
-  { key: "interview_thankyou_days", label: "Thank-you note", hint: "due within this many days of reaching Interview" },
+const FIELDS: {
+  key: ProfileCadenceKey;
+  label: string;
+  labelFr: string;
+  hint: string;
+  hintFr: string;
+}[] = [
+  {
+    key: "applied_first_days",
+    label: "First follow-up",
+    labelFr: "Première relance",
+    hint: "days after applying before the 1st nudge is due",
+    hintFr: "jours après candidature avant le 1er rappel",
+  },
+  {
+    key: "applied_subsequent_days",
+    label: "Between follow-ups",
+    labelFr: "Entre deux relances",
+    hint: "days between nudges while Applied",
+    hintFr: "jours entre chaque rappel pour le statut Candidaté",
+  },
+  {
+    key: "applied_max_followups",
+    label: "Max follow-ups",
+    labelFr: "Nombre max de relances",
+    hint: "after this many with no reply the lead goes cold",
+    hintFr: "au-delà sans réponse, l'opportunité passe en sans nouvelles",
+  },
+  {
+    key: "responded_initial_days",
+    label: "Reply window",
+    labelFr: "Délai de réponse",
+    hint: "answer a company response within this many days",
+    hintFr: "répondre à un message de l'entreprise sous ce nombre de jours",
+  },
+  {
+    key: "responded_subsequent_days",
+    label: "Responded / assessment cadence",
+    labelFr: "Cadence en cours d'échange / test",
+    hint: "days between touches while in Responded or Assessment",
+    hintFr: "jours entre chaque contact en statut Répondu ou Test technique",
+  },
+  {
+    key: "interview_thankyou_days",
+    label: "Thank-you note",
+    labelFr: "Remerciement post-entretien",
+    hint: "due within this many days of reaching Interview",
+    hintFr: "à envoyer dans ce nombre de jours après passage en Entretien",
+  },
 ];
 
 export function CadenceSettings() {
   const router = useRouter();
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
+
   const [values, setValues] = useState<Record<ProfileCadenceKey, string> | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -46,9 +92,11 @@ export function CadenceSettings() {
         // invented number.
         setEnabled(d?.enabled !== false);
         const eff = (d?.effective ?? {}) as Partial<Record<ProfileCadenceKey, number>>;
-        setValues(Object.fromEntries(
-          PROFILE_CADENCE_KEYS.map((k) => [k, eff[k] === undefined ? "" : String(eff[k])]),
-        ) as Record<ProfileCadenceKey, string>);
+        setValues(
+          Object.fromEntries(
+            PROFILE_CADENCE_KEYS.map((k) => [k, eff[k] === undefined ? "" : String(eff[k])]),
+          ) as Record<ProfileCadenceKey, string>,
+        );
       })
       .catch(() => setLoadError(true));
   }, []);
@@ -62,7 +110,9 @@ export function CadenceSettings() {
       const raw = values[k].trim();
       const n = raw === "" ? Number.NaN : Number(raw);
       if (!Number.isInteger(n) || n < 0) {
-        setError(`"${FIELDS.find((f) => f.key === k)?.label}" must be a whole number ≥ 0.`);
+        const field = FIELDS.find((f) => f.key === k);
+        const name = isFr ? field?.labelFr : field?.label;
+        setError(isFr ? `"${name}" doit être un nombre entier ≥ 0.` : `"${name}" must be a whole number ≥ 0.`);
         return;
       }
       payload[k] = n;
@@ -77,13 +127,13 @@ export function CadenceSettings() {
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(typeof j.error === "string" ? j.error : "Could not save.");
+        setError(typeof j.error === "string" ? j.error : isFr ? "Impossible d'enregistrer." : "Could not save.");
       } else {
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       }
     } catch {
-      setError("Could not save.");
+      setError(isFr ? "Impossible d'enregistrer." : "Could not save.");
     }
     setSaving(false);
   };
@@ -99,7 +149,7 @@ export function CadenceSettings() {
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(typeof j.error === "string" ? j.error : "Could not save.");
+        setError(typeof j.error === "string" ? j.error : isFr ? "Impossible d'enregistrer." : "Could not save.");
       } else {
         setEnabled(next);
         // The nav is rendered on the server from the same setting. A router
@@ -107,7 +157,7 @@ export function CadenceSettings() {
         router.refresh();
       }
     } catch {
-      setError("Could not save.");
+      setError(isFr ? "Impossible d'enregistrer." : "Could not save.");
     }
     setToggling(false);
   };
@@ -115,30 +165,48 @@ export function CadenceSettings() {
   return (
     <div>
       <label className="mt-8 mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-        Follow-up cadence
+        {isFr ? "Cadence des relances" : "Follow-up cadence"}
       </label>
       <div className="rounded-xl border border-border bg-surface/50 p-4">
         <p className="text-xs leading-relaxed text-faint">
-          When the <span className="text-muted">Follow-ups</span> tracker nudges you. Saved to{" "}
-          <span className="font-mono text-muted">config/profile.yml</span> — the CLI uses the same values.
+          {isFr ? (
+            <>
+              Quand le suivi des <span className="text-muted">Relances</span> vous avertit. Enregistré dans{" "}
+              <span className="font-mono text-muted">config/profile.yml</span> — le CLI utilise les mêmes valeurs.
+            </>
+          ) : (
+            <>
+              When the <span className="text-muted">Follow-ups</span> tracker nudges you. Saved to{" "}
+              <span className="font-mono text-muted">config/profile.yml</span> — the CLI uses the same values.
+            </>
+          )}
         </p>
         {loadError ? (
           <div className="mt-3 text-sm text-muted">
             <p className="text-red-500">
-              Couldn&apos;t read your current cadence settings — not showing defaults, to avoid overwriting real values in{" "}
-              <span className="font-mono">config/profile.yml</span>.
+              {isFr ? (
+                <>
+                  Impossible de lire vos paramètres de cadence actuels — les valeurs par défaut ne sont pas affichées, pour éviter d&apos;écraser des valeurs réelles dans{" "}
+                  <span className="font-mono">config/profile.yml</span>.
+                </>
+              ) : (
+                <>
+                  Couldn&apos;t read your current cadence settings — not showing defaults, to avoid overwriting real values in{" "}
+                  <span className="font-mono">config/profile.yml</span>.
+                </>
+              )}
             </p>
             <button
               type="button"
               onClick={load}
               className="mt-2 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium transition-colors hover:bg-surface-hover"
             >
-              Retry
+              {isFr ? "Réessayer" : "Retry"}
             </button>
           </div>
         ) : values === null ? (
           <div className="mt-3 flex items-center gap-2 text-sm text-muted">
-            <Loader2 className="size-4 animate-spin" /> Loading…
+            <Loader2 className="size-4 animate-spin" /> {isFr ? "Chargement…" : "Loading…"}
           </div>
         ) : (
           <>
@@ -150,20 +218,33 @@ export function CadenceSettings() {
                 onChange={(e) => toggle(e.target.checked)}
                 className="size-4 accent-brand"
               />
-              Track follow-ups
+              {isFr ? "Activer le suivi des relances" : "Track follow-ups"}
               {toggling && <Loader2 className="size-3.5 animate-spin" />}
             </label>
             <p className="mt-0.5 text-xs text-faint">
-              Off hides the Follow-ups page and stops scheduling follow-up dates. Saved as{" "}
-              <span className="font-mono text-muted">follow_ups.enabled</span>.
+              {isFr ? (
+                <>
+                  Désactivé, cela masque la page Relances et cesse de programmer des dates de relance. Enregistré sous{" "}
+                  <span className="font-mono text-muted">follow_ups.enabled</span>.
+                </>
+              ) : (
+                <>
+                  Off hides the Follow-ups page and stops scheduling follow-up dates. Saved as{" "}
+                  <span className="font-mono text-muted">follow_ups.enabled</span>.
+                </>
+              )}
             </p>
             {enabled && (
               <>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   {FIELDS.map((f) => (
                     <label key={f.key} className="block">
-                      <span className="block text-sm font-medium text-foreground">{f.label}</span>
-                      <span className="mt-0.5 block text-xs text-faint">{f.hint}</span>
+                      <span className="block text-sm font-medium text-foreground">
+                        {isFr ? f.labelFr : f.label}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-faint">
+                        {isFr ? f.hintFr : f.hint}
+                      </span>
                       <input
                         type="number"
                         min={0}
@@ -185,7 +266,7 @@ export function CadenceSettings() {
                   )}
                 >
                   {saving ? <Loader2 className="size-3.5 animate-spin" /> : saved ? <Check className="size-3.5 text-emerald-400" /> : null}
-                  {saved ? "Saved" : "Save cadence"}
+                  {saved ? (isFr ? "Enregistré" : "Saved") : (isFr ? "Enregistrer la cadence" : "Save cadence")}
                 </button>
               </>
             )}

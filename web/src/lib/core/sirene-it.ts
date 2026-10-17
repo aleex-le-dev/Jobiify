@@ -131,7 +131,7 @@ export async function loadSireneDiscoveredOffers(
       company: c.nom_complet,
       title,
       location: loc,
-      postedAt: new Date().toISOString().slice(0, 10),
+      postedAt: "",
       ats: "portals",
       source: "sirene-pme-62",
       url,

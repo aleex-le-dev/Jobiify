@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Compass, ChevronDown, RotateCcw, AlertTriangle, Sparkles, Settings } from "lucide-react";
+import { Compass, ChevronDown, RotateCcw, AlertTriangle, Sparkles, Settings, Trash2, Clock, Coins } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { instrumentSerif } from "@/lib/fonts";
 import type { Application, InboxJob } from "@/lib/career-ops";
 import { normalizeTextKey } from "@/lib/core/normalize-text-key.mjs";
-import { paramsToFilters, paramsToAi, type ExploreFilters } from "@/lib/explore";
+import { paramsToFilters, paramsToAi, RECENCY_FR, RECENCY_EN, type ExploreFilters } from "@/lib/explore";
 import { FilterBuilder } from "./filter-builder";
 import { DiscoveringState } from "./discovering-state";
 import { AiHuntView } from "./ai-hunt-view";
@@ -15,7 +15,6 @@ import { ExploreModeToggle } from "./explore-mode-toggle";
 import { AiSearchBox } from "./ai-search-box";
 import { ResultsList, type EnrichedOffer } from "./results-list";
 import { useExplore } from "./explore-provider";
-import { ScheduleJobAction } from "./schedule-job-action";
 import { useI18n } from "@/components/i18n-provider";
 
 // Same shape as core normalizeTextKey(s, " ") — never [^a-z0-9] (#2666).
@@ -43,13 +42,9 @@ export function ExplorerView({
 }) {
   const { locale } = useI18n();
   const isFr = locale === "fr";
+  const recencyList = isFr ? RECENCY_FR : RECENCY_EN;
   const { filters, setFilters, initFilters, phase, running, offers, discover, loadFresh, status, error, scannerMissing, mode, setMode, aiIntent, setAiIntent, discoverAI, companiesScanned, companiesAvailable, capHit, droppedNoDate, partial } = useExplore();
-  const scanNote =
-    companiesScanned > 0
-      ? isFr
-        ? `${companiesScanned.toLocaleString()} entreprise${companiesScanned > 1 ? "s" : ""} scannée${companiesScanned > 1 ? "s" : ""}${companiesAvailable > companiesScanned ? ` sur ${companiesAvailable.toLocaleString()}` : ""}${partial ? " · certaines sources étaient inaccessibles" : ""}.`
-        : `Scanned ${companiesScanned.toLocaleString()}${companiesAvailable > companiesScanned ? ` of ${companiesAvailable.toLocaleString()}` : ""} compan${companiesScanned === 1 ? "y" : "ies"}${partial ? " · some sources were unreachable" : ""}.`
-      : undefined;
+
   const inited = useRef(false);
   const [refineOpen, setRefineOpen] = useState(false);
   const [cli, setCli] = useState<{ id: string | null; name?: string }>({ id: null });
@@ -119,6 +114,28 @@ export function ExplorerView({
   // filter/sort/scroll and co-rise survive the 850ms reveal handoff.
   const showScanList = !isAi && offers.length > 0 && (scanRunning || isResults);
 
+  const [clearedSnapshot, setClearedSnapshot] = useState<ExploreFilters | null>(null);
+
+  const clearFilters = () => {
+    setClearedSnapshot({ ...filters });
+    setFilters({
+      ...filters,
+      positive: [],
+      negative: [],
+      allow: [],
+      alwaysAllow: [],
+      block: [],
+      blockHard: [],
+    });
+  };
+
+  const restoreFilters = () => {
+    if (clearedSnapshot) {
+      setFilters({ ...clearedSnapshot });
+      setClearedSnapshot(null);
+    }
+  };
+
   if (running && isAi) return <AiHuntView cliName={cli.name} />;
 
   return (
@@ -178,9 +195,9 @@ export function ExplorerView({
               <EmptyState
                 tone="loose"
                 title={isFr ? "Aucune correspondance publique pour l'instant." : "No public matches — yet."}
-                body={isFr ? "La recherche IA lit le web public. Essayez des critères plus larges, ou lancez un scan ATS gratuit." : "AI search reads what's public. Try broader intent, or run the free Scan over the ATS network."}
+                body={isFr ? "La recherche IA lit le web public. Essayez des critères plus larges, ou lancez un scan des portails." : "AI search reads what's public. Try broader intent, or run the Scan over the ATS network."}
                 onRerun={() => setMode("scan")}
-                rerunLabel={isFr ? "Lancer le scan gratuit" : "Run the free Scan"}
+                rerunLabel={isFr ? "Lancer le scan des portails" : "Run the Scan"}
               />
             )}
             {phase === "failed" && <FailedCard msg={error || status} scannerMissing={scannerMissing} onRetry={() => void discoverAI()} />}
@@ -188,44 +205,107 @@ export function ExplorerView({
         )
       ) : (
         <>
-          {isResults ? (
-            <div className="mb-6 rounded-xl border border-border bg-surface/30">
-              <button type="button" onClick={() => setRefineOpen((v) => !v)} className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-foreground">
-                <Compass className="size-4 text-brand" /> {isFr ? "Affiner la recherche" : "Refine search"}
-                <ChevronDown className={cn("ml-auto size-4 text-muted transition-transform", refineOpen && "rotate-180")} />
-              </button>
-              {refineOpen && (
-                <div className="space-y-4 border-t border-border p-4">
-                  <FilterBuilder filters={filters} onChange={setFilters} seededFrom={seed.seededFrom} />
-                  <DiscoverBar canDiscover={canDiscover} onDiscover={discover} label={isFr ? "Relancer le scan (gratuit)" : "Re-cast (free)"} filters={filters} />
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="mb-6 rounded-2xl border border-border bg-surface/30 p-5">
-              <FilterBuilder filters={filters} onChange={setFilters} seededFrom={seed.seededFrom} />
-              <div className="mt-5">
-                <DiscoverBar canDiscover={canDiscover} onDiscover={discover} label={isFr ? "Découvrir (gratuit)" : "Discover (free)"} filters={filters} />
+          <div className="mb-6 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRefineOpen((v) => !v)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface/40 px-3.5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-surface-hover hover:border-brand/40"
+                >
+                  <Compass className="size-4 text-brand" />
+                  <span>{isFr ? "Affiner la recherche" : "Refine search"}</span>
+                  <ChevronDown className={cn("size-4 text-muted transition-transform duration-200", refineOpen && "rotate-180")} />
+                </button>
+
+                {!isAi && (
+                  <div className="inline-flex flex-wrap items-center gap-2 rounded-xl border border-border/80 bg-surface/50 px-3 py-1.5 text-xs">
+                    <span className="inline-flex items-center gap-1.5 font-medium text-muted">
+                      <Clock className="size-3.5 text-brand" />
+                      {isFr ? "Publié depuis :" : "Posted within:"}
+                    </span>
+                    <div className="inline-flex rounded-lg border border-border/70 bg-background/60 p-0.5">
+                      {recencyList.map((r) => {
+                        const active = (filters.sinceDays || 0) === r.days;
+                        return (
+                          <button
+                            key={r.days}
+                            type="button"
+                            onClick={() => setFilters({ ...filters, sinceDays: r.days })}
+                            className={cn(
+                              "rounded-md px-2.5 py-1 text-xs font-medium transition-colors max-sm:min-h-11",
+                              active
+                                ? "bg-brand-soft text-brand font-semibold shadow-xs"
+                                : "text-muted hover:text-foreground",
+                            )}
+                          >
+                            {r.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  disabled={!canDiscover || running}
+                  onClick={() => void discover()}
+                  className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground shadow-sm transition-all hover:brightness-110 disabled:opacity-50 max-sm:min-h-11"
+                >
+                  <RotateCcw className={cn("size-4", running && "animate-spin")} />
+                  <span>
+                    {isFr
+                      ? isResults
+                        ? "Relancer le scan"
+                        : "Découvrir les offres"
+                      : isResults
+                        ? "Re-cast"
+                        : "Discover offers"}
+                  </span>
+                </button>
               </div>
             </div>
-          )}
+
+            {refineOpen && (
+              <div className="space-y-4 rounded-xl border border-border bg-surface/30 p-4">
+                <FilterBuilder filters={filters} onChange={setFilters} seededFrom={seed.seededFrom} />
+                <DiscoverBar
+                  canDiscover={canDiscover}
+                  onDiscover={discover}
+                  onClearFilters={clearFilters}
+                  onRestoreFilters={clearedSnapshot ? restoreFilters : undefined}
+                  label={
+                    isFr
+                      ? isResults
+                        ? "Appliquer et relancer le scan"
+                        : "Appliquer et lancer le scan"
+                      : isResults
+                        ? "Apply & re-cast"
+                        : "Apply & scan"
+                  }
+                  filters={filters}
+                />
+              </div>
+            )}
+          </div>
 
           {isResults && firstRun && (
-            <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
-              <Sparkles className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+            <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+              <Coins className="mt-0.5 size-4 shrink-0 text-amber-500" />
               <p className="text-[13px] leading-relaxed text-foreground">
                 {isFr ? (
-                  <>Voici des offres en ligne correspondant à votre CV. <span className="text-emerald-600 dark:text-emerald-400">Rien ici n&apos;a coûté de jeton.</span> Choisissez celle qui vous intéresse le plus — évaluez-la et je vous donnerai votre note exacte et son explication.</>
+                  <>Voici les offres en ligne correspondant à votre CV. <span className="font-semibold text-amber-600 dark:text-amber-400">Consomment des jetons IA :</span> l&apos;évaluation approfondie de l&apos;offre et l&apos;adaptation de votre candidature.</>
                 ) : (
-                  <>These are live roles that match your CV. <span className="text-emerald-600 dark:text-emerald-400">Nothing here cost you a token.</span> Pick the one you&apos;re most curious about — Evaluate it and I&apos;ll tell you exactly how you score, and why.</>
+                  <>These are live roles matching your CV. <span className="font-semibold text-amber-600 dark:text-amber-400">Uses AI tokens:</span> in-depth evaluation and application tailoring.</>
                 )}
               </p>
             </div>
           )}
 
-          {isResults && capHit && (
-            <CappedBanner companiesScanned={companiesScanned} companiesAvailable={companiesAvailable} onRefine={() => setRefineOpen(true)} />
-          )}
+
         </>
       )}
       </>
@@ -244,7 +324,6 @@ export function ExplorerView({
               tone="good"
               title={isFr ? "Vous êtes complètement à jour." : "You're all caught up."}
               body={isFr ? "Rien de nouveau depuis votre dernier scan. Votre pipeline est à jour — c'est l'objectif !" : "Nothing new since your last scan. Your pipeline is current — that's the goal."}
-              note={scanNote}
               onRerun={() => {
                 setFilters({ ...filters, sinceDays: Math.max(filters.sinceDays, 30) });
                 void discover();
@@ -256,8 +335,7 @@ export function ExplorerView({
             <EmptyState
               tone="loose"
               title={isFr ? "Aucune nouvelle offre pour l'instant." : "No fresh matches — yet."}
-              body={isFr ? "La découverte est gratuite — élargissez les critères et relancez autant que vous le souhaitez." : "Discovery is free — loosen and re-cast as often as you want."}
-              note={scanNote}
+              body={isFr ? "Élargissez les critères et relancez la recherche autant que vous le souhaitez." : "Loosen criteria and re-cast as often as you want."}
               onRerun={() => {
                 setFilters({ ...filters, sinceDays: 30, block: [], allow: [] });
                 void discover();
@@ -282,9 +360,31 @@ export function ExplorerView({
   );
 }
 
-function DiscoverBar({ canDiscover, onDiscover, label, filters }: { canDiscover: boolean; onDiscover: () => void; label: string; filters: ExploreFilters }) {
+function DiscoverBar({
+  canDiscover,
+  onDiscover,
+  label,
+  filters,
+  onClearFilters,
+  onRestoreFilters,
+}: {
+  canDiscover: boolean;
+  onDiscover: () => void;
+  label: string;
+  filters: ExploreFilters;
+  onClearFilters?: () => void;
+  onRestoreFilters?: () => void;
+}) {
   const { locale } = useI18n();
   const isFr = locale === "fr";
+  const hasAnyFilter =
+    filters.positive.length > 0 ||
+    filters.negative.length > 0 ||
+    filters.allow.length > 0 ||
+    filters.alwaysAllow.length > 0 ||
+    filters.block.length > 0 ||
+    filters.blockHard.length > 0;
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       <button
@@ -295,18 +395,38 @@ function DiscoverBar({ canDiscover, onDiscover, label, filters }: { canDiscover:
       >
         <Compass className="size-4" /> {label}
       </button>
-      <ScheduleJobAction filters={filters} />
+      {hasAnyFilter && onClearFilters ? (
+        <button
+          type="button"
+          onClick={onClearFilters}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors max-sm:min-h-11"
+          title={isFr ? "Effacer tous les critères de recherche" : "Clear all search filters"}
+        >
+          <Trash2 className="size-4" />
+          <span>{isFr ? "Effacer tous les filtres" : "Clear filters"}</span>
+        </button>
+      ) : onRestoreFilters ? (
+        <button
+          type="button"
+          onClick={onRestoreFilters}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-brand/30 bg-brand-soft px-3.5 py-2.5 text-sm font-medium text-brand hover:brightness-110 transition-colors max-sm:min-h-11"
+          title={isFr ? "Restaurer les critères précédemment effacés" : "Restore previous filters"}
+        >
+          <RotateCcw className="size-4" />
+          <span>{isFr ? "Restaurer les filtres" : "Restore filters"}</span>
+        </button>
+      ) : null}
       <span className="inline-flex items-center gap-1.5 text-[12px] text-muted">
-        <span className="size-1.5 rounded-full bg-emerald-500" />
+        <Coins className="size-3.5 text-amber-500" />
         {isFr
-          ? "L'évaluation ultérieure d'une offre coûte des tokens. La découverte est toujours gratuite."
-          : "Evaluating a role later costs tokens. Discovering never does."}
+          ? "Consomment des jetons IA : Évaluation approfondie (A–F) et personnalisation de candidature."
+          : "Uses AI tokens: In-depth evaluation (A–F) and application tailoring."}
       </span>
     </div>
   );
 }
 
-function EmptyState({ tone, title, body, note, onRerun, rerunLabel }: { tone: "good" | "loose"; title: string; body: string; note?: string; onRerun: () => void; rerunLabel: string }) {
+function EmptyState({ tone, title, body, onRerun, rerunLabel }: { tone: "good" | "loose"; title: string; body: string; onRerun: () => void; rerunLabel: string }) {
   return (
     <div className="rounded-2xl border border-border bg-surface/30 px-6 py-12 text-center">
       <div className={cn("mx-auto grid size-12 place-items-center rounded-full", tone === "good" ? "bg-emerald-500/12 text-emerald-500" : "bg-brand-soft text-brand")}>
@@ -314,7 +434,6 @@ function EmptyState({ tone, title, body, note, onRerun, rerunLabel }: { tone: "g
       </div>
       <h2 className={`${instrumentSerif.className} mt-4 text-2xl text-foreground`}>{title}</h2>
       <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">{body}</p>
-      {note && <p className="mx-auto mt-1 max-w-md text-[12px] text-faint">{note}</p>}
       <button onClick={onRerun} className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface/50 px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:border-brand/40 hover:text-brand">
         <RotateCcw className="size-4" /> {rerunLabel}
       </button>
@@ -371,22 +490,6 @@ function DegradedCard({
   );
 }
 
-function CappedBanner({ companiesScanned, companiesAvailable, onRefine }: { companiesScanned: number; companiesAvailable: number; onRefine: () => void }) {
-  const { locale } = useI18n();
-  const isFr = locale === "fr";
-  return (
-    <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-4 py-2.5 text-[13px]">
-      <span className="text-foreground">
-        {isFr
-          ? `Échantillon partiel — ${companiesScanned.toLocaleString()}${companiesAvailable > companiesScanned ? ` sur ${companiesAvailable.toLocaleString()}` : ""} entreprises scannées.`
-          : `Showing a capped slice — searched ${companiesScanned.toLocaleString()}${companiesAvailable > companiesScanned ? ` of ${companiesAvailable.toLocaleString()}` : ""} companies.`}
-      </span>
-      <button onClick={onRefine} className="font-medium text-brand hover:underline">
-        {isFr ? "Augmenter la profondeur de scan" : "Raise scan depth to search deeper"}
-      </button>
-    </div>
-  );
-}
 
 function FailedCard({ msg, scannerMissing, onRetry }: { msg: string; scannerMissing: boolean; onRetry: () => void }) {
   const { locale } = useI18n();
@@ -441,8 +544,8 @@ function BlockedCard() {
       </h2>
       <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">
         {isFr
-          ? "Connectez Claude Code, Gemini ou toute CLI d'agent — votre clé, vos tokens, votre machine. Le scan gratuit reste utilisable sans CLI."
-          : "Connect Claude Code, Gemini, or any agent CLI — your key, your tokens, your machine. The free Scan stays available without one."}
+          ? "Connectez Claude Code, Gemini ou toute CLI d'agent — votre clé, vos tokens, votre machine. Le scan des portails reste utilisable sans CLI."
+          : "Connect Claude Code, Gemini, or any agent CLI — your key, your tokens, your machine. Portal scan stays available without one."}
       </p>
       <Link href="/config" className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-brand-foreground transition hover:brightness-110">
         <Settings className="size-4" /> {isFr ? "Ouvrir la configuration" : "Open Config"}

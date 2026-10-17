@@ -1,10 +1,9 @@
 "use client";
 
-import { Search, X } from "lucide-react";
+import { Search, X, Coins } from "lucide-react";
 import type { AtsSource } from "@/lib/explore";
 import { ATS_LABEL } from "@/lib/explore";
 import { FRESHNESS_WINDOWS, SENIORITY_LABEL, type Seniority } from "@/lib/inbox";
-import { CostBadge } from "@/components/cost/cost-badge";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/components/i18n-provider";
 
@@ -129,9 +128,9 @@ export function FacetChips({
       {/* Token-honesty is bidirectional: the "free" reassurance is as always-visible
           as the tray's "spend" cue (mobile + desktop) — never desktop-only. */}
       <div className="flex items-center gap-1.5">
-        <CostBadge kind="free" size="xs" />
+        <Coins className="size-3.5 text-amber-500" />
         <span className="text-[11px] text-faint">
-          {isFr ? "Le filtrage est gratuit — seule l'évaluation consomme des jetons." : "Filtering is free — only scoring uses tokens."}
+          {isFr ? "Seule l'évaluation approfondie d'une offre consomme des jetons IA." : "Only in-depth evaluation uses AI tokens."}
         </span>
       </div>
     </div>

@@ -39,7 +39,7 @@ export function FirstRunHome() {
                 <a href="/config" className="text-foreground underline-offset-2 hover:underline">
                   Config
                 </a>{" "}
-                d&apos;abord. Le scan de marché est <span className="text-foreground">gratuit</span>. Vous ne dépensez des tokens que lorsque vous décidez d&apos;évaluer une offre.
+                d&apos;abord. Vous ne consommez des jetons IA que lorsque vous décidez d&apos;évaluer une offre ou d&apos;adapter votre candidature.
               </>
             ) : (
               <>
@@ -47,8 +47,7 @@ export function FirstRunHome() {
                 <a href="/config" className="text-foreground underline-offset-2 hover:underline">
                   Config
                 </a>{" "}
-                first. The market scan is <span className="text-foreground">free</span>. You only spend tokens when you
-                choose to score a role.
+                first. You only spend AI tokens when you score a role or tailor applications.
               </>
             )}
           </p>

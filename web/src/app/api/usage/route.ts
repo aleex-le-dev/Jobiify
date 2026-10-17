@@ -18,6 +18,10 @@ function projectsDir(): string {
   return path.join(os.homedir(), ".claude", "projects");
 }
 
+function codexSessionsDir(): string {
+  return path.join(os.homedir(), ".codex", "sessions");
+}
+
 function* walkJsonl(dir: string): Generator<string> {
   let entries: fs.Dirent[];
   try {
@@ -42,6 +46,7 @@ function compute(): Usage {
   let m5 = 0;
   let m7 = 0;
 
+  // 1. Claude Code per-message logs (~/.claude/projects/**/*.jsonl)
   for (const file of walkJsonl(projectsDir())) {
     let st: fs.Stats;
     try {
@@ -76,6 +81,52 @@ function compute(): Usage {
       }
     }
   }
+
+  // 2. Codex per-turn logs (~/.codex/sessions/**/*.jsonl)
+  for (const file of walkJsonl(codexSessionsDir())) {
+    let st: fs.Stats;
+    try {
+      st = fs.statSync(file);
+    } catch {
+      continue;
+    }
+    if (st.mtimeMs < cutoffMtime) continue;
+    let content: string;
+    try {
+      content = fs.readFileSync(file, "utf8");
+    } catch {
+      continue;
+    }
+    for (const line of content.split("\n")) {
+      if (!line.includes('"usage"')) continue;
+      let d: {
+        payload?: { usage?: Record<string, number>; timestamp?: string };
+        usage?: Record<string, number>;
+        timestamp?: string;
+      };
+      try {
+        d = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      const u = d.payload?.usage || d.usage;
+      const rawTs = d.timestamp || d.payload?.timestamp;
+      const ts = rawTs ? Date.parse(rawTs) : NaN;
+      if (!u || Number.isNaN(ts) || ts < w7) continue;
+      const tok =
+        typeof u.total_tokens === "number" && u.total_tokens > 0
+          ? u.total_tokens
+          : (u.input_tokens || 0) + (u.output_tokens || 0);
+      if (tok <= 0) continue;
+      t7 += tok;
+      m7 += 1;
+      if (ts >= w5) {
+        t5 += tok;
+        m5 += 1;
+      }
+    }
+  }
+
   return { window5h: { tokens: t5, messages: m5 }, window7d: { tokens: t7, messages: m7 }, computedAt: now };
 }
 

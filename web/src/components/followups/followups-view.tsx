@@ -119,7 +119,10 @@ export function FollowupsView() {
   const refetch = useCallback(() => {
     fetch("/api/followups?full=1")
       .then((r) => r.json())
-      .then((d: CadenceResponse) => setData(d))
+      .then((d: CadenceResponse) => {
+        setData(d);
+        if (typeof window !== "undefined") window.dispatchEvent(new Event("followups:changed"));
+      })
       .catch(() => setData({ available: false, metadata: null, entries: [] }));
   }, []);
   useEffect(refetch, [refetch]);
@@ -236,8 +239,20 @@ export function FollowupsView() {
     <div className="mx-auto max-w-none px-6 py-8">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl tracking-tight text-landing">
-            {isFr ? "Suivi des relances" : "Follow-up Tracker"}
+          <h1 className="font-display text-2xl tracking-tight text-landing flex items-center gap-2.5">
+            <span>{isFr ? "Suivi des relances" : "Follow-up Tracker"}</span>
+            {meta && (
+              <span
+                className={cn(
+                  "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums leading-none",
+                  (meta.overdue + meta.urgent) > 0
+                    ? "bg-brand/20 text-brand-text border border-brand/30"
+                    : "bg-surface-hover text-muted border border-border",
+                )}
+              >
+                {meta.overdue + meta.urgent} {isFr ? "à traiter" : "due"}
+              </span>
+            )}
           </h1>
           <p className="mt-1 text-sm text-muted">{subtitle}</p>
           <p className="mt-2 max-w-3xl text-xs leading-relaxed text-faint">

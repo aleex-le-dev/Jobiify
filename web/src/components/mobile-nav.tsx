@@ -13,6 +13,7 @@ import { instrumentSerif } from "@/lib/fonts";
 import { visibleNavItems, isActivePath } from "@/lib/nav-items";
 import { useJobs } from "@/components/jobs/job-store";
 import { useI18n } from "@/components/i18n-provider";
+import { useFollowupsCount } from "@/components/followups/followups-count-provider";
 
 // Mobile navigation (< md): a glass top bar + a right-side slide-over drawer that
 // mirrors the desktop sidebar (nav + workers + usage + theme). Premium details:
@@ -41,6 +42,7 @@ export function MobileNav({ followupsEnabled }: { followupsEnabled: boolean }) {
   const panelRef = useRef<HTMLElement>(null);
   const { jobs } = useJobs();
   const { t } = useI18n();
+  const { dueCount } = useFollowupsCount();
   const running = jobs.filter((j) => j.status === "running").length;
 
   // Close on route change.
@@ -156,6 +158,7 @@ export function MobileNav({ followupsEnabled }: { followupsEnabled: boolean }) {
             const active = isActivePath(href, pathname);
             const translatedLabel = t(key) || label;
             const translatedChip = chip === "New" ? t("chip_new") : chip;
+            const isFollowups = href === "/followups";
             return (
               <Link
                 key={href}
@@ -167,8 +170,22 @@ export function MobileNav({ followupsEnabled }: { followupsEnabled: boolean }) {
                   active ? "bg-brand-soft text-brand-text font-medium" : "text-muted hover:bg-surface-hover hover:text-foreground",
                 )}
               >
-                <Icon className="size-5" />
-                {translatedLabel}
+                <Icon className="size-5 shrink-0" />
+                <span className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="truncate">{translatedLabel}</span>
+                  {isFollowups && (
+                    <span
+                      className={cn(
+                        "inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums leading-none",
+                        dueCount > 0
+                          ? "bg-brand/20 text-brand-text border border-brand/30"
+                          : "bg-surface-hover text-faint border border-border/50",
+                      )}
+                    >
+                      {dueCount}
+                    </span>
+                  )}
+                </span>
                 {translatedChip && (
                   <span className="ml-auto rounded-full border border-brand/30 bg-brand-soft px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-brand-text">
                     {translatedChip}

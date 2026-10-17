@@ -11,8 +11,8 @@ import { formatLocationCity, formatPublicationDate } from "@/lib/format";
 import { useI18n } from "@/components/i18n-provider";
 
 function freshness(postedAt: string, isFr: boolean): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(postedAt)) return "";
-  const days = Math.max(0, Math.round((Date.now() - new Date(postedAt + "T00:00:00Z").getTime()) / 86_400_000));
+  if (!/^\d{4}-\d{2}-\d{2}/.test(postedAt)) return "";
+  const days = Math.max(0, Math.round((Date.now() - new Date(postedAt.slice(0, 10) + "T00:00:00Z").getTime()) / 86_400_000));
   if (isFr) {
     return days === 0 ? "aujourd'hui" : days === 1 ? "hier" : `il y a ${days}j`;
   }
@@ -47,7 +47,7 @@ const WORKER_LABEL_FR: Record<string, string> = { evaluate: "Évaluation en cour
 export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: DiscoveredOffer; inPipeline: boolean; evaluatedN?: string }) {
   const { locale } = useI18n();
   const isFr = locale === "fr";
-  const { added, adding, addToPipeline } = useExplore();
+  const { added, adding, removed, addToPipeline, removeFromPipeline } = useExplore();
   const { jobs, startJob } = useJobs();
 
   // GLOBAL worker awareness: any worker acting on this URL drives the CTA, here
@@ -61,7 +61,8 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
   const workerMap = isFr ? WORKER_LABEL_FR : WORKER_LABEL_EN;
   const statusLabel = workerMap[job?.kind ?? ""] ?? (isFr ? "En cours…" : "Working…");
 
-  const isAdded = added.has(offer.url) || inPipeline || working || doneEval;
+  const inSel = (added.has(offer.url) || inPipeline) && !removed?.has(offer.url);
+  const isAdded = inSel || working || doneEval;
   const isAdding = adding.has(offer.url);
   const fresh = freshness(offer.postedAt, isFr) || offer.postedHint || "";
   const city = useMemo(() => formatLocationCity(offer.location), [offer.location]);
@@ -145,10 +146,22 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
         <div className="flex items-center gap-1.5 text-[11.5px]">
           <span
             className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-hover/70 px-2 py-0.5 font-medium text-foreground/85"
-            title={pubInfo.formattedDate ? (isFr ? `Date de publication : ${pubInfo.formattedDate}` : `Publication date: ${pubInfo.formattedDate}`) : undefined}
+            title={
+              pubInfo.formattedDate
+                ? isFr
+                  ? `Date de publication : ${pubInfo.formattedDate}${pubInfo.time ? ` à ${pubInfo.time}` : ""}`
+                  : `Publication date: ${pubInfo.formattedDate}${pubInfo.time ? ` at ${pubInfo.time}` : ""}`
+                : undefined
+            }
           >
             <Calendar className="size-3 text-brand shrink-0" />
             {pubInfo.label}
+          </span>
+        </div>
+      ) : offer.source === "sirene-pme-62" || offer.source === "la-bonne-boite-pme" ? (
+        <div className="flex items-center gap-1.5 text-[11.5px]">
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-hover/50 px-2 py-0.5 font-medium text-muted">
+            {isFr ? "Candidature spontanée" : "Spontaneous application"}
           </span>
         </div>
       ) : fresh ? (
@@ -175,23 +188,49 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
           <div className="flex items-center gap-2">
             <button
               type="button"
-              disabled={isAdded || isAdding}
-              onClick={() => addToPipeline([offer])}
+              disabled={isAdding}
+              onClick={() => {
+                if (inSel) {
+                  void removeFromPipeline([offer.url]);
+                } else {
+                  void addToPipeline([offer]);
+                }
+              }}
+              title={
+                inSel
+                  ? (isFr ? "Cliquer pour retirer de ma sélection" : "Click to remove from selection")
+                  : (isFr ? "Ajouter à ma sélection" : "Add to selection")
+              }
               className={cn(
-                "inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-2 text-xs font-medium transition-colors max-sm:min-h-[44px]",
-                isAdded ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-surface-hover text-foreground hover:bg-brand-soft hover:text-brand",
+                "group/btn inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-2 text-xs font-medium transition-colors max-sm:min-h-[44px]",
+                inSel
+                  ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:border-rose-400/40 hover:bg-rose-500/10 hover:text-rose-600 dark:text-emerald-400 dark:hover:text-rose-400"
+                  : "bg-surface-hover text-foreground hover:bg-brand-soft hover:text-brand",
               )}
             >
-              {isAdding ? <Loader2 className="size-3.5 animate-spin" /> : isAdded ? <Check className="size-3.5" /> : <Plus className="size-3.5" />}
-              {isAdded ? (isFr ? "Dans ma sélection" : "In selection") : (isFr ? "Ajouter à ma sélection" : "Add to selection")}
+              {isAdding ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : inSel ? (
+                <>
+                  <Check className="size-3.5 group-hover/btn:hidden" />
+                  <span className="hidden text-xs font-bold leading-none group-hover/btn:inline text-rose-500">✕</span>
+                  <span className="group-hover/btn:hidden">{isFr ? "Dans ma sélection" : "In selection"}</span>
+                  <span className="hidden group-hover/btn:inline">{isFr ? "Retirer" : "Remove"}</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="size-3.5" />
+                  <span>{isFr ? "Ajouter à ma sélection" : "Add to selection"}</span>
+                </>
+              )}
             </button>
             <button
               type="button"
               onClick={evaluate}
-              title={isFr ? "Lance une évaluation complète A-F." : "Runs an A–F evaluation."}
+              title={isFr ? "Évaluation approfondie A–F (consomme des jetons IA)." : "In-depth A–F evaluation (uses AI tokens)."}
               className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-brand/30 px-2.5 py-2 text-xs font-medium text-brand transition-colors hover:bg-brand-soft max-sm:min-h-[44px]"
             >
-              {isFr ? "Évaluer" : "Evaluate"} <Coins className="size-3.5 opacity-80" />
+              {isFr ? "Évaluer" : "Evaluate"} <Coins className="size-3.5 text-amber-500" />
             </button>
           </div>
         )}

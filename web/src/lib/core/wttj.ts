@@ -97,7 +97,7 @@ export async function fetchAndCacheWttjJobs(): Promise<WttjJob[]> {
         const location = parts.join(", ");
 
         const ts = h.published_at_timestamp;
-        const postedAt = Number.isFinite(ts) && ts > 0 ? new Date(ts * 1000).toISOString().slice(0, 10) : "";
+        const postedAt = Number.isFinite(ts) && ts > 0 ? new Date(ts * 1000).toISOString() : "";
 
         byUrl.set(jobUrl, { title, url: jobUrl, company, location, postedAt });
       }
@@ -156,7 +156,7 @@ export async function loadWttjDiscoveredOffers(
       company: job.company,
       title: job.title,
       location: job.location,
-      postedAt: job.postedAt || new Date().toISOString().slice(0, 10),
+      postedAt: job.postedAt || "",
       ats: "portals",
       source: "wttj-fr",
       url: job.url,

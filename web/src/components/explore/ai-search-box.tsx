@@ -132,7 +132,7 @@ export function AiSearchBox({
           </button>
         ))}
         <button type="button" onClick={onRunScan} className="ml-auto inline-flex items-center gap-1 text-[12px] text-faint transition hover:text-foreground">
-          {isFr ? "ou lancer le Scan gratuit à la place →" : "or run the free Scan instead →"}
+          {isFr ? "ou lancer le Scan des portails à la place →" : "or run the portal Scan instead →"}
         </button>
       </div>
     </div>

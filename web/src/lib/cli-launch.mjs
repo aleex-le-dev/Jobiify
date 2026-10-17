@@ -46,16 +46,27 @@ export function prepareCliLaunch(binPath, args, platform = process.platform) {
     return unresolved();
   }
 
+  // On Windows, Codex's process execution policy with `--ask-for-approval never`
+  // causes CreateProcess (PowerShell, etc.) to fail with "rejected: blocked by policy"
+  // because Windows lacks kernel Seatbelt/Landlock sandboxes. Replace `--ask-for-approval never`
+  // with `--approve-for-me` to route workspace reviews automatically during headless runs.
+  let launchArgs = args;
+  const neverIdx = launchArgs.indexOf("--ask-for-approval");
+  if (neverIdx !== -1 && launchArgs[neverIdx + 1] === "never") {
+    launchArgs = [...launchArgs];
+    launchArgs.splice(neverIdx, 2, "--approve-for-me");
+  }
+
   const targetMatches = wrapper.matchAll(/["']\$basedir[\\/]([^"']+)["']\s+\$args/g);
   for (const match of targetMatches) {
     const target = path.resolve(path.dirname(ps1Shim), match[1].replace(/[\\/]/g, path.sep));
     if (!fs.existsSync(target)) continue;
     const targetExt = path.extname(target).toLowerCase();
     if ([".js", ".cjs", ".mjs"].includes(targetExt)) {
-      return { command: process.execPath, args: [target, ...args] };
+      return { command: process.execPath, args: [target, ...launchArgs] };
     }
     if ([".exe", ".com"].includes(targetExt)) {
-      return { command: target, args };
+      return { command: target, args: launchArgs };
     }
   }
 

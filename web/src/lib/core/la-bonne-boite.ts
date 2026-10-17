@@ -150,7 +150,7 @@ export async function loadLaBonneBoiteDiscoveredOffers(
       company: c.name,
       title,
       location: loc,
-      postedAt: new Date().toISOString().slice(0, 10),
+      postedAt: "",
       ats: "portals",
       source: "la-bonne-boite-pme",
       url,

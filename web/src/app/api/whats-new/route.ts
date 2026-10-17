@@ -66,7 +66,7 @@ export async function GET(req: Request) {
       company: (company || "").trim(),
       title: (title || "").trim(),
       location: (location || "").trim(),
-      postedAt: /^\d{4}-\d{2}-\d{2}$/.test(firstSeen || "") ? firstSeen : "",
+      postedAt: /^\d{4}-\d{2}-\d{2}/.test(firstSeen || "") ? firstSeen : "",
       ats: (portal || "").replace(/-full$/, "").trim() || "other",
       source: "whats-new",
     };

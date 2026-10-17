@@ -36,7 +36,9 @@ export function useCountUp(target: number): number {
         const diff = target - v;
         if (Math.abs(diff) < 0.5) return target;
         raf.current = requestAnimationFrame(tick);
-        return v + diff * 0.18;
+        // Si le décalage est important, accélérer pour rester immédiatement synchro avec la liste
+        const step = Math.abs(diff) > 10 ? diff * 0.5 : diff * 0.25;
+        return v + step;
       });
     };
     raf.current = requestAnimationFrame(tick);
@@ -69,8 +71,9 @@ function SourceChip({ ats, s }: { ats: AtsSource; s?: SourceState }) {
 }
 
 export function DiscoveringState() {
-  const { sources, matchCount, companiesScanned, status, phase } = useExplore();
-  const shown = useCountUp(matchCount);
+  const { sources, matchCount, companiesScanned, status, phase, offers } = useExplore();
+  const targetOffers = Math.max(offers.length, matchCount);
+  const shown = useCountUp(targetOffers);
   const companies = useCountUp(companiesScanned);
 
   return (
@@ -80,15 +83,15 @@ export function DiscoveringState() {
         <style>{STYLE}</style>
 
         <div className="co-ledger">
-          <span className="size-1.5 rounded-full bg-emerald-500" />
-          0 jetons · 0,00 € {companies > 0 && <span className="opacity-70">· {companies.toLocaleString()} entreprises</span>}
+          <span className="size-1.5 rounded-full bg-brand" />
+          {companies > 0 ? `${companies.toLocaleString()} entreprises explorées` : "Exploration en direct"}
         </div>
 
         <div>
           <div className={`${instrumentSerif.className} co-disc__counter text-foreground`}>{shown}</div>
           <p className="mt-1 text-sm text-muted">
             {phase === "revealing"
-              ? "offres récentes trouvées — gratuit"
+              ? "offres récentes trouvées"
               : matchCount > 0
                 ? "offres récentes et ça continue…"
                 : "exploration du réseau en cours…"}

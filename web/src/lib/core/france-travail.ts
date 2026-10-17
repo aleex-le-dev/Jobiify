@@ -179,8 +179,8 @@ export async function loadFranceTravailDiscoveredOffers(
     const finalUrl = partnerUrl || originUrl || directUrl;
 
     const cleanCity = formatLocationCity(loc) || loc;
-    const rawDate = (job.dateActualisation || job.dateCreation || "").slice(0, 10);
-    const postedAt = normalizeDateToIso(rawDate) || rawDate || new Date().toISOString().slice(0, 10);
+    const rawDate = job.dateActualisation || job.dateCreation || "";
+    const postedAt = rawDate || "";
 
     offers.push({
       company: job.entreprise?.nom || "France Travail (Employeur confidentiel)",

@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import * as yaml from "js-yaml";
-import { careerOpsRoot, rootScript, readInbox } from "@/lib/career-ops";
+import { careerOpsRoot, rootScript, readInbox, readScanDates } from "@/lib/career-ops";
 import { writeTempPortals, cleanupTempPortals } from "./portals";
 import { profileTargetKeywords } from "@/lib/profile-keywords.mjs";
 import { titleFit } from "@/lib/title-fit.mjs";
@@ -10,6 +10,7 @@ import { resolveScanTimeoutMs, scanTimeoutMessage } from "./scan-timeout.mjs";
 import { ATS_LABEL, ATS_SOURCES, type AtsSource, type DiscoveredOffer, type ExploreFilters, type FitBand, type ScanEvent } from "@/lib/explore";
 import { mergeScanResults, timedOutMessage } from "./scan-merge.mjs";
 import { parseScanJsonStdout } from "./scan-json.mjs";
+import { isOfferWithinSinceDays } from "@/lib/format";
 
 export type { DiscoveredOffer, ScanEvent, AtsSource } from "@/lib/explore";
 export { ATS_SOURCES } from "@/lib/explore";
@@ -81,6 +82,7 @@ function ingestJsonOffer(
 ): void {
   const url = (o.url || "").trim();
   if (!url || seen.has(url) || !o.company || !o.title) return;
+  if (filters.sinceDays && !isOfferWithinSinceDays(o.postedAt, filters.sinceDays)) return;
   seen.add(url);
   const source = o.source || `${currentAts}-full`;
   const offer: DiscoveredOffer = {
@@ -125,7 +127,7 @@ function parseOfferLine(source: string, date: string, rest: string): Omit<Discov
     company,
     title,
     location: location === "N/A" ? "" : location,
-    postedAt: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "",
+    postedAt: /^\d{4}-\d{2}-\d{2}/.test(date) ? date : "",
     ats: source.replace(/-full$/, ""),
     source,
   };
@@ -419,10 +421,74 @@ async function scanLocalPortals(
 
   onEvent({ kind: "atsStart", ats: "portals", companies: trackedCount });
 
-  // 1. Inbox local jobs
+  // 1. Open Data Choisir le Service Public & Emploi Territorial (data.gouv.fr)
+  try {
+    const spOffers = await loadServicePublicDiscoveredOffers(filters, roleTargets);
+    for (const spOffer of spOffers) {
+      if (sink.seen.has(spOffer.url)) continue;
+      // Pour les filtres ultra-courts (24h ou 3j), filtrer strictement la date.
+      // Dès 7 jours, 14 jours, 30 jours ou Toutes, conserver tous les postes ouverts de la fonction publique territoriale.
+      if (filters.sinceDays && filters.sinceDays <= 3 && spOffer.postedAt && !isOfferWithinSinceDays(spOffer.postedAt, filters.sinceDays)) continue;
+      sink.seen.add(spOffer.url);
+      sink.offers.push(spOffer);
+      onEvent({ kind: "offer", offer: spOffer });
+    }
+  } catch (err) {
+    console.error("Erreur lors de la récupération du Service Public:", err);
+  }
+
+  // 2. Welcome to the Jungle (WTTJ)
+  try {
+    const wttjOffers = await loadWttjDiscoveredOffers(filters, roleTargets);
+    for (const wOffer of wttjOffers) {
+      if (sink.seen.has(wOffer.url)) continue;
+      if (filters.sinceDays && wOffer.postedAt && !isOfferWithinSinceDays(wOffer.postedAt, filters.sinceDays)) continue;
+      sink.seen.add(wOffer.url);
+      sink.offers.push(wOffer);
+      onEvent({ kind: "offer", offer: wOffer });
+    }
+  } catch (err) {
+    console.error("Erreur lors de la récupération de WTTJ:", err);
+  }
+
+  // 3. France Travail (si configuré dans .env)
+  try {
+    const ftOffers = await loadFranceTravailDiscoveredOffers(filters, roleTargets);
+    for (const ftOffer of ftOffers) {
+      if (sink.seen.has(ftOffer.url)) continue;
+      if (filters.sinceDays && ftOffer.postedAt && !isOfferWithinSinceDays(ftOffer.postedAt, filters.sinceDays)) continue;
+      sink.seen.add(ftOffer.url);
+      sink.offers.push(ftOffer);
+      onEvent({ kind: "offer", offer: ftOffer });
+    }
+  } catch (err) {
+    console.error("Erreur lors de la récupération de France Travail:", err);
+  }
+
+  // 4. Jooble (offres de PME et petits cabinets si JOOBLE_API_KEY dans .env)
+  try {
+    const joobleOffers = await loadJoobleDiscoveredOffers(filters, roleTargets);
+    for (const jOffer of joobleOffers) {
+      if (sink.seen.has(jOffer.url)) continue;
+      if (filters.sinceDays && filters.sinceDays <= 3 && jOffer.postedAt && !isOfferWithinSinceDays(jOffer.postedAt, filters.sinceDays)) continue;
+      sink.seen.add(jOffer.url);
+      sink.offers.push(jOffer);
+      onEvent({ kind: "offer", offer: jOffer });
+    }
+  } catch (err) {
+    console.error("Erreur lors de la récupération de Jooble:", err);
+  }
+
+  // 5. Inbox local jobs (offres sauvegardées ou ajoutées manuellement dans pipeline.md)
   const inbox = readInbox();
+  const scanDates = readScanDates();
   for (const job of inbox) {
+    // Si l'offre a déjà été découverte par une source officielle avec sa date, on conserve la version enrichie
     if (sink.seen.has(job.url)) continue;
+    const effectiveDate = job.postedAt || scanDates.get(job.url) || "";
+    // N'inclure que les offres ayant une date de publication réelle
+    if (!effectiveDate) continue;
+    if (filters.sinceDays && filters.sinceDays <= 3 && !isOfferWithinSinceDays(effectiveDate, filters.sinceDays)) continue;
     const titleMatch = matchesTitle(job.role, filters.positive, filters.negative);
     const locMatch = matchesLocation(job.location || "", filters.allow, filters.block, filters.blockHard);
     if (!titleMatch || !locMatch) continue;
@@ -432,7 +498,7 @@ async function scanLocalPortals(
       company: job.company,
       title: job.role,
       location: job.location || "",
-      postedAt: job.postedAt || new Date().toISOString().slice(0, 10),
+      postedAt: effectiveDate,
       ats: "portals",
       source: "portals-local",
       url: job.url,
@@ -443,84 +509,6 @@ async function scanLocalPortals(
     onEvent({ kind: "offer", offer });
   }
 
-  // 2. Open Data Choisir le Service Public & Emploi Territorial (data.gouv.fr)
-  try {
-    const spOffers = await loadServicePublicDiscoveredOffers(filters, roleTargets);
-    for (const spOffer of spOffers) {
-      if (sink.seen.has(spOffer.url)) continue;
-      sink.seen.add(spOffer.url);
-      sink.offers.push(spOffer);
-      onEvent({ kind: "offer", offer: spOffer });
-    }
-  } catch (err) {
-    console.error("Erreur lors de la récupération du Service Public:", err);
-  }
-
-  // 3. Welcome to the Jungle (WTTJ)
-  try {
-    const wttjOffers = await loadWttjDiscoveredOffers(filters, roleTargets);
-    for (const wOffer of wttjOffers) {
-      if (sink.seen.has(wOffer.url)) continue;
-      sink.seen.add(wOffer.url);
-      sink.offers.push(wOffer);
-      onEvent({ kind: "offer", offer: wOffer });
-    }
-  } catch (err) {
-    console.error("Erreur lors de la récupération de WTTJ:", err);
-  }
-
-  // 4. France Travail (si configuré dans .env)
-  try {
-    const ftOffers = await loadFranceTravailDiscoveredOffers(filters, roleTargets);
-    for (const ftOffer of ftOffers) {
-      if (sink.seen.has(ftOffer.url)) continue;
-      sink.seen.add(ftOffer.url);
-      sink.offers.push(ftOffer);
-      onEvent({ kind: "offer", offer: ftOffer });
-    }
-  } catch (err) {
-    console.error("Erreur lors de la récupération de France Travail:", err);
-  }
-
-  // 5. Jooble (offres de PME et petits cabinets si JOOBLE_API_KEY dans .env)
-  try {
-    const joobleOffers = await loadJoobleDiscoveredOffers(filters, roleTargets);
-    for (const jOffer of joobleOffers) {
-      if (sink.seen.has(jOffer.url)) continue;
-      sink.seen.add(jOffer.url);
-      sink.offers.push(jOffer);
-      onEvent({ kind: "offer", offer: jOffer });
-    }
-  } catch (err) {
-    console.error("Erreur lors de la récupération de Jooble:", err);
-  }
-
-  // 7. La Bonne Boîte (France Travail : détection des PME/TPE qui recrutent sans annonce)
-  try {
-    const lbbOffers = await loadLaBonneBoiteDiscoveredOffers(filters, roleTargets);
-    for (const lbbOffer of lbbOffers) {
-      if (sink.seen.has(lbbOffer.url)) continue;
-      sink.seen.add(lbbOffer.url);
-      sink.offers.push(lbbOffer);
-      onEvent({ kind: "offer", offer: lbbOffer });
-    }
-  } catch (err) {
-    console.error("Erreur lors de la récupération de La Bonne Boîte:", err);
-  }
-
-  // 8. Répertoire SIRENE (INSEE : cartographie de toutes les PME / TPE IT du 62)
-  try {
-    const sireneOffers = await loadSireneDiscoveredOffers(filters);
-    for (const sOffer of sireneOffers) {
-      if (sink.seen.has(sOffer.url)) continue;
-      sink.seen.add(sOffer.url);
-      sink.offers.push(sOffer);
-      onEvent({ kind: "offer", offer: sOffer });
-    }
-  } catch (err) {
-    console.error("Erreur lors de la récupération du répertoire SIRENE:", err);
-  }
-
   onEvent({ kind: "atsDone", ats: "portals", unreachable: 0 });
   return trackedCount;
 }
@@ -529,7 +517,8 @@ const NO_OUTPUT = "The scanner returned no readable output.";
 
 export async function runDiscovery(filters: ExploreFilters, onEvent: (e: ScanEvent) => void): Promise<DiscoveredOffer[]> {
   const tempPortals = writeTempPortals(filters);
-  const allAts = (filters.ats.length ? filters.ats : [...ATS_SOURCES]).filter((a) => (ATS_SOURCES as readonly string[]).includes(a));
+  // Respecter les sources sélectionnées par l'utilisateur (par défaut : portals)
+  const allAts = Array.isArray(filters.ats) && filters.ats.length > 0 ? filters.ats : ["portals"];
   const useJson = scannerSupportsJson();
   // Read once per run: every child gets the same budget, and the copy quotes it
   // exactly (a 1.5s budget must not read as 2s).
