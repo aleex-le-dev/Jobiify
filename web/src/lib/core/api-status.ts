@@ -31,19 +31,7 @@ export function getApisStatus(): ApiInfo[] {
     }
   } catch {}
 
-  // 2. Sirene IT PME 62
-  let sireneDetail = "En ligne (INSEE) · Prêt pour la cartographie";
-  try {
-    const sireneCache = path.join(cacheDir, "sirene-it-62.json");
-    if (fs.existsSync(sireneCache)) {
-      const data = JSON.parse(fs.readFileSync(sireneCache, "utf8"));
-      if (Array.isArray(data)) {
-        sireneDetail = `En ligne (INSEE) · ${data.length} PME informatiques locales cartographiées à proximité`;
-      }
-    }
-  } catch {}
-
-  // 3. WTTJ
+  // 2. WTTJ
   let wttjDetail = "En ligne (Algolia France) · Requêtes temps réel sans token";
   try {
     const wttjCache = path.join(cacheDir, "wttj-fr.json");
@@ -56,10 +44,10 @@ export function getApisStatus(): ApiInfo[] {
   } catch {}
 
   const env = getEffectiveEnv();
-  // 4. France Travail
+  // 3. France Travail
   const hasFt = Boolean(env.FRANCETRAVAIL_CLIENT_ID?.trim() && env.FRANCETRAVAIL_CLIENT_SECRET?.trim());
 
-  // 5. Jooble
+  // 4. Jooble
   const hasJooble = Boolean(env.JOOBLE_API_KEY?.trim());
 
   const list: ApiInfo[] = [
@@ -72,16 +60,6 @@ export function getApisStatus(): ApiInfo[] {
       detail: spDetail,
       free: true,
       docUrl: "https://choisirleservicepublic.gouv.fr",
-    },
-    {
-      id: "sirene-it",
-      name: "Répertoire SIRENE — PME & Artisans IT du 62",
-      description: "Cartographie officielle INSEE de toutes les entreprises et prestataires informatiques locaux",
-      category: "Gouvernement & Open Data",
-      status: "live",
-      detail: sireneDetail,
-      free: true,
-      docUrl: "https://annuaire-entreprises.data.gouv.fr",
     },
     {
       id: "wttj",

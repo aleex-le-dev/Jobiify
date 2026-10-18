@@ -386,8 +386,6 @@ import { loadServicePublicDiscoveredOffers } from "./service-public";
 import { loadWttjDiscoveredOffers } from "./wttj";
 import { loadFranceTravailDiscoveredOffers } from "./france-travail";
 import { loadJoobleDiscoveredOffers } from "./jooble";
-import { loadLaBonneBoiteDiscoveredOffers } from "./la-bonne-boite";
-import { loadSireneDiscoveredOffers } from "./sirene-it";
 
 function matchesKeyword(text: string, kw: string): boolean {
   return text.toLowerCase().includes(kw.toLowerCase().trim());
@@ -485,20 +483,7 @@ async function scanLocalPortals(
     console.error("Erreur lors de la récupération de Jooble:", err);
   }
 
-  // 5. SIRENE IT (275 entreprises et PME informatiques locales du Pas-de-Calais)
-  try {
-    const sireneOffers = await loadSireneDiscoveredOffers(filters);
-    for (const sOffer of sireneOffers) {
-      if (sink.seen.has(sOffer.url)) continue;
-      sink.seen.add(sOffer.url);
-      sink.offers.push(sOffer);
-      onEvent({ kind: "offer", offer: sOffer });
-    }
-  } catch (err) {
-    console.error("Erreur lors de la récupération de SIRENE IT:", err);
-  }
-
-  // 6. Inbox local jobs (offres sauvegardées ou ajoutées manuellement dans pipeline.md)
+  // 5. Inbox local jobs (offres sauvegardées ou ajoutées manuellement dans pipeline.md)
   const inbox = readInbox();
   const scanDates = readScanDates();
   for (const job of inbox) {

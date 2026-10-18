@@ -145,6 +145,32 @@ const PRESET_CATEGORIES = [
       "Gestionnaire de Parc",
     ],
   },
+  {
+    id: "safetynet",
+    labelFr: "🛡️ Filets larges (Tous)",
+    labelEn: "🛡️ Broad Safety Net",
+    roles: [
+      "Développeur",
+      "Developer",
+      "Software",
+      "Technicien",
+      "Informatique",
+      "Support",
+      "Helpdesk",
+      "Web",
+      "Digital",
+      "Numérique",
+      "Applicatif",
+      "Système",
+      "Réseau",
+      "SI",
+      "IT",
+      "Data",
+      "Cloud",
+      "Cyber",
+      "Infrastructure",
+    ],
+  },
 ];
 
 type FilterKey = "positive" | "negative" | "allow" | "alwaysAllow" | "block" | "blockHard";
