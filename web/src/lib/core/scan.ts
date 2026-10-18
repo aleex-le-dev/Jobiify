@@ -205,7 +205,10 @@ function runScanner(
       rootScript("scan-ats-full"),
       "--dry-run",
       "--since",
-      filters.sinceDays && filters.sinceDays > 0 ? String(filters.sinceDays) : "60",
+      // Toujours scanner sur 30 jours pour maximiser le pool d'offres ;
+      // le filtre sinceDays (24h, 3j, 7j...) s'applique ensuite côté client
+      // dans results-list.tsx, sans coût réseau supplémentaire.
+      "30",
       "--ats",
       ats.join(","),
       "--limit",

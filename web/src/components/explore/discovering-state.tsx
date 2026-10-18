@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { ApplyBackdrop } from "@/components/apply/apply-backdrop";
 import { instrumentSerif } from "@/lib/fonts";
-import { ATS_LABEL, ATS_SOURCES, type AtsSource } from "@/lib/explore";
+import { ATS_LABEL, type AtsSource } from "@/lib/explore";
 import { useExplore, type SourceState } from "./explore-provider";
 
 const STYLE = `
@@ -70,11 +70,15 @@ function SourceChip({ ats, s }: { ats: AtsSource; s?: SourceState }) {
   );
 }
 
-export function DiscoveringState() {
-  const { sources, matchCount, companiesScanned, status, phase, offers } = useExplore();
-  const targetOffers = Math.max(offers.length, matchCount);
-  const shown = useCountUp(targetOffers);
+/** filteredCount = nombre d'offres dans la fenêtre sinceDays (ce que l'utilisateur verra) */
+export function DiscoveringState({ filteredCount }: { filteredCount: number }) {
+  const { sources, companiesScanned, status, phase, filters } = useExplore();
+  // Afficher le nombre d'offres filtrées (cohérent avec ResultsList)
+  const shown = useCountUp(filteredCount);
   const companies = useCountUp(companiesScanned);
+
+  // N'afficher que les sources sélectionnées dans filters.ats
+  const activeSources = (filters.ats ?? []) as AtsSource[];
 
   return (
     <>
@@ -91,15 +95,15 @@ export function DiscoveringState() {
           <div className={`${instrumentSerif.className} co-disc__counter text-foreground`}>{shown}</div>
           <p className="mt-1 text-sm text-muted">
             {phase === "revealing"
-              ? "offres récentes trouvées"
-              : matchCount > 0
-                ? "offres récentes et ça continue…"
+              ? "offres trouvées"
+              : filteredCount > 0
+                ? "offres correspondantes et ça continue…"
                 : "exploration du réseau en cours…"}
           </p>
         </div>
 
         <div className="co-src">
-          {ATS_SOURCES.map((a) => (
+          {activeSources.map((a) => (
             <SourceChip key={a} ats={a} s={sources[a]} />
           ))}
         </div>

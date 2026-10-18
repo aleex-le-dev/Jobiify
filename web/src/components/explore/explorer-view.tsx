@@ -8,6 +8,7 @@ import { instrumentSerif } from "@/lib/fonts";
 import type { Application, InboxJob } from "@/lib/career-ops";
 import { normalizeTextKey } from "@/lib/core/normalize-text-key.mjs";
 import { paramsToFilters, paramsToAi, RECENCY_FR, RECENCY_EN, type ExploreFilters } from "@/lib/explore";
+import { isOfferWithinSinceDays } from "@/lib/format";
 import { FilterBuilder } from "./filter-builder";
 import { DiscoveringState } from "./discovering-state";
 import { AiHuntView } from "./ai-hunt-view";
@@ -44,6 +45,10 @@ export function ExplorerView({
   const isFr = locale === "fr";
   const recencyList = isFr ? RECENCY_FR : RECENCY_EN;
   const { filters, setFilters, initFilters, phase, running, offers, discover, loadFresh, status, error, scannerMissing, mode, setMode, aiIntent, setAiIntent, discoverAI, companiesScanned, companiesAvailable, capHit, droppedNoDate, partial } = useExplore();
+
+  // Référence stable sur la phase pour être lue dans un setTimeout sans stale closure.
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
 
   const inited = useRef(false);
   const [refineOpen, setRefineOpen] = useState(false);
@@ -86,9 +91,19 @@ export function ExplorerView({
       if (sp.get("run") === "1") {
         setFirstRun(true);
         void discover();
+      } else if (!hasSpecificFilterParams && phase === "idle") {
+        // Auto-lancement : si on arrive sur Explorer sans session restaurée
+        // ni params URL spéciaux, on démarre le scan après un tick pour laisser
+        // la rehydration de session s'exécuter d'abord (sinon on relancerait
+        // un scan même quand des résultats sont déjà disponibles).
+        setTimeout(() => {
+          // Vérification post-tick : on ne lance que si la phase est toujours idle
+          // (pas de session restaurée entre-temps).
+          if (phaseRef.current === "idle") void discover();
+        }, 0);
       }
     }
-  }, [seed.filters, initFilters, setMode, setAiIntent, discover, loadFresh]);
+  }, [seed.filters, initFilters, setMode, setAiIntent, discover, loadFresh, phase]);
 
   const inboxUrls = useMemo(() => new Set(inboxSnapshot.map((j) => j.url)), [inboxSnapshot]);
   const enriched: EnrichedOffer[] = useMemo(
@@ -107,13 +122,22 @@ export function ExplorerView({
     [offers, inboxUrls, appsSnapshot],
   );
 
+  // Nombre d'offres dans la fenêtre de recency sélectionnée — cohérent avec
+  // ce que ResultsList affichera (même logique de filtrage que results-list.tsx).
+  const filteredCount = useMemo(() => {
+    const sd = filters.sinceDays;
+    if (!sd || sd <= 0) return enriched.length;
+    return enriched.filter((o) => isOfferWithinSinceDays(o.postedAt, sd)).length;
+  }, [enriched, filters.sinceDays]);
+
   const isAi = mode === "ai";
   const isResults = phase === "results";
   const canDiscover = filters.ats.length > 0;
   const scanRunning = running && !isAi;
-  // Keep one ResultsList mounted across scanning → revealing → results so
-  // filter/sort/scroll and co-rise survive the 850ms reveal handoff.
-  const showScanList = !isAi && offers.length > 0 && (scanRunning || isResults);
+  // N'afficher la ResultsList qu'après la fin du scan (isResults) — pendant
+  // le scan, seul l'écran DiscoveringState est visible pour éviter la confusion
+  // entre le compteur de chargement et le nombre d'offres filtrées.
+  const showScanList = !isAi && (isResults || phase === "revealing");
 
   const [clearedSnapshot, setClearedSnapshot] = useState<ExploreFilters | null>(null);
 
@@ -141,7 +165,7 @@ export function ExplorerView({
 
   return (
     <div className={scanRunning ? undefined : "mx-auto max-w-5xl px-5 py-8 md:px-8"}>
-      {scanRunning && <DiscoveringState />}
+      {scanRunning && <DiscoveringState filteredCount={filteredCount} />}
       {!scanRunning && (
         <>
       <header className="mb-6">
