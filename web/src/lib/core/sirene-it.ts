@@ -102,25 +102,29 @@ function matchesKeyword(text: string, kw: string): boolean {
   return text.toLowerCase().includes(kw.toLowerCase().trim());
 }
 
-function matchesLocation(location: string, allow: string[], block: string[], blockHard: string[]): boolean {
-  if (blockHard.some((b) => b && matchesKeyword(location, b))) return false;
-  if (block.some((b) => b && matchesKeyword(location, b))) return false;
-  if (allow.length === 0) return true;
-  return allow.some((a) => a && matchesKeyword(location, a));
+function matchesLocation(location: string, allow?: string[], block?: string[], blockHard?: string[]): boolean {
+  const bHard = blockHard || [];
+  if (bHard.some((b) => b && matchesKeyword(location, b))) return false;
+  const blk = block || [];
+  if (blk.some((b) => b && matchesKeyword(location, b))) return false;
+  const alw = allow || [];
+  if (alw.length === 0) return true;
+  return alw.some((a) => a && matchesKeyword(location, a));
 }
 
 export async function loadSireneDiscoveredOffers(
-  filters: ExploreFilters,
+  filters?: ExploreFilters,
 ): Promise<DiscoveredOffer[]> {
   const companies = await fetchAndCacheSireneItCompanies();
   const offers: DiscoveredOffer[] = [];
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   for (const c of companies) {
     const cp = c.siege?.code_postal || "62";
     const communeName = c.siege?.libelle_commune ? toTitleCase(c.siege.libelle_commune) : "";
     const loc = communeName ? `${communeName} (${cp})` : formatLocationCity(c.siege?.adresse || `${c.siege?.commune || "Pas-de-Calais"} (${cp})`);
 
-    if (!matchesLocation(loc, filters.allow, filters.block, filters.blockHard)) continue;
+    if (!matchesLocation(loc, filters?.allow, filters?.block, filters?.blockHard)) continue;
 
     const naf = c.activite_principale || "";
     const nafLabel = NAF_LIBELLES[naf] || "Prestations & Services Informatiques";
@@ -131,7 +135,7 @@ export async function loadSireneDiscoveredOffers(
       company: c.nom_complet,
       title,
       location: loc,
-      postedAt: "",
+      postedAt: todayIso,
       ats: "portals",
       source: "sirene-pme-62",
       url,

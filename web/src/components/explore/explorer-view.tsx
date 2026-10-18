@@ -79,7 +79,8 @@ export function ExplorerView({
       initFilters(seed.filters);
       void loadFresh();
     } else {
-      initFilters(sp.toString() ? paramsToFilters(sp) : seed.filters);
+      const hasSpecificFilterParams = sp.has("q") || sp.has("loc") || sp.has("ats") || sp.has("not") || sp.has("since");
+      initFilters(hasSpecificFilterParams ? paramsToFilters(sp) : seed.filters);
       // Onboarding hand-off: ?run=1 auto-fires the free scan + flags the first-run
       // banner (the "matches found from your CV, free" reveal).
       if (sp.get("run") === "1") {

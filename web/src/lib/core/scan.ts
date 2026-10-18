@@ -82,7 +82,6 @@ function ingestJsonOffer(
 ): void {
   const url = (o.url || "").trim();
   if (!url || seen.has(url) || !o.company || !o.title) return;
-  if (filters.sinceDays && !isOfferWithinSinceDays(o.postedAt, filters.sinceDays)) return;
   seen.add(url);
   const source = o.source || `${currentAts}-full`;
   const offer: DiscoveredOffer = {
@@ -197,15 +196,20 @@ function runScanner(
   roleTargets: string[],
 ): Promise<ScannerRun> {
   return new Promise((resolve) => {
+    const isWorkday = ats.includes("workday");
+    const requestedLimit = Math.max(1, filters.limitPerAts || 150);
+    // Workday effectue des requêtes détaillées par offre et par tenant distinct,
+    // 150 entreprises prend plus de 15 minutes. On plafonne Workday à 15 entreprises max en exploration web.
+    const effectiveLimit = isWorkday ? Math.min(requestedLimit, 15) : requestedLimit;
     const args = [
       rootScript("scan-ats-full"),
       "--dry-run",
       "--since",
-      String(Math.max(1, filters.sinceDays || 7)),
+      filters.sinceDays && filters.sinceDays > 0 ? String(filters.sinceDays) : "60",
       "--ats",
       ats.join(","),
       "--limit",
-      String(Math.max(1, filters.limitPerAts || 150)),
+      String(effectiveLimit),
     ];
     if (useJson) args.push("--json");
 
@@ -386,17 +390,22 @@ function matchesKeyword(text: string, kw: string): boolean {
   return text.toLowerCase().includes(kw.toLowerCase().trim());
 }
 
-function matchesTitle(title: string, positive: string[], negative: string[]): boolean {
-  if (negative.some((n) => n && matchesKeyword(title, n))) return false;
-  if (positive.length === 0) return true;
-  return positive.some((p) => p && matchesKeyword(title, p));
+function matchesTitle(title: string, positive?: string[], negative?: string[]): boolean {
+  const neg = negative || [];
+  if (neg.some((n) => n && matchesKeyword(title, n))) return false;
+  const pos = positive || [];
+  if (pos.length === 0) return true;
+  return pos.some((p) => p && matchesKeyword(title, p));
 }
 
-function matchesLocation(location: string, allow: string[], block: string[], blockHard: string[]): boolean {
-  if (blockHard.some((b) => b && matchesKeyword(location, b))) return false;
-  if (block.some((b) => b && matchesKeyword(location, b))) return false;
-  if (allow.length === 0) return true;
-  return allow.some((a) => a && matchesKeyword(location, a));
+function matchesLocation(location: string, allow?: string[], block?: string[], blockHard?: string[]): boolean {
+  const bHard = blockHard || [];
+  if (bHard.some((b) => b && matchesKeyword(location, b))) return false;
+  const blk = block || [];
+  if (blk.some((b) => b && matchesKeyword(location, b))) return false;
+  const alw = allow || [];
+  if (alw.length === 0) return true;
+  return alw.some((a) => a && matchesKeyword(location, a));
 }
 
 async function scanLocalPortals(
@@ -426,7 +435,6 @@ async function scanLocalPortals(
     const spOffers = await loadServicePublicDiscoveredOffers(filters, roleTargets);
     for (const spOffer of spOffers) {
       if (sink.seen.has(spOffer.url)) continue;
-      if (filters.sinceDays && spOffer.postedAt && !isOfferWithinSinceDays(spOffer.postedAt, filters.sinceDays)) continue;
       sink.seen.add(spOffer.url);
       sink.offers.push(spOffer);
       onEvent({ kind: "offer", offer: spOffer });
@@ -440,7 +448,6 @@ async function scanLocalPortals(
     const wttjOffers = await loadWttjDiscoveredOffers(filters, roleTargets);
     for (const wOffer of wttjOffers) {
       if (sink.seen.has(wOffer.url)) continue;
-      if (filters.sinceDays && wOffer.postedAt && !isOfferWithinSinceDays(wOffer.postedAt, filters.sinceDays)) continue;
       sink.seen.add(wOffer.url);
       sink.offers.push(wOffer);
       onEvent({ kind: "offer", offer: wOffer });
@@ -454,7 +461,6 @@ async function scanLocalPortals(
     const ftOffers = await loadFranceTravailDiscoveredOffers(filters, roleTargets);
     for (const ftOffer of ftOffers) {
       if (sink.seen.has(ftOffer.url)) continue;
-      if (filters.sinceDays && ftOffer.postedAt && !isOfferWithinSinceDays(ftOffer.postedAt, filters.sinceDays)) continue;
       sink.seen.add(ftOffer.url);
       sink.offers.push(ftOffer);
       onEvent({ kind: "offer", offer: ftOffer });
@@ -468,7 +474,6 @@ async function scanLocalPortals(
     const joobleOffers = await loadJoobleDiscoveredOffers(filters, roleTargets);
     for (const jOffer of joobleOffers) {
       if (sink.seen.has(jOffer.url)) continue;
-      if (filters.sinceDays && jOffer.postedAt && !isOfferWithinSinceDays(jOffer.postedAt, filters.sinceDays)) continue;
       sink.seen.add(jOffer.url);
       sink.offers.push(jOffer);
       onEvent({ kind: "offer", offer: jOffer });
@@ -477,19 +482,26 @@ async function scanLocalPortals(
     console.error("Erreur lors de la récupération de Jooble:", err);
   }
 
-  // 5. Inbox local jobs (offres sauvegardées ou ajoutées manuellement dans pipeline.md)
+  // 5. SIRENE IT (275 entreprises et PME informatiques locales du Pas-de-Calais)
+  try {
+    const sireneOffers = await loadSireneDiscoveredOffers(filters);
+    for (const sOffer of sireneOffers) {
+      if (sink.seen.has(sOffer.url)) continue;
+      sink.seen.add(sOffer.url);
+      sink.offers.push(sOffer);
+      onEvent({ kind: "offer", offer: sOffer });
+    }
+  } catch (err) {
+    console.error("Erreur lors de la récupération de SIRENE IT:", err);
+  }
+
+  // 6. Inbox local jobs (offres sauvegardées ou ajoutées manuellement dans pipeline.md)
   const inbox = readInbox();
   const scanDates = readScanDates();
   for (const job of inbox) {
     // Si l'offre a déjà été découverte par une source officielle avec sa date, on conserve la version enrichie
     if (sink.seen.has(job.url)) continue;
-    const effectiveDate = job.postedAt || scanDates.get(job.url) || "";
-    // N'inclure que les offres ayant une date de publication réelle
-    if (!effectiveDate) continue;
-    if (filters.sinceDays && !isOfferWithinSinceDays(effectiveDate, filters.sinceDays)) continue;
-    const titleMatch = matchesTitle(job.role, filters.positive, filters.negative);
-    const locMatch = matchesLocation(job.location || "", filters.allow, filters.block, filters.blockHard);
-    if (!titleMatch || !locMatch) continue;
+    const effectiveDate = job.postedAt || scanDates.get(job.url) || new Date().toISOString().slice(0, 10);
 
     sink.seen.add(job.url);
     const offer: DiscoveredOffer = {
@@ -500,7 +512,7 @@ async function scanLocalPortals(
       ats: "portals",
       source: "portals-local",
       url: job.url,
-      matchedKeyword: firstMatch(job.role, filters.positive),
+      matchedKeyword: firstMatch(job.role, filters?.positive),
       ...fitField(job.role, roleTargets),
     };
     sink.offers.push(offer);

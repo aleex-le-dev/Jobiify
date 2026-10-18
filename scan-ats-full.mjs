@@ -1544,8 +1544,8 @@ async function main() {
     }, ({ done, resumeAt }) => {
       lastDone = done;
       curDone = done; curErrors = errors; curDeadSkipped = deadBoardsSkipped;
-      lastResumeAt = resumeAt;
-      if (done % 200 === 0 || done === entries.length) {
+      const step = entries.length <= 50 ? 5 : entries.length <= 200 ? 10 : 100;
+      if (done % step === 0 || done === entries.length) {
         progress(`  ${done}/${entries.length} scanned, ${newOffers.length} total matches\r`);
       }
       if (done % CHECKPOINT_EVERY === 0 && !opts.dryRun) {

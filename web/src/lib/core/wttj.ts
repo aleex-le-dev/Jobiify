@@ -52,14 +52,26 @@ export async function fetchAndCacheWttjJobs(): Promise<WttjJob[]> {
     const { appId, apiKey } = parseEnvPayload(envText);
     const algoliaHost = `${appId}-dsn.algolia.net`;
 
-    const queries = ["informatique", "support", "technicien", "developpeur", "reseau", "web"];
+    const queries = [
+      "informatique",
+      "support",
+      "technicien",
+      "developpeur",
+      "reseau",
+      "web",
+      "helpdesk",
+      "react",
+      "php",
+      "frontend",
+      "fullstack",
+    ];
     const byUrl = new Map<string, WttjJob>();
 
     for (const query of queries) {
       const url = `https://${algoliaHost}/1/indexes/wttj_jobs_production_en/query`;
       const params = new URLSearchParams({
         query,
-        hitsPerPage: "100",
+        hitsPerPage: "200",
         filters: "offices.country_code:FR",
         attributesToRetrieve: "name,slug,organization,offices,remote,published_at_timestamp",
       });
@@ -93,7 +105,9 @@ export async function fetchAndCacheWttjJobs(): Promise<WttjJob[]> {
         const parts: string[] = [];
         if (office?.city) parts.push(office.city.trim());
         if (office?.country) parts.push(office.country.trim());
-        if (h.remote === "fulltime") parts.push("Télétravail");
+        if (h.remote === "fulltime" || h.remote === "partial" || h.remote === "punctual") {
+          parts.push("Télétravail");
+        }
         const location = parts.join(", ");
 
         const ts = h.published_at_timestamp;
@@ -115,7 +129,8 @@ export async function fetchAndCacheWttjJobs(): Promise<WttjJob[]> {
   }
 }
 
-function firstMatch(title: string, positives: string[]): string | undefined {
+function firstMatch(title: string, positives?: string[]): string | undefined {
+  if (!positives || !Array.isArray(positives)) return undefined;
   const lower = title.toLowerCase();
   for (const k of positives) if (k && lower.includes(k.toLowerCase())) return k;
   return undefined;
@@ -130,14 +145,26 @@ function matchesKeyword(text: string, kw: string): boolean {
   return text.toLowerCase().includes(kw.toLowerCase().trim());
 }
 
-function matchesFilters(title: string, location: string, filters: ExploreFilters): boolean {
-  if (filters.negative.some((n) => n && matchesKeyword(title, n))) return false;
-  if (filters.positive.length > 0 && !filters.positive.some((p) => p && matchesKeyword(title, p))) return false;
+function matchesFilters(title: string, location: string, filters?: ExploreFilters): boolean {
+  const negative = filters?.negative || [];
+  if (negative.some((n) => n && matchesKeyword(title, n))) return false;
+  const positive = filters?.positive || [];
+  if (positive.length > 0) {
+    const isTechGeneric = /(informatique|technicien|support|syst[eè]me|r[eé]seau|d[eé]veloppeur|web|cloud|devops|data|helpdesk|num[eé]rique)/i.test(title);
+    if (!isTechGeneric && !positive.some((p) => p && matchesKeyword(title, p))) return false;
+  }
 
   const fullLoc = location.toLowerCase();
-  if (filters.blockHard.some((b) => b && matchesKeyword(fullLoc, b))) return false;
-  if (filters.block.some((b) => b && matchesKeyword(fullLoc, b))) return false;
-  if (filters.allow.length > 0 && !filters.allow.some((a) => a && matchesKeyword(fullLoc, a))) return false;
+  const blockHard = filters?.blockHard || [];
+  if (blockHard.some((b) => b && matchesKeyword(fullLoc, b))) return false;
+  const block = filters?.block || [];
+  if (block.some((b) => b && matchesKeyword(fullLoc, b))) return false;
+
+  if (fullLoc.includes("télétravail") || fullLoc.includes("teletravail") || fullLoc.includes("remote")) return true;
+  const alwaysAllow = filters?.alwaysAllow || [];
+  if (alwaysAllow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
+  const allow = filters?.allow || [];
+  if (allow.length > 0 && !allow.some((a) => a && matchesKeyword(fullLoc, a))) return false;
 
   return true;
 }
@@ -160,7 +187,7 @@ export async function loadWttjDiscoveredOffers(
       ats: "portals",
       source: "wttj-fr",
       url: job.url,
-      matchedKeyword: firstMatch(job.title, filters.positive),
+      matchedKeyword: firstMatch(job.title, filters?.positive),
       ...fitField(job.title, roleTargets),
     });
   }

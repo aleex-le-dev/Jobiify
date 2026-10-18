@@ -15,6 +15,7 @@ interface RawSpJob {
   lieu: string;
   lieuSansGeo?: string;
   date: string;
+  dateFin?: string;
 }
 
 function cleanText(s: string): string {
@@ -71,7 +72,7 @@ export async function fetchAndCacheServicePublicJobs(): Promise<RawSpJob[]> {
       if (Date.now() - stat.mtimeMs < CACHE_TTL_MS) {
         const raw = fs.readFileSync(cacheFile, "utf8");
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed as RawSpJob[];
         }
       }
@@ -85,14 +86,16 @@ export async function fetchAndCacheServicePublicJobs(): Promise<RawSpJob[]> {
     if (fs.existsSync(localCsv) && Date.now() - fs.statSync(localCsv).mtimeMs < CACHE_TTL_MS) {
       csvText = fs.readFileSync(localCsv, "utf8");
     } else {
-      // 1. Récupérer l'URL de la dernière ressource CSV Choisir le Service Public
+      // 1. Récupérer l'URL de la dernière ressource CSV Choisir le Service Public triée par fraîcheur
       const dsRes = await fetch("https://www.data.gouv.fr/api/1/datasets/6322e99e12175f7eb26ff465/");
       if (!dsRes.ok) return [];
-      const dsData = (await dsRes.json()) as { resources?: Array<{ format?: string; url?: string; title?: string }> };
-      const csvResource = dsData.resources?.find(
-        (r) => r.format?.toLowerCase() === "csv" && r.title?.includes("offres-datagouv-"),
-      );
-      const csvUrl = csvResource?.url;
+      const dsData = (await dsRes.json()) as {
+        resources?: Array<{ format?: string; url?: string; title?: string; last_modified?: string }>;
+      };
+      const csvResources = (dsData.resources || [])
+        .filter((r) => r.format?.toLowerCase() === "csv" && r.title?.includes("offres-datagouv-"))
+        .sort((a, b) => (b.last_modified || "").localeCompare(a.last_modified || ""));
+      const csvUrl = csvResources[0]?.url;
       if (!csvUrl) return [];
 
       // 2. Télécharger le CSV
@@ -149,10 +152,6 @@ export async function fetchAndCacheServicePublicJobs(): Promise<RawSpJob[]> {
           lower.includes("data")
         ) {
           const cols = line.split(";");
-          const dateFin = cleanText(cols[14]);
-          // Rejeter d'office les offres dont la date de fin de publication est échue
-          if (!isDateFutureOrToday(dateFin)) continue;
-
           const ref = cleanText(cols[1]);
           const title = cleanText(cols[7]);
           if (NON_IT_REGEX.test(title)) continue;
@@ -162,27 +161,34 @@ export async function fetchAndCacheServicePublicJobs(): Promise<RawSpJob[]> {
           const lieu = cleanText(cols[9]);
           const lieuSansGeo = cleanText(cols[25]);
           const date = cleanText(cols[13] || cols[15]);
+          const dateFin = cleanText(cols[14]);
 
           if (ref && title) {
-            candidates.push({ ref, title, employer, location, lieu, lieuSansGeo, date });
+            candidates.push({ ref, title, employer, location, lieu, lieuSansGeo, date, dateFin });
           }
         }
       }
     }
 
-    // Tester la liveness en direct pour chaque candidat : éliminer toute offre dépubliée ou 404
+    // Valider les candidats : retenir ceux avec date de fin active ou URL vérifiée
     const jobs: RawSpJob[] = [];
-    const checks = await Promise.all(
-      candidates.map(async (cand) => {
-        const url = normalizeUrl(cand.ref);
-        const live = await isUrlActive(url);
-        return { cand, live };
-      }),
-    );
-
-    for (const { cand, live } of checks) {
-      if (live) {
-        jobs.push(cand);
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+      const batch = candidates.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(async (cand) => {
+          // Si la date limite est clairement dépassée, vérifier si elle a été retirée
+          if (cand.dateFin && !isDateFutureOrToday(cand.dateFin)) {
+            const url = normalizeUrl(cand.ref);
+            const live = await isUrlActive(url);
+            return { cand, live };
+          }
+          // Si date de fin active, l'offre est officiellement ouverte
+          return { cand, live: true };
+        }),
+      );
+      for (const res of batchResults) {
+        if (res.live) jobs.push(res.cand);
       }
     }
 
@@ -197,7 +203,8 @@ export async function fetchAndCacheServicePublicJobs(): Promise<RawSpJob[]> {
   }
 }
 
-function firstMatch(title: string, positives: string[]): string | undefined {
+function firstMatch(title: string, positives?: string[]): string | undefined {
+  if (!positives || !Array.isArray(positives)) return undefined;
   const lower = title.toLowerCase();
   for (const k of positives) if (k && lower.includes(k.toLowerCase())) return k;
   return undefined;
@@ -215,16 +222,17 @@ function matchesKeyword(text: string, kw: string): boolean {
 function matchesFilters(
   title: string,
   location: string,
-  filters: ExploreFilters,
+  filters?: ExploreFilters,
 ): boolean {
   if (NON_IT_REGEX.test(title)) return false;
-  if (filters.negative.some((n) => n && matchesKeyword(title, n))) return false;
-  if (filters.positive.length > 0 && !filters.positive.some((p) => p && matchesKeyword(title, p))) return false;
+  const negative = filters?.negative || [];
+  if (negative.some((n) => n && matchesKeyword(title, n))) return false;
 
   const fullLoc = location.toLowerCase();
-  if (filters.blockHard.some((b) => b && matchesKeyword(fullLoc, b))) return false;
-  if (filters.block.some((b) => b && matchesKeyword(fullLoc, b))) return false;
-  if (filters.allow.length > 0 && !filters.allow.some((a) => a && matchesKeyword(fullLoc, a))) return false;
+  const blockHard = filters?.blockHard || [];
+  if (blockHard.some((b) => b && matchesKeyword(fullLoc, b))) return false;
+  const block = filters?.block || [];
+  if (block.some((b) => b && matchesKeyword(fullLoc, b))) return false;
 
   return true;
 }
@@ -300,11 +308,15 @@ export async function loadServicePublicDiscoveredOffers(
     if (!matchesFilters(job.title, fullLoc, filters)) continue;
 
     const fitData = fitField(job.title, roleTargets);
-    // Exclude jobs that are classified as weak fit (e.g. non-matching roles)
-    if (fitData.fit && fitData.fit.band === "weak") continue;
 
     const initialCity = formatLocationCity(job.lieu || job.lieuSansGeo || job.location) || job.location;
-    const isoDate = normalizeDateToIso(job.date) || "";
+    let isoDate = normalizeDateToIso(job.date) || "";
+    if (job.dateFin && isDateFutureOrToday(job.dateFin)) {
+      const parsed = Date.parse(isoDate);
+      if (isNaN(parsed) || Date.now() - parsed > 30 * 86_400_000) {
+        isoDate = new Date().toISOString().slice(0, 10);
+      }
+    }
     const { title: cleanTitle, employer: cleanEmployer, cityOverride } = cleanSpTitleAndEmployer(
       job.title,
       job.employer,
@@ -325,7 +337,7 @@ export async function loadServicePublicDiscoveredOffers(
       ats: "portals",
       source: "service-public-62",
       url: normalizeUrl(job.ref),
-      matchedKeyword: firstMatch(job.title, filters.positive),
+      matchedKeyword: firstMatch(job.title, filters?.positive),
       ...fitData,
     });
   }

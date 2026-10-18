@@ -44,31 +44,48 @@ export async function fetchAndCacheJoobleJobs(): Promise<JoobleRawJob[]> {
   }
 
   try {
-    const keywords = ["informatique", "technicien support", "developpeur", "reseau"];
+    const queries = [
+      { kw: "technicien informatique", loc: "Pas-de-Calais, France" },
+      { kw: "support informatique", loc: "Pas-de-Calais, France" },
+      { kw: "developpeur web", loc: "Pas-de-Calais, France" },
+      { kw: "informatique", loc: "Béthune, France" },
+      { kw: "informatique", loc: "Lens, France" },
+      { kw: "informatique", loc: "Arras, France" },
+      { kw: "technicien helpdesk", loc: "Pas-de-Calais, France" },
+      { kw: "administrateur systeme", loc: "Pas-de-Calais, France" },
+      { kw: "technicien reseau", loc: "Pas-de-Calais, France" },
+      { kw: "integrateur web", loc: "Pas-de-Calais, France" },
+      { kw: "support applicatif", loc: "Pas-de-Calais, France" },
+      { kw: "informatique", loc: "Pas-de-Calais, France" },
+    ];
     const allJobs = new Map<string, JoobleRawJob>();
 
-    for (const kw of keywords) {
-      const url = `https://jooble.org/api/${encodeURIComponent(apiKey)}`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          keywords: kw,
-          location: "Pas-de-Calais, France",
-          page: 1,
-        }),
-      });
+    for (const q of queries) {
+      for (let page = 1; page <= 2; page++) {
+        const url = `https://jooble.org/api/${encodeURIComponent(apiKey)}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            keywords: q.kw,
+            location: q.loc,
+            page,
+          }),
+        });
 
-      if (!res.ok) continue;
+        if (!res.ok) break;
 
-      const data = (await res.json()) as { jobs?: JoobleRawJob[] };
-      for (const item of data.jobs || []) {
-        if (item.link && !allJobs.has(item.link)) {
-          allJobs.set(item.link, item);
+        const data = (await res.json()) as { jobs?: JoobleRawJob[] };
+        const fetched = data.jobs || [];
+        for (const item of fetched) {
+          if (item.link && !allJobs.has(item.link)) {
+            allJobs.set(item.link, item);
+          }
         }
+        if (fetched.length < 20) break; // Dernière page
       }
     }
 
@@ -84,7 +101,8 @@ export async function fetchAndCacheJoobleJobs(): Promise<JoobleRawJob[]> {
   }
 }
 
-function firstMatch(title: string, positives: string[]): string | undefined {
+function firstMatch(title: string, positives?: string[]): string | undefined {
+  if (!positives || !Array.isArray(positives)) return undefined;
   const lower = title.toLowerCase();
   for (const k of positives) if (k && lower.includes(k.toLowerCase())) return k;
   return undefined;
@@ -95,18 +113,52 @@ function fitField(title: string, targets: string[]): { fit: { band: FitBand; sco
   return f ? { fit: { band: f.band as FitBand, score: f.score } } : {};
 }
 
+const NON_IT_TITLE_REGEX =
+  /\b(production\s+automobile|chimie|chemical|fluvial|m[ée]canique|usinage|qualit[ée]\s+uap|approvisionnement\s+mati[èe]re|technical cleanliness)\b/i;
+
+function resolveJoobleLocation(job: JoobleRawJob): string {
+  const snippet = (job.snippet || "").toLowerCase();
+  const company = (job.company || "").toLowerCase();
+  if (company.includes("automotive cells company") || company.includes("acc")) {
+    return "Billy-Berclau / Douvrin (62)";
+  }
+  if (snippet.includes("lens")) return "Lens (62)";
+  if (snippet.includes("arras")) return "Arras (62)";
+  if (snippet.includes("béthune") || snippet.includes("bethune")) return "Béthune (62)";
+  if (snippet.includes("calais")) return "Calais (62)";
+  if (snippet.includes("douvrin")) return "Douvrin (62)";
+  if (snippet.includes("saint-omer")) return "Saint-Omer (62)";
+  if (job.location && job.location.toLowerCase() !== "france") {
+    return job.location;
+  }
+  return "Pas-de-Calais (62)";
+}
+
 function matchesKeyword(text: string, kw: string): boolean {
   return text.toLowerCase().includes(kw.toLowerCase().trim());
 }
 
-function matchesFilters(title: string, location: string, filters: ExploreFilters): boolean {
-  if (filters.negative.some((n) => n && matchesKeyword(title, n))) return false;
-  if (filters.positive.length > 0 && !filters.positive.some((p) => p && matchesKeyword(title, p))) return false;
+function matchesFilters(title: string, location: string, filters?: ExploreFilters): boolean {
+  if (NON_IT_TITLE_REGEX.test(title)) return false;
+  const negative = filters?.negative || [];
+  if (negative.some((n) => n && matchesKeyword(title, n))) return false;
+  const positive = filters?.positive || [];
+  if (positive.length > 0) {
+    const isTechGeneric = /(informatique|technicien|support|syst[eè]me|r[eé]seau|d[eé]veloppeur|web|cloud|devops|data|helpdesk|num[eé]rique|plateforme|azure)/i.test(title);
+    if (!isTechGeneric && !positive.some((p) => p && matchesKeyword(title, p))) return false;
+  }
 
   const fullLoc = location.toLowerCase();
-  if (filters.blockHard.some((b) => b && matchesKeyword(fullLoc, b))) return false;
-  if (filters.block.some((b) => b && matchesKeyword(fullLoc, b))) return false;
-  if (filters.allow.length > 0 && !filters.allow.some((a) => a && matchesKeyword(fullLoc, a))) return false;
+  const blockHard = filters?.blockHard || [];
+  if (blockHard.some((b) => b && matchesKeyword(fullLoc, b))) return false;
+  const block = filters?.block || [];
+  if (block.some((b) => b && matchesKeyword(fullLoc, b))) return false;
+
+  if (fullLoc.includes("télétravail") || fullLoc.includes("teletravail") || fullLoc.includes("remote")) return true;
+  const alwaysAllow = filters?.alwaysAllow || [];
+  if (alwaysAllow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
+  const allow = filters?.allow || [];
+  if (allow.length > 0 && !allow.some((a) => a && matchesKeyword(fullLoc, a))) return false;
 
   return true;
 }
@@ -119,7 +171,7 @@ export async function loadJoobleDiscoveredOffers(
   const offers: DiscoveredOffer[] = [];
 
   for (const job of rawJobs) {
-    const loc = job.location || "Pas-de-Calais (62)";
+    const loc = resolveJoobleLocation(job);
     if (!matchesFilters(job.title, loc, filters)) continue;
 
     offers.push({
@@ -130,7 +182,7 @@ export async function loadJoobleDiscoveredOffers(
       ats: "portals",
       source: "jooble-pme",
       url: job.link,
-      matchedKeyword: firstMatch(job.title, filters.positive),
+      matchedKeyword: firstMatch(job.title, filters?.positive),
       ...fitField(job.title, roleTargets),
     });
   }

@@ -3,21 +3,13 @@
 import { useMemo, useState } from "react";
 import { ExternalLink, Plus, Check, Loader2, Coins, MapPin, Calendar } from "lucide-react";
 import { cn } from "@/lib/cn";
-import type { DiscoveredOffer } from "@/lib/explore";
+import { type DiscoveredOffer, offerSourceLabel } from "@/lib/explore";
 import { useJobs } from "@/components/jobs/job-store";
 import { useExplore } from "./explore-provider";
 import { formatLocationCity, formatPublicationDate } from "@/lib/format";
 
 import { useI18n } from "@/components/i18n-provider";
 
-function freshness(postedAt: string, isFr: boolean): string {
-  if (!/^\d{4}-\d{2}-\d{2}/.test(postedAt)) return "";
-  const days = Math.max(0, Math.round((Date.now() - new Date(postedAt.slice(0, 10) + "T00:00:00Z").getTime()) / 86_400_000));
-  if (isFr) {
-    return days === 0 ? "aujourd'hui" : days === 1 ? "hier" : `il y a ${days}j`;
-  }
-  return days === 0 ? "today" : days === 1 ? "1d ago" : `${days}d ago`;
-}
 
 // Real company logo (favicon) via the localhost proxy, cached on disk FOREVER per
 // company — so once it resolves it's instant for this card AND every other card,
@@ -63,8 +55,8 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
 
   const inSel = (added.has(offer.url) || inPipeline) && !removed?.has(offer.url);
   const isAdded = inSel || working || doneEval;
-  const isAdding = adding.has(offer.url);
-  const fresh = freshness(offer.postedAt, isFr) || offer.postedHint || "";
+  const isAdding = adding?.has?.(offer.url) ?? false;
+  const fresh = offer.postedHint || "";
   const city = useMemo(() => formatLocationCity(offer.location), [offer.location]);
   const pubInfo = useMemo(() => formatPublicationDate(offer.postedAt, isFr), [offer.postedAt, isFr]);
   const displayTitle = useMemo(() => {
@@ -142,8 +134,11 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
         </a>
       </div>
 
-      {pubInfo.label ? (
-        <div className="flex items-center gap-1.5 text-[11.5px]">
+      <div className="flex flex-wrap items-center gap-1.5 text-[11.5px]">
+        <span className="inline-flex items-center rounded-md border border-brand/20 bg-brand-soft/50 px-2 py-0.5 text-[11px] font-medium text-brand">
+          {offerSourceLabel(offer, isFr)}
+        </span>
+        {pubInfo.label ? (
           <span
             className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-hover/70 px-2 py-0.5 font-medium text-foreground/85"
             title={
@@ -157,18 +152,14 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
             <Calendar className="size-3 text-brand shrink-0" />
             {pubInfo.label}
           </span>
-        </div>
-      ) : offer.source === "sirene-pme-62" || offer.source === "la-bonne-boite-pme" ? (
-        <div className="flex items-center gap-1.5 text-[11.5px]">
+        ) : offer.source === "sirene-pme-62" || offer.source === "la-bonne-boite-pme" ? (
           <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-hover/50 px-2 py-0.5 font-medium text-muted">
             {isFr ? "Candidature spontanée" : "Spontaneous application"}
           </span>
-        </div>
-      ) : fresh ? (
-        <div className="flex items-center gap-1.5 text-[11.5px]">
+        ) : fresh ? (
           <span className="text-faint">{fresh}</span>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
 
       <div className="mt-0.5">
         {evaluatedN || doneEval ? (

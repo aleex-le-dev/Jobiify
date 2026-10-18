@@ -368,25 +368,17 @@ export function formatPublicationDate(
     if (diffDays === 0) {
       label = timeStr ? `Publié aujourd'hui à ${timeStr}` : `Publié aujourd'hui`;
     } else if (diffDays === 1) {
-      label = timeStr
-        ? `Publié hier à ${timeStr} (${formattedDate})`
-        : `Publié hier (${formattedDate})`;
-    } else if (diffDays <= 30) {
-      label = `Publié le ${formattedDate} (${relativeAge})`;
+      label = timeStr ? `Publié hier à ${timeStr}` : `Publié hier`;
     } else {
-      label = `Publié le ${formattedDate}`;
+      label = timeStr ? `Publié le ${formattedDate} à ${timeStr}` : `Publié le ${formattedDate}`;
     }
   } else {
     if (diffDays === 0) {
       label = timeStr ? `Posted today at ${timeStr}` : `Posted today`;
     } else if (diffDays === 1) {
-      label = timeStr
-        ? `Posted yesterday at ${timeStr} (${formattedDate})`
-        : `Posted yesterday (${formattedDate})`;
-    } else if (diffDays <= 30) {
-      label = `Posted ${formattedDate} (${relativeAge})`;
+      label = timeStr ? `Posted yesterday at ${timeStr}` : `Posted yesterday`;
     } else {
-      label = `Posted ${formattedDate}`;
+      label = timeStr ? `Posted ${formattedDate} at ${timeStr}` : `Posted ${formattedDate}`;
     }
   }
 

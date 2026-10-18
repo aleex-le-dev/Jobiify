@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Search, Plus, Coins } from "lucide-react";
 import type { DiscoveredOffer } from "@/lib/explore";
 import { useI18n } from "@/components/i18n-provider";
-import { parseOfferTimestamp } from "@/lib/format";
+import { parseOfferTimestamp, isOfferWithinSinceDays } from "@/lib/format";
 import { DiscoveryCard } from "./discovery-card";
 import { useExplore } from "./explore-provider";
 
@@ -18,16 +18,21 @@ export function ResultsList({ offers }: { offers: EnrichedOffer[] }) {
 
   const view = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    // Ne conserver que les offres possédant une date de publication réelle
-    let list = offers.filter((o) => typeof o.postedAt === "string" && o.postedAt.trim().length > 0);
+    // Lorsque l'utilisateur filtre par date (24h, 3j, 7j, 14j, 30j), appliquer le filtre temporel.
+    // Lorsque "Toutes" est sélectionné (sinceDays === 0), afficher l'intégralité des offres de toutes les sources.
+    let list = offers;
+
+    if (filters?.sinceDays && filters.sinceDays > 0) {
+      list = list.filter((o) => isOfferWithinSinceDays(o.postedAt, filters.sinceDays));
+    }
 
     if (needle) {
       list = list.filter((o) => o.title.toLowerCase().includes(needle) || o.company.toLowerCase().includes(needle));
     }
     // Toujours trier par défaut du plus récent au plus ancien
     const sorted = [...list].sort((a, b) => {
-      const timeA = parseOfferTimestamp(a.postedAt);
-      const timeB = parseOfferTimestamp(b.postedAt);
+      const timeA = parseOfferTimestamp(a.postedAt) || 0;
+      const timeB = parseOfferTimestamp(b.postedAt) || 0;
       if (timeA !== timeB) {
         return timeB - timeA;
       }

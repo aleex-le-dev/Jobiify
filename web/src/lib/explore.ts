@@ -78,7 +78,7 @@ export const DEFAULT_FILTERS: ExploreFilters = {
   blockHard: [],
   alwaysAllow: [],
   sinceDays: 0,
-  ats: [...ATS_SOURCES],
+  ats: ["portals", "greenhouse", "lever", "ashby"],
   limitPerAts: 150,
 };
 

@@ -121,6 +121,14 @@ describe("formatPublicationDate", () => {
     assert.equal(res.label, "Publié aujourd'hui");
   });
 
+  it("does not include relative age (il y a Xj) after the date", () => {
+    const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString();
+    const res = formatPublicationDate(twoDaysAgo, true);
+    assert.ok(res.label?.startsWith("Publié le "));
+    assert.ok(!res.label?.includes("il y a"));
+    assert.ok(!res.label?.includes("("));
+  });
+
   it("returns empty object for missing, empty or null date", () => {
     assert.deepEqual(formatPublicationDate("", true), {});
     assert.deepEqual(formatPublicationDate(null, true), {});
