@@ -3,6 +3,7 @@ import path from "node:path";
 import { careerOpsRoot } from "@/lib/career-ops";
 import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
 import { titleFit } from "@/lib/title-fit.mjs";
+import { inZone, type Zone } from "./zone";
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 heure
 
@@ -12,6 +13,8 @@ interface WttjJob {
   company: string;
   location: string;
   postedAt?: string;
+  lat?: number;
+  lon?: number;
 }
 
 function parseEnvPayload(text: string): { appId: string; apiKey: string } {
@@ -105,15 +108,19 @@ export async function fetchAndCacheWttjJobs(): Promise<WttjJob[]> {
         const parts: string[] = [];
         if (office?.city) parts.push(office.city.trim());
         if (office?.country) parts.push(office.country.trim());
-        if (h.remote === "fulltime" || h.remote === "partial" || h.remote === "punctual") {
-          parts.push("Télétravail");
+        if (h.remote === "fulltime") {
+          parts.push("100% Télétravail");
+        } else if (h.remote === "partial" || h.remote === "punctual") {
+          parts.push("Télétravail partiel");
         }
         const location = parts.join(", ");
 
         const ts = h.published_at_timestamp;
         const postedAt = Number.isFinite(ts) && ts > 0 ? new Date(ts * 1000).toISOString() : "";
+        const lat = typeof office?._geoloc?.lat === "number" ? office._geoloc.lat : typeof h._geoloc?.lat === "number" ? h._geoloc.lat : undefined;
+        const lon = typeof office?._geoloc?.lng === "number" ? office._geoloc.lng : typeof h._geoloc?.lng === "number" ? h._geoloc.lng : undefined;
 
-        byUrl.set(jobUrl, { title, url: jobUrl, company, location, postedAt });
+        byUrl.set(jobUrl, { title, url: jobUrl, company, location, postedAt, lat, lon });
       }
     }
 
@@ -142,27 +149,72 @@ function fitField(title: string, targets: string[]): { fit: { band: FitBand; sco
 }
 
 function matchesKeyword(text: string, kw: string): boolean {
-  return text.toLowerCase().includes(kw.toLowerCase().trim());
+  const cleanKw = kw.toLowerCase().replace(/\s+/g, " ").trim();
+  if (!cleanKw) return false;
+  const cleanText = text.toLowerCase().replace(/\s+/g, " ").trim();
+  if (cleanKw.length <= 3) {
+    const escaped = cleanKw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const rx = new RegExp(`(^|[^a-z0-9à-ÿ])${escaped}([^a-z0-9à-ÿ]|$)`, "i");
+    return rx.test(cleanText);
+  }
+  return cleanText.includes(cleanKw);
 }
 
-function matchesFilters(title: string, location: string, filters?: ExploreFilters): boolean {
+function isBlockedLocation(location: string, blockList?: string[]): boolean {
+  if (!blockList || blockList.length === 0) return false;
+  const locWithoutDept = location.toLowerCase().replace(/\bpas[- ]de[- ]calais\b/g, "").trim();
+  return blockList.some((b) => {
+    if (!b) return false;
+    const cleanB = b.toLowerCase().trim();
+    if (cleanB === "calais") {
+      return /\bcalais\b/i.test(locWithoutDept);
+    }
+    return matchesKeyword(locWithoutDept, b);
+  });
+}
+
+function matchesFilters(
+  title: string,
+  location: string,
+  filters?: ExploreFilters,
+  job?: WttjJob,
+  zone?: Zone,
+): boolean {
   const negative = filters?.negative || [];
   if (negative.some((n) => n && matchesKeyword(title, n))) return false;
   const positive = filters?.positive || [];
-  if (positive.length > 0) {
-    const isTechGeneric = /(informatique|technicien|support|syst[eè]me|r[eé]seau|d[eé]veloppeur|web|cloud|devops|data|helpdesk|num[eé]rique)/i.test(title);
-    if (!isTechGeneric && !positive.some((p) => p && matchesKeyword(title, p))) return false;
-  }
+  if (positive.length > 0 && !positive.some((p) => p && matchesKeyword(title, p))) return false;
 
   const fullLoc = location.toLowerCase();
   const blockHard = filters?.blockHard || [];
-  if (blockHard.some((b) => b && matchesKeyword(fullLoc, b))) return false;
+  if (isBlockedLocation(fullLoc, blockHard)) return false;
   const block = filters?.block || [];
-  if (block.some((b) => b && matchesKeyword(fullLoc, b))) return false;
+  if (isBlockedLocation(fullLoc, block)) return false;
 
-  if (fullLoc.includes("télétravail") || fullLoc.includes("teletravail") || fullLoc.includes("remote")) return true;
+  const is100Remote = fullLoc.includes("100% télétravail") || fullLoc.includes("full remote");
+  if (filters?.remoteOnly) {
+    return is100Remote;
+  }
+  const userWantsRemote = (filters?.allow || []).some((a) => /remote|t[eé]l[eé]travail/i.test(a));
+  if (is100Remote && userWantsRemote) return true;
+
   const alwaysAllow = filters?.alwaysAllow || [];
   if (alwaysAllow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
+
+  if (zone) {
+    const verdict = inZone({ ville: location, lat: job?.lat, lon: job?.lon }, zone);
+    if (verdict === "oui") return true;
+    if (verdict === "non") {
+      const allow = filters?.allow || [];
+      if (allow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
+      return false;
+    }
+    if (filters?.allow && filters.allow.length > 0) {
+      return filters.allow.some((a) => a && matchesKeyword(fullLoc, a));
+    }
+    return true;
+  }
+
   const allow = filters?.allow || [];
   if (allow.length > 0 && !allow.some((a) => a && matchesKeyword(fullLoc, a))) return false;
 
@@ -172,12 +224,13 @@ function matchesFilters(title: string, location: string, filters?: ExploreFilter
 export async function loadWttjDiscoveredOffers(
   filters: ExploreFilters,
   roleTargets: string[],
+  zone?: Zone,
 ): Promise<DiscoveredOffer[]> {
   const rawJobs = await fetchAndCacheWttjJobs();
   const offers: DiscoveredOffer[] = [];
 
   for (const job of rawJobs) {
-    if (!matchesFilters(job.title, job.location, filters)) continue;
+    if (!matchesFilters(job.title, job.location, filters, job, zone)) continue;
 
     offers.push({
       company: job.company,

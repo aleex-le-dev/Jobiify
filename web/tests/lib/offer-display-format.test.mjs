@@ -114,7 +114,10 @@ describe("formatPublicationDate", () => {
 
   it("does not invent time when postedAt only has the date YYYY-MM-DD for today", () => {
     const now = new Date();
-    const todayYmd = now.toISOString().slice(0, 10);
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    const todayYmd = `${y}-${m}-${d}`;
 
     const res = formatPublicationDate(todayYmd, true);
     assert.equal(res.time, undefined);

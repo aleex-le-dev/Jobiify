@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Ban, Clock, MapPin, Trash2, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { cleanChips, RECENCY_FR, RECENCY_EN, type ExploreFilters } from "@/lib/explore";
 import { useI18n } from "@/components/i18n-provider";
+
+interface CitySuggestion {
+  nom: string;
+  codePostal: string;
+  departement: string;
+  label: string;
+  codeInsee: string;
+}
 
 const STYLE = `
 .co-fb__chip{display:inline-flex;align-items:center;gap:.3rem;border-radius:999px;padding:.2rem .5rem .2rem .6rem;font-size:12.5px;line-height:1.2;border:1px solid transparent}
@@ -23,154 +31,298 @@ function KeywordField({
   tone,
   placeholder,
   ariaLabel,
+  isCitySearch,
   onChange,
 }: {
   values: string[];
   tone: "inc" | "exc";
   placeholder: string;
   ariaLabel?: string;
+  isCitySearch?: boolean;
   onChange: (v: string[]) => void;
 }) {
   const [draft, setDraft] = useState("");
-  // Split only on UNAMBIGUOUS item separators (comma / newline / semicolon) — never
-  // bare spaces, which are legitimate inside multi-word entries ("AI platform",
-  // "New York", "Costa Rica"). A space-only paste stays one chip on purpose (#1147).
+  const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isCitySearch || !draft || draft.trim().length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/explore/cities?q=${encodeURIComponent(draft.trim())}`);
+        if (res.ok) {
+          const list = await res.json();
+          setSuggestions(list);
+          setShowSuggestions(list.length > 0);
+          setHighlightedIndex(-1);
+        }
+      } catch {
+        /* ignore */
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [draft, isCitySearch]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const commit = (text: string) => {
     const parts = text.split(/[,\n;\t\r]+/);
     const next = cleanChips([...values, ...parts]);
     onChange(next);
     setDraft("");
+    setShowSuggestions(false);
   };
+
+  const selectSuggestion = (city: CitySuggestion) => {
+    commit(city.nom);
+  };
+
   return (
-    <div className={cn("co-fb__field border border-border bg-surface/40 focus-within:border-brand/40 transition-colors")}>
-      {values.map((v) => (
-        <span key={v} className={cn("co-fb__chip", tone === "inc" ? "inc" : "border-border bg-surface-hover text-muted")}>
-          {tone === "exc" && <Ban className="size-3 opacity-70" />}
-          {v}
-          <button type="button" aria-label={`Remove ${v}`} onClick={() => onChange(values.filter((x) => x !== v))}>
-            <X className="size-3" />
-          </button>
-        </span>
-      ))}
-      <input
-        aria-label={ariaLabel}
-        value={draft}
-        onChange={(e) => {
-          const val = e.target.value;
-          if (/[,\n;\t\r]$/.test(val)) commit(val);
-          else setDraft(val);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && draft.trim()) {
+    <div ref={wrapperRef} className="relative">
+      <div className={cn("co-fb__field border border-border bg-surface/40 focus-within:border-brand/40 transition-colors")}>
+        {values.map((v) => (
+          <span key={v} className={cn("co-fb__chip", tone === "inc" ? "inc" : "border-border bg-surface-hover text-muted")}>
+            {tone === "exc" && <Ban className="size-3 opacity-70" />}
+            {v}
+            <button type="button" aria-label={`Remove ${v}`} onClick={() => onChange(values.filter((x) => x !== v))}>
+              <X className="size-3" />
+            </button>
+          </span>
+        ))}
+        <input
+          aria-label={ariaLabel}
+          value={draft}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (/[,\n;\t\r]$/.test(val)) commit(val);
+            else setDraft(val);
+          }}
+          onFocus={() => {
+            if (isCitySearch && suggestions.length > 0) setShowSuggestions(true);
+          }}
+          onKeyDown={(e) => {
+            if (showSuggestions && suggestions.length > 0) {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setHighlightedIndex((i) => Math.min(suggestions.length - 1, i + 1));
+                return;
+              }
+              if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setHighlightedIndex((i) => Math.max(0, i - 1));
+                return;
+              }
+              if (e.key === "Enter" && highlightedIndex >= 0 && suggestions[highlightedIndex]) {
+                e.preventDefault();
+                selectSuggestion(suggestions[highlightedIndex]);
+                return;
+              }
+              if (e.key === "Escape") {
+                setShowSuggestions(false);
+                return;
+              }
+            }
+            if (e.key === "Enter" && draft.trim()) {
+              e.preventDefault();
+              commit(draft);
+            } else if (e.key === "Backspace" && !draft && values.length) {
+              onChange(values.slice(0, -1));
+            }
+          }}
+          onPaste={(e) => {
             e.preventDefault();
-            commit(draft);
-          } else if (e.key === "Backspace" && !draft && values.length) {
-            onChange(values.slice(0, -1));
-          }
-        }}
-        onPaste={(e) => {
-          e.preventDefault();
-          const text = e.clipboardData.getData("text");
-          const merged = draft + text;
-          // Only commit to chips when the paste contains item separators.
-          // A plain-text paste (e.g. pasting "-EMEA" after typing "Remote")
-          // stays in the input field so the user can keep editing.
-          if (/[,;\n\t\r]/.test(text)) commit(merged);
-          else setDraft(merged);
-        }}
-        onBlur={() => draft.trim() && commit(draft)}
-        placeholder={values.length ? "" : placeholder}
-      />
+            const text = e.clipboardData.getData("text");
+            const merged = draft + text;
+            if (/[,;\n\t\r]/.test(text)) commit(merged);
+            else setDraft(merged);
+          }}
+          onBlur={() => {
+            setTimeout(() => {
+              if (draft.trim() && !showSuggestions) commit(draft);
+            }, 200);
+          }}
+          placeholder={values.length ? "" : placeholder}
+        />
+      </div>
+
+      {showSuggestions && suggestions.length > 0 && (
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-56 w-72 overflow-y-auto rounded-lg border border-border/80 bg-surface shadow-xl p-1 text-xs">
+          <div className="px-2 py-1 text-[10px] font-semibold text-muted uppercase tracking-wider border-b border-border/40 mb-1">
+            Communes suggérées
+          </div>
+          {suggestions.map((s, idx) => (
+            <button
+              key={`${s.codeInsee}-${s.codePostal}`}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                selectSuggestion(s);
+              }}
+              className={cn(
+                "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors",
+                highlightedIndex === idx
+                  ? "bg-brand/15 text-brand font-medium"
+                  : "text-foreground hover:bg-surface-hover hover:text-brand",
+              )}
+            >
+              <span className="font-medium">
+                {s.nom} <span className="text-muted font-normal">({s.codePostal})</span>
+              </span>
+              <span className="text-[10px] text-muted">{s.departement}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-const PRESET_CATEGORIES = [
-  {
-    id: "web",
-    labelFr: "🌐 Dév Web",
-    labelEn: "🌐 Web Dev",
-    roles: [
-      "Développeur Web",
-      "Développeur Front",
-      "Développeur Frontend",
-      "Frontend Developer",
-      "Développeur Fullstack",
-      "Développeur Full Stack",
-      "Fullstack Developer",
-      "Développeur PHP",
-      "Développeur React",
-      "Développeur JavaScript",
-      "Intégrateur Web",
-      "UI/UX Designer",
-    ],
-  },
-  {
-    id: "support",
-    labelFr: "🖥️ Support IT & Proximité",
-    labelEn: "🖥️ IT Support",
-    roles: [
-      "Technicien Informatique",
-      "Technicien Support",
-      "Technicien Helpdesk",
-      "Support Informatique",
-      "Technicien de Proximité",
-      "Technicien de Maintenance Informatique",
-      "Technicien Poste de Travail",
-      "Technicien Déploiement",
-      "Technicien Bureautique",
-    ],
-  },
-  {
-    id: "systems",
-    labelFr: "🔌 Réseaux & Systèmes",
-    labelEn: "🔌 Systems & Networks",
-    roles: [
-      "Technicien Réseau",
-      "Technicien Systèmes et Réseaux",
-      "Administrateur Système",
-      "Gestionnaire de Parc Informatique",
-      "Technicien Parc Informatique",
-      "Technicien Télécoms",
-    ],
-  },
-  {
-    id: "erp",
-    labelFr: "📦 Support ERP / Logistique",
-    labelEn: "📦 ERP / Logistics Support",
-    roles: [
-      "Référent Informatique",
-      "Référent Digital",
-      "Support Applicatif",
-      "Gestionnaire de Parc",
-    ],
-  },
-  {
-    id: "safetynet",
-    labelFr: "🛡️ Filets larges (Tous)",
-    labelEn: "🛡️ Broad Safety Net",
-    roles: [
-      "Développeur",
-      "Developer",
-      "Software",
-      "Technicien",
-      "Informatique",
-      "Support",
-      "Helpdesk",
-      "Web",
-      "Digital",
-      "Numérique",
-      "Applicatif",
-      "Système",
-      "Réseau",
-      "SI",
-      "IT",
-      "Data",
-      "Cloud",
-      "Cyber",
-      "Infrastructure",
-    ],
-  },
+function CityOriginInput({
+  value,
+  onChange,
+  onSelect,
+  placeholder = "Lières",
+  isFr = true,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSelect: (nom: string, cp: string) => void;
+  placeholder?: string;
+  isFr?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!value || value.trim().length < 2) {
+      setSuggestions([]);
+      setOpen(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/explore/cities?q=${encodeURIComponent(value.trim())}`);
+        if (res.ok) {
+          const list = await res.json();
+          setSuggestions(list);
+          setOpen(list.length > 0);
+          setHighlightedIndex(-1);
+        }
+      } catch {
+        /* ignore */
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [value]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectItem = (city: CitySuggestion) => {
+    onChange(city.nom);
+    onSelect(city.nom, city.codePostal);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={containerRef} className="relative inline-block">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => {
+          if (suggestions.length > 0) setOpen(true);
+        }}
+        onKeyDown={(e) => {
+          if (open && suggestions.length > 0) {
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setHighlightedIndex((i) => Math.min(suggestions.length - 1, i + 1));
+              return;
+            }
+            if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setHighlightedIndex((i) => Math.max(0, i - 1));
+              return;
+            }
+            if (e.key === "Enter" && highlightedIndex >= 0 && suggestions[highlightedIndex]) {
+              e.preventDefault();
+              selectItem(suggestions[highlightedIndex]);
+              return;
+            }
+            if (e.key === "Escape") {
+              setOpen(false);
+              return;
+            }
+          }
+        }}
+        className="h-7 w-36 rounded-md border border-border/80 bg-background px-2.5 text-xs font-medium text-foreground focus:border-brand focus:ring-1 focus:ring-brand/30 focus:outline-none transition-colors"
+        placeholder={placeholder}
+      />
+
+      {open && suggestions.length > 0 && (
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-56 w-64 overflow-y-auto rounded-lg border border-border/80 bg-surface shadow-xl p-1 text-xs">
+          <div className="px-2 py-1 text-[10px] font-semibold text-muted uppercase tracking-wider border-b border-border/40 mb-1">
+            {isFr ? "Communes suggérées" : "Suggested cities"}
+          </div>
+          {suggestions.map((s, idx) => (
+            <button
+              key={`${s.codeInsee}-${s.codePostal}`}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                selectItem(s);
+              }}
+              className={cn(
+                "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors",
+                highlightedIndex === idx
+                  ? "bg-brand/15 text-brand font-medium"
+                  : "text-foreground hover:bg-surface-hover hover:text-brand",
+              )}
+            >
+              <span className="font-medium">
+                {s.nom} <span className="text-muted font-normal">({s.codePostal})</span>
+              </span>
+              <span className="text-[10px] text-muted">{s.departement}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+const COMMUTE_PRESETS = [
+  { minutes: 15, labelFr: "⏱️ 15 min", labelEn: "⏱️ 15 min", descFr: "< 15 min en voiture", descEn: "< 15 min driving" },
+  { minutes: 30, labelFr: "⏱️ 30 min", labelEn: "⏱️ 30 min", descFr: "~30 min (Bassin minier & Artois)", descEn: "~30 min (Artois & Basin)" },
+  { minutes: 45, labelFr: "⏱️ 45 min", labelEn: "⏱️ 45 min", descFr: "~45 min (+ Arras & alentours)", descEn: "~45 min (+ Arras area)" },
 ];
 
 type FilterKey = "positive" | "negative" | "allow" | "alwaysAllow" | "block" | "blockHard";
@@ -243,6 +395,40 @@ export function FilterBuilder({
 
   const set = (patch: Partial<ExploreFilters>) => onChange({ ...filters, ...patch });
   const recencyList = isFr ? RECENCY_FR : RECENCY_EN;
+
+  const [originCity, setOriginCity] = useState(filters.originCity || "Lières");
+  const [zoneFeedback, setZoneFeedback] = useState<{
+    loading?: boolean;
+    count?: number;
+    km?: number;
+    city?: string;
+  }>({
+    count: 374,
+    km: 30,
+    city: filters.originCity || "Lières",
+  });
+
+  const selectCommute = async (minutes: number, cityOverride?: string) => {
+    const city = (cityOverride || originCity).trim() || "Lières";
+    set({ commuteMinutes: minutes, originCity: city });
+    setZoneFeedback((prev) => ({ ...prev, loading: true }));
+    try {
+      const res = await fetch(`/api/explore/zone?minutes=${minutes}&ville=${encodeURIComponent(city)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setZoneFeedback({
+          loading: false,
+          count: data.communesCount,
+          km: data.rayonMaxKm,
+          city,
+        });
+      } else {
+        setZoneFeedback((prev) => ({ ...prev, loading: false }));
+      }
+    } catch {
+      setZoneFeedback((prev) => ({ ...prev, loading: false }));
+    }
+  };
 
   const hasAnyFilter =
     filters.positive.length > 0 ||
@@ -326,31 +512,7 @@ export function FilterBuilder({
           {isFr ? "Postes à rechercher" : "Roles to find"}
         </Label>
 
-        {/* Boutons de sélection rapide par catégorie métier */}
-        <div className="mb-2 flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] font-medium text-muted mr-0.5">
-            {isFr ? "Catégories rapides :" : "Quick categories:"}
-          </span>
-          {PRESET_CATEGORIES.map((cat) => {
-            const hasAny = cat.roles.some((r) => filters.positive.includes(r));
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => set({ positive: [...cat.roles] })}
-                className={cn(
-                  "rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",
-                  hasAny
-                    ? "border-brand/40 bg-brand-soft text-brand font-semibold"
-                    : "border-border/70 bg-surface/50 text-muted hover:text-foreground hover:border-brand/30",
-                )}
-                title={isFr ? `Filtrer uniquement sur ${cat.labelFr}` : `Filter by ${cat.labelEn}`}
-              >
-                {isFr ? cat.labelFr : cat.labelEn}
-              </button>
-            );
-          })}
-        </div>
+
 
         <KeywordField
           ariaLabel={isFr ? "Postes à rechercher" : "Roles to find"}
@@ -381,24 +543,92 @@ export function FilterBuilder({
       </div>
 
       <div>
-        <Label
-          count={filters.allow.length}
-          restorableCount={history.allow?.length || 0}
-          onClear={() => clearCategory("allow")}
-          onRestore={() => restoreCategory("allow")}
-          isFr={isFr}
-        >
+        <Label isFr={isFr}>
           <span className="inline-flex items-center gap-1.5">
-            <MapPin className="size-3.5 text-muted" /> {isFr ? "Ville ou localisation" : "City or location"}
+            <MapPin className="size-3.5 text-muted" /> {isFr ? "Zone de trajet & Localisation" : "Commute Zone & Location"}
           </span>
         </Label>
-        <KeywordField
-          values={filters.allow}
-          tone="inc"
-          placeholder={isFr ? "Béthune, Bruay, Lens, Arras, Saint-Omer, Pas-de-Calais, 62…" : "Toronto, New York, London…"}
-          ariaLabel={isFr ? "Ville ou localisation" : "City or location"}
-          onChange={(v) => set({ allow: v })}
-        />
+
+        {/* Barre de configuration de la zone : Ville de départ + Durées + Télétravail */}
+        <div className="space-y-2 rounded-lg border border-border/70 bg-surface/30 p-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-medium text-muted">
+                {isFr ? "Ville de départ :" : "Starting city:"}
+              </span>
+              <CityOriginInput
+                value={originCity}
+                onChange={(val) => {
+                  setOriginCity(val);
+                  set({ originCity: val });
+                }}
+                onSelect={(nom) => {
+                  setOriginCity(nom);
+                  set({ originCity: nom });
+                  if (filters.commuteMinutes) {
+                    selectCommute(filters.commuteMinutes, nom);
+                  }
+                }}
+                placeholder="Lières"
+                isFr={isFr}
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] font-medium text-muted mr-0.5">
+                {isFr ? "Temps de trajet :" : "Commute time:"}
+              </span>
+              {COMMUTE_PRESETS.map((p) => {
+                const isActive = (filters.commuteMinutes ?? 30) === p.minutes;
+                return (
+                  <button
+                    key={p.minutes}
+                    type="button"
+                    onClick={() => selectCommute(p.minutes)}
+                    className={cn(
+                      "rounded-md border px-2.5 py-1 text-[11px] font-medium transition-all shadow-xs",
+                      isActive
+                        ? "border-brand bg-brand-soft text-brand font-semibold ring-1 ring-brand/30"
+                        : "border-border/70 bg-surface/60 text-muted hover:text-foreground hover:border-brand/30",
+                    )}
+                    title={isFr ? p.descFr : p.descEn}
+                  >
+                    {isFr ? p.labelFr : p.labelEn}
+                  </button>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={() => set({ remoteOnly: !filters.remoteOnly })}
+                className={cn(
+                  "rounded-md border px-2.5 py-1 text-[11px] font-medium transition-all shadow-xs",
+                  filters.remoteOnly
+                    ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold ring-1 ring-emerald-500/30"
+                    : "border-border/70 bg-surface/60 text-muted hover:text-foreground hover:border-emerald-500/30",
+                )}
+                title={isFr ? "Afficher uniquement les offres en télétravail complet" : "Show only 100% remote positions"}
+              >
+                🏠 {isFr ? "Télétravail uniquement" : "Remote only"}
+              </button>
+            </div>
+          </div>
+
+          {/* Badge informatif de couverture de zone */}
+          {zoneFeedback.count ? (
+            <div className="flex items-center gap-1.5 text-[11px] text-muted">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              <span>
+                {isFr
+                  ? `Zone active : ${zoneFeedback.count} communes couvertes (~${zoneFeedback.km} km en voiture autour de ${zoneFeedback.city})`
+                  : `Active zone: ${zoneFeedback.count} municipalities covered (~${zoneFeedback.km} km driving around ${zoneFeedback.city})`}
+              </span>
+              {zoneFeedback.loading ? (
+                <span className="text-[10px] text-muted animate-pulse">({isFr ? "calcul..." : "updating..."})</span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div>
@@ -418,6 +648,7 @@ export function FilterBuilder({
           tone="exc"
           placeholder={isFr ? "Lille, Roubaix, Paris…" : "Paris, London…"}
           ariaLabel={isFr ? "Lieux à exclure" : "Exclude locations"}
+          isCitySearch={true}
           onChange={(v) => set({ block: v })}
         />
       </div>

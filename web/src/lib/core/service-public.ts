@@ -4,6 +4,7 @@ import { careerOpsRoot } from "@/lib/career-ops";
 import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
 import { formatLocationCity, normalizeDateToIso, toTitleCase } from "@/lib/format";
 import { titleFit } from "@/lib/title-fit.mjs";
+import { inZone, type Zone } from "./zone";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 heures
 
@@ -216,23 +217,70 @@ function fitField(title: string, targets: string[]): { fit: { band: FitBand; sco
 }
 
 function matchesKeyword(text: string, kw: string): boolean {
-  return text.toLowerCase().includes(kw.toLowerCase().trim());
+  const cleanKw = kw.toLowerCase().replace(/\s+/g, " ").trim();
+  if (!cleanKw) return false;
+  const cleanText = text.toLowerCase().replace(/\s+/g, " ").trim();
+  if (cleanKw.length <= 3) {
+    const escaped = cleanKw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const rx = new RegExp(`(^|[^a-z0-9à-ÿ])${escaped}([^a-z0-9à-ÿ]|$)`, "i");
+    return rx.test(cleanText);
+  }
+  return cleanText.includes(cleanKw);
+}
+
+function isBlockedLocation(location: string, blockList?: string[]): boolean {
+  if (!blockList || blockList.length === 0) return false;
+  const locWithoutDept = location.toLowerCase().replace(/\bpas[- ]de[- ]calais\b/g, "").trim();
+  return blockList.some((b) => {
+    if (!b) return false;
+    const cleanB = b.toLowerCase().trim();
+    if (cleanB === "calais") {
+      return /\bcalais\b/i.test(locWithoutDept);
+    }
+    return matchesKeyword(locWithoutDept, b);
+  });
 }
 
 function matchesFilters(
   title: string,
   location: string,
   filters?: ExploreFilters,
+  zone?: Zone,
 ): boolean {
   if (NON_IT_REGEX.test(title)) return false;
   const negative = filters?.negative || [];
   if (negative.some((n) => n && matchesKeyword(title, n))) return false;
+  const positive = filters?.positive || [];
+  if (positive.length > 0 && !positive.some((p) => p && matchesKeyword(title, p))) return false;
 
   const fullLoc = location.toLowerCase();
   const blockHard = filters?.blockHard || [];
-  if (blockHard.some((b) => b && matchesKeyword(fullLoc, b))) return false;
+  if (isBlockedLocation(fullLoc, blockHard)) return false;
   const block = filters?.block || [];
-  if (block.some((b) => b && matchesKeyword(fullLoc, b))) return false;
+  if (isBlockedLocation(fullLoc, block)) return false;
+
+  if (filters?.remoteOnly) {
+    const isRemote = fullLoc.includes("100% télétravail") || fullLoc.includes("remote");
+    if (!isRemote) return false;
+    return true;
+  }
+
+  if (zone) {
+    const verdict = inZone({ ville: location }, zone);
+    if (verdict === "oui") return true;
+    if (verdict === "non") {
+      const allow = filters?.allow || [];
+      if (allow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
+      return false;
+    }
+    if (filters?.allow && filters.allow.length > 0) {
+      return filters.allow.some((a) => a && matchesKeyword(fullLoc, a));
+    }
+    return true;
+  }
+
+  const allow = filters?.allow || [];
+  if (allow.length > 0 && !allow.some((a) => a && matchesKeyword(fullLoc, a))) return false;
 
   return true;
 }
@@ -283,8 +331,8 @@ function cleanSpTitleAndEmployer(
     employer = "Conseil Départemental du Pas-de-Calais";
   }
 
-  // Fallback: check lieuSansGeo if cityOverride is not set
-  if (!cityOverride && lieuSansGeo) {
+  // Fallback: check lieuSansGeo only if cityOverride is not set and cleanCity is empty or generic
+  if (!cityOverride && (!cleanCity || /pas-de-calais/i.test(cleanCity)) && lieuSansGeo) {
     const candidate = formatLocationCity(lieuSansGeo);
     if (candidate && !/^pas-de-calais/i.test(candidate) && !/^dipn/i.test(candidate)) {
       cityOverride = candidate;
@@ -297,6 +345,7 @@ function cleanSpTitleAndEmployer(
 export async function loadServicePublicDiscoveredOffers(
   filters: ExploreFilters,
   roleTargets: string[],
+  zone?: Zone,
 ): Promise<DiscoveredOffer[]> {
   const rawJobs = await fetchAndCacheServicePublicJobs();
   const offers: DiscoveredOffer[] = [];
@@ -304,19 +353,7 @@ export async function loadServicePublicDiscoveredOffers(
   for (const job of rawJobs) {
     if (NON_IT_REGEX.test(job.title)) continue;
 
-    const fullLoc = `${job.lieu ? job.lieu + " — " : ""}${job.lieuSansGeo ? job.lieuSansGeo + " — " : ""}${job.location}`;
-    if (!matchesFilters(job.title, fullLoc, filters)) continue;
-
-    const fitData = fitField(job.title, roleTargets);
-
     const initialCity = formatLocationCity(job.lieu || job.lieuSansGeo || job.location) || job.location;
-    let isoDate = normalizeDateToIso(job.date) || "";
-    if (job.dateFin && isDateFutureOrToday(job.dateFin)) {
-      const parsed = Date.parse(isoDate);
-      if (isNaN(parsed) || Date.now() - parsed > 30 * 86_400_000) {
-        isoDate = new Date().toISOString().slice(0, 10);
-      }
-    }
     const { title: cleanTitle, employer: cleanEmployer, cityOverride } = cleanSpTitleAndEmployer(
       job.title,
       job.employer,
@@ -329,6 +366,21 @@ export async function loadServicePublicDiscoveredOffers(
       finalCity = `${finalCity} (62)`;
     }
 
+    const fullLoc = `${finalCity} — ${job.lieu ? job.lieu + " — " : ""}${job.lieuSansGeo ? job.lieuSansGeo + " — " : ""}${job.location}`;
+    if (!matchesFilters(cleanTitle, fullLoc, filters, zone)) continue;
+
+    const fitData = fitField(cleanTitle, roleTargets);
+
+    let isoDate = normalizeDateToIso(job.date) || "";
+    if (job.dateFin && isDateFutureOrToday(job.dateFin)) {
+      const parsed = Date.parse(isoDate);
+      if (isNaN(parsed) || Date.now() - parsed > 30 * 86_400_000) {
+        isoDate = new Date().toISOString().slice(0, 10);
+      }
+    } else if (!isoDate || Date.now() - Date.parse(isoDate) > 30 * 86_400_000) {
+      isoDate = new Date().toISOString().slice(0, 10);
+    }
+
     offers.push({
       company: cleanEmployer,
       title: cleanTitle,
@@ -337,7 +389,7 @@ export async function loadServicePublicDiscoveredOffers(
       ats: "portals",
       source: "service-public-62",
       url: normalizeUrl(job.ref),
-      matchedKeyword: firstMatch(job.title, filters?.positive),
+      matchedKeyword: firstMatch(cleanTitle, filters?.positive),
       ...fitData,
     });
   }

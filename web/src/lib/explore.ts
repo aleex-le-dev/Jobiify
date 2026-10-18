@@ -48,6 +48,9 @@ export type ExploreFilters = {
   sinceDays: number;
   ats: AtsSource[];
   limitPerAts: number;
+  commuteMinutes?: number;
+  originCity?: string;
+  remoteOnly?: boolean;
 };
 
 export type RecencyOption = { label: string; days: number };
@@ -80,6 +83,9 @@ export const DEFAULT_FILTERS: ExploreFilters = {
   sinceDays: 1,
   ats: ["portals", "workday", "greenhouse", "lever", "ashby"],
   limitPerAts: 150,
+  commuteMinutes: 30,
+  originCity: "Lières",
+  remoteOnly: false,
 };
 
 /** Banded title-vs-profile overlap (web/src/lib/title-fit.mjs). Words, not
@@ -196,6 +202,9 @@ export function parseExplorePatch(
   if (raw.limit !== undefined) next.limitPerAts = clampNum(raw.limit, 50, 500, base.limitPerAts);
   if (raw.limitPerAts !== undefined) next.limitPerAts = clampNum(raw.limitPerAts, 50, 500, base.limitPerAts);
   if (raw.ats !== undefined) next.ats = cleanAts(raw.ats);
+  if (raw.commuteMinutes !== undefined) next.commuteMinutes = clampNum(raw.commuteMinutes, 0, 120, 30);
+  if (raw.originCity !== undefined) next.originCity = String(raw.originCity);
+  if (raw.remoteOnly !== undefined) next.remoteOnly = Boolean(raw.remoteOnly);
   return next;
 }
 
@@ -211,6 +220,9 @@ export function filtersToParams(f: ExploreFilters): string {
   if (f.sinceDays !== DEFAULT_FILTERS.sinceDays) sp.set("since", String(f.sinceDays));
   if (f.ats.length !== ATS_SOURCES.length) sp.set("ats", f.ats.join(","));
   if (f.limitPerAts !== DEFAULT_FILTERS.limitPerAts) sp.set("limit", String(f.limitPerAts));
+  if (f.commuteMinutes) sp.set("commute", String(f.commuteMinutes));
+  if (f.originCity && f.originCity !== "Lières") sp.set("from", f.originCity);
+  if (f.remoteOnly) sp.set("remote", "1");
   return sp.toString();
 }
 
@@ -227,6 +239,9 @@ export function paramsToFilters(sp: URLSearchParams, base: ExploreFilters = DEFA
       since: sp.get("since") ?? undefined,
       ats: split(sp.get("ats")),
       limit: sp.get("limit") ?? undefined,
+      commuteMinutes: sp.get("commute") ? Number(sp.get("commute")) : undefined,
+      originCity: sp.get("from") ?? undefined,
+      remoteOnly: sp.get("remote") === "1" ? true : undefined,
     },
     base,
   );

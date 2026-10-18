@@ -79,9 +79,27 @@ function ingestJsonOffer(
   offers: DiscoveredOffer[],
   onEvent: (e: ScanEvent) => void,
   roleTargets: string[] = [],
+  zone?: Zone,
 ): void {
   const url = (o.url || "").trim();
   if (!url || seen.has(url) || !o.company || !o.title) return;
+  if (!matchesTitle(o.title, filters.positive, filters.negative)) return;
+
+  if (filters.remoteOnly) {
+    const loc = (o.location || "").toLowerCase();
+    if (!loc.includes("100% télétravail") && !loc.includes("remote")) return;
+  }
+
+  if (zone && o.location) {
+    const verdict = inZone({ ville: o.location }, zone);
+    if (verdict === "non") {
+      const allow = filters.allow || [];
+      if (!allow.some((a) => a && o.location?.toLowerCase().includes(a.toLowerCase()))) {
+        return;
+      }
+    }
+  }
+
   seen.add(url);
   const source = o.source || `${currentAts}-full`;
   const offer: DiscoveredOffer = {
@@ -386,9 +404,18 @@ import { loadServicePublicDiscoveredOffers } from "./service-public";
 import { loadWttjDiscoveredOffers } from "./wttj";
 import { loadFranceTravailDiscoveredOffers } from "./france-travail";
 import { loadJoobleDiscoveredOffers } from "./jooble";
+import { loadZone, inZone, type Zone } from "./zone";
 
 function matchesKeyword(text: string, kw: string): boolean {
-  return text.toLowerCase().includes(kw.toLowerCase().trim());
+  const cleanKw = kw.toLowerCase().replace(/\s+/g, " ").trim();
+  if (!cleanKw) return false;
+  const cleanText = text.toLowerCase().replace(/\s+/g, " ").trim();
+  if (cleanKw.length <= 3) {
+    const escaped = cleanKw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const rx = new RegExp(`(^|[^a-z0-9à-ÿ])${escaped}([^a-z0-9à-ÿ]|$)`, "i");
+    return rx.test(cleanText);
+  }
+  return cleanText.includes(cleanKw);
 }
 
 function matchesTitle(title: string, positive?: string[], negative?: string[]): boolean {
@@ -399,11 +426,24 @@ function matchesTitle(title: string, positive?: string[], negative?: string[]): 
   return pos.some((p) => p && matchesKeyword(title, p));
 }
 
+function isBlockedLocation(location: string, blockList?: string[]): boolean {
+  if (!blockList || blockList.length === 0) return false;
+  const locWithoutDept = location.toLowerCase().replace(/\bpas[- ]de[- ]calais\b/g, "").trim();
+  return blockList.some((b) => {
+    if (!b) return false;
+    const cleanB = b.toLowerCase().trim();
+    if (cleanB === "calais") {
+      return /\bcalais\b/i.test(locWithoutDept);
+    }
+    return matchesKeyword(locWithoutDept, b);
+  });
+}
+
 function matchesLocation(location: string, allow?: string[], block?: string[], blockHard?: string[]): boolean {
   const bHard = blockHard || [];
-  if (bHard.some((b) => b && matchesKeyword(location, b))) return false;
+  if (isBlockedLocation(location, bHard)) return false;
   const blk = block || [];
-  if (blk.some((b) => b && matchesKeyword(location, b))) return false;
+  if (isBlockedLocation(location, blk)) return false;
   const alw = allow || [];
   if (alw.length === 0) return true;
   return alw.some((a) => a && matchesKeyword(location, a));
@@ -414,6 +454,7 @@ async function scanLocalPortals(
   onEvent: (e: ScanEvent) => void,
   sink: { offers: DiscoveredOffer[]; seen: Set<string> },
   roleTargets: string[],
+  zone?: Zone,
 ): Promise<number> {
   let trackedCount = 14;
   try {
@@ -433,7 +474,7 @@ async function scanLocalPortals(
 
   // 1. Open Data Choisir le Service Public & Emploi Territorial (data.gouv.fr)
   try {
-    const spOffers = await loadServicePublicDiscoveredOffers(filters, roleTargets);
+    const spOffers = await loadServicePublicDiscoveredOffers(filters, roleTargets, zone);
     for (const spOffer of spOffers) {
       if (sink.seen.has(spOffer.url)) continue;
       sink.seen.add(spOffer.url);
@@ -446,7 +487,7 @@ async function scanLocalPortals(
 
   // 2. Welcome to the Jungle (WTTJ)
   try {
-    const wttjOffers = await loadWttjDiscoveredOffers(filters, roleTargets);
+    const wttjOffers = await loadWttjDiscoveredOffers(filters, roleTargets, zone);
     for (const wOffer of wttjOffers) {
       if (sink.seen.has(wOffer.url)) continue;
       sink.seen.add(wOffer.url);
@@ -459,7 +500,7 @@ async function scanLocalPortals(
 
   // 3. France Travail (si configuré dans .env)
   try {
-    const ftOffers = await loadFranceTravailDiscoveredOffers(filters, roleTargets);
+    const ftOffers = await loadFranceTravailDiscoveredOffers(filters, roleTargets, zone);
     for (const ftOffer of ftOffers) {
       if (sink.seen.has(ftOffer.url)) continue;
       sink.seen.add(ftOffer.url);
@@ -472,7 +513,7 @@ async function scanLocalPortals(
 
   // 4. Jooble (offres de PME et petits cabinets si JOOBLE_API_KEY dans .env)
   try {
-    const joobleOffers = await loadJoobleDiscoveredOffers(filters, roleTargets);
+    const joobleOffers = await loadJoobleDiscoveredOffers(filters, roleTargets, zone);
     for (const jOffer of joobleOffers) {
       if (sink.seen.has(jOffer.url)) continue;
       sink.seen.add(jOffer.url);
@@ -487,8 +528,24 @@ async function scanLocalPortals(
   const inbox = readInbox();
   const scanDates = readScanDates();
   for (const job of inbox) {
-    // Si l'offre a déjà été découverte par une source officielle avec sa date, on conserve la version enrichie
     if (sink.seen.has(job.url)) continue;
+    if (!matchesTitle(job.role, filters.positive, filters.negative)) continue;
+
+    if (filters.remoteOnly) {
+      const loc = (job.location || "").toLowerCase();
+      if (!loc.includes("100% télétravail") && !loc.includes("remote")) continue;
+    }
+
+    if (zone && job.location) {
+      const verdict = inZone({ ville: job.location }, zone);
+      if (verdict === "non") {
+        const allow = filters.allow || [];
+        if (!allow.some((a) => a && job.location?.toLowerCase().includes(a.toLowerCase()))) {
+          continue;
+        }
+      }
+    }
+
     const effectiveDate = job.postedAt || scanDates.get(job.url) || new Date().toISOString().slice(0, 10);
 
     sink.seen.add(job.url);
@@ -514,7 +571,22 @@ async function scanLocalPortals(
 const NO_OUTPUT = "The scanner returned no readable output.";
 
 export async function runDiscovery(filters: ExploreFilters, onEvent: (e: ScanEvent) => void): Promise<DiscoveredOffer[]> {
-  const tempPortals = writeTempPortals(filters);
+  let zone: Zone | undefined;
+  let effectiveFilters = { ...filters };
+  if (filters.commuteMinutes) {
+    try {
+      zone = await loadZone(filters.commuteMinutes, filters.originCity || "Lières");
+      const zoneCommunes = zone.communes.map((c) => c.nom);
+      effectiveFilters = {
+        ...filters,
+        allow: Array.from(new Set([...filters.allow, ...zoneCommunes])),
+      };
+    } catch (err) {
+      console.warn("[scan] Impossible de charger la zone isochrone:", err);
+    }
+  }
+
+  const tempPortals = writeTempPortals(effectiveFilters);
   // Respecter les sources sélectionnées par l'utilisateur (par défaut : portals)
   const allAts = Array.isArray(filters.ats) && filters.ats.length > 0 ? filters.ats : ["portals"];
   const useJson = scannerSupportsJson();
@@ -532,7 +604,7 @@ export async function runDiscovery(filters: ExploreFilters, onEvent: (e: ScanEve
     const scanPortals = allAts.includes("portals");
     let localCount = 0;
     if (scanPortals) {
-      localCount = await scanLocalPortals(filters, onEvent, sink, roleTargets);
+      localCount = await scanLocalPortals(filters, onEvent, sink, roleTargets, zone);
     }
 
     const remoteAts = allAts.filter((a) => a !== "portals");
@@ -571,7 +643,7 @@ export async function runDiscovery(filters: ExploreFilters, onEvent: (e: ScanEve
     runs.forEach((run, i) => {
       if (!run.json) return;
       finished.push(run.json);
-      for (const o of run.json.offers ?? []) ingestJsonOffer(o, ats[i], filters, seen, offers, onEvent, roleTargets);
+      for (const o of run.json.offers ?? []) ingestJsonOffer(o, ats[i], filters, seen, offers, onEvent, roleTargets, zone);
     });
 
     // A child stopped at the deadline flushes what it found so far as a partial

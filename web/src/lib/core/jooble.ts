@@ -3,6 +3,7 @@ import path from "node:path";
 import { careerOpsRoot } from "@/lib/career-ops";
 import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
 import { titleFit } from "@/lib/title-fit.mjs";
+import { inZone, type Zone } from "./zone";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 heures
 
@@ -19,8 +20,32 @@ interface JoobleRawJob {
   updated?: string;
 }
 
+function getEnvVar(key: string): string | undefined {
+  if (process.env[key]?.trim()) return process.env[key]?.trim();
+  try {
+    const envPaths = [
+      path.join(careerOpsRoot(), "web", ".env.local"),
+      path.join(careerOpsRoot(), ".env"),
+      path.join(process.cwd(), ".env.local"),
+      path.join(process.cwd(), ".env"),
+    ];
+    for (const p of envPaths) {
+      if (fs.existsSync(p)) {
+        const content = fs.readFileSync(p, "utf8");
+        const match = content.match(new RegExp(`^${key}=(.*)$`, "m"));
+        if (match && match[1]?.trim()) {
+          return match[1].trim().replace(/^["']|["']$/g, "");
+        }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return undefined;
+}
+
 export async function fetchAndCacheJoobleJobs(): Promise<JoobleRawJob[]> {
-  const apiKey = process.env.JOOBLE_API_KEY?.trim();
+  const apiKey = getEnvVar("JOOBLE_API_KEY");
   if (!apiKey) {
     return [];
   }
@@ -135,28 +160,72 @@ function resolveJoobleLocation(job: JoobleRawJob): string {
 }
 
 function matchesKeyword(text: string, kw: string): boolean {
-  return text.toLowerCase().includes(kw.toLowerCase().trim());
+  const cleanKw = kw.toLowerCase().replace(/\s+/g, " ").trim();
+  if (!cleanKw) return false;
+  const cleanText = text.toLowerCase().replace(/\s+/g, " ").trim();
+  if (cleanKw.length <= 3) {
+    const escaped = cleanKw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const rx = new RegExp(`(^|[^a-z0-9à-ÿ])${escaped}([^a-z0-9à-ÿ]|$)`, "i");
+    return rx.test(cleanText);
+  }
+  return cleanText.includes(cleanKw);
 }
 
-function matchesFilters(title: string, location: string, filters?: ExploreFilters): boolean {
+function isBlockedLocation(location: string, blockList?: string[]): boolean {
+  if (!blockList || blockList.length === 0) return false;
+  const locWithoutDept = location.toLowerCase().replace(/\bpas[- ]de[- ]calais\b/g, "").trim();
+  return blockList.some((b) => {
+    if (!b) return false;
+    const cleanB = b.toLowerCase().trim();
+    if (cleanB === "calais") {
+      return /\bcalais\b/i.test(locWithoutDept);
+    }
+    return matchesKeyword(locWithoutDept, b);
+  });
+}
+
+function matchesFilters(
+  title: string,
+  location: string,
+  filters?: ExploreFilters,
+  zone?: Zone,
+): boolean {
   if (NON_IT_TITLE_REGEX.test(title)) return false;
   const negative = filters?.negative || [];
   if (negative.some((n) => n && matchesKeyword(title, n))) return false;
   const positive = filters?.positive || [];
-  if (positive.length > 0) {
-    const isTechGeneric = /(informatique|technicien|support|syst[eè]me|r[eé]seau|d[eé]veloppeur|web|cloud|devops|data|helpdesk|num[eé]rique|plateforme|azure)/i.test(title);
-    if (!isTechGeneric && !positive.some((p) => p && matchesKeyword(title, p))) return false;
-  }
+  if (positive.length > 0 && !positive.some((p) => p && matchesKeyword(title, p))) return false;
 
   const fullLoc = location.toLowerCase();
   const blockHard = filters?.blockHard || [];
-  if (blockHard.some((b) => b && matchesKeyword(fullLoc, b))) return false;
+  if (isBlockedLocation(fullLoc, blockHard)) return false;
   const block = filters?.block || [];
-  if (block.some((b) => b && matchesKeyword(fullLoc, b))) return false;
+  if (isBlockedLocation(fullLoc, block)) return false;
 
-  if (fullLoc.includes("télétravail") || fullLoc.includes("teletravail") || fullLoc.includes("remote")) return true;
+  const is100Remote = fullLoc.includes("100% télétravail") || fullLoc.includes("full remote");
+  if (filters?.remoteOnly) {
+    return is100Remote;
+  }
+  const userWantsRemote = (filters?.allow || []).some((a) => /remote|t[eé]l[eé]travail/i.test(a));
+  if (is100Remote && userWantsRemote) return true;
+
   const alwaysAllow = filters?.alwaysAllow || [];
   if (alwaysAllow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
+
+  if (zone) {
+    const verdict = inZone({ ville: location }, zone);
+    if (verdict === "oui") return true;
+    if (verdict === "non") {
+      const allow = filters?.allow || [];
+      if (allow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
+      return false;
+    }
+    if (filters?.allow && filters.allow.length > 0) {
+      return filters.allow.some((a) => a && matchesKeyword(fullLoc, a));
+    }
+    return true;
+  }
+
   const allow = filters?.allow || [];
   if (allow.length > 0 && !allow.some((a) => a && matchesKeyword(fullLoc, a))) return false;
 
@@ -166,13 +235,14 @@ function matchesFilters(title: string, location: string, filters?: ExploreFilter
 export async function loadJoobleDiscoveredOffers(
   filters: ExploreFilters,
   roleTargets: string[],
+  zone?: Zone,
 ): Promise<DiscoveredOffer[]> {
   const rawJobs = await fetchAndCacheJoobleJobs();
   const offers: DiscoveredOffer[] = [];
 
   for (const job of rawJobs) {
     const loc = resolveJoobleLocation(job);
-    if (!matchesFilters(job.title, loc, filters)) continue;
+    if (!matchesFilters(job.title, loc, filters, zone)) continue;
 
     offers.push({
       company: job.company || "Entreprise / PME (via Jooble)",

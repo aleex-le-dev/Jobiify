@@ -4,6 +4,7 @@ import { careerOpsRoot } from "@/lib/career-ops";
 import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
 import { formatLocationCity, normalizeDateToIso } from "@/lib/format";
 import { titleFit } from "@/lib/title-fit.mjs";
+import { inZone, type Zone } from "./zone";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 heures
 
@@ -17,6 +18,8 @@ interface FtRawJob {
     libelle?: string;
     codePostal?: string;
     commune?: string;
+    latitude?: number;
+    longitude?: number;
   };
   entreprise?: {
     nom?: string;
@@ -68,9 +71,33 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
   }
 }
 
+function getEnvVar(key: string): string | undefined {
+  if (process.env[key]?.trim()) return process.env[key]?.trim();
+  try {
+    const envPaths = [
+      path.join(careerOpsRoot(), "web", ".env.local"),
+      path.join(careerOpsRoot(), ".env"),
+      path.join(process.cwd(), ".env.local"),
+      path.join(process.cwd(), ".env"),
+    ];
+    for (const p of envPaths) {
+      if (fs.existsSync(p)) {
+        const content = fs.readFileSync(p, "utf8");
+        const match = content.match(new RegExp(`^${key}=(.*)$`, "m"));
+        if (match && match[1]?.trim()) {
+          return match[1].trim().replace(/^["']|["']$/g, "");
+        }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return undefined;
+}
+
 export async function fetchAndCacheFranceTravailJobs(): Promise<FtRawJob[]> {
-  const clientId = process.env.FRANCETRAVAIL_CLIENT_ID?.trim();
-  const clientSecret = process.env.FRANCETRAVAIL_CLIENT_SECRET?.trim();
+  const clientId = getEnvVar("FRANCETRAVAIL_CLIENT_ID");
+  const clientSecret = getEnvVar("FRANCETRAVAIL_CLIENT_SECRET");
   if (!clientId || !clientSecret) {
     return [];
   }
@@ -147,16 +174,72 @@ function fitField(title: string, targets: string[]): { fit: { band: FitBand; sco
 }
 
 function matchesKeyword(text: string, kw: string): boolean {
-  return text.toLowerCase().includes(kw.toLowerCase().trim());
+  const cleanKw = kw.toLowerCase().replace(/\s+/g, " ").trim();
+  if (!cleanKw) return false;
+  const cleanText = text.toLowerCase().replace(/\s+/g, " ").trim();
+  if (cleanKw.length <= 3) {
+    const escaped = cleanKw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const rx = new RegExp(`(^|[^a-z0-9à-ÿ])${escaped}([^a-z0-9à-ÿ]|$)`, "i");
+    return rx.test(cleanText);
+  }
+  return cleanText.includes(cleanKw);
 }
 
-function matchesFilters(title: string, location: string, filters: ExploreFilters): boolean {
+function isBlockedLocation(location: string, blockList?: string[]): boolean {
+  if (!blockList || blockList.length === 0) return false;
+  const locWithoutDept = location.toLowerCase().replace(/\bpas[- ]de[- ]calais\b/g, "").trim();
+  return blockList.some((b) => {
+    if (!b) return false;
+    const cleanB = b.toLowerCase().trim();
+    if (cleanB === "calais") {
+      return /\bcalais\b/i.test(locWithoutDept);
+    }
+    return matchesKeyword(locWithoutDept, b);
+  });
+}
+
+function matchesFilters(
+  title: string,
+  location: string,
+  filters: ExploreFilters,
+  job?: FtRawJob,
+  zone?: Zone,
+): boolean {
   if (filters.negative.some((n) => n && matchesKeyword(title, n))) return false;
   if (filters.positive.length > 0 && !filters.positive.some((p) => p && matchesKeyword(title, p))) return false;
 
   const fullLoc = location.toLowerCase();
-  if (filters.blockHard.some((b) => b && matchesKeyword(fullLoc, b))) return false;
-  if (filters.block.some((b) => b && matchesKeyword(fullLoc, b))) return false;
+  if (isBlockedLocation(fullLoc, filters.blockHard)) return false;
+  if (isBlockedLocation(fullLoc, filters.block)) return false;
+
+  if (filters.remoteOnly) {
+    const isRemote = fullLoc.includes("100% télétravail") || fullLoc.includes("remote");
+    if (!isRemote) return false;
+    return true;
+  }
+
+  if (zone) {
+    const verdict = inZone(
+      {
+        lat: job?.lieuTravail?.latitude,
+        lon: job?.lieuTravail?.longitude,
+        codeInsee: job?.lieuTravail?.commune,
+        ville: job?.lieuTravail?.libelle || location,
+      },
+      zone,
+    );
+    if (verdict === "oui") return true;
+    if (verdict === "non") {
+      const allow = filters.allow || [];
+      if (allow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
+      return false;
+    }
+    if (filters.allow && filters.allow.length > 0) {
+      return filters.allow.some((a) => a && matchesKeyword(fullLoc, a));
+    }
+    return true;
+  }
+
   if (filters.allow.length > 0 && !filters.allow.some((a) => a && matchesKeyword(fullLoc, a))) return false;
 
   return true;
@@ -165,13 +248,14 @@ function matchesFilters(title: string, location: string, filters: ExploreFilters
 export async function loadFranceTravailDiscoveredOffers(
   filters: ExploreFilters,
   roleTargets: string[],
+  zone?: Zone,
 ): Promise<DiscoveredOffer[]> {
   const rawJobs = await fetchAndCacheFranceTravailJobs();
   const offers: DiscoveredOffer[] = [];
 
   for (const job of rawJobs) {
     const loc = job.lieuTravail?.libelle || job.lieuTravail?.commune || "Pas-de-Calais (62)";
-    if (!matchesFilters(job.intitule, loc, filters)) continue;
+    if (!matchesFilters(job.intitule, loc, filters, job, zone)) continue;
 
     const partnerUrl = job.origineOffre?.partenaires?.[0]?.url;
     const originUrl = job.origineOffre?.urlOrigine;
