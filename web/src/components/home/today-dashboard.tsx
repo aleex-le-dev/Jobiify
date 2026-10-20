@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, CircleHelp, Sparkles, ArrowRight } from "lucide-react";
+import { Bell, CircleHelp, Sparkles, ArrowRight, Settings } from "lucide-react";
 import { instrumentSerif } from "@/lib/fonts";
 import { HeroGlow } from "@/components/hero-glow";
 import type { Application, InboxJob } from "@/lib/career-ops";
@@ -202,6 +202,10 @@ export function TodayDashboard({
             </Link>
             <Link href="/pipeline" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-medium text-foreground transition hover:border-brand/40 hover:text-brand max-sm:min-h-[44px]">
               {isFr ? "Voir mes candidatures" : "Open pipeline"}
+            </Link>
+            <Link href="/config" className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-medium text-muted transition hover:border-brand/40 hover:text-foreground max-sm:min-h-[44px]">
+              <Settings className="size-4 text-muted" />
+              {isFr ? "Paramètres" : "Settings"}
             </Link>
           </div>
           {inBetween && <QuickEvaluate />}

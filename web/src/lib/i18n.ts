@@ -20,7 +20,7 @@ export const DICTIONARY: Record<Locale, Record<string, string>> = {
     nav_analytics: "Statistiques",
     nav_cv: "Mon CV",
     nav_documents: "Documents",
-    nav_config: "Configuration",
+    nav_config: "Paramètres",
     chip_new: "Nouveau",
 
     // Barre latérale & Thème
