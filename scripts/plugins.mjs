@@ -25,9 +25,9 @@ import {
   discoverPlugins, pluginRoots, loadPluginConfig, pluginStatus,
   runHook, filterResultsForId, loadDotenvOnce, HOOK_KINDS, loadSkill, resolveSuccessorIds,
   warnConfigLeftInCodeRoot,
-} from '../plugins/_engine.mjs';
-import { loadRegistry, findInRegistry, classifySource, sourceBadge, successorFor } from '../plugins/_registry.mjs';
-import { readLock, writeLockEntry, removeLockEntry, hashPluginTree, consentSurface } from '../plugins/_lock.mjs';
+} from '../lib/plugins/_engine.mjs';
+import { loadRegistry, findInRegistry, classifySource, sourceBadge, successorFor } from '../lib/plugins/_registry.mjs';
+import { readLock, writeLockEntry, removeLockEntry, hashPluginTree, consentSurface } from '../lib/plugins/_lock.mjs';
 import { installFromRepo, scaffoldNew, parseRepoArg } from './plugin-install.mjs';
 import { appendToPipeline } from './scan.mjs';
 import { postingKey } from './url-key.mjs';

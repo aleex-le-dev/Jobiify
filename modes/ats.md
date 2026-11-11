@@ -124,7 +124,7 @@ If the user only wants the score on an already-generated CV, steps 4-7 stand alo
 
 ## Rules
 
-- **Read-only.** The checker reads one HTML file and writes nothing. `scripts/ats-payload.mjs` consumes a payload and emits a new one, and writes nothing either — in particular never `cv.md` or `config/profile.yml`. Both respect `docs/projet/DATA_CONTRACT.md`.
+- **Read-only.** The checker reads one HTML file and writes nothing. `scripts/ats-payload.mjs` consumes a payload and emits a new one, and writes nothing either — in particular never `cv.md` or `config/profile.yml`. Both respect `docs/DATA_CONTRACT.md`.
 - **Advisory, not a gate.** Unlike `scripts/verify-cv-facts.mjs`, neither tool is part of the `pdf` hard-gate chain. Surface the fold, the lint findings, the score and the issues to the user; do not block generation on any of them.
 - **Never apply a lint finding yourself.** The three lints exist precisely because each needs a judgement the user owns — an employer name inside a role, where a parenthetical detail belongs, which bullets belong to which stint. Rewriting a job title or an employer name on the user's behalf is fabrication under AGENTS.md § "Source-of-Truth Boundary", and a silent rewrite is worse than the mangling it prevents. Relay the finding; if the user decides, write the change to the user-layer file through the normal confirm-before-write path.
 - **Deterministic.** Same HTML in, same score out; same payload in, same payload out — no model calls, no network, in either tool.

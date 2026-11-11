@@ -396,7 +396,7 @@ function runSelfTest() {
   // The example CV is the format shipped to users: "## Work Experience" and
   // double-hyphen company/location separators. It must be checked rather than
   // producing the default-input UNVERIFIED warning.
-  const shippedCvMd = readFileSync(join(ROOT, 'examples', 'cv-example.md'), 'utf-8');
+  const shippedCvMd = readFileSync(join(ROOT, 'templates', 'cv-example.md'), 'utf-8');
   const shippedEntries = parseCvMdExperience(shippedCvMd);
   equal('shipped example parses both Work Experience entries',
     shippedEntries.map((e) => e.company), ['TechFin Corp', 'DataStartup Inc']);

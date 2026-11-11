@@ -67,7 +67,7 @@ import bamboohr from '../providers/bamboohr.mjs';
 import { buildTitleFilter, buildTitleFilterOverrides, buildTitleFilterWithOverrides, buildLocationFilter, buildContentFilter, matchedTitleKeywords, loadSeenUrls, normalizeUrlForDedup, appendToPipeline, appendToScanHistory, findBlacklistEntry, loadBlacklist, parseSinceDays, PORTALS_PATH, PIPELINE_PATH, SCAN_HISTORY_PATH } from './scan.mjs';
 import { localToday } from '../lib/local-today.mjs';
 import { printScanSummaryHeader } from '../lib/scan-summary-marker.mjs';
-import { SEED_SOURCES, toPortalEntry } from '../seeds/vc-portfolios.mjs';
+import { SEED_SOURCES, toPortalEntry } from '../lib/vc-portfolios.mjs';
 import { validateFlags } from '../lib/cli-flags.mjs';
 import { isMainModule } from '../lib/is-main-module.mjs';
 import { boardKey, loadDeadBoards, recordBoardFailure, recordBoardResult, saveDeadBoards, shouldSkipDeadBoard } from './dead-boards.mjs';

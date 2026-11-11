@@ -61,7 +61,7 @@ import * as yaml from 'js-yaml';
 import { makeHttpCtx } from '../providers/_http.mjs';
 import { buildTrustValidator } from '../providers/_trust-validator.mjs';
 import { loadProviders, resolveProvider } from '../providers/_registry.mjs';
-import { mergeProviderPlugins } from '../plugins/_engine.mjs';
+import { mergeProviderPlugins } from '../lib/plugins/_engine.mjs';
 import { classifyFetchError } from './verify-portals.mjs';
 import { fingerprintText, findCrossListings } from './fingerprint-core.mjs';
 import { computeListingFingerprint } from './listing-fingerprint.mjs';
@@ -3523,11 +3523,11 @@ export function loadBlacklist(filePath = BLACKLIST_PATH) {
 }
 
 /**
- * Parse data-static/aggregator-domains.txt into a Map keyed by domain.
+ * Parse templates/aggregator-domains.txt into a Map keyed by domain.
  * Format: `domain.com # reason`
  * Skips blank lines and lines starting with `#`.
  *
- * @param {string} text - Raw data-static/aggregator-domains.txt content.
+ * @param {string} text - Raw templates/aggregator-domains.txt content.
  * @returns {Map<string, {domain: string, reason: string}>}
  */
 export function parseAggregatorDomains(text) {
@@ -3550,10 +3550,10 @@ export function parseAggregatorDomains(text) {
   return entries;
 }
 
-export const AGGREGATOR_DOMAINS_PATH = process.env.CAREER_OPS_AGGREGATOR_DOMAINS || path.join(CODE_ROOT, 'data-static/aggregator-domains.txt');
+export const AGGREGATOR_DOMAINS_PATH = process.env.CAREER_OPS_AGGREGATOR_DOMAINS || path.join(CODE_ROOT, 'templates/aggregator-domains.txt');
 
 /**
- * Load data-static/aggregator-domains.txt dataset.
+ * Load templates/aggregator-domains.txt dataset.
  *
  * @param {string} [filePath] - Override for tests.
  * @returns {Map<string, {domain: string, reason: string}>}

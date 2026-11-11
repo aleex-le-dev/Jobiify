@@ -61,7 +61,7 @@ const PORTALS_PATH = process.env.CAREER_OPS_PORTALS || join(DATA_ROOT, 'portals.
 const BLACKLIST_PATH = process.env.CAREER_OPS_BLACKLIST || join(DATA_ROOT, 'data', 'blacklist.md');
 
 // Safe charset for a slug that will be interpolated into an ATS URL. Consistent
-// with the SLUG_RE guard in scripts/scan-ats-full.mjs and seeds/vc-portfolios.mjs — a
+// with the SLUG_RE guard in scripts/scan-ats-full.mjs and lib/vc-portfolios.mjs — a
 // tampered or malformed input can never inject unexpected characters into a URL.
 // Mixed case is intentional: Ashby boards are case-sensitive (AlephAlpha, DeepL).
 export const SLUG_RE = /^[A-Za-z0-9._-]+$/;
@@ -160,7 +160,7 @@ Input YAML shape:
 // ── Pure functions (exported for tests) ──────────────────────────────
 
 /**
- * Derive a URL-safe slug from a company name. Mirrors seeds/vc-portfolios.mjs.
+ * Derive a URL-safe slug from a company name. Mirrors lib/vc-portfolios.mjs.
  * Lowercases — so camelCase Ashby boards (AlephAlpha, DeepL) need an explicit
  * `slug` in the input; a derived slug will miss them.
  * @param {string} name
@@ -1239,7 +1239,7 @@ async function main() {
   // Data-contract rule: portals.yml is a USER-LAYER file and is NEVER written
   // unless the user explicitly opts in with --write. The default is preview —
   // we print the entries we WOULD add and touch nothing. This mirrors how the
-  // rest of career-ops treats user files (see docs/projet/DATA_CONTRACT.md).
+  // rest of career-ops treats user files (see docs/DATA_CONTRACT.md).
   let written = false;
   if (opts.write && fresh.length && existsSync(PORTALS_PATH)) {
     const current = readFileSync(PORTALS_PATH, 'utf-8');

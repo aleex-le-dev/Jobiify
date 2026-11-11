@@ -57,7 +57,7 @@ const TRACKING_PARAMS = [
 // list literal and conservative, for the same reason TRACKING_PARAMS is. Adding
 // an employer-controlled host here would let a fuzzy title collision merge two
 // genuinely distinct requisitions, which is the silent failure direction.
-// The scraper list is shared with scripts/scan.mjs (data-static/aggregator-domains.txt,
+// The scraper list is shared with scripts/scan.mjs (templates/aggregator-domains.txt,
 // #4263) so a newly discovered reposter is added in ONE place.
 //
 // It does not answer this module's question on its own. That file lists hosts
@@ -104,7 +104,7 @@ const AGGREGATOR_SUPPLEMENT = [
 
 /** Path to the shared scraper list, overridable the same way scripts/scan.mjs allows. */
 const AGGREGATOR_DOMAINS_PATH = process.env.CAREER_OPS_AGGREGATOR_DOMAINS
-  || join(dirname(dirname(fileURLToPath(import.meta.url))), 'data-static/aggregator-domains.txt');
+  || join(dirname(dirname(fileURLToPath(import.meta.url))), 'templates/aggregator-domains.txt');
 
 // Read once, lazily: this module is imported by scripts/merge-tracker.mjs and scripts/scan.mjs
 // on every run, and it stays a pure function module until something actually

@@ -587,7 +587,7 @@ if (!existsSync(PORTALS_FILE)) {
   try {
     const { findUnclaimedEntries } = await import('./audit-portals.mjs');
     const { loadProviders } = await import('../providers/_registry.mjs');
-    const { mergeProviderPlugins } = await import('../plugins/_engine.mjs');
+    const { mergeProviderPlugins } = await import('../lib/plugins/_engine.mjs');
     const yaml = await import('js-yaml');
 
     const cfg = yaml.load(readFileSync(PORTALS_FILE, 'utf-8')) || {};

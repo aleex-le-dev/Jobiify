@@ -70,7 +70,7 @@ const CV_PATH = join(getCareerOpsRoot(), 'cv.md');
 
 // ── cv.md experience parsing ────────────────────────────────────────
 //
-// cv.md's canonical shape (see examples/cv-example.md):
+// cv.md's canonical shape (see templates/cv-example.md):
 //
 //   ### Company Name -- Location
 //
@@ -311,7 +311,7 @@ export function diagnoseUnverified(cvEntries, tailoredEntries, result) {
       message:
         'cv.md entries could not be parsed — title check did not run. ' +
         `Expected a "## ${EXPERIENCE_HEADING_NAMES.join('" / "## ')}" section whose entries are ` +
-        '"### Company — Location", then a bold **Title** line, then a dates line (see examples/cv-example.md).',
+        '"### Company — Location", then a bold **Title** line, then a dates line (see templates/cv-example.md).',
     };
   }
   return {

@@ -67,8 +67,9 @@ cd jobiify
 npm install
 npm --prefix web install
 
-# 3. Préparer le fichier de configuration
+# 3. Préparer la configuration (clés d'API et sources régionales)
 cp .env.example .env
+cp templates/portals.example.yml portals.yml
 
 # 4. Lancer l'application
 npm run dev

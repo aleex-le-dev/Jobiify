@@ -14,14 +14,14 @@ import * as yaml from 'js-yaml';
 import dotenv from 'dotenv';
 import { findTitleFilterConflicts } from '../lib/title-filter-conflicts.mjs';
 import { sectionState, scanHeadings, SECTIONS } from '../lib/personalization.mjs';
-import { discoverPlugins, pluginRoots, pluginStatus } from '../plugins/_engine.mjs';
+import { discoverPlugins, pluginRoots, pluginStatus } from '../lib/plugins/_engine.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { validateProfile, EXAMPLE_PATH } from './validate-profile.mjs';
 import { resolveExtractorMode } from './browser-extract.mjs';
 import { parseConfigByExtension } from './jsonc-parse.mjs';
 import { validateFlags } from '../lib/cli-flags.mjs';
 import { geminiNodeFloor } from '../lib/gemini-node-floor.mjs';
-import { SKILL_ENTRYPOINTS } from '../scaffolder/bin/skill-entrypoints.mjs';
+import { SKILL_ENTRYPOINTS } from '../lib/skill-entrypoints.mjs';
 import { nodeFloor } from '../lib/node-floor.mjs';
 import { findExperienceSections, parseCompanyHeading, EXPERIENCE_HEADING_NAMES } from '../lib/cv-markdown.mjs';
 
@@ -273,7 +273,7 @@ const quotePowerShell = (v) => `'${v.replace(/['\u2018\u2019\u201A\u201B]/g, (c)
 const quoteCmd = (v) => `"${v}"`;
 
 function repairCommands(root) {
-  const mod = join(root, 'scaffolder', 'bin', 'skill-entrypoints.mjs');
+  const mod = join(root, 'lib', 'skill-entrypoints.mjs');
   const updater = join(root, 'scripts', 'update-system.mjs');
   const forms = (quote) => ({
     materialize: `node -e ${quote(MATERIALIZE_SCRIPT)} ${quote(mod)} ${quote(root)}`,
@@ -687,7 +687,7 @@ const USER_LAYER_PREREQS = [
     path: 'cv.md',
     fix: [
       'Create cv.md in the project root with your CV in markdown',
-      'See examples/ for reference CVs',
+      'See templates/cv-example.md for a reference CV',
     ],
   },
   {
@@ -947,7 +947,7 @@ function checkCvShape(root) {
       : 'cv.md: Experience section has no "### Company — Location" entries — title and structure checks will not run',
     fix: [
       `Name the section ${EXPERIENCE_HEADING_NAMES.map((n) => `"## ${n}"`).join(', ')}`,
-      'Start each job with "### Company — Location", then a bold **Title** line, then a dates line (see examples/cv-example.md)',
+      'Start each job with "### Company — Location", then a bold **Title** line, then a dates line (see templates/cv-example.md)',
     ],
   };
 }

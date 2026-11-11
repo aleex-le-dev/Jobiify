@@ -876,7 +876,7 @@ async function main() {
   // with the scanner on every plugin-provider entry (#4026). No-op for a
   // plugin-free install (mergeProviderPlugins returns before config/plugins.yml
   // is read when it is absent).
-  const { mergeProviderPlugins } = await import('../plugins/_engine.mjs');
+  const { mergeProviderPlugins } = await import('../lib/plugins/_engine.mjs');
   await mergeProviderPlugins(providers, { root: dirname(PROVIDERS_DIR), dataRoot: DATA_ROOT });
   const httpCtx = makeHttpCtx();
   const { found, results } = await verifyPortalsFile(filePath, { fetchJson, providers, httpCtx });

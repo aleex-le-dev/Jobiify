@@ -39,7 +39,7 @@ function ingestPrompt(source: string): string {
   if (mode) {
     return `${mode}\n\n--- HEADLESS OUTPUT CONTRACT (the career-ops WEB is parsing your stream) ---\nFollow the mode above exactly. You are a PROPOSER running headless: emit ONLY the markdown between <<cv:start>> and <<cv:end>> (own lines, never in a code fence), then one <<cv:seed>>{...} line; or <<cv:error>>{"reason":"unreadable"} if you can't read it. Narrate one short line in French before <<cv:start>>. Write the CV itself in French (labels and section headings included).\n\n${source}`;
   }
-  // Fallback mirrors the canonical examples/cv-example.md format (the SSOT the
+  // Fallback mirrors the canonical templates/cv-example.md format (the SSOT the
   // project ships) so a web-parsed CV is the same shape as a hand-written one.
   return `You convert a person's CV into clean cv.md markdown that EXACTLY mirrors career-ops's reference format.
 

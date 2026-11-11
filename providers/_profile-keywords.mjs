@@ -19,7 +19,7 @@ import { existsSync, readFileSync } from 'fs';
 import * as yaml from 'js-yaml';
 
 // Matches the CAREER_OPS_PROFILE override already honored by scripts/scan.mjs,
-// scripts/cv-templates.mjs, scripts/followup-cadence.mjs, plugins/_engine.mjs, and
+// scripts/cv-templates.mjs, scripts/followup-cadence.mjs, lib/plugins/_engine.mjs, and
 // scripts/test-all.mjs — without this, a user with that env var set would get
 // silently different fallback behavior here than everywhere else.
 // Read at call time, not at import: a module-level constant froze whatever
