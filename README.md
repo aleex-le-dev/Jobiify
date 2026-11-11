@@ -5,13 +5,13 @@
 <h1 align="center">Jobiify</h1>
 
 <p align="center">
-  <strong>Toutes les offres d'emploi du Pas-de-Calais, triées par trajet et par profil.</strong><br>
-  Une application locale qui fouille les sources d'emploi et d'intérim du 62 pour vous,<br>
-  et ne vous montre que ce qui est à portée de route.
+  <strong>Recherche d'emploi dans le Pas-de-Calais (62), en France.</strong><br>
+  Toutes les offres d'emploi et missions d'intérim du département, triées par trajet et par profil.<br>
+  Une application locale qui ne vous montre que ce qui est à portée de route.
 </p>
 
 <p align="center">
-  <img alt="Département 62" src="https://img.shields.io/badge/zone-Pas--de--Calais%20(62)-0f766e">
+  <img alt="Pas-de-Calais (62), France" src="https://img.shields.io/badge/zone-Pas--de--Calais%20(62)%2C%20France-0f766e">
   <img alt="Node.js 22.13+" src="https://img.shields.io/badge/Node.js-22.13%2B-339933?logo=nodedotjs&logoColor=white">
   <img alt="Données locales" src="https://img.shields.io/badge/données-100%25%20locales-334155">
   <img alt="Licence MIT" src="https://img.shields.io/badge/licence-MIT-64748b">
@@ -20,6 +20,8 @@
 ---
 
 ## Le principe
+
+Jobiify est pensé pour un seul territoire : **le Pas-de-Calais (62), en France**, et les communes voisines accessibles en voiture. Les sources, les agences d'intérim et les employeurs configurés sont ceux de ce département.
 
 Chercher du travail dans le 62, c'est ouvrir dix sites, retaper les mêmes mots-clés et trier à la main des annonces situées à Lyon ou à Paris. Jobiify fait ce tri à votre place.
 
@@ -60,7 +62,7 @@ Un CV différent par piste (logistique, BTP, administratif…) donne un profil d
 
 ```bash
 # 1. Récupérer le projet
-git clone https://github.com/aleex-le-dev/career-ops.git jobiify
+git clone https://github.com/aleex-le-dev/Jobiify.git jobiify
 cd jobiify
 
 # 2. Installer les dépendances (moteur + application web)

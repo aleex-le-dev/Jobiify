@@ -1,6 +1,6 @@
 # Jobiify — instructions pour l'agent IA
 
-Jobiify est une application web locale de recherche d'emploi pour le Pas-de-Calais (62) : offres d'emploi et missions d'intérim, triées par profil de recherche et par temps de trajet. Elle est née d'une adaptation de [career-ops](https://github.com/santifer/career-ops) (licence MIT).
+Jobiify est une application web locale de recherche d'emploi pour le Pas-de-Calais (62), en France : offres d'emploi et missions d'intérim, triées par profil de recherche et par temps de trajet. Elle est née d'une adaptation de [career-ops](https://github.com/santifer/career-ops) (licence MIT).
 
 Ce fichier est lu par Claude à chaque tâche IA lancée depuis l'application (évaluation d'une offre, CV adapté, lettre de motivation, recherche IA, import de CV). Les consignes détaillées de chaque tâche sont dans `modes/` ; les scripts appelés sont dans `scripts/`.
 

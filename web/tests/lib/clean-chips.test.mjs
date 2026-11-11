@@ -6,8 +6,6 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import * as yaml from "js-yaml";
 import { cleanChips, CHIP_CAP } from "../../src/lib/clean-chips.mjs";
 
 /** Split a raw input string the same way filter-builder's commit() does —
@@ -93,14 +91,13 @@ test("a pathological paste is still bounded", () => {
 
 // ── the cap must not be smaller than the config it carries ───────────────────
 
-test("the shipped portals.example.yml round-trips without losing keywords", () => {
-  // The regression this pair of tests exists for. The cap was 16 and the
-  // template ships 37 positives, so seedExploreFilters() read the project's own
-  // default and handed the scanner fewer than half of it — while the CLI, on
-  // the same file, used all 37. One config, two different searches, no warning.
-  const yml = readFileSync(new URL("../../../templates/portals.example.yml", import.meta.url), "utf8");
-  const positive = yaml.load(yml)?.title_filter?.positive ?? [];
-  assert.ok(positive.length > 16, "template should still be the realistic size this guards");
+test("a realistic 37-keyword title filter round-trips without losing keywords", () => {
+  // The regression this pair of tests exists for. The cap was 16 and a real
+  // config held 37 positives, so seedExploreFilters() handed the scanner fewer
+  // than half of them — while the CLI, on the same file, used all 37. The
+  // shipped template now leaves the list empty (search profiles supply the
+  // roles), so the realistic size is built here instead.
+  const positive = Array.from({ length: 37 }, (_, i) => `Métier ${i + 1}`);
   assert.equal(cleanChips(positive).length, positive.length);
 });
 

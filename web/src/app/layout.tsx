@@ -10,8 +10,8 @@ import { detectClis } from "@/lib/clis";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Jobiify — recherche d'emploi locale",
-  description: "Jobiify : toutes les offres d'emploi autour de chez vous, triées par profil et par temps de trajet.",
+  title: "Jobiify — recherche d'emploi dans le Pas-de-Calais (62)",
+  description: "Jobiify : recherche d'emploi dans le Pas-de-Calais (62), en France. Offres d'emploi et missions d'intérim triées par profil et par temps de trajet.",
   // Home-screen / standalone (iOS): let our theme-color flow up to the status bar
   // + Dynamic Island; safe-area insets handle the layout.
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Jobiify" },

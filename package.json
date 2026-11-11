@@ -1,7 +1,7 @@
 {
   "name": "jobiify",
   "version": "1.37.0",
-  "description": "Jobiify — recherche d’emploi locale dans le Pas-de-Calais (62) : offres et missions d’intérim triées par profil et par temps de trajet.",
+  "description": "Jobiify — recherche d’emploi dans le Pas-de-Calais (62), en France : offres et missions d’intérim triées par profil et par temps de trajet.",
   "private": true,
   "engines": {
     "node": "^22.13.0 || >=23.4.0"
@@ -11,11 +11,13 @@
     "recherche-emploi",
     "interim",
     "pas-de-calais",
-    "france-travail"
+    "france-travail",
+    "france",
+    "62"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/aleex-le-dev/career-ops"
+    "url": "https://github.com/aleex-le-dev/Jobiify"
   },
   "license": "MIT",
   "scripts": {
