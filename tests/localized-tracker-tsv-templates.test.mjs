@@ -52,7 +52,7 @@ const KNOWN_TEMPLATE_FILES = [
 ];
 
 // Column labels a header must carry before merge-tracker can resolve a row by
-// name; mirrors TSV_REQUIRED_FIELDS in tracker-parse.mjs.
+// name; mirrors TSV_REQUIRED_FIELDS in scripts/tracker-parse.mjs.
 const REQUIRED = ['num', 'date', 'company', 'role', 'score', 'status', 'pdf', 'report'];
 
 /** Cells of one template line: real tabs, or the literal two-character `\t`. */
@@ -317,7 +317,7 @@ for (const rel of [...seen].sort()) {
 
     let out = '';
     try {
-      out = execFileSync(NODE, [join(ROOT, 'merge-tracker.mjs')], {
+      out = execFileSync(NODE, [join(ROOT, 'scripts/merge-tracker.mjs')], {
         encoding: 'utf-8', timeout: 30000, stdio: ['ignore', 'pipe', 'pipe'],
         env: { ...process.env, CAREER_OPS_TRACKER: tracker, CAREER_OPS_ADDITIONS: adds, CAREER_OPS_BATCH_STATE: isolatedBatchStatePath(adds) },
       });

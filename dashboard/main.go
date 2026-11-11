@@ -297,13 +297,13 @@ func openCmd(target string) tea.Cmd {
 	}
 }
 
-// runGeneratePDF runs the checkout's generate-pdf.mjs against the selected data root,
+// runGeneratePDF runs the checkout's scripts/generate-pdf.mjs against the selected data root,
 // opens the resulting PDF on success, and reports the outcome back to the
 // pipeline screen as a PipelinePDFGeneratedMsg. Runs in a tea.Cmd goroutine,
 // so the UI stays responsive while Chromium renders.
 func runGeneratePDF(msg screens.PipelineGeneratePDFMsg) tea.Cmd {
 	return func() tea.Msg {
-		script, err := data.CheckoutScriptPath("generate-pdf.mjs")
+		script, err := data.CheckoutScriptPath("scripts/generate-pdf.mjs")
 		if err != nil {
 			return screens.PipelinePDFGeneratedMsg{Err: err.Error()}
 		}
@@ -345,7 +345,7 @@ func runGeneratePDF(msg screens.PipelineGeneratePDFMsg) tea.Cmd {
 }
 
 // summarizeCmdError condenses a failed command into one help-bar-sized line:
-// the last non-empty output line when there is one (generate-pdf.mjs prints
+// the last non-empty output line when there is one (scripts/generate-pdf.mjs prints
 // its error there), otherwise the exec error itself.
 func summarizeCmdError(err error, out []byte) string {
 	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
@@ -371,7 +371,7 @@ func (m appModel) View() string {
 }
 
 // getRepoRoot defers to internal/data, which already walks up from cwd looking
-// for path-resolver.mjs and is the function a relative CAREER_OPS_TRACKER
+// for scripts/path-resolver.mjs and is the function a relative CAREER_OPS_TRACKER
 // resolves through.
 //
 // This used to be a second, shorter search — cwd and cwd's PARENT, then a

@@ -4,8 +4,8 @@ import { pass, fail, ROOT } from './helpers.mjs';
 import { mkdtempSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { assertFacts, verifyFacts } from '../verify-cv-facts.mjs';
-import { buildHtml } from '../generate-cover-letter.mjs';
+import { assertFacts, verifyFacts } from '../scripts/verify-cv-facts.mjs';
+import { buildHtml } from '../scripts/generate-cover-letter.mjs';
 
 console.log('\nCover letter fact gate');
 

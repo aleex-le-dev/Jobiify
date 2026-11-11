@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * reply-watch.mjs — Classify employer replies and generate a review digest (RFC #1585).
+ * scripts/reply-watch.mjs — Classify employer replies and generate a review digest (RFC #1585).
  *
  * Reads candidate replies from a JSON file, matches them against the application tracker,
  * classifies the reply types (e.g. Interview, Rejected, Noise), and prints a concise
  * review digest. Prompts the user to approve recommended tracker status updates.
  *
  * Usage:
- *   node reply-watch.mjs [path/to/candidates.json]
+ *   node scripts/reply-watch.mjs [path/to/candidates.json]
  */
 
 import fs from 'node:fs';
@@ -22,11 +22,11 @@ import { resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
 import {
   openTrackerTransaction, rebuildRow, resolveTrackerPath, loadCanonicalStates,
 } from './tracker-utils.mjs';
-import { readReplyProposals, hasProposalReceipt } from './lib/reply-proposals.mjs';
+import { readReplyProposals, hasProposalReceipt } from '../lib/reply-proposals.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
-import { localToday } from './lib/local-today.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { localToday } from '../lib/local-today.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { parseFollowups } from './followup-cadence.mjs';
 
 // Every file here is user layer, so it resolves against the data root
@@ -37,7 +37,7 @@ export const DEFAULT_CANDIDATES_PATH = process.env.CAREER_OPS_REPLY_CANDIDATES
   || path.join(DATA_ROOT, 'data', 'reply-candidates.json');
 export const APPS_FILE = resolveTrackerPath(DATA_ROOT);
 export const FOLLOWUPS_FILE = path.join(DATA_ROOT, 'data', 'follow-ups.md');
-const CODE_ROOT = path.dirname(fileURLToPath(import.meta.url));
+const CODE_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 // Helper to ask a question in the CLI
 function askQuestion(query) {
@@ -183,7 +183,7 @@ function applyProposalUpdate(update) {
   }
   const digest = createHash('sha256').update(content).digest('hex');
   try {
-    const output = execFileSync(process.execPath, [path.join(CODE_ROOT, 'set-status.mjs'),
+    const output = execFileSync(process.execPath, [path.join(CODE_ROOT, 'scripts/set-status.mjs'),
       '--row', String(update.num), update.newStatus, '--source', 'reply-watch',
       '--expect-tracker', digest, '--note', update.proposals.map(p => p.receipt).join('; '), '--json'], {
       encoding: 'utf8',
@@ -264,7 +264,7 @@ async function updateTrackerStatuses(updates, onApplied = null) {
 }
 
 const KNOWN_FLAGS = ['--help', '-h'];
-const USAGE = 'Usage: node reply-watch.mjs [path/to/candidates.json]';
+const USAGE = 'Usage: node scripts/reply-watch.mjs [path/to/candidates.json]';
 
 async function main() {
   const args = process.argv.slice(2);
@@ -425,9 +425,9 @@ async function main() {
       for (const update of selected.filter(u => u.proposals.length > 0)) applyProposalUpdate(update);
       console.log('\n✅ Tracker review complete');
 
-      // Sync tracker DB if tracker.mjs exists
+      // Sync tracker DB if scripts/tracker.mjs exists
       try {
-        execFileSync(process.execPath, [path.join(CODE_ROOT, 'tracker.mjs'), 'sync'], {
+        execFileSync(process.execPath, [path.join(CODE_ROOT, 'scripts/tracker.mjs'), 'sync'], {
           stdio: 'ignore',
           env: { ...process.env, CAREER_OPS_ROOT: DATA_ROOT, CAREER_OPS_TRACKER: APPS_FILE },
         });

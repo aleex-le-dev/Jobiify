@@ -1,4 +1,4 @@
-// tests/scan-flag-forms.test.mjs — scan.mjs must read --flag=value, not only
+// tests/scan-flag-forms.test.mjs — scripts/scan.mjs must read --flag=value, not only
 // --flag value, and must reject a flag passed with no operand.
 //
 // `args.indexOf('--posted-after')` returns -1 for `--posted-after=2026-07-28`,
@@ -7,7 +7,7 @@
 // result, which is the failure mode lib/cli-flags.mjs was written to end
 // (#2401/#2402/#2498, and 37055d7d which fixed five other scripts).
 //
-// The sharpest symptom is that the typo guard stops guarding: scan.mjs
+// The sharpest symptom is that the typo guard stops guarding: scripts/scan.mjs
 // validates these dates and exits 1 on a malformed one precisely "since a
 // silently-ignored bound would look like 'no jobs matched' instead of an
 // error" — but with the = form the value never reached the validator, so a
@@ -15,7 +15,7 @@
 // prevent.
 //
 // HERMETIC: every run pins CAREER_OPS_PORTALS at a path that does not exist, so
-// scan.mjs stops at its portals check and can never load providers, reach the
+// scripts/scan.mjs stops at its portals check and can never load providers, reach the
 // network, or write scan state — regardless of whether the developer running
 // the suite has a real portals.yml. Each assertion also checks the subprocess
 // actually ran (no spawn error, no signal), so a timeout cannot pass silently.
@@ -30,14 +30,14 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const NO_PORTALS = join(tmpdir(), 'career-ops-no-such-portals.yml');
 
 function runScan(...args) {
-  const r = spawnSync(process.execPath, [join(ROOT, 'scan.mjs'), ...args], {
+  const r = spawnSync(process.execPath, [join(ROOT, 'scripts/scan.mjs'), ...args], {
     cwd: ROOT,
     encoding: 'utf-8',
     timeout: 30_000,
     env: { ...process.env, CAREER_OPS_PORTALS: NO_PORTALS },
   });
-  assert.equal(r.error, undefined, `scan.mjs failed to spawn: ${r.error?.message}`);
-  assert.equal(r.signal, null, `scan.mjs was killed by ${r.signal} (timeout?)`);
+  assert.equal(r.error, undefined, `scripts/scan.mjs failed to spawn: ${r.error?.message}`);
+  assert.equal(r.signal, null, `scripts/scan.mjs was killed by ${r.signal} (timeout?)`);
   return { ...r, all: `${r.stdout ?? ''}${r.stderr ?? ''}` };
 }
 

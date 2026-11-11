@@ -1,5 +1,5 @@
 // tests/doctor-cli-resolution.test.mjs — CLI resolution precedence coverage
-// in `doctor.mjs`. CLI resolution feeds MCP detection (covered in
+// in `scripts/doctor.mjs`. CLI resolution feeds MCP detection (covered in
 // tests/playwright-mcp-detection.test.mjs); this file owns the precedence
 // paths themselves. See plan/opencode-json-ignore.md for context.
 // Each scenario uses a fresh --target dir so no MCP config / .env / env
@@ -12,12 +12,12 @@ import { join } from 'path';
 
 console.log('\ndoctor.mjs — CLI resolution');
 
-const DOCTOR = join(ROOT, 'doctor.mjs');
+const DOCTOR = join(ROOT, 'scripts/doctor.mjs');
 
 function runDoctor(cwd, args, env) {
   const baseEnv = { ...process.env };
   // Hermetic env: in-process imports earlier in the suite load the repo .env
-  // (scan.mjs, …), which sets CAREER_OPS_CLI and would silently override the
+  // (scripts/scan.mjs, …), which sets CAREER_OPS_CLI and would silently override the
   // precedence scenarios below. Delete it so each scenario controls the CLI
   // explicitly (default → claude, or the --cli/env/.env value it supplies).
   delete baseEnv.CAREER_OPS_CLI;

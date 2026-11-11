@@ -1,5 +1,5 @@
 // Guards the child-process snippet in src/lib/core/pipeline.ts that calls the
-// core's canonical writers (appendToPipeline, appendToScanHistory from scan.mjs).
+// core's canonical writers (appendToPipeline, appendToScanHistory from scripts/scan.mjs).
 //
 // Both writers are async and both take the shared pipeline lock. The snippet
 // runs them from a `process.stdin.on("end", ...)` handler and then writes the
@@ -26,7 +26,7 @@ import { dirname, join } from "node:path";
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "lib", "core", "pipeline.ts");
 const src = readFileSync(SRC, "utf8");
 
-// The async writers scan.mjs exports and this snippet drives.
+// The async writers scripts/scan.mjs exports and this snippet drives.
 const WRITERS = ["appendToPipeline", "appendToScanHistory"];
 
 // A call is the name followed by `(`, ANYWHERE on the line — not just at the

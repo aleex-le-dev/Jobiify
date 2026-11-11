@@ -1,12 +1,12 @@
-// tests/mark-pdf-ready.test.mjs — regression coverage for mark-pdf-ready.mjs (#2172).
+// tests/mark-pdf-ready.test.mjs — regression coverage for scripts/mark-pdf-ready.mjs (#2172).
 //
-// mark-pdf-ready.mjs is the canonical write path for the tracker's PDF column
+// scripts/mark-pdf-ready.mjs is the canonical write path for the tracker's PDF column
 // (❌→✅), used by the web dashboard's "pdf" mode after the backend confirms a
 // successful render. Same sandboxing pattern as tests/set-status.test.mjs /
 // tracker-columns.test.mjs: a throwaway tracker via the CAREER_OPS_TRACKER /
-// CAREER_OPS_TRACKER_LOCK env overrides tracker-utils.mjs already respects.
+// CAREER_OPS_TRACKER_LOCK env overrides scripts/tracker-utils.mjs already respects.
 //
-// Auto-discovered by test-all.mjs (tests/**/*.test.mjs, #1440) — imported
+// Auto-discovered by scripts/test-all.mjs (tests/**/*.test.mjs, #1440) — imported
 // in-process alongside every other discovered suite, so this file must NEVER
 // exit the process itself; only pass()/fail() from ./helpers.mjs.
 import { pass, fail, NODE, ROOT, directoryDenyBinds } from './helpers.mjs';
@@ -32,7 +32,7 @@ function readTracker(sandbox) {
   return readFileSync(sandbox.tracker, 'utf-8');
 }
 
-// Run mark-pdf-ready.mjs against a sandboxed tracker. Returns { code, stdout, stderr }.
+// Run scripts/mark-pdf-ready.mjs against a sandboxed tracker. Returns { code, stdout, stderr }.
 function runMarkPdfReady(args, sandbox, extraEnv = {}) {
   const env = {
     ...process.env,
@@ -41,7 +41,7 @@ function runMarkPdfReady(args, sandbox, extraEnv = {}) {
     ...extraEnv,
   };
   try {
-    const stdout = execFileSync(NODE, [join(ROOT, 'mark-pdf-ready.mjs'), ...args], {
+    const stdout = execFileSync(NODE, [join(ROOT, 'scripts/mark-pdf-ready.mjs'), ...args], {
       cwd: ROOT, env, encoding: 'utf-8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'],
     });
     return { code: 0, stdout, stderr: '' };

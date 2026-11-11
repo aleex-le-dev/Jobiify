@@ -34,13 +34,13 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { execFileSync } from 'child_process';
 import { pass, fail, rmSync } from './helpers.mjs';
-import { gitIn, systemTreeDiffers } from '../update-system.mjs';
+import { gitIn, systemTreeDiffers } from '../scripts/update-system.mjs';
 
 // System paths the fixtures pretend this install manages. Small and stable:
 // one root-level script, one modes/ file (exercises a directory-style
 // pathspec component), mirroring SYSTEM_PATHS' shape without coupling the
 // test to the real manifest's contents.
-const SYSTEM_PATHS = ['scan.mjs', 'modes/_shared.md'];
+const SYSTEM_PATHS = ['scripts/scan.mjs', 'modes/_shared.md'];
 const USER_PATH = 'data/applications.md';
 
 function makeOrigin() {
@@ -53,7 +53,7 @@ function makeOrigin() {
   g('config', 'commit.gpgsign', 'false');
   mkdirSync(join(dir, 'modes'), { recursive: true });
   mkdirSync(join(dir, 'data'), { recursive: true });
-  writeFileSync(join(dir, 'scan.mjs'), '// scan v1\n');
+  writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/scan.mjs')), '// scan v1\n');
   writeFileSync(join(dir, 'modes', '_shared.md'), '# shared v1\n');
   writeFileSync(join(dir, USER_PATH), '| base | Acme | Intern | 4.0/5 |\n');
   g('add', '-A');
@@ -94,7 +94,7 @@ console.log('\n🧪 Testing updater system-tree drift detection...');
     install.g('commit', '-qm', 'track application');
 
     // Upstream moves ahead with a system-file change…
-    writeFileSync(join(origin.dir, 'scan.mjs'), '// scan v2\n');
+    writeFileSync((mkdirSync(join(origin.dir, 'scripts'), { recursive: true }), join(origin.dir, 'scripts/scan.mjs')), '// scan v2\n');
     origin.g('add', '-A');
     origin.g('commit', '-qm', 'fix scanner');
 
@@ -126,7 +126,7 @@ console.log('\n🧪 Testing updater system-tree drift detection...');
   const origin = makeOrigin();
   const install = cloneInstall(origin.dir);
   try {
-    writeFileSync(join(origin.dir, 'scan.mjs'), '// scan v2\n');
+    writeFileSync((mkdirSync(join(origin.dir, 'scripts'), { recursive: true }), join(origin.dir, 'scripts/scan.mjs')), '// scan v2\n');
     origin.g('add', '-A');
     origin.g('commit', '-qm', 'fix scanner');
     install.g('fetch', '-q', origin.dir, 'main');
@@ -170,7 +170,7 @@ console.log('\n🧪 Testing updater system-tree drift detection...');
   const origin = makeOrigin();
   const install = cloneInstall(origin.dir);
   try {
-    writeFileSync(join(install.dir, 'scan.mjs'), '// local uncommitted tweak\n');
+    writeFileSync((mkdirSync(join(install.dir, 'scripts'), { recursive: true }), join(install.dir, 'scripts/scan.mjs')), '// local uncommitted tweak\n');
     install.g('fetch', '-q', origin.dir, 'main');
 
     if (systemTreeDiffers(SYSTEM_PATHS, 'FETCH_HEAD', { git: (...a) => gitIn(install.dir, ...a) }) === false) {

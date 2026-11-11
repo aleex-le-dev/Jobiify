@@ -10,7 +10,7 @@ import { SCRATCH_PREFIX } from '../lib/scratch-dirs.mjs';
 console.log('\nstates — canonical load from states.yml');
 
 const { loadCanonicalStates } = await import(
-  pathToFileURL(join(ROOT, 'tracker-utils.mjs')).href
+  pathToFileURL(join(ROOT, 'scripts/tracker-utils.mjs')).href
 );
 
 const STATES_FILE = join(ROOT, 'templates/states.yml');

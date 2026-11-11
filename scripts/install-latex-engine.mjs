@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 
 /**
- * install-latex-engine.mjs — One-command local LaTeX engine for the latex CV path (#5132)
+ * scripts/install-latex-engine.mjs — One-command local LaTeX engine for the latex CV path (#5132)
  *
  * Usage:
- *   node install-latex-engine.mjs            # install tectonic into the repo root (no-op if tectonic is present)
- *   node install-latex-engine.mjs --check    # report the engine generate-latex.mjs would use; never downloads
- *   node install-latex-engine.mjs --force    # re-download even if tectonic is already available
- *   node install-latex-engine.mjs --json     # machine-readable result
+ *   node scripts/install-latex-engine.mjs            # install tectonic into the repo root (no-op if tectonic is present)
+ *   node scripts/install-latex-engine.mjs --check    # report the engine scripts/generate-latex.mjs would use; never downloads
+ *   node scripts/install-latex-engine.mjs --force    # re-download even if tectonic is already available
+ *   node scripts/install-latex-engine.mjs --json     # machine-readable result
  *
- * `latex` / `latex-tex` modes compile through generate-latex.mjs, which needs
+ * `latex` / `latex-tex` modes compile through scripts/generate-latex.mjs, which needs
  * tectonic or pdflatex. pdflatex means a full TeX distribution (1-5 GB, admin
  * installers, different per OS); tectonic is one binary that fetches only the
  * packages a document uses, is already the engine resolveLatexEngine() prefers,
  * and is the only one that builds the CJK template (#3553). So this installs
  * tectonic, next to the scripts, where resolveLatexEngine() looks first.
  *
- * Opt-in by design: nothing calls this on `npm install`. generate-latex.mjs
+ * Opt-in by design: nothing calls this on `npm install`. scripts/generate-latex.mjs
  * reports `installHint` when no engine is found, and the latex modes ask the
  * user before running it.
  *
@@ -35,11 +35,11 @@ import { existsSync, mkdirSync, mkdtempSync, writeFileSync, copyFileSync, chmodS
 import { tmpdir } from 'os';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
 import { resolveLatexEngine, localTectonicPath } from './generate-latex.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 export const TECTONIC_VERSION = '0.17.0';
 
@@ -197,7 +197,7 @@ export async function installTectonic({
   probe = binaryWorks,
 } = {}) {
   // Only tectonic counts: a pdflatex-only host still needs it for the CJK
-  // template, which is where generate-latex.mjs sends those users.
+  // template, which is where scripts/generate-latex.mjs sends those users.
   if (!force) {
     const engine = detectEngine();
     if (engine === 'tectonic') return { status: 'already-available', engine };
@@ -269,11 +269,11 @@ export async function installTectonic({
 const KNOWN_FLAGS = ['--check', '--force', '--json', '--help', '-h'];
 
 const USAGE = `Usage:
-  node install-latex-engine.mjs            # install tectonic ${TECTONIC_VERSION} into the repo root (no-op if tectonic is present)
-  node install-latex-engine.mjs --check    # report the engine generate-latex.mjs would use; never downloads
-  node install-latex-engine.mjs --force    # re-download even if tectonic is already available
-  node install-latex-engine.mjs --json     # machine-readable result
-  node install-latex-engine.mjs --help|-h  # print this usage block and exit
+  node scripts/install-latex-engine.mjs            # install tectonic ${TECTONIC_VERSION} into the repo root (no-op if tectonic is present)
+  node scripts/install-latex-engine.mjs --check    # report the engine scripts/generate-latex.mjs would use; never downloads
+  node scripts/install-latex-engine.mjs --force    # re-download even if tectonic is already available
+  node scripts/install-latex-engine.mjs --json     # machine-readable result
+  node scripts/install-latex-engine.mjs --help|-h  # print this usage block and exit
 
 Downloads one pinned, SHA-256-verified binary from the official tectonic GitHub
 release (~10-22 MB). Nothing about you is sent anywhere.`;
@@ -288,7 +288,7 @@ async function main() {
     const engine = resolveLatexEngine();
     const local = localTectonicPath();
     result = { status: engine ? 'available' : 'missing', engine, localBinary: existsSync(local) ? local : null };
-    if (!engine) result.installHint = 'node install-latex-engine.mjs';
+    if (!engine) result.installHint = 'node scripts/install-latex-engine.mjs';
   } else {
     result = await installTectonic({
       force: args.includes('--force'),
@@ -307,7 +307,7 @@ async function main() {
   } else if (result.status === 'available') {
     console.log(`LaTeX engine: ${result.engine}${result.localBinary ? ` (${result.localBinary})` : ''}`);
   } else {
-    console.log('No LaTeX engine found. Run: node install-latex-engine.mjs');
+    console.log('No LaTeX engine found. Run: node scripts/install-latex-engine.mjs');
   }
 
   const ok = ['installed', 'already-available', 'available'].includes(result.status);

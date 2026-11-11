@@ -16,7 +16,7 @@ import { join } from 'path';
 
 console.log('\ndoctor.mjs — unfilled personalization templates');
 
-const DOCTOR = join(ROOT, 'doctor.mjs');
+const DOCTOR = join(ROOT, 'scripts/doctor.mjs');
 const dirs = [];
 
 function runDoctor(cwd, args = []) {

@@ -1,8 +1,8 @@
 /**
- * reply-matcher.mjs — deterministic matcher that maps email reply candidates to application tracker entries.
+ * scripts/reply-matcher.mjs — deterministic matcher that maps email reply candidates to application tracker entries.
  */
 
-import { isPlaceholderCompany } from './lib/placeholder-cell.mjs';
+import { isPlaceholderCompany } from '../lib/placeholder-cell.mjs';
 
 export function extractDomain(emailStr) {
   if (!emailStr) return null;
@@ -31,7 +31,7 @@ export function normalizeChinese(s) {
 // partial role matches, and reaching confidence `high` next to any
 // post-application keyword.
 // Definition in lib/placeholder-cell.mjs — it lived here and in
-// process-quality.mjs, and a third reader of the same files had neither.
+// scripts/process-quality.mjs, and a third reader of the same files had neither.
 
 // Short names must land on a word boundary. The normalized check further down
 // has always required more than two characters, but the two substring checks

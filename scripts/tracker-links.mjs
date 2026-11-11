@@ -1,5 +1,5 @@
 /**
- * tracker-links.mjs — Shared report-link normalization for the tracker.
+ * scripts/tracker-links.mjs — Shared report-link normalization for the tracker.
  *
  * Markdown links resolve relative to the file that contains them, so a report
  * link in applications.md must be relative to wherever that tracker file lives:

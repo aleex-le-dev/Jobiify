@@ -1,8 +1,8 @@
 // tests/pdf-ats-variant.test.mjs — `pdf --ats` dual emit (#3853).
 //
 // Step 21a of modes/pdf.md composes three mechanisms that each have their own
-// suite: the fold (ats-payload.mjs), the `ats` template (cv-templates.mjs), and
-// the fact gate (verify-cv-facts.mjs). What none of those suites can see is the
+// suite: the fold (scripts/ats-payload.mjs), the `ats` template (scripts/cv-templates.mjs), and
+// the fact gate (scripts/verify-cv-facts.mjs). What none of those suites can see is the
 // composition as the mode file spells it out. So this suite pulls the `node …`
 // commands out of Step 21a itself and runs them in order. A renamed flag, a
 // dropped fold, or a reordered step fails here rather than in a user's run.
@@ -82,13 +82,13 @@ function runDocumentedStep(payload) {
   let atsTemplate;
   const steps = [];
   for (const raw of documentedCommands()) {
-    if (raw.startsWith('node generate-pdf.mjs')) continue;
+    if (raw.startsWith('node scripts/generate-pdf.mjs')) continue;
     const [command, redirect] = fill(raw, atsTemplate).split(' > ');
     const args = command.split(/\s+/).slice(1);
     const r = spawnSync(process.execPath, args, { cwd: ROOT, env, encoding: 'utf-8', timeout: 60_000 });
     assert.equal(r.error, undefined, `${raw} failed to spawn: ${r.error?.message}`);
     if (redirect) writeFileSync(redirect.trim(), r.stdout);
-    if (args[0] === 'cv-templates.mjs') atsTemplate = r.stdout.trim();
+    if (args[0] === 'scripts/cv-templates.mjs') atsTemplate = r.stdout.trim();
     steps.push({ raw, status: r.status, stdout: r.stdout, stderr: r.stderr });
   }
   return { dir, styledJson, steps, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
@@ -103,7 +103,7 @@ test('pdf --ats is documented as an opt-in pass and routed from AGENTS.md', () =
 
 test('Step 21a folds before it renders, renders the ats template, then gates', () => {
   const cmds = documentedCommands().map((c) => c.split(/\s+/)[1]);
-  const order = ['ats-payload.mjs', 'cv-templates.mjs', 'build-cv-html.mjs', 'verify-cv-facts.mjs'];
+  const order = ['scripts/ats-payload.mjs', 'scripts/cv-templates.mjs', 'scripts/build-cv-html.mjs', 'scripts/verify-cv-facts.mjs'];
   const positions = order.map((s) => cmds.indexOf(s));
   assert.ok(positions.every((p) => p >= 0), `Step 21a must run ${order.join(', ')}; found ${cmds.join(', ')}`);
   assert.deepEqual([...positions].sort((a, b) => a - b), positions, `out of order: ${cmds.join(', ')}`);
@@ -111,7 +111,7 @@ test('Step 21a folds before it renders, renders the ats template, then gates', (
 });
 
 test('the optional ATS PDF is rendered without --report', () => {
-  const pdfCmd = documentedCommands().find((c) => c.startsWith('node generate-pdf.mjs'));
+  const pdfCmd = documentedCommands().find((c) => c.startsWith('node scripts/generate-pdf.mjs'));
   assert.ok(pdfCmd, 'Step 21a documents how to render the ATS variant to PDF');
   assert.doesNotMatch(pdfCmd, /--report/, '--report would key the ATS PDF onto the styled CV\'s pdf-index row');
 });
@@ -140,7 +140,7 @@ test('the ATS gate catches a claim the styled HTML fix never carried back to the
   drifted.experience[0].bullets.push('Grew revenue by 300% in one quarter');
   const { steps, cleanup } = runDocumentedStep(drifted);
   try {
-    const gate = steps.find((s) => s.raw.startsWith('node verify-cv-facts.mjs'));
+    const gate = steps.find((s) => s.raw.startsWith('node scripts/verify-cv-facts.mjs'));
     assert.notEqual(gate.status, 0, 'the fact gate must fail the ATS variant on an unsourced metric');
   } finally {
     cleanup();

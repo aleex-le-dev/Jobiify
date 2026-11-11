@@ -36,7 +36,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { pass, fail } from './helpers.mjs';
-import { gitIn, gitStatusEntries, parsePorcelainStatus, userLayerViolations } from '../update-system.mjs';
+import { gitIn, gitStatusEntries, parsePorcelainStatus, userLayerViolations } from '../scripts/update-system.mjs';
 
 // quotepath: false in most repos here only to keep assertion strings readable —
 // with `-z` the parser never sees a quoted path regardless of the setting. The
@@ -106,7 +106,7 @@ console.log('\n🧪 Testing updater git-status path parsing...');
   try {
     mkdirSync(join(dir, 'data'));
     writeFileSync(join(dir, 'data', 'user-file.md'), 'v1\n');
-    writeFileSync(join(dir, 'scan.mjs'), 'x\n');
+    writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/scan.mjs')), 'x\n');
     g('add', '-A');
     g('commit', '-qm', 'base');
     // Dirty a tracked file WITHOUT staging: its porcelain line is ` M …`
@@ -127,16 +127,16 @@ console.log('\n🧪 Testing updater git-status path parsing...');
 {
   const { dir, g } = makeRepo();
   try {
-    writeFileSync(join(dir, 'tracker.mjs'), 'x\n');
-    g('add', 'tracker.mjs');
+    writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/tracker.mjs')), 'x\n');
+    g('add', 'scripts/tracker.mjs');
     g('commit', '-qm', 'base');
-    writeFileSync(join(dir, 'tracker.mjs'), 'y\n');
-    g('add', 'tracker.mjs');
+    writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/tracker.mjs')), 'y\n');
+    g('add', 'scripts/tracker.mjs');
 
     assertRoundTrip(
       'staged-first-line entry keeps `M ` code and full path',
       dir,
-      [{ code: 'M ', path: 'tracker.mjs' }],
+      [{ code: 'M ', path: 'scripts/tracker.mjs' }],
     );
   } finally {
     rmSync(dir, { recursive: true, force: true });

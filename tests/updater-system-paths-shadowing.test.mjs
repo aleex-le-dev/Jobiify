@@ -1,8 +1,8 @@
 // tests/updater-system-paths-shadowing.test.mjs — no SYSTEM_PATHS file entry may sit
 // under a directory entry that already covers it.
 //
-// `covered()` in validate-system-paths-coverage.mjs matches a trailing-slash
-// entry by prefix, and `pathMatchesManifest` in update-system.mjs does the same
+// `covered()` in scripts/validate-system-paths-coverage.mjs matches a trailing-slash
+// entry by prefix, and `pathMatchesManifest` in scripts/update-system.mjs does the same
 // for the stale-file prune. So a directory entry covers everything beneath it
 // for BOTH things the manifest is used for — delivery and pruning — and a file
 // entry underneath one is dead weight.
@@ -19,12 +19,12 @@
 // directory entry, so they do not trip this.
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { extractArrayFromSource } from '../update-system.mjs';
+import { extractArrayFromSource } from '../scripts/update-system.mjs';
 import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\nupdate-system.mjs — no shadowed SYSTEM_PATHS entries');
 
-// The manifest is read with update-system.mjs's OWN exported extractor rather
+// The manifest is read with scripts/update-system.mjs's OWN exported extractor rather
 // than a regex of this file's own. A second parser is a second set of rules to
 // drift: the first draft here required exactly two spaces and a single quote,
 // which silently skipped any other style — not a parse error, an entry the
@@ -35,21 +35,21 @@ console.log('\nupdate-system.mjs — no shadowed SYSTEM_PATHS entries');
 // updater considers an entry is exactly what is checked here, and
 // tests/updater-extract-array-syntax.test.mjs already covers the parser itself.
 
-// A missing or renamed update-system.mjs must report as a controlled failure,
-// not an uncaught throw: the throw is contained by test-all.mjs's #2828 guard,
+// A missing or renamed scripts/update-system.mjs must report as a controlled failure,
+// not an uncaught throw: the throw is contained by scripts/test-all.mjs's #2828 guard,
 // but it reads as "suite crashed" rather than "the manifest is not where this
 // expects", which is the actionable half.
 let src = null;
 try {
-  src = readFileSync(join(ROOT, 'update-system.mjs'), 'utf-8');
+  src = readFileSync(join(ROOT, 'scripts/update-system.mjs'), 'utf-8');
 } catch (err) {
-  fail(`update-system.mjs is unreadable at ${ROOT} (${err.code || err.message}) — the manifest was never parsed, so this is not a clean result`);
+  fail(`scripts/update-system.mjs is unreadable at ${ROOT} (${err.code || err.message}) — the manifest was never parsed, so this is not a clean result`);
 }
 
 const entries = src ? extractArrayFromSource(src, 'SYSTEM_PATHS') : [];
 
 if (entries.length > 0) {
-  pass(`SYSTEM_PATHS parsed via update-system.mjs's own extractor (${entries.length} entries)`);
+  pass(`SYSTEM_PATHS parsed via scripts/update-system.mjs's own extractor (${entries.length} entries)`);
 } else if (src) {
   fail('could not parse SYSTEM_PATHS — this guard would pass vacuously');
 }

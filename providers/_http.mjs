@@ -1,5 +1,5 @@
 // HTTP transport helpers shared across providers.
-// Files prefixed with _ are never loaded as providers by scan.mjs.
+// Files prefixed with _ are never loaded as providers by scripts/scan.mjs.
 
 import './_dns-cache.mjs'; // memoize dns.lookup process-wide (see that file)
 import { isIP } from 'node:net';
@@ -7,10 +7,10 @@ import {
   DEFAULT_USER_AGENT,
   BROWSER_LIKE_USER_AGENT,
   MACOS_BROWSER_LIKE_USER_AGENT,
-} from '../user-agent.mjs';
+} from '../scripts/user-agent.mjs';
 import { providerFetchContext, isBlockedAddress, blockedAddressError } from './_ip-guard.mjs';
 import { currentConnectionScope } from './_connection-scope.mjs';
-import { normalizeUrl, aggregatorPostingId } from '../url-key.mjs';
+import { normalizeUrl, aggregatorPostingId } from '../scripts/url-key.mjs';
 
 /** @typedef {import('./_types.js').Context} Context */
 /** @typedef {import('./_types.js').FetchOptions} FetchOptions */
@@ -381,7 +381,7 @@ export function parseRetryAfterMs(value) {
  * failure, and only `err.cause.message` tells them apart.
  *
  * Exported because the verdict has two consumers, not one. isRetryableError()
- * below needs it to stop retrying; discover-ats.mjs needs it to stop telling a
+ * below needs it to stop retrying; scripts/discover-ats.mjs needs it to stop telling a
  * human to re-run. Before it was shared, those two disagreed about the same
  * error object: the retry layer called it deterministic while the CLI reported
  * "board status unknown — re-run", and 48 of one user's 62 companies were
@@ -549,7 +549,7 @@ export function makeHttpCtx(observer) {
     fetchResponse,
     // The canonical posting-URL key, so a provider can deduplicate its own
     // results the way the tracker and scanner do. Handing it over through ctx
-    // is what keeps the behaviour identical: `url-key.mjs` is dependency-free,
+    // is what keeps the behaviour identical: `scripts/url-key.mjs` is dependency-free,
     // so a standalone provider receives the same function the core calls rather
     // than importing the file or copying its body (#4218).
     normalizePostingUrl: normalizeUrl,

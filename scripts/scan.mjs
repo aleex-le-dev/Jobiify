@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * scan.mjs — Zero-token portal scanner with a plugin-based provider layer.
+ * scripts/scan.mjs — Zero-token portal scanner with a plugin-based provider layer.
  *
  * Providers live in providers/*.mjs and are loaded at startup. Each provider
  * exports a default object with:
@@ -21,20 +21,20 @@
  * Zero Claude API tokens — pure HTTP + JSON.
  *
  * Usage:
- *   node scan.mjs                  # scan all enabled companies
- *   node scan.mjs --dry-run        # preview without writing files
- *   node scan.mjs --company Cohere # scan a single company
- *   node scan.mjs --verify         # API-first liveness check; use Playwright when inconclusive
- *   node scan.mjs --verify --headed-fallback  # retry anti-bot-blocked URLs in a headed browser (needs a display)
- *   node scan.mjs --verify --throttle          # jittered ~5-10s gap between browser checks
- *   node scan.mjs --verify --throttle=8000     # custom base gap in ms (waits base..2*base)
- *   node scan.mjs --include-blacklisted        # let data/blacklist.md matches through (annotated)
- *   node scan.mjs --since 7                    # postings from the last 7 days
- *   node scan.mjs --posted-after 2026-07-01    # absolute lower bound on posting date
- *   node scan.mjs --posted-before 2026-08-01   # absolute upper bound on posting date
- *   node scan.mjs --rediscover-404             # re-verify tracked URLs that 404/410 (rides on --verify)
- *   node scan.mjs --quiet                      # suppress the manifesto footer
- *   node scan.mjs --help                       # print this usage block and exit
+ *   node scripts/scan.mjs                  # scan all enabled companies
+ *   node scripts/scan.mjs --dry-run        # preview without writing files
+ *   node scripts/scan.mjs --company Cohere # scan a single company
+ *   node scripts/scan.mjs --verify         # API-first liveness check; use Playwright when inconclusive
+ *   node scripts/scan.mjs --verify --headed-fallback  # retry anti-bot-blocked URLs in a headed browser (needs a display)
+ *   node scripts/scan.mjs --verify --throttle          # jittered ~5-10s gap between browser checks
+ *   node scripts/scan.mjs --verify --throttle=8000     # custom base gap in ms (waits base..2*base)
+ *   node scripts/scan.mjs --include-blacklisted        # let data/blacklist.md matches through (annotated)
+ *   node scripts/scan.mjs --since 7                    # postings from the last 7 days
+ *   node scripts/scan.mjs --posted-after 2026-07-01    # absolute lower bound on posting date
+ *   node scripts/scan.mjs --posted-before 2026-08-01   # absolute upper bound on posting date
+ *   node scripts/scan.mjs --rediscover-404             # re-verify tracked URLs that 404/410 (rides on --verify)
+ *   node scripts/scan.mjs --quiet                      # suppress the manifesto footer
+ *   node scripts/scan.mjs --help                       # print this usage block and exit
  */
 
 import {
@@ -58,31 +58,31 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import * as yaml from 'js-yaml';
 
-import { makeHttpCtx } from './providers/_http.mjs';
-import { buildTrustValidator } from './providers/_trust-validator.mjs';
-import { loadProviders, resolveProvider } from './providers/_registry.mjs';
-import { mergeProviderPlugins } from './plugins/_engine.mjs';
+import { makeHttpCtx } from '../providers/_http.mjs';
+import { buildTrustValidator } from '../providers/_trust-validator.mjs';
+import { loadProviders, resolveProvider } from '../providers/_registry.mjs';
+import { mergeProviderPlugins } from '../plugins/_engine.mjs';
 import { classifyFetchError } from './verify-portals.mjs';
 import { fingerprintText, findCrossListings } from './fingerprint-core.mjs';
 import { computeListingFingerprint } from './listing-fingerprint.mjs';
 import { resolveColumns, parseTrackerRow, normalizeTextKey, extractReqNumber, REQ_NUMBER_RE } from './tracker-parse.mjs';
-import { workdayDedupKey, stripWorkdayRepostSuffix, isWorkdayJobUrl } from './providers/workday.mjs';
+import { workdayDedupKey, stripWorkdayRepostSuffix, isWorkdayJobUrl } from '../providers/workday.mjs';
 import { normalizeCompany } from './tracker-utils.mjs';
 import { normalizeCompanyName } from './invite-match.mjs';
 import { withPipelineLock } from './pipeline-lock.mjs';
 import { compileKeyword, compilePositiveKeyword, compileContentKeyword, buildTitleFilter, foldTitle } from './title-keywords.mjs';
-import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
+import { flagValue, hasFlag, validateFlags } from '../lib/cli-flags.mjs';
 import { withPortalHealthLock } from './portal-health-lock.mjs';
-import { localToday } from './lib/local-today.mjs';
-import { printScanSummaryHeader } from './lib/scan-summary-marker.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { SCAN_HISTORY_COLUMNS, parseScanHistoryLine } from './lib/scan-history-columns.mjs';
-import { escapeFormulaCell } from './lib/tsv-formula-escape.mjs';
+import { localToday } from '../lib/local-today.mjs';
+import { printScanSummaryHeader } from '../lib/scan-summary-marker.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { SCAN_HISTORY_COLUMNS, parseScanHistoryLine } from '../lib/scan-history-columns.mjs';
+import { escapeFormulaCell } from '../lib/tsv-formula-escape.mjs';
 import { promoteKnownFragmentIdentity, LANGUAGE_PARAMS, languageSubtag } from './url-key.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { checkLivenessViaApi } from './liveness-api.mjs';
 
-const CODE_ROOT = path.dirname(fileURLToPath(import.meta.url));
+const CODE_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 
 try {
@@ -109,7 +109,7 @@ const PROFILE_PATH = process.env.CAREER_OPS_PROFILE || path.join(DATA_ROOT, 'con
 // two it still writes into the one inbox and the one dedup history. That is not
 // just untidy: scan-history.tsv IS the dedup source, so a posting surfaced in
 // lane A is silently counted as a duplicate in lane B and never shown at all.
-// Exported because scan-ats-full.mjs, scan-interamt.mjs and scan-hn.mjs write to
+// Exported because scripts/scan-ats-full.mjs, scan-interamt.mjs and scan-hn.mjs write to
 // these same files through appendToPipeline/appendToScanHistory. They each used
 // to carry their own bare-relative copy, so a sibling could check existence and
 // create data/pipeline.md in the cwd, then append the actual results to the
@@ -123,7 +123,7 @@ const PROVIDERS_DIR = path.resolve(CODE_ROOT, 'providers');
 // No directory creation at import time (#3159). Every writer below creates its
 // own parent before its first write — scan-history (appendToScanHistory),
 // scan-runs (appendScanRunSummary), portal-health (appendPortalHealth) — and
-// pipeline.md goes through pipeline-lock.mjs, which creates data/ for the same
+// pipeline.md goes through scripts/pipeline-lock.mjs, which creates data/ for the same
 // reason. applications.md and blacklist.md are read-only here. Importing this
 // module must stay side-effect free: a sibling that only reads a constant used
 // to leave a stray data/ in whatever cwd it ran from.
@@ -173,16 +173,16 @@ export function emitJsonReceipt(receipt, exitCode) {
 }
 
 // Provider loading + routing live in providers/_registry.mjs so the portal
-// health check (verify-portals.mjs) can reuse the exact same layer without
+// health check (scripts/verify-portals.mjs) can reuse the exact same layer without
 // importing this module.
 
 // ── Title filter ────────────────────────────────────────────────────
 
-// How a keyword matches text lives in title-keywords.mjs, because
-// openrouter-runner.mjs filters titles too and cannot import this file (scan.mjs
+// How a keyword matches text lives in scripts/title-keywords.mjs, because
+// scripts/openrouter-runner.mjs filters titles too and cannot import this file (scripts/scan.mjs
 // creates data/ at import time). It called a second, hand-kept copy of this
 // logic until the two drifted; there is now one implementation and this file
-// re-exports it, so existing importers — scan-ats-full.mjs and test-all.mjs's
+// re-exports it, so existing importers — scripts/scan-ats-full.mjs and scripts/test-all.mjs's
 // sections 11b and 44 among them — keep resolving it from here.
 // compileContentKeyword shares the `word:`/`stem:` prefix machinery but skips
 // the title filter's short-acronym auto-anchor (#3274).
@@ -677,8 +677,8 @@ export function buildPostingAgeFilter(maxAgeDays, now = Date.now()) {
 /**
  * Parse and validate `--since <days>` from an argv slice.
  *
- * Shared by scan.mjs and scan-ats-full.mjs so ONE flag name cannot mean two
- * different things. scan-ats-full.mjs used `Number(valueOf('--since')) || 3`,
+ * Shared by scripts/scan.mjs and scripts/scan-ats-full.mjs so ONE flag name cannot mean two
+ * different things. scripts/scan-ats-full.mjs used `Number(valueOf('--since')) || 3`,
  * which silently swallowed every malformed operand: `--since abc` and
  * `--since 0` both became 3 (the user believes they scanned the window they
  * typed), `--since -5` produced a cutoff in the FUTURE so nothing was ever
@@ -686,7 +686,7 @@ export function buildPostingAgeFilter(maxAgeDays, now = Date.now()) {
  * became Infinity → an -Infinity cutoff, i.e. no window at all (#2498).
  *
  * Returns the day count, or null when the flag is absent — the DEFAULT is the
- * caller's to choose (scan.mjs: no bound; scan-ats-full.mjs: 3 days), only the
+ * caller's to choose (scripts/scan.mjs: no bound; scripts/scan-ats-full.mjs: 3 days), only the
  * validation is shared. `error` is a ready-to-print message; callers print and
  * exit rather than this throwing, so both CLIs fail the same way.
  *
@@ -798,7 +798,7 @@ export function buildPostedDateFilter(afterIso, beforeIso) {
 //   - `positive` non-empty → at least one keyword must be present
 //
 // A keyword may opt in to boundary-anchored matching with a `word:` or `stem:`
-// prefix (identical to `title_filter` — see title-keywords.mjs). Without a
+// prefix (identical to `title_filter` — see scripts/title-keywords.mjs). Without a
 // prefix an entry is a plain substring, so a bare negative `java` rejects every
 // posting mentioning "JavaScript" and `ios` rejects "curiosity"; `word:java` /
 // `stem:ios` fix that one entry while leaving the rest of the list untouched
@@ -1103,7 +1103,7 @@ export function buildSalaryFilter(salaryFilter) {
 }
 
 // CJK/Korean corporate-form markers (#2570), kept as a list local to this
-// file rather than folded into invite-match.mjs's LEGAL_SUFFIXES. Two reasons
+// file rather than folded into scripts/invite-match.mjs's LEGAL_SUFFIXES. Two reasons
 // they can't share one list: LEGAL_SUFFIXES strips a *trailing, space-
 // delimited* word (`\s${suffix}$`), but 株式会社 is usually written unspaced,
 // as a *prefix* (株式会社メルカリ) and sometimes as a suffix (メルカリ株式会社),
@@ -1111,7 +1111,7 @@ export function buildSalaryFilter(salaryFilter) {
 // 株式会社 メルカリ is ordinary orthography too, and it already matched before
 // this change — via the punctuation-to-space key and the containment
 // fallback. The unspaced form is the actual gap.) And
-// invite-match.mjs's normalizeCompanyName is deliberately stricter than
+// scripts/invite-match.mjs's normalizeCompanyName is deliberately stricter than
 // companyMatch (loosely-quoted email text vs. an identity key that must never
 // merge two different companies) — folding a CJK list into that stricter
 // normalizer risks loosening its callers too, which the "splits, never
@@ -1702,7 +1702,7 @@ const DEDUP_STRIP_PARAMS = new Set([
  * clickable and scan-history/pipeline.md stay faithful to what the provider
  * returned.
  *
- * The path is lowercased because scan.mjs and scan-ats-full.mjs run as
+ * The path is lowercased because scripts/scan.mjs and scripts/scan-ats-full.mjs run as
  * separate processes and can independently produce different casing for the
  * identical posting — a Workday tenant/site path segment reached via the
  * curated portals.yml entry vs. the reverse-ATS dataset, for instance. A
@@ -1851,7 +1851,7 @@ const PIPELINE_CHECKBOX_STRICT_RE = /^- \[[ x]\]\s+/;
 /**
  * A labeled trailing segment of a pipeline entry, as written by the two writers
  * that emit one: `formatPipelineOffer` here (`posted:`, `trust:`, `note:`) and
- * `appendRankAnnotation` in `rank-pipeline.mjs` (`rank:`).
+ * `appendRankAnnotation` in `scripts/rank-pipeline.mjs` (`rank:`).
  *
  * Labeled segments are appended after the positional columns, so one slides into
  * the location column whenever an offer has neither a location nor a
@@ -1866,7 +1866,7 @@ const PIPELINE_CHECKBOX_STRICT_RE = /^- \[[ x]\]\s+/;
  * exactly the collapse `dedup_include_location` exists to prevent, reintroduced
  * through the parser instead of the key.
  *
- * Deliberately NOT in the list: `score:`. `rank-pipeline.mjs` uses that word
+ * Deliberately NOT in the list: `score:`. `scripts/rank-pipeline.mjs` uses that word
  * only inside the prompt it sends an LLM ("score: 0-5, where 5 is an excellent
  * match"); the segment it actually writes to pipeline.md is `rank: {n}/5 — …`.
  * Prompt text is not a serialization format. Extend this list only alongside a
@@ -1935,7 +1935,7 @@ function pipelineEntry(line, checkboxRe) {
  * Six line shapes are documented across the modes, and only the one
  * `appendToPipeline` writes leads with the URL. The others lead with a report
  * number (`#NNN`, `modes/pipeline.md`), a report link
- * (`[NNN](reports/…)`, `reconcile-pipeline.mjs`), a pre-screen marker (`#--`,
+ * (`[NNN](reports/…)`, `scripts/reconcile-pipeline.mjs`), a pre-screen marker (`#--`,
  * `modes/pipeline.md`), or a strikethrough (`~~…~~`, `modes/pipeline.md` and
  * `modes/oferta.md`). Anchoring the URL to the checkbox missed all five.
  *
@@ -2392,7 +2392,7 @@ const ROLE_GENDER_TAG_RE = /^(?:[mwfdx](?:\s*\/\s*(?:[mwfdx]|div|divers)){1,3}|(
  * not split a key.
  *
  * This helper does not infer posting churn or detect repost clusters. Those
- * post-tracking facts remain the responsibility of detect-reposts.mjs and the
+ * post-tracking facts remain the responsibility of scripts/detect-reposts.mjs and the
  * company-history `postingChurn` axis.
  *
  * @param {unknown} role - Raw role title from a tracker row or provider job.
@@ -2563,7 +2563,7 @@ export const ANY_REQUISITION = '*';
  * - a Workday URL, via `workdayDedupKey` (the same parse the provider uses for
  *   cross-site dedupe, #3439, including its `-N` repost-suffix stripping);
  * - labelled free text (tracker Notes, a posting title) via the tracker's own
- *   `extractReqNumber`, the vocabulary merge-tracker.mjs already relies on to
+ *   `extractReqNumber`, the vocabulary scripts/merge-tracker.mjs already relies on to
  *   keep same-title rows apart (#1524).
  *
  * Only these explicit forms count. A generic board's numeric posting ID is not
@@ -2668,7 +2668,7 @@ export function isDistinctRequisition(seededRequisitions, candidateRequisitions)
 
 /**
  * The posting language as dedup forms, or none when the source did not say:
- * the one form languageSubtag (url-key.mjs) reduces it to, shared with the
+ * the one form languageSubtag (scripts/url-key.mjs) reduces it to, shared with the
  * tracker's URL comparison.
  *
  * @param {unknown} language - `Job.language`, or a scan-history `language` cell.
@@ -2861,7 +2861,7 @@ export function collectSeenCompanyRoles(sources = {}, policy = {}, canonicalize 
     }
   };
 
-  // applications.md — header-aware parse (tracker-parse.mjs, #954). The old
+  // applications.md — header-aware parse (scripts/tracker-parse.mjs, #954). The old
   // positional regex captured the wrong cells on customized layouts (e.g. with a
   // Location column), so the seen-set keyed on garbage and dedup misfired.
   //
@@ -3350,7 +3350,7 @@ Paste job URLs below as \`- [ ] {url}\` then run \`/career-ops pipeline\`.
 const PENDING_MARKERS = ['## Pending', '## Pendientes'];
 const PROCESSED_MARKERS = ['## Processed', '## Procesadas'];
 
-// Locked (pipeline-lock.mjs) so scan.mjs, scan-ats-full.mjs, and plugins.mjs
+// Locked (scripts/pipeline-lock.mjs) so scripts/scan.mjs, scripts/scan-ats-full.mjs, and scripts/plugins.mjs
 // (pipeline mode) — the three current callers — can never interleave their
 // read-modify-write and silently drop each other's offers.
 // Same seam as loadSeenUrls above: the default is the CAREER_OPS_ROOT-anchored
@@ -3391,8 +3391,8 @@ export async function appendToPipeline(offers, { pipelinePath = PIPELINE_PATH } 
 }
 
 // data/scan-history.tsv has exactly the same set of concurrent writers as
-// data/pipeline.md — scan.mjs, scan-ats-full.mjs, scan-interamt.mjs and
-// plugins.mjs — so it takes the same lock appendToPipeline does, on its own
+// data/pipeline.md — scripts/scan.mjs, scripts/scan-ats-full.mjs, scan-interamt.mjs and
+// scripts/plugins.mjs — so it takes the same lock appendToPipeline does, on its own
 // path. Unlocked, two writers race in two places: the create branch below is a
 // check-then-write, and its writeFileSync truncates, so a scanner that loses
 // the race erases rows the winner already appended; and a multi-row
@@ -3594,7 +3594,7 @@ export function checkAggregatorRepost(offer, domainsMap = loadAggregatorDomains(
 // ── Scan-run persistence (#1604) ────────────────────────────────────
 
 // Anchored for the same reason (#3510), and with a reader to agree with:
-// stats.mjs:36 reads join(DATA_ROOT, 'data', 'scan-runs.tsv'). While this was
+// scripts/stats.mjs:36 reads join(DATA_ROOT, 'data', 'scan-runs.tsv'). While this was
 // cwd-relative the writer and the reader could name different files, and the
 // trend stats simply under-reported whatever landed elsewhere.
 const SCAN_RUNS_PATH = path.join(DATA_ROOT, 'data/scan-runs.tsv');
@@ -3622,7 +3622,7 @@ export function registerRunFailureSnapshot(fn) {
 
 // NOT locked, deliberately. This runs from the SIGINT handler and the fatal
 // path, which call process.exit() with nothing able to await first, and every
-// lock entry point in pipeline-lock.mjs is async. It is already best-effort and
+// lock entry point in scripts/pipeline-lock.mjs is async. It is already best-effort and
 // swallows its own errors. So a failure row written while a migration is
 // swapping the file can still be lost; the completed-run path above is the one
 // that is covered. Stated rather than implied, because the alternative is a
@@ -3645,7 +3645,7 @@ export function appendScanRunSummary(c, filePath = SCAN_RUNS_PATH) {
   if (!existsSync(filePath)) writeFileSync(filePath, SCAN_RUNS_HEADER, 'utf-8');
   // The header is written only on first creation, so a release that appends or inserts a counter
   // leaves existing files with a header that no longer describes the rows below it. Nothing
-  // migrates it and nothing notices: stats.mjs reads by column NAME, so it silently returns a
+  // migrates it and nothing notices: scripts/stats.mjs reads by column NAME, so it silently returns a
   // neighbouring counter. Surface the mismatch here rather than papering over it — rewriting the
   // header in place would misalign every historical row instead.
   if (!existsSync(filePath)) {
@@ -3656,7 +3656,7 @@ export function appendScanRunSummary(c, filePath = SCAN_RUNS_PATH) {
       console.error(
         `Warning: ${filePath} header has ${onDisk.trim().split('\t').length} columns but this build writes `
         + `${SCAN_RUNS_HEADER.trim().split('\t').length}. Rows below the header are positionally offset and `
-        + `stats.mjs will exclude them. Move ${filePath} aside to start a fresh file — deleting only the header does NOT recover it, because the file still exists and the next run would read the first data row as the header.`,
+        + `scripts/stats.mjs will exclude them. Move ${filePath} aside to start a fresh file — deleting only the header does NOT recover it, because the file still exists and the next run would read the first data row as the header.`,
       );
     }
   }
@@ -3680,12 +3680,12 @@ export function appendScanRunSummary(c, filePath = SCAN_RUNS_PATH) {
 
 // ── Portal health persistence (#1744) ───────────────────────────────
 
-// Anchored to the data root (#3510), read by stats.mjs:39 at the same anchor.
+// Anchored to the data root (#3510), read by scripts/stats.mjs:39 at the same anchor.
 //
-// This path has moved twice. It was dirname(fileURLToPath(import.meta.url)) —
+// This path has moved twice. It was dirname(dirname(fileURLToPath(import.meta.url))) —
 // the script's own directory — until 96c578b made it cwd-relative, because a
 // sandboxed run was writing fixture rows into the live data/portal-health.tsv of
-// whatever checkout owned scan.mjs. That problem was real; the mechanism traded
+// whatever checkout owned scripts/scan.mjs. That problem was real; the mechanism traded
 // one unanchored path for another, and left this file with two different rules
 // for where user data lives. Isolation now comes from CAREER_OPS_ROOT, which is
 // how the rest of the suite already sandboxes writes — see
@@ -3694,7 +3694,7 @@ export function appendScanRunSummary(c, filePath = SCAN_RUNS_PATH) {
 const PORTAL_HEALTH_PATH = path.join(DATA_ROOT, 'data/portal-health.tsv');
 export const PORTAL_HEALTH_HEADER = 'timestamp\tcompany\tstatus\n';
 
-// Locked (portal-health-lock.mjs) so a concurrent read-modify-write of this
+// Locked (scripts/portal-health-lock.mjs) so a concurrent read-modify-write of this
 // same file — e.g. tests/portal-health-guard.mjs's regression-cleanup path —
 // can never interleave with this append and silently discard one side.
 export async function appendPortalHealth(healthRecords, filePath = PORTAL_HEALTH_PATH) {
@@ -3855,7 +3855,7 @@ export async function verifyOffers(offers, { headedFallback = false, throttleBas
       let offerPage = null;
       let verdict = verdicts[i];
       // Non-null API `uncertain` is an explicit conservative conclusion, just
-      // as in check-liveness.mjs. Only an inconclusive null needs the browser.
+      // as in scripts/check-liveness.mjs. Only an inconclusive null needs the browser.
       if (!verdict) {
         offerPage = await browserForOffer();
         verdict = await checkPage(offerPage, offer.url);
@@ -3935,10 +3935,10 @@ function guardStatusFor(code) {
 }
 
 // ── CLI args ────────────────────────────────────────────────────────
-// #2270: `node scan.mjs --help` used to run a full live scan and write to
+// #2270: `node scripts/scan.mjs --help` used to run a full live scan and write to
 // pipeline.md/scan-history.tsv instead of printing usage — the flag was
-// never checked at all. Same shape as scan-ats-full.mjs (#1633/#1635),
-// reply-watch.mjs (#2743/#2745) and dedup-tracker.mjs (#2744/#2746), shared
+// never checked at all. Same shape as scripts/scan-ats-full.mjs (#1633/#1635),
+// scripts/reply-watch.mjs (#2743/#2745) and scripts/dedup-tracker.mjs (#2744/#2746), shared
 // via lib/cli-flags.mjs's validateFlags() (#2775).
 const KNOWN_FLAGS = [
   '--dry-run', '--verify', '--headed-fallback', '--throttle', '--rediscover-404',
@@ -3953,21 +3953,21 @@ const KNOWN_FLAGS = [
 const VALUE_FLAGS = ['--company', '--posted-after', '--posted-before', '--since'];
 
 const USAGE = `Usage:
-  node scan.mjs                              # scan all enabled companies
-  node scan.mjs --dry-run                    # preview without writing files
-  node scan.mjs --company Cohere             # scan a single company
-  node scan.mjs --verify                     # API-first liveness check; use Playwright when inconclusive
-  node scan.mjs --verify --headed-fallback   # retry anti-bot-blocked URLs in a headed browser (needs a display)
-  node scan.mjs --verify --throttle          # jittered ~5-10s gap between browser checks
-  node scan.mjs --verify --throttle=8000     # custom base gap in ms (waits base..2*base)
-  node scan.mjs --rediscover-404             # re-verify tracked URLs that 404/410 (rides on --verify)
-  node scan.mjs --include-blacklisted        # let data/blacklist.md matches through (annotated)
-  node scan.mjs --since 7                    # postings from the last 7 days
-  node scan.mjs --posted-after 2026-07-01    # absolute lower bound on posting date
-  node scan.mjs --posted-before 2026-08-01   # absolute upper bound on posting date
-  node scan.mjs --json                       # emit one machine-readable receipt on stdout
-  node scan.mjs --quiet                      # suppress the manifesto footer
-  node scan.mjs --help                       # print this usage block and exit`;
+  node scripts/scan.mjs                              # scan all enabled companies
+  node scripts/scan.mjs --dry-run                    # preview without writing files
+  node scripts/scan.mjs --company Cohere             # scan a single company
+  node scripts/scan.mjs --verify                     # API-first liveness check; use Playwright when inconclusive
+  node scripts/scan.mjs --verify --headed-fallback   # retry anti-bot-blocked URLs in a headed browser (needs a display)
+  node scripts/scan.mjs --verify --throttle          # jittered ~5-10s gap between browser checks
+  node scripts/scan.mjs --verify --throttle=8000     # custom base gap in ms (waits base..2*base)
+  node scripts/scan.mjs --rediscover-404             # re-verify tracked URLs that 404/410 (rides on --verify)
+  node scripts/scan.mjs --include-blacklisted        # let data/blacklist.md matches through (annotated)
+  node scripts/scan.mjs --since 7                    # postings from the last 7 days
+  node scripts/scan.mjs --posted-after 2026-07-01    # absolute lower bound on posting date
+  node scripts/scan.mjs --posted-before 2026-08-01   # absolute upper bound on posting date
+  node scripts/scan.mjs --json                       # emit one machine-readable receipt on stdout
+  node scripts/scan.mjs --quiet                      # suppress the manifesto footer
+  node scripts/scan.mjs --help                       # print this usage block and exit`;
 
 async function main() {
   const args = process.argv.slice(2);
@@ -4031,18 +4031,18 @@ async function main() {
 
   // --since <days>: a RELATIVE lower bound on the employer's posting date —
   // the same thing --posted-after expresses absolutely, and it filters exactly
-  // like it does. Matches scan-ats-full.mjs, which has always treated --since
+  // like it does. Matches scripts/scan-ats-full.mjs, which has always treated --since
   // as a filter; one flag name should not mean two different things.
   //
   // It additionally unlocks an optimisation. providers/workday.mjs returns
   // postings newest-first and can stop paginating once a page is entirely past
-  // the window, but that only fires when ctx carries sinceMs — and scan.mjs
+  // the window, but that only fires when ctx carries sinceMs — and scripts/scan.mjs
   // built a bare makeHttpCtx(), so every Workday tenant paginated to its
   // max_pages cap on every run however stale the deep pages were.
   //
   // Flag presence, operand validity, duplicate occurrences and the
   // out-of-Date-range case are all handled by the SHARED parseSinceDays(), so
-  // scan-ats-full.mjs cannot disagree about what --since means (#2498).
+  // scripts/scan-ats-full.mjs cannot disagree about what --since means (#2498).
   const since = parseSinceDays(args);
   if (since.error) {
     console.error(`Error: ${since.error}`);
@@ -4156,7 +4156,7 @@ async function main() {
   resolveEntries(boards, { isBoard: true });
 
   // #3438. Startup checks for field_filters / filter_on, before any network
-  // call. scan.mjs does not run validatePortalsConfig, so every rule that
+  // call. scripts/scan.mjs does not run validatePortalsConfig, so every rule that
   // decides whether a declared whitelist actually filters is enforced here as
   // well; tests/scan-field-filters-parity.test.mjs holds the two rule sets
   // together. Each shape rejected below would otherwise leave the whitelist
@@ -4329,7 +4329,7 @@ async function main() {
     let provider = company._provider;
     const observation = { requests: 0, successfulResponses: 0, lastStatus: null };
     // includeUndated is deliberately ALWAYS true, independent of the window.
-    // It does not mean "include undated postings in the results" — scan.mjs
+    // It does not mean "include undated postings in the results" — scripts/scan.mjs
     // already decides that downstream, where buildPostedDateFilter passes a
     // posting with no parseable date. It means "provider, do not pre-empt that
     // decision": without it, workday.mjs's no-date-skip returns page 0 only for
@@ -4937,11 +4937,11 @@ async function main() {
   if (persistentlyDead.length > 0) {
     console.log(`\n🚨 FIX NEEDED: ${persistentlyDead.length} target(s) have been unreachable for ${STREAK_THRESHOLD}+ runs:`);
     console.log(`   ${persistentlyDead.join(', ')}`);
-    console.log(`   Run: node verify-portals.mjs to check if the ATS migrated, or update their board slugs.`);
+    console.log(`   Run: node scripts/verify-portals.mjs to check if the ATS migrated, or update their board slugs.`);
   }
   if (newlyDeadSlug.length > 0) {
     const names = newlyDeadSlug.map(x => x.company).join(', ');
-    console.log(`\n⚠️  ${newlyDeadSlug.length} target(s) unreachable (slug?): ${names} — run: node verify-portals.mjs`);
+    console.log(`\n⚠️  ${newlyDeadSlug.length} target(s) unreachable (slug?): ${names} — run: node scripts/verify-portals.mjs`);
   }
   if (emptyTargets.length > 0) {
     console.log(`🟡 ${emptyTargets.length} target(s) live but empty: ${emptyTargets.join(', ')}`);
@@ -4985,7 +4985,7 @@ async function main() {
     // Locked on the same file the migration locks, for the reason the sibling
     // append at appendToScanHistory already gives: two writers interleaving a
     // read-modify-write on an append-only TSV silently drop each other's rows.
-    // migrate-scan-runs.mjs rewrites this file wholesale, so without the lock a
+    // scripts/migrate-scan-runs.mjs rewrites this file wholesale, so without the lock a
     // run finishing mid-migration is written into a file that is then replaced
     // by a snapshot taken before it, and the row is gone from the live file and
     // from the .bak. Measured at ~9ms of exposure, and reproduced.
@@ -5048,7 +5048,7 @@ async function main() {
   }
 }
 
-// Only run main() when invoked directly (`node scan.mjs`), not when imported by tests.
+// Only run main() when invoked directly (`node scripts/scan.mjs`), not when imported by tests.
 // `|| ''` guards the case where Node is invoked without a script arg (e.g. `node -e`).
 if (isMainModule(import.meta.url)) {
   main().catch(err => {

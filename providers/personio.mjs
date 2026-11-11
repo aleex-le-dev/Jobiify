@@ -30,11 +30,11 @@ import { fetchTextWithRetry, sleep } from './_http.mjs';
 // - `ctx.preferredLanguageRank` (portals.yml preferred_languages), no
 //   careers_url language: one more fetch of `/` per preferred language some
 //   posting has, up to MAX_EXTRA_LANGUAGES, so those versions come back next
-//   to the default one and scan.mjs keeps the best-ranked one.
+//   to the default one and scripts/scan.mjs keeps the best-ranked one.
 // - `ctx.dedupIncludeLanguage` (scan_history.dedup_include_language): one more
 //   fetch of `/` per further language, up to MAX_EXTRA_LANGUAGES, so every
 //   version comes back; each posting's default-language version first, which
-//   scan.mjs's language-aware URL dedup relies on. A careers_url language does
+//   scripts/scan.mjs's language-aware URL dedup relies on. A careers_url language does
 //   not narrow this: it and then the preferred languages are only fetched
 //   first, so the cap skips the other languages before a preferred one.
 // The extra fetches are skipped under a health probe (`ctx.maxPages`), which
@@ -53,7 +53,7 @@ const LANGUAGE_PARAM = 'language';
 
 // A language code as Personio writes it (`de`, `en`). Codes from the payload
 // and from careers_url go into request and job URLs verbatim, so this gate
-// keeps them to tag characters; scan.mjs canonicalizes them for comparison.
+// keeps them to tag characters; scripts/scan.mjs canonicalizes them for comparison.
 const LANGUAGE_RE = /^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/;
 
 // Spacing between the per-language careers-page fetches of one tenant.

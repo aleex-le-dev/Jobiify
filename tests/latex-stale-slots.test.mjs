@@ -33,9 +33,9 @@ function fixture(run, initialText = sourceText) {
     const manifest = join(root, 'manifest.json');
     const output = join(root, 'output.tex');
     const env = { ...process.env, CAREER_OPS_ROOT: root, CAREER_OPS_TRACKER: '' };
-    const cli = (script, args) => spawnSync(process.execPath, [script, ...args], { cwd: new URL('..', import.meta.url), env, encoding: 'utf8' });
+    const cli = (script, args) => spawnSync(process.execPath, [script, ...args], { cwd: new URL('../', import.meta.url), env, encoding: 'utf8' });
     writeFileSync(source, initialText);
-    const extracted = cli('extract-latex-content.mjs', [source, '--out', manifest]);
+    const extracted = cli('scripts/extract-latex-content.mjs', [source, '--out', manifest]);
     assert.equal(extracted.status, 0, extracted.stderr);
     const slots = JSON.parse(readFileSync(manifest, 'utf8')).slots;
     assert.equal(slots.length, 2);
@@ -47,7 +47,7 @@ function fixture(run, initialText = sourceText) {
 }
 
 check('unchanged extracted source patches only the selected prose and escapes it', () => fixture(({ source, manifest, output, cli }) => {
-  const result = cli('patch-latex-content.mjs', [source, manifest, output]);
+  const result = cli('scripts/patch-latex-content.mjs', [source, manifest, output]);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(readFileSync(source, 'utf8'), sourceText);
   assert.equal(readFileSync(output, 'utf8'), sourceText.replace('Original first bullet.', String.raw`Tailored 30\% \& verified.`));
@@ -58,7 +58,7 @@ for (const edit of [text => '% New comment before extraction offsets\n' + text, 
     const edited = edit(sourceText);
     writeFileSync(source, edited);
     writeFileSync(output, 'Previous valid output.');
-    const result = cli('patch-latex-content.mjs', [source, manifest, output]);
+    const result = cli('scripts/patch-latex-content.mjs', [source, manifest, output]);
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /stale|changed/i);
     assert.match(result.stderr, /extract-latex-content/);
@@ -69,7 +69,7 @@ for (const edit of [text => '% New comment before extraction offsets\n' + text, 
 
 check('stale spans cannot create a new output artifact', () => fixture(({ source, manifest, output, cli }) => {
   writeFileSync(source, '% Shifted\n' + sourceText);
-  const result = cli('patch-latex-content.mjs', [source, manifest, output]);
+  const result = cli('scripts/patch-latex-content.mjs', [source, manifest, output]);
   assert.notEqual(result.status, 0);
   assert.ok(!existsSync(output));
 }));
@@ -86,7 +86,7 @@ check('fresh unbraced item slots remain valid with trailing spaces and CRLF', ()
 \end{document}
 `.replace('First bullet.', 'First bullet.   ').replace('Second bullet.', 'Second bullet. ').replace(/\n/g, '\r\n');
   fixture(({ source, manifest, output, cli }) => {
-    const result = cli('patch-latex-content.mjs', [source, manifest, output]);
+    const result = cli('scripts/patch-latex-content.mjs', [source, manifest, output]);
     assert.equal(result.status, 0, result.stderr);
     assert.match(readFileSync(output, 'utf8'), /Tailored 30\\% \\& verified\./);
     assert.equal(readFileSync(source, 'utf8'), initial);
@@ -99,7 +99,7 @@ for (const existingOutput of [false, true]) {
     payload.slots.push({ ...payload.slots[0], span: payload.slots[1].span });
     writeFileSync(manifest, JSON.stringify(payload));
     if (existingOutput) writeFileSync(output, 'Previous valid output.');
-    const result = cli('patch-latex-content.mjs', [source, manifest, output]);
+    const result = cli('scripts/patch-latex-content.mjs', [source, manifest, output]);
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /duplicate slot ids/i);
     assert.equal(readFileSync(source, 'utf8'), sourceText);

@@ -1,4 +1,4 @@
-// tests/doctor-billing-source.test.mjs — the billing-source check in doctor.mjs.
+// tests/doctor-billing-source.test.mjs — the billing-source check in scripts/doctor.mjs.
 //
 // The check exists to tell a user which account their tokens are billed to, so
 // a FALSE warning is worse than none: it tells someone who explicitly opted out
@@ -10,7 +10,7 @@ import { join } from 'path';
 
 console.log('\ndoctor.mjs — billing source');
 
-const DOCTOR = join(ROOT, 'doctor.mjs');
+const DOCTOR = join(ROOT, 'scripts/doctor.mjs');
 
 /** Run doctor and return its human output (it exits non-zero when it finds issues). */
 function runDoctor(env) {

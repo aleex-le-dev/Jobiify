@@ -1,30 +1,30 @@
 #!/usr/bin/env node
 
 /**
- * patch-latex-content.mjs — Apply prose patches to a user-owned LaTeX CV in place.
+ * scripts/patch-latex-content.mjs — Apply prose patches to a user-owned LaTeX CV in place.
  *
  * Usage:
- *   node patch-latex-content.mjs <source.tex> <patches.json> <output.tex>
+ *   node scripts/patch-latex-content.mjs <source.tex> <patches.json> <output.tex>
  *
  * patches.json:
  *   { "patches": [ { "id": "bullet-0", "text": "Tailored bullet text" } ] }
  *
- * Optional manifest fields in patches.json (from extract-latex-content.mjs):
+ * Optional manifest fields in patches.json (from scripts/extract-latex-content.mjs):
  *   { "slots": [...], "patches": [...] }
  */
 
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { resolve, dirname } from 'path';
-import { applyPatches, buildManifest } from './lib/latex-content.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { applyPatches, buildManifest } from '../lib/latex-content.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 async function main() {
   const args = process.argv.slice(2).filter(a => a !== '--help');
   const [sourcePath, patchesPath, outputPath] = args;
 
   if (!sourcePath || !patchesPath || !outputPath) {
-    console.error('Usage: node patch-latex-content.mjs <source.tex> <patches.json> <output.tex>');
+    console.error('Usage: node scripts/patch-latex-content.mjs <source.tex> <patches.json> <output.tex>');
     process.exit(1);
   }
 
@@ -55,12 +55,12 @@ async function main() {
   const slots = Array.isArray(payload.slots) ? payload.slots : [];
 
   if (slots.length === 0) {
-    console.error('patches.json must include a slots array from extract-latex-content.mjs');
+    console.error('patches.json must include a slots array from scripts/extract-latex-content.mjs');
     process.exit(1);
   }
 
   if (new Set(slots.map(s => s.id)).size !== slots.length) {
-    console.error('Duplicate slot ids in patches.json; rerun extract-latex-content.mjs.');
+    console.error('Duplicate slot ids in patches.json; rerun scripts/extract-latex-content.mjs.');
     process.exit(1);
   }
 
@@ -80,7 +80,7 @@ async function main() {
       || current.span.start !== slot.span.start || current.span.end !== slot.span.end;
   });
   if (stale.length > 0) {
-    console.error(`Stale patch slots: ${stale.map(p => p.id).join(', ')}. Source changed; rerun extract-latex-content.mjs.`);
+    console.error(`Stale patch slots: ${stale.map(p => p.id).join(', ')}. Source changed; rerun scripts/extract-latex-content.mjs.`);
     process.exit(1);
   }
 

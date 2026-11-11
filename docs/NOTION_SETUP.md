@@ -74,15 +74,15 @@ NOTION_PARENT_PAGE_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ## 6. Verify + run
 
 ```bash
-node doctor.mjs --json                          # confirm notion shows configured
-node plugins.mjs run notion export --dry-run     # preview what would be pushed
-node plugins.mjs run notion export               # push tracker rows into Notion
+node scripts/doctor.mjs --json                          # confirm notion shows configured
+node scripts/plugins.mjs run notion export --dry-run     # preview what would be pushed
+node scripts/plugins.mjs run notion export               # push tracker rows into Notion
 ```
 
 Optional — pull leads that have a URL back into the pipeline:
 
 ```bash
-node plugins.mjs run notion search "<query>"
+node scripts/plugins.mjs run notion search "<query>"
 ```
 
 ## Scope, honestly

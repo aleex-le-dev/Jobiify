@@ -45,7 +45,7 @@ function runSync() {
       writeFileSync(join(work, 'output', pdf), '%PDF-1.4\n');
     }
     
-    execFileSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs')], {
+    execFileSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs')], {
       encoding: 'utf-8',
       timeout: 30000,
       cwd: work,
@@ -94,7 +94,7 @@ try {
     pass('sync-pdf-flags correctly ignores partially numeric report IDs (4-draft)');
   }
 } catch (e) {
-  fail(`sync-pdf-flags.mjs tests crashed: ${e.message}`);
+  fail(`scripts/sync-pdf-flags.mjs tests crashed: ${e.message}`);
 }
 
 {
@@ -105,7 +105,7 @@ try {
     writeFileSync(tracker, TRACKER_HEADER);
     writeFileSync(pdfIndex, PDF_MANIFEST);
 
-    const result = spawnSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs'), '--dry-rn', '--json'], {
+    const result = spawnSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs'), '--dry-rn', '--json'], {
       encoding: 'utf-8',
       timeout: 30000,
       env: { ...process.env, CAREER_OPS_TRACKER: tracker, CAREER_OPS_PDF_INDEX: pdfIndex },
@@ -130,7 +130,7 @@ try {
     writeFileSync(tracker, TRACKER_HEADER);
     mkdirSync(pdfIndexDir);
 
-    const result = spawnSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs'), '--json'], {
+    const result = spawnSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs'), '--json'], {
       encoding: 'utf-8',
       timeout: 30000,
       env: { ...process.env, CAREER_OPS_TRACKER: tracker, CAREER_OPS_PDF_INDEX: pdfIndexDir },
@@ -173,7 +173,7 @@ try {
     writeFileSync(tracker, TRACKER_HEADER);
     writeFileSync(pdfIndex, manifest);
 
-    const result = spawnSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs'), '--prune', '--json'], {
+    const result = spawnSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs'), '--prune', '--json'], {
       encoding: 'utf-8',
       timeout: 30000,
       env: { ...process.env, CAREER_OPS_TRACKER: tracker, CAREER_OPS_PDF_INDEX: pdfIndex },
@@ -219,7 +219,7 @@ try {
     writeFileSync(tracker, TRACKER_HEADER);
     writeFileSync(pdfIndex, manifest);
 
-    const result = spawnSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs'), '--prune', '--write', '--json'], {
+    const result = spawnSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs'), '--prune', '--write', '--json'], {
       encoding: 'utf-8',
       timeout: 30000,
       env: { ...process.env, CAREER_OPS_TRACKER: tracker, CAREER_OPS_PDF_INDEX: pdfIndex },
@@ -273,7 +273,7 @@ try {
     writeFileSync(tracker, TRACKER_HEADER);
     writeFileSync(pdfIndex, manifest);
 
-    const result = spawnSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs'), '--prune', '--write', '--json'], {
+    const result = spawnSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs'), '--prune', '--write', '--json'], {
       encoding: 'utf-8',
       timeout: 30000,
       env: { ...process.env, CAREER_OPS_TRACKER: tracker, CAREER_OPS_PDF_INDEX: pdfIndex },
@@ -307,7 +307,7 @@ try {
     writeFileSync(tracker, TRACKER_HEADER);
     writeFileSync(pdfIndex, PDF_MANIFEST);
 
-    const result = spawnSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs'), '--write', '--json'], {
+    const result = spawnSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs'), '--write', '--json'], {
       encoding: 'utf-8',
       timeout: 30000,
       env: { ...process.env, CAREER_OPS_TRACKER: tracker, CAREER_OPS_PDF_INDEX: pdfIndex },
@@ -332,7 +332,7 @@ try {
 
     writeFileSync(tracker, TRACKER_HEADER);
 
-    const result = spawnSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs'), '--prune', '--json'], {
+    const result = spawnSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs'), '--prune', '--json'], {
       encoding: 'utf-8',
       timeout: 30000,
       env: { ...process.env, CAREER_OPS_TRACKER: tracker, CAREER_OPS_PDF_INDEX: pdfIndex },
@@ -371,7 +371,7 @@ try {
     writeFileSync(tracker, TRACKER_HEADER);
     writeFileSync(pdfIndex, manifest);
 
-    const result = spawnSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs'), '--prune', '--dry-run', '--write', '--json'], {
+    const result = spawnSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs'), '--prune', '--dry-run', '--write', '--json'], {
       encoding: 'utf-8',
       timeout: 30000,
       env: { ...process.env, CAREER_OPS_TRACKER: tracker, CAREER_OPS_PDF_INDEX: pdfIndex },
@@ -424,7 +424,7 @@ try {
     writeFileSync(tracker, TRACKER_HEADER);
     writeFileSync(pdfIndex, manifest);
 
-    const result = spawnSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs'), '--prune', '--write', '--json'], {
+    const result = spawnSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs'), '--prune', '--write', '--json'], {
       encoding: 'utf-8',
       timeout: 30000,
       env: { ...process.env, CAREER_OPS_TRACKER: tracker, CAREER_OPS_PDF_INDEX: pdfIndex },
@@ -452,13 +452,13 @@ try {
 
 // ── #3893: a deleted PDF leaves a stale manifest row that re-asserts ✅ ───────
 //
-// sync-pdf-flags.mjs:64-68 keeps only the report number when it parses
+// scripts/sync-pdf-flags.mjs:64-68 keeps only the report number when it parses
 // data/pdf-index.tsv and throws the pdf path away, so from that point it cannot
 // tell a live artifact from a deleted one. The decision at :108 degenerates to
 // "is this report number mentioned in the manifest", and the only write is a
 // monotonic ✅ at :110-118.
 //
-// Nothing prunes the manifest either. generate-pdf.mjs:1240-1244 evicts a row
+// Nothing prunes the manifest either. scripts/generate-pdf.mjs:1240-1244 evicts a row
 // only on RE-generation, so `rm output/*.pdf` leaves every row standing. That is
 // why neither half is fixable alone: correcting the tracker cell by hand is
 // reverted on the next run by the row that outlived its file.
@@ -496,7 +496,7 @@ console.log('\nsync-pdf-flags.mjs — a deleted PDF leaves a stale manifest row 
       '',
     ].join('\n'));
 
-    execFileSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs')], {
+    execFileSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs')], {
       encoding: 'utf-8',
       timeout: 30000,
       cwd: work,
@@ -526,10 +526,10 @@ console.log('\nsync-pdf-flags.mjs — a deleted PDF leaves a stale manifest row 
 
 // ── #4777: which manifest rows count as a generated CV ────────────────────────
 //
-// The decision lives in livePdfIndex (find.mjs), shared with merge-tracker.mjs.
+// The decision lives in livePdfIndex (scripts/find.mjs), shared with scripts/merge-tracker.mjs.
 // These cases run the real script, so they also pin what the helper cannot see
 // for itself: that this script calls it, parses the manifest with the
-// kind-aware parser, and resolves paths under the root generate-pdf.mjs wrote
+// kind-aware parser, and resolves paths under the root scripts/generate-pdf.mjs wrote
 // them for rather than the root of the canonical tracker path.
 console.log('\nsync-pdf-flags.mjs — which manifest rows count as a generated CV (#4777)');
 
@@ -563,7 +563,7 @@ const PDF_HEADER = '# report\tpdf\thtml\tformat\tdate\tkind';
       '',
     ].join('\n'));
 
-    execFileSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs')], {
+    execFileSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs')], {
       encoding: 'utf-8',
       timeout: 30000,
       cwd: work,
@@ -589,7 +589,7 @@ const PDF_HEADER = '# report\tpdf\thtml\tformat\tdate\tkind';
 {
   // data/ symlinked out of the repo, the natural workaround for #524. The
   // tracker and manifest are reached through the link; the PDF sits in the
-  // repo's own output/, which is where generate-pdf.mjs wrote it (#3169).
+  // repo's own output/, which is where scripts/generate-pdf.mjs wrote it (#3169).
   const parent = mkdtempSync(join(tmpdir(), 'cops-sync-symlinked-data-'));
   try {
     const repo = join(parent, 'repo');
@@ -608,7 +608,7 @@ const PDF_HEADER = '# report\tpdf\thtml\tformat\tdate\tkind';
     const env = { ...process.env, CAREER_OPS_ROOT: repo };
     delete env.CAREER_OPS_TRACKER;
     delete env.CAREER_OPS_PDF_INDEX;
-    execFileSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs')], { encoding: 'utf-8', timeout: 30000, cwd: repo, env });
+    execFileSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs')], { encoding: 'utf-8', timeout: 30000, cwd: repo, env });
 
     const after = readFileSync(join(external, 'data', 'applications.md'), 'utf-8');
     if (rowIn(after, 1).includes('✅')) {
@@ -634,7 +634,7 @@ const PDF_HEADER = '# report\tpdf\thtml\tformat\tdate\tkind';
     writeFileSync(tracker, TRACKER_FOR(ROW(1, 'Acme', '❌')));
     writeFileSync(pdfIndex, [PDF_HEADER, '1\t../outside/cv.pdf\t\tletter\t2026-01-01\tcv', ''].join('\n'));
 
-    const result = spawnSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs')], {
+    const result = spawnSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs')], {
       encoding: 'utf-8',
       timeout: 30000,
       cwd: work,
@@ -660,7 +660,7 @@ const PDF_HEADER = '# report\tpdf\thtml\tformat\tdate\tkind';
     const pdfIndex = join(work, 'pdf-index.tsv');
     writeFileSync(tracker, TRACKER_FOR(ROW(1, 'Acme', '❌')));
     writeFileSync(pdfIndex, [PDF_HEADER, '1\t\t\tletter\t2026-01-01\tcv', ''].join('\n'));
-    execFileSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs')], {
+    execFileSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs')], {
       encoding: 'utf-8',
       timeout: 30000,
       cwd: work,
@@ -696,7 +696,7 @@ if (process.platform === 'win32') {
       '',
     ].join('\n'));
 
-    const result = spawnSync(NODE, [join(ROOT, 'sync-pdf-flags.mjs')], {
+    const result = spawnSync(NODE, [join(ROOT, 'scripts/sync-pdf-flags.mjs')], {
       encoding: 'utf-8',
       timeout: 30000,
       cwd: work,

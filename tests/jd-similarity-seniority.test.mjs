@@ -1,4 +1,4 @@
-// tests/jd-similarity-seniority.test.mjs — the seniority gate in jd-similarity.mjs.
+// tests/jd-similarity-seniority.test.mjs — the seniority gate in scripts/jd-similarity.mjs.
 //
 // recommendCvReuse refuses to recommend reuse when the two documents describe
 // different seniority levels (`reason: 'level-mismatch'`). That gate OVERRIDES
@@ -22,7 +22,7 @@ console.log('\njd-similarity.mjs — the seniority gate only fires on real level
 
 try {
   const { recommendCvReuse, hardMismatch, jaccardSimilarity } = await import(
-    pathToFileURL(join(ROOT, 'jd-similarity.mjs')).href
+    pathToFileURL(join(ROOT, 'scripts/jd-similarity.mjs')).href
   );
 
   const check = (label, actual, expected) => {
@@ -92,5 +92,5 @@ try {
   check('an ambiguous new JD also stands the gate down',
     hardMismatch(progressionCv, 'Intern Developer. Django.'), false);
 } catch (error) {
-  fail(`jd-similarity.mjs seniority tests could not run: ${error.message}`);
+  fail(`scripts/jd-similarity.mjs seniority tests could not run: ${error.message}`);
 }

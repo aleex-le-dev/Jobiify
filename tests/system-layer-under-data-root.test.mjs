@@ -1,16 +1,16 @@
 // tests/system-layer-under-data-root.test.mjs — System Layer files must resolve
 // from the codebase, never from the configurable data root (#3500).
 //
-// DATA_CONTRACT.md: "System Layer files continue to be resolved relative to the
+// docs/projet/DATA_CONTRACT.md: "System Layer files continue to be resolved relative to the
 // codebase/repository root, keeping code and personal data completely separate."
 //
-// normalize-statuses.mjs broke that for templates/states.yml: one variable served
+// scripts/normalize-statuses.mjs broke that for templates/states.yml: one variable served
 // both roles, so `join(getCareerOpsRoot(), 'templates', 'states.yml')` looked for a
 // System Layer file inside the user's data directory. A data root that legitimately
 // has no templates/ is indistinguishable from the broken checkout the surrounding
 // `catch` was written for, so every status silently normalized to unknown — the
 // documented tracker repair path rewriting 156 localized spellings to nothing.
-// followup-cadence.mjs carried the identical join.
+// scripts/followup-cadence.mjs carried the identical join.
 //
 // The suite never caught it because it runs with the default root, where data root
 // and codebase root are the same directory. These checks therefore run the modules
@@ -42,7 +42,7 @@ try {
   //    Spanish, and a localized alias, i.e. exactly the table in the bug report.
   for (const envVar of ['CAREER_OPS_ROOT', 'CAREER_OPS_DATA_DIR']) {
     const out = runWithDataRoot(
-      `import('./normalize-statuses.mjs').then(m => console.log(` +
+      `import('./scripts/normalize-statuses.mjs').then(m => console.log(` +
       `['Accepted','Contratado','Evaluada','Rechazado'].map(v => v + '=' + (m.normalizeStatus(v).status ?? 'unknown')).join(' ')))`,
       envVar,
     );
@@ -55,7 +55,7 @@ try {
   // 2. followup-cadence reads the same System Layer file for its alias map; a
   //    localized status resolving to '' there drops the row out of the funnel.
   const cadence = runWithDataRoot(
-    `import('./followup-cadence.mjs').then(m => console.log(` +
+    `import('./scripts/followup-cadence.mjs').then(m => console.log(` +
     `['Contratado','Aplicado','Entrevista'].map(v => v + '=' + (m.normalizeStatus(v) || 'unknown')).join(' ')))`,
   );
   const cadenceExpected = 'Contratado=hired Aplicado=applied Entrevista=interview';
@@ -90,7 +90,7 @@ try {
 
   // 4. A genuinely unreadable states.yml must be loud, not a silent empty list —
   //    the property that made the original path bug invisible.
-  const src = readFileSync(join(ROOT, 'normalize-statuses.mjs'), 'utf-8');
+  const src = readFileSync(join(ROOT, 'scripts/normalize-statuses.mjs'), 'utf-8');
   /console\.error\(/.test(src.slice(src.indexOf('function canonicalStates'), src.indexOf('function normalizeStatus')))
     ? pass('normalize-statuses reports an unreadable states.yml on stderr instead of degrading silently')
     : fail('normalize-statuses swallows a states.yml load failure with no diagnostic (#3500)');

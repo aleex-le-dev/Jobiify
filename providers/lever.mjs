@@ -54,7 +54,7 @@ function resolveApiUrl(entry) {
 /** Fold `categories.location` together with any extra `categories.allLocations`
  *  into one string. Lever puts a SINGLE primary city in `location`, and exposes
  *  the full set on multi-location postings in `allLocations` — reading only the
- *  former silently hides every other eligible location from scan.mjs's
+ *  former silently hides every other eligible location from scripts/scan.mjs's
  *  location_filter (e.g. a req open in Barcelona AND Montevideo looks
  *  Barcelona-only). Mirrors resolveLocation() in providers/remotli.mjs.
  *  @param {any} categories */
@@ -122,7 +122,7 @@ export default {
         : undefined,
       location: resolveLocation(j.categories),
       // Lever's v0 postings list ships the full description for free (same
-      // payload, no per-job request) — enables scan.mjs content_filter.
+      // payload, no per-job request) — enables scripts/scan.mjs content_filter.
       description: leverDescription(j),
       postedAt: typeof j.createdAt === 'number' ? j.createdAt : undefined,
       // Lever's posting uuid; the v0 board API exposes no employer requisition

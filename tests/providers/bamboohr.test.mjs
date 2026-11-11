@@ -1,4 +1,4 @@
-// tests/providers/bamboohr.test.mjs — moved verbatim from test-all.mjs (#1440).
+// tests/providers/bamboohr.test.mjs — moved verbatim from scripts/test-all.mjs (#1440).
 import { pass, fail, ROOT } from '../helpers.mjs';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
@@ -205,7 +205,7 @@ try {
   }
 
   // fetch() — a non-redirect failure (timeout, DNS, 5xx) must pass through
-  // unchanged: it is not a confirmed-dead signal, only "unknown" (dead-boards.mjs).
+  // unchanged: it is not a confirmed-dead signal, only "unknown" (scripts/dead-boards.mjs).
   {
     const transientErr = new Error('This operation was aborted');
     transientErr.code = 20;

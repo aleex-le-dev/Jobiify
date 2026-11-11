@@ -1,12 +1,12 @@
-// tests/reply-hired-data-root.test.mjs — hired-share.mjs, reply-watch.mjs and
-// paste-reply.mjs resolve the tracker and their user-layer files against the
-// data root, the same way set-status.mjs and merge-tracker.mjs already do.
+// tests/reply-hired-data-root.test.mjs — scripts/hired-share.mjs, scripts/reply-watch.mjs and
+// scripts/paste-reply.mjs resolve the tracker and their user-layer files against the
+// data root, the same way scripts/set-status.mjs and scripts/merge-tracker.mjs already do.
 //
 // Before this, all three missed getCareerOpsRoot():
 //
-//   hired-share.mjs   resolveWorkspaceRoot(resolveTrackerPath(process.cwd()))
-//   reply-watch.mjs   resolveTrackerPath(__dirname), data/*.json under __dirname
-//   paste-reply.mjs   data/reply-candidates.json under __dirname
+//   scripts/hired-share.mjs   resolveWorkspaceRoot(resolveTrackerPath(process.cwd()))
+//   scripts/reply-watch.mjs   resolveTrackerPath(__dirname), data/*.json under __dirname
+//   scripts/paste-reply.mjs   data/reply-candidates.json under __dirname
 //
 // With the user layer outside the checkout (CAREER_OPS_ROOT,
 // CAREER_OPS_DATA_DIR or a .career-ops-data marker) hired-share found no hires,
@@ -31,7 +31,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const SCRIPTS = ['hired-share.mjs', 'reply-watch.mjs', 'paste-reply.mjs'];
+const SCRIPTS = ['scripts/hired-share.mjs', 'scripts/reply-watch.mjs', 'scripts/paste-reply.mjs'];
 // Runtime assets an import scan cannot see.
 const ASSETS = ['tracker-aliases.json', 'templates/states.yml'];
 
@@ -84,7 +84,7 @@ function fixture(t) {
   }
   for (const file of CLOSURE) {
     mkdirSync(dirname(join(f.code, file)), { recursive: true });
-    copyFileSync(join(ROOT, file), join(f.code, file));
+    (mkdirSync(join(f.code, file, '..'), { recursive: true }), (mkdirSync(join(f.code, file, '..'), { recursive: true }), copyFileSync(join(ROOT, file), join(f.code, file))));
   }
   // Bare-specifier imports (js-yaml, …) resolve through the checkout's modules:
   // the nearest node_modules at or above ROOT, as Node's own lookup would find
@@ -138,10 +138,10 @@ for (const config of CONFIGS) {
     const f = fixture(t);
     const env = config.setup(f);
 
-    const status = JSON.parse(run(f, 'hired-share.mjs', ['--status'], env).stdout);
+    const status = JSON.parse(run(f, 'scripts/hired-share.mjs', ['--status'], env).stdout);
     assert.deepEqual(status.hires.map((h) => h.role), ['data role']);
 
-    run(f, 'hired-share.mjs', ['--report', '1', '--mark', 'later'], env);
+    run(f, 'scripts/hired-share.mjs', ['--report', '1', '--mark', 'later'], env);
     const statePath = join(f.data, 'data', '.hired-share-state.json');
     assert.ok(existsSync(statePath), 'state file must land under the data root');
     assert.equal(JSON.parse(readFileSync(statePath, 'utf-8')).byReport['1'].status, 'later');
@@ -156,14 +156,14 @@ for (const config of CONFIGS) {
     const email = join(f.dir, 'email.txt');
     writeFileSync(email, 'Subject: Thanks for applying\nFrom: jobs@acme.example\n\nWe received your application.\n');
 
-    run(f, 'paste-reply.mjs', ['--file', email], env);
+    run(f, 'scripts/paste-reply.mjs', ['--file', email], env);
     const candidatesPath = join(f.data, 'data', 'reply-candidates.json');
     assert.ok(existsSync(candidatesPath), 'paste-reply must write under the data root');
     assert.equal(JSON.parse(readFileSync(candidatesPath, 'utf-8')).length, 1);
 
     // reply-watch reads the same file. Answer "no" to any update prompt so the
     // run never writes the tracker.
-    const watch = run(f, 'reply-watch.mjs', [], env, 'n\n');
+    const watch = run(f, 'scripts/reply-watch.mjs', [], env, 'n\n');
     assert.match(watch.stdout, /Today: 1 application updates need review/);
 
     for (const other of [f.code, f.cwd, f.other]) {
@@ -175,17 +175,17 @@ for (const config of CONFIGS) {
 
 test('with nothing configured, the code root is the default — not the cwd', (t) => {
   const f = fixture(t);
-  const status = JSON.parse(run(f, 'hired-share.mjs', ['--status']).stdout);
+  const status = JSON.parse(run(f, 'scripts/hired-share.mjs', ['--status']).stdout);
   assert.deepEqual(status.hires.map((h) => h.role), ['code role']);
 
-  run(f, 'reply-watch.mjs', [], {}, 'n\n');
+  run(f, 'scripts/reply-watch.mjs', [], {}, 'n\n');
   assert.ok(existsSync(join(f.code, 'data', 'reply-candidates.json')));
   assert.ok(!existsSync(join(f.cwd, 'data', 'reply-candidates.json')));
 });
 
 test('an explicit --root still overrides the configured data root for hired-share', (t) => {
   const f = fixture(t);
-  const status = JSON.parse(run(f, 'hired-share.mjs', ['--status', '--root', f.other], { CAREER_OPS_ROOT: f.data }).stdout);
+  const status = JSON.parse(run(f, 'scripts/hired-share.mjs', ['--status', '--root', f.other], { CAREER_OPS_ROOT: f.data }).stdout);
   assert.deepEqual(status.hires.map((h) => h.role), ['other role']);
 });
 
@@ -197,7 +197,7 @@ test('hired-share --mark creates data/ on a legacy-layout data root', (t) => {
   mkdirSync(legacy);
   writeFileSync(join(legacy, 'applications.md'), tracker('legacy role'));
 
-  run(f, 'hired-share.mjs', ['--report', '1', '--mark', 'never'], { CAREER_OPS_ROOT: legacy });
+  run(f, 'scripts/hired-share.mjs', ['--report', '1', '--mark', 'never'], { CAREER_OPS_ROOT: legacy });
   const statePath = join(legacy, 'data', '.hired-share-state.json');
   assert.ok(existsSync(statePath), 'state file must be written under the legacy root');
   assert.equal(JSON.parse(readFileSync(statePath, 'utf-8')).byReport['1'].status, 'never');

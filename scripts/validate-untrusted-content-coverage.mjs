@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * validate-untrusted-content-coverage.mjs — structural coverage check for the
+ * scripts/validate-untrusted-content-coverage.mjs — structural coverage check for the
  * "untrusted external content" directive.
  *
  * Every mode that ingests raw external text (a job posting, a scraped
@@ -20,7 +20,7 @@
  * it). A missing reference is a coverage gap: a new/edited mode can silently
  * lose the directive with no signal until it's exploited.
  *
- * Run: node validate-untrusted-content-coverage.mjs
+ * Run: node scripts/validate-untrusted-content-coverage.mjs
  * Exit 0 = clean. Exit 1 = coverage gap listed.
  */
 
@@ -28,10 +28,10 @@ import { readFileSync, existsSync, readdirSync } from 'fs';
 import { dirname, join, relative, sep } from 'path';
 import { fileURLToPath } from 'url';
 import { USER_PATHS } from './update-system.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { listTree } from './lib/walk-tree.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { listTree } from '../lib/walk-tree.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const MARKER = 'Untrusted External Content';
 const CANONICAL_HEADING = `## ${MARKER} (CRITICAL)`;
@@ -86,7 +86,7 @@ const ALWAYS_REQUIRED = [
 const LOCALIZED_MIRROR = /^modes\/[a-z]{2}(-[A-Z]{2})?\//;
 
 /**
- * USER-layer files, derived from update-system.mjs's USER_PATHS rather than
+ * USER-layer files, derived from scripts/update-system.mjs's USER_PATHS rather than
  * re-listed here — a second hardcoded copy is how a fourth user file ends up
  * policed by tooling that must not have an opinion about it.
  *
@@ -146,7 +146,7 @@ export function hasCanonicalHeading(text) {
 // run the validation and process.exit() out from under the importer.
 if (isMainModule(import.meta.url)) {
   if (process.argv.includes('--self-test')) {
-    console.log('Running validate-untrusted-content-coverage.mjs self-tests...');
+    console.log('Running scripts/validate-untrusted-content-coverage.mjs self-tests...');
 
     const assert = (condition, message) => {
       if (!condition) {

@@ -82,7 +82,7 @@ test('two offers with different URLs/report numbers/dates/IDs resolve to a byte-
 
     // Report numbers must differ between the two offers too, so the test
     // cannot pass by accident on a fixture that happens to reuse "001".
-    writeFileSync(join(dir, 'reserve-report-num.mjs'), [
+    writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/reserve-report-num.mjs')), [
       "import { readFileSync, writeFileSync, existsSync } from 'node:fs';",
       "if (!process.argv.includes('--release')) {",
       "  const f = 'counter.txt';",
@@ -93,7 +93,7 @@ test('two offers with different URLs/report numbers/dates/IDs resolve to a byte-
     ].join('\n') + '\n');
 
     for (const script of ['merge-tracker', 'reconcile-pipeline', 'verify-pipeline']) {
-      writeFileSync(join(dir, `${script}.mjs`), '// No external integrations in this fixture.\n');
+      writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts', `${script}.mjs`)), '// No external integrations in this fixture.\n');
     }
 
     // curl fails immediately so JD prefetch short-circuits without a network

@@ -1,5 +1,5 @@
 // tests/providers/greenhouse.test.mjs — direct provider-contract tests (#1499).
-// Covers the id/detect/fetch contract scan.mjs calls: api: precedence with the
+// Covers the id/detect/fetch contract scripts/scan.mjs calls: api: precedence with the
 // host allowlist, careers_url auto-detection, normalization from the
 // boards-api JSON shape, and the guard chain running before any request.
 // (Indirect coverage elsewhere: liveness tests exercise Greenhouse URL
@@ -402,7 +402,7 @@ try {
   // Order stability (#3750). The folded city list must not inherit the order
   // Greenhouse happened to return its offices in: that order is not promised to
   // be stable, and this string is what lands in scan-history.tsv AND what
-  // scan.mjs keys the location dedupe on. Same two offices as above, declared
+  // scripts/scan.mjs keys the location dedupe on. Same two offices as above, declared
   // the other way round — the emitted location must be byte-identical.
   const reversedOffices = {
     offices: [

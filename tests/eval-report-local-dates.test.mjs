@@ -69,7 +69,7 @@ globalThis.Date = class extends RealDate {
 `);
     const driver = join(work, 'driver.mjs');
     writeFileSync(driver, `
-const { processOffer, PATHS } = await import(${JSON.stringify(pathToFileURL(join(ROOT, 'batch-evaluate-gemini.mjs')).href)});
+const { processOffer, PATHS } = await import(${JSON.stringify(pathToFileURL(join(ROOT, 'scripts/batch-evaluate-gemini.mjs')).href)});
 PATHS.reports = ${JSON.stringify(reportsDir)};
 PATHS.trackerAdditions = ${JSON.stringify(additionsDir)};
 const mockBrowser = { newPage: async () => ({
@@ -100,7 +100,7 @@ await processOffer(mockBrowser, '- [ ] https://example.com/job | Acme Corp | Sen
     });
     assert.equal(r.error, undefined, `spawn failed: ${r.error?.message}`);
 
-    // reserve-report-num.mjs drops a {num}-RESERVED.md sentinel in the same
+    // scripts/reserve-report-num.mjs drops a {num}-RESERVED.md sentinel in the same
     // directory to claim the slot; it is not the report and carries no date.
     const reports = readdirSync(reportsDir)
       .filter((f) => f.endsWith('.md') && !/-RESERVED\.md$/.test(f));
@@ -129,7 +129,7 @@ test('no evaluator derives its report date from the UTC day', () => {
   // inline in a CLI body that needs an API key, so there is no seam to drive.
   // It still catches the exact regression — a `today` built from toISOString.
   const offenders = [];
-  for (const file of ['gemini-eval.mjs', 'ollama-eval.mjs', 'openai-eval.mjs', 'batch-evaluate-gemini.mjs']) {
+  for (const file of ['scripts/gemini-eval.mjs', 'scripts/ollama-eval.mjs', 'scripts/openai-eval.mjs', 'scripts/batch-evaluate-gemini.mjs']) {
     const src = readFileSync(join(ROOT, file), 'utf-8');
     for (const line of src.split('\n')) {
       if (/^\s*(\/\/|\*)/.test(line)) continue;                       // comment
@@ -142,9 +142,9 @@ test('no evaluator derives its report date from the UTC day', () => {
 test('and each evaluator actually imports localToday', () => {
   // The other half of the structural pair. Absence of toISOString would also be
   // satisfied by deleting the date entirely; this pins what replaced it.
-  for (const file of ['gemini-eval.mjs', 'ollama-eval.mjs', 'openai-eval.mjs', 'batch-evaluate-gemini.mjs']) {
+  for (const file of ['scripts/gemini-eval.mjs', 'scripts/ollama-eval.mjs', 'scripts/openai-eval.mjs', 'scripts/batch-evaluate-gemini.mjs']) {
     const src = readFileSync(join(ROOT, file), 'utf-8');
-    assert.match(src, /from '\.\/lib\/local-today\.mjs'/, `${file} does not import localToday`);
+    assert.match(src, /from '\.\.\/lib\/local-today\.mjs'/, `${file} does not import localToday`);
     assert.match(src, /const\s+today\s*=\s*localToday\(\)/, `${file} does not derive today from localToday()`);
   }
 });

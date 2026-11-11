@@ -6,7 +6,7 @@ import path from "node:path";
  * drafting the structured answers reads the document the reviewer is holding.
  *
  * Resolution goes through the `pdf` column of `data/pdf-index.tsv`, instead of a
- * second match over `output/`. generate-pdf.mjs drops any existing row naming
+ * second match over `output/`. scripts/generate-pdf.mjs drops any existing row naming
  * the same PDF, so a PDF path identifies at most one row. That row's `html`
  * column is that PDF's own source.
  *

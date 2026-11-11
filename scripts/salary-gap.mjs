@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * salary-gap.mjs — Desired vs Advertised vs Actual compensation analyzer
+ * scripts/salary-gap.mjs — Desired vs Advertised vs Actual compensation analyzer
  *
  * Salary facts are append-only observations, never mutated:
  *   { tracker#, date, type: desired|advertised|actual|stated, amount, currency, source, note, round, interviewer }
@@ -30,18 +30,18 @@
  * of those is "not evaluated," never a guessed penalty. NOT financial or tax
  * advice; see that table's own header for the full disclaimer.
  *
- * Run: node salary-gap.mjs             (JSON)
- *      node salary-gap.mjs --summary   (human-readable)
- *      node salary-gap.mjs --stated-for <tracker#>   (prior stated-comp observations, JSON)
- *      node salary-gap.mjs --relocation --gross <amount> --posting-location "<city, province>"
+ * Run: node scripts/salary-gap.mjs             (JSON)
+ *      node scripts/salary-gap.mjs --summary   (human-readable)
+ *      node scripts/salary-gap.mjs --stated-for <tracker#>   (prior stated-comp observations, JSON)
+ *      node scripts/salary-gap.mjs --relocation --gross <amount> --posting-location "<city, province>"
  *                          [--home-location "<city, province>"] [--currency <code>]
  *                                                (ad hoc relocation comparison, JSON)
- *      node salary-gap.mjs --relocation --gross <amount> --posting-location-file <path>
+ *      node scripts/salary-gap.mjs --relocation --gross <amount> --posting-location-file <path>
  *                          [--home-location "<city, province>"] [--currency <code>]
  *                                                (same, but the posting location is read
  *                                                 from a file instead of a shell argument —
  *                                                 see CWE-78 note below)
- *      node salary-gap.mjs --self-test
+ *      node scripts/salary-gap.mjs --self-test
  *
  * `--posting-location` vs `--posting-location-file` (#4696 CodeRabbit CWE-78
  * finding): the posting location is the JD's own verbatim text — untrusted,
@@ -71,16 +71,16 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
 import { resolveColumns, parseTrackerRow, extractTrackerReportLinks, extractTrackerReportNumbers } from './tracker-parse.mjs';
 import * as yaml from 'js-yaml';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { flagValue, hasFlag } from './lib/cli-flags.mjs';
-import { parseAmount, compensationPeriod } from './providers/_salary-text.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { flagValue, hasFlag } from '../lib/cli-flags.mjs';
+import { parseAmount, compensationPeriod } from '../providers/_salary-text.mjs';
 
 const CAREER_OPS = getCareerOpsRoot();
 const OBS_PATH = join(CAREER_OPS, 'data/salary-observations.tsv');
 const REPORTS_DIR = join(CAREER_OPS, 'reports');
 // templates/ is SYSTEM layer (Data Contract) — resolved relative to this
 // script's own directory, never the (possibly different) user data root.
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const SCRIPT_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 const RELOCATION_TABLE_PATH = join(SCRIPT_DIR, 'templates/jurisdiction-relocation-tax.yml');
 
 /**
@@ -183,7 +183,7 @@ export function getStatedObservations(observations, num) {
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
-// Like analyze-patterns.mjs:110 but WITHOUT `json`: analyze-patterns feeds the fence
+// Like scripts/analyze-patterns.mjs:110 but WITHOUT `json`: analyze-patterns feeds the fence
 // body to a real YAML parser (JSON is a YAML subset, so json fences parse fine there),
 // while yamlStr below only extracts `key: value` lines — a json fence would "match"
 // and silently yield null company/role/advertised_comp. Rejecting it outright means
@@ -1065,7 +1065,7 @@ function selfTest() {
 
   // extractTrackerReportLinks keeps label and target apart; the flattened
   // membership helper it now backs must still answer for BOTH numbers, because
-  // find.mjs and set-status.mjs rely on a collision matching either spelling.
+  // scripts/find.mjs and scripts/set-status.mjs rely on a collision matching either spelling.
   const links = extractTrackerReportLinks('[5](../reports/006-globex-2026-01-01.md)');
   assert(links.length === 1 && links[0].target === 6 && links[0].label === 5,
     `the link's target and label are both reported, got ${JSON.stringify(links)}`);
@@ -1314,13 +1314,13 @@ const REPORT_FILE_RE = /^(\d{3})-.*-(\d{4}-\d{2}-\d{2})\.md$/;
 
 /**
  * Resolve applications from tracker rows, reaching each row's report through
- * its Report link — the same way `set-status.mjs`, `outcome.mjs` and
- * `check-jd-archive.mjs` already do it.
+ * its Report link — the same way `scripts/set-status.mjs`, `scripts/outcome.mjs` and
+ * `scripts/check-jd-archive.mjs` already do it.
  *
  * Column 1 of `salary-observations.tsv` is documented as a tracker#, but this
  * file used to build its application map from `reports/NNN-*.md` filenames, so
  * it was really joining on report#. Those are two independent counters that
- * "diverge permanently once any row exists without a report" (set-status.mjs),
+ * "diverge permanently once any row exists without a report" (scripts/set-status.mjs),
  * which had three consequences (#4351): a report-less row could never match and
  * every observation on it was called an orphan; and once an id was padded to
  * silence that orphan, the figure attached to whichever report happened to carry
@@ -1502,7 +1502,7 @@ function loadProfileDesired() {
     if (!comp?.target_range) return null;
     return { amount: String(comp.target_range), currency: comp.currency ? String(comp.currency) : null };
   } catch {
-    return null; // unreadable profile is a non-event here; doctor.mjs owns that complaint
+    return null; // unreadable profile is a non-event here; scripts/doctor.mjs owns that complaint
   }
 }
 
@@ -1521,7 +1521,7 @@ function loadProfileLocation() {
     const city = profile?.location?.city;
     return typeof city === 'string' && city.trim() ? city.trim() : null;
   } catch {
-    return null; // unreadable profile is a non-event here; doctor.mjs owns that complaint
+    return null; // unreadable profile is a non-event here; scripts/doctor.mjs owns that complaint
   }
 }
 
@@ -1643,7 +1643,7 @@ function main() {
 
   if (statedForFlagIdx !== -1) {
     if (!statedForNum) {
-      console.error('Usage: node salary-gap.mjs --stated-for <tracker#>');
+      console.error('Usage: node scripts/salary-gap.mjs --stated-for <tracker#>');
       process.exit(1);
     }
     const { observations } = collectSources();
@@ -1688,7 +1688,7 @@ function main() {
       }
     }
     if (gross === null || !postingLocation) {
-      console.error('Usage: node salary-gap.mjs --relocation --gross <amount> (--posting-location "<city, province>" | --posting-location-file <path>) [--home-location "<city, province>"] [--currency <code>]');
+      console.error('Usage: node scripts/salary-gap.mjs --relocation --gross <amount> (--posting-location "<city, province>" | --posting-location-file <path>) [--home-location "<city, province>"] [--currency <code>]');
       process.exit(1);
     }
     const jurisdictions = loadRelocationTable();
@@ -1737,7 +1737,7 @@ function main() {
 // Derived from the flags this file actually accepts, so `--help` cannot
 // describe an option that does not exist.
 const USAGE = `Usage:
-  node salary-gap.mjs [--summary] [--stated-for <tracker#>] [--self-test]
+  node scripts/salary-gap.mjs [--summary] [--stated-for <tracker#>] [--self-test]
 
   --summary                human-readable table instead of JSON
   --stated-for <tracker#>  prior stated-comp observations for one tracked row

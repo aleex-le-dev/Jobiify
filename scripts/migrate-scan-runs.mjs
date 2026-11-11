@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * migrate-scan-runs.mjs — bring an existing data/scan-runs.tsv onto the current
+ * scripts/migrate-scan-runs.mjs — bring an existing data/scan-runs.tsv onto the current
  * schema so runs recorded under an older header keep counting (#4423).
  *
  * appendScanRunSummary writes SCAN_RUNS_HEADER only when the file does not yet
@@ -29,25 +29,25 @@
  *
  * A counter a row's schema never recorded is left EMPTY, not zero: the run did
  * not filter zero postings by age, it predates that counter. Number('') is 0,
- * so stats.mjs folds it exactly as a 0 would, and the file keeps saying
+ * so scripts/stats.mjs folds it exactly as a 0 would, and the file keeps saying
  * "unrecorded" instead of asserting a measurement that was never taken.
  *
  * Usage:
- *   node migrate-scan-runs.mjs                   # dry run (default) — reports, writes nothing
- *   node migrate-scan-runs.mjs --apply           # rewrite in place, after saving <file>.bak
- *   node migrate-scan-runs.mjs --file <path>     # target a file other than the resolved default
- *   node migrate-scan-runs.mjs --json            # machine-readable summary
+ *   node scripts/migrate-scan-runs.mjs                   # dry run (default) — reports, writes nothing
+ *   node scripts/migrate-scan-runs.mjs --apply           # rewrite in place, after saving <file>.bak
+ *   node scripts/migrate-scan-runs.mjs --file <path>     # target a file other than the resolved default
+ *   node scripts/migrate-scan-runs.mjs --json            # machine-readable summary
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { SCAN_RUNS_HEADER, atomicWriteFile } from './scan.mjs';
 import { withPipelineLock } from './pipeline-lock.mjs';
-import { flagValue, validateFlags } from './lib/cli-flags.mjs';
+import { flagValue, validateFlags } from '../lib/cli-flags.mjs';
 
-/** Current column order, taken from scan.mjs so this can never drift from the writer. */
+/** Current column order, taken from scripts/scan.mjs so this can never drift from the writer. */
 export const CURRENT_COLUMNS = SCAN_RUNS_HEADER.trim().split('\t');
 
 /**
@@ -138,13 +138,13 @@ export function migrateScanRuns(text) {
  *
  * An earlier version of this comment claimed a lock here would be theatre and
  * that comparing made the losing case "a refusal, never a lost run". Both were
- * wrong. scan.mjs already imports withPipelineLock and already wraps the
+ * wrong. scripts/scan.mjs already imports withPipelineLock and already wraps the
  * sibling append-only TSV in it at appendToScanHistory, so the pattern was one
  * function away, not a new hot-path cost. And the compare alone left a window
  * between the read and the rename: measured at about 9ms, and reproduced at 48
  * lost rows over 120 trials, every one of them reporting written: true.
  *
- * So the completed-run append in scan.mjs now takes this same lock, and this
+ * So the completed-run append in scripts/scan.mjs now takes this same lock, and this
  * side takes it too. The compare stays inside the lock: it still catches an
  * append that landed before the lock was acquired, and it is what makes the
  * refusal meaningful rather than decorative.
@@ -181,7 +181,7 @@ if (isMainModule(import.meta.url)) {
     console.error('Error: --file requires a non-empty value');
     process.exit(1);
   }
-  validateFlags(argv, ['--apply', '--file', '--json', '--help', '-h'], `Usage: node migrate-scan-runs.mjs [options]
+  validateFlags(argv, ['--apply', '--file', '--json', '--help', '-h'], `Usage: node scripts/migrate-scan-runs.mjs [options]
 
 Preview migration of scan-runs.tsv to the current schema. Writes nothing by default.
 

@@ -1,17 +1,17 @@
 // The dashboard and the CLI must fill the SAME CV template (#4034).
 //
 // The half that is easy to get wrong is not the lookup — that is delegated to the
-// core's cv-templates.mjs — but the BASE a relative path resolves against.
-// cv-templates.mjs reads CAREER_OPS_PROFILE relative to the cwd, and the cwd is
+// core's scripts/cv-templates.mjs — but the BASE a relative path resolves against.
+// scripts/cv-templates.mjs reads CAREER_OPS_PROFILE relative to the cwd, and the cwd is
 // `<core>` for the CLI and `<core>/web` for the dashboard. `config/profile.yml`
 // therefore names two different files, one of which does not exist: the dashboard
 // finds no profile, falls back to the base template, and the two agree on nothing
 // while reporting no error. Same class of bug, same fix, as data-root.test.mjs.
 //
 // Every case runs against a REAL temporary checkout holding the real
-// cv-templates.mjs, and drives the REAL `process.env` and `process.cwd()` rather
+// scripts/cv-templates.mjs, and drives the REAL `process.env` and `process.cwd()` rather
 // than injected stand-ins. That is not ceremony: an injected env made the relative
-// case pass against the UNFIXED code, because cv-templates.mjs reads
+// case pass against the UNFIXED code, because scripts/cv-templates.mjs reads
 // `process.env.CAREER_OPS_PROFILE` itself, at module load, and never saw the
 // stand-in. The test agreed with the bug.
 //
@@ -29,30 +29,30 @@ import { linkCorePackage } from "../helpers/core-package.mjs";
 
 const CORE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-// cv-templates.mjs imports js-yaml. A web-only install (web-ci.yml runs `npm ci`
+// scripts/cv-templates.mjs imports js-yaml. A web-only install (web-ci.yml runs `npm ci`
 // in web/ alone) has the file and not its dependencies, so probe importability
 // rather than existence — existsSync would call that runnable and every case
 // below would fail on ERR_MODULE_NOT_FOUND instead of skipping (mirrors
 // followups-lock.test.mjs / #2922).
 let coreUsable = true;
 try {
-  await import(path.join(CORE, "cv-templates.mjs"));
+  await import(path.join(CORE, "scripts/cv-templates.mjs"));
 } catch {
   coreUsable = false;
 }
 
 /**
- * A throwaway career-ops checkout: the real cv-templates.mjs, a base template, a
+ * A throwaway career-ops checkout: the real scripts/cv-templates.mjs, a base template, a
  * named one, and a profile.yml selecting the named one. Each call gets its own
- * directory, which also gives cv-templates.mjs a fresh module URL — it caches its
+ * directory, which also gives scripts/cv-templates.mjs a fresh module URL — it caches its
  * default profile path at load, so a shared copy would freeze the first case's env.
  */
 function fakeCheckout({ profileAt = "config/profile.yml", template = "mine", pack = null } = {}) {
   // realpath: macOS symlinks /var → /private/var, and path.relative() against an
   // unresolved base would compare two spellings of the same directory.
   const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "cv-template-")));
-  fs.copyFileSync(path.join(CORE, "cv-templates.mjs"), path.join(root, "cv-templates.mjs"));
-  // cv-templates.mjs imports ./lib/is-main-module.mjs, ./path-resolver.mjs (its
+  fs.copyFileSync((fs.mkdirSync(path.join(CORE, 'scripts'), { recursive: true }), path.join(CORE, "scripts/cv-templates.mjs")), (fs.mkdirSync(path.join(root, 'scripts'), { recursive: true }), path.join(root, "scripts/cv-templates.mjs")));
+  // scripts/cv-templates.mjs imports ./lib/is-main-module.mjs, ./path-resolver.mjs (its
   // default profile path follows the data root), ./providers/_html-entities.mjs
   // (it decodes entities in a template meta block) and ./lib/template-manifest.mjs
   // (the manifest block and the section vocabulary) relative to itself. A missing
@@ -67,7 +67,7 @@ function fakeCheckout({ profileAt = "config/profile.yml", template = "mine", pac
     path.join(CORE, "lib", "template-manifest.mjs"),
     path.join(root, "lib", "template-manifest.mjs"),
   );
-  fs.copyFileSync(path.join(CORE, "path-resolver.mjs"), path.join(root, "path-resolver.mjs"));
+  fs.copyFileSync((fs.mkdirSync(path.join(CORE, 'scripts'), { recursive: true }), path.join(CORE, "scripts/path-resolver.mjs")), (fs.mkdirSync(path.join(root, 'scripts'), { recursive: true }), path.join(root, "scripts/path-resolver.mjs")));
   fs.mkdirSync(path.join(root, "providers"), { recursive: true });
   fs.copyFileSync(
     path.join(CORE, "providers", "_html-entities.mjs"),
@@ -181,7 +181,7 @@ test("a template pack survives BOTH halves: the resolver and the prompt's guard"
 });
 
 test("an unresolvable checkout yields the base template rather than throwing", async () => {
-  // Given a root with no cv-templates.mjs at all — an older checkout, or a
+  // Given a root with no scripts/cv-templates.mjs at all — an older checkout, or a
   // data-only install. A failed run is worse than an untailored CV.
   const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "cv-template-empty-")));
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * tests/paste-reply.test.mjs — regression tests for paste-reply.mjs (#1802).
+ * tests/paste-reply.test.mjs — regression tests for scripts/paste-reply.mjs (#1802).
  *
- * Locks in the manual/no-Gmail input path into reply-watch.mjs's classification
+ * Locks in the manual/no-Gmail input path into scripts/reply-watch.mjs's classification
  * pipeline:
  *   1. --file mode normalizes subject/from/body into the exact candidate shape
- *      reply-watch.mjs expects, with signal left null (classification stays
- *      reply-watch.mjs's job).
+ *      scripts/reply-watch.mjs expects, with signal left null (classification stays
+ *      scripts/reply-watch.mjs's job).
  *   2. Appending is additive — existing candidates are never clobbered.
  *   3. A missing candidates file is created (with the array wrapper) on first append.
  *   4. --file input with no Subject:/From: headers falls back to whole-file-as-body.
@@ -31,7 +31,7 @@ import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\npaste-reply.mjs — manual reply input without Gmail');
 const NODE = process.execPath;
-const CLI = join(ROOT, 'paste-reply.mjs');
+const CLI = join(ROOT, 'scripts/paste-reply.mjs');
 
 function check(name, cond, detail = '') {
   if (cond) pass(name);
@@ -73,7 +73,7 @@ console.log('1. --file mode normalizes into the exact candidate shape');
   check('from parsed', cand.from === 'recruiter@wingyun.com', cand.from);
   check('subject parsed', cand.subject === '恭喜简历通过，杭州赢云贸易有限公司邀您面试', cand.subject);
   check('body_snippet contains multi-line body', cand.body_snippet.includes('AI微信小程序面试') && cand.body_snippet.includes('15~30分钟'), cand.body_snippet);
-  check('signal is null (classification stays reply-watch.mjs job)', cand.signal === null, JSON.stringify(cand.signal));
+  check('signal is null (classification stays scripts/reply-watch.mjs job)', cand.signal === null, JSON.stringify(cand.signal));
   check('exactly 5 shape keys', Object.keys(cand).sort().join(',') === 'body_snippet,from,message_id,signal,subject', Object.keys(cand).sort().join(','));
 }
 

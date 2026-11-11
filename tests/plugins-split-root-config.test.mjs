@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { rmSync, ROOT } from './helpers.mjs';
 
-const PLUGINS_CLI = join(ROOT, 'plugins.mjs');
+const PLUGINS_CLI = join(ROOT, 'scripts/plugins.mjs');
 const NOTION_KEYS = ['NOTION_ACCESS_TOKEN', 'NOTION_PARENT_PAGE_ID'];
 
 function sandbox(prefix) {
@@ -83,7 +83,7 @@ test('scan preloads .env from the data root instead of the caller cwd', () => {
     writeFileSync(join(callerRoot, '.env'), `${key}=from-caller-cwd\n`);
     const env = { ...process.env, CAREER_OPS_ROOT: dataRoot };
     delete env[key];
-    const scanUrl = pathToFileURL(join(ROOT, 'scan.mjs')).href;
+    const scanUrl = pathToFileURL(join(ROOT, 'scripts/scan.mjs')).href;
     const result = spawnSync(
       process.execPath,
       ['--input-type=module', '-e', `await import(${JSON.stringify(scanUrl)}); process.stdout.write(process.env[${JSON.stringify(key)}] || '');`],

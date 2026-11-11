@@ -1,6 +1,6 @@
 // tests/core-test-layout.test.mjs — a suite that is not under tests/ does not run.
 //
-// test-all.mjs discovers `tests/**/*.test.mjs` and nothing else (#1440), and
+// scripts/test-all.mjs discovers `tests/**/*.test.mjs` and nothing else (#1440), and
 // that limit is deliberate: it keeps the runner away from standalone files at
 // the repository root. The cost is that a suite written anywhere else is
 // invisible in the quietest possible way: the file exists, it is committed,
@@ -12,14 +12,14 @@
 // scoring-critical section cannot silently become compressible. That guard
 // had never run in CI. The sibling check for web/'s own discovery glob is
 // tests/web-test-layout.test.mjs; this is the core half, kept in tests/
-// rather than inline in test-all.mjs so `--only` can reach it.
+// rather than inline in scripts/test-all.mjs so `--only` can reach it.
 import { pass, fail, ROOT } from './helpers.mjs';
 import { collectMjsFiles } from '../lib/mjs-files.mjs';
 import { relative, sep } from 'path';
 
 console.log('\ncore test layout — every suite lives where a runner can find it');
 
-// The two trees a runner actually discovers: test-all.mjs's discoverTests()
+// The two trees a runner actually discovers: scripts/test-all.mjs's discoverTests()
 // over tests/, and web/'s own `npm test` glob over web/tests/.
 const DISCOVERED_ROOTS = ['tests/', 'web/tests/'];
 

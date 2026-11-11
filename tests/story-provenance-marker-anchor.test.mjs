@@ -7,7 +7,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyStoryBank, parseStoryBlocks } from '../story-provenance-check.mjs';
+import { classifyStoryBank, parseStoryBlocks } from '../scripts/story-provenance-check.mjs';
 
 const CV = '# CV\n\nUnrelated.\n';
 

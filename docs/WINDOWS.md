@@ -10,7 +10,7 @@ If something is failing and the error mentions `node: command not found`, an emp
 - [ ] Git for Windows installed (it provides Git Bash, which `batch/` needs)
 - [ ] Cloned on v1.26.0 or later, or renormalized once (see §3)
 - [ ] `npx playwright install chromium` if you want PDF generation
-- [ ] `node doctor.mjs --json` reports `"onboardingNeeded": false`
+- [ ] `node scripts/doctor.mjs --json` reports `"onboardingNeeded": false`
 
 ## 1. `bash` on your PATH is probably not Git Bash
 
@@ -82,7 +82,7 @@ git ls-files --eol batch/batch-runner.sh
 ## 4. Running the tests
 
 ```powershell
-node test-all.mjs
+node scripts/test-all.mjs
 ```
 
 To run one suite on its own — useful when you are adding tests, and the fastest way to see a specific failure:
@@ -95,7 +95,7 @@ Windows-specific failures in the suite are almost always one of the three proble
 
 ## 5. PDF generation needs a browser
 
-`generate-pdf.mjs` drives Playwright. Install the browser once:
+`scripts/generate-pdf.mjs` drives Playwright. Install the browser once:
 
 ```powershell
 npx playwright install chromium

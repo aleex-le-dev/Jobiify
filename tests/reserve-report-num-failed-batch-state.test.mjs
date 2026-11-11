@@ -1,7 +1,7 @@
-// Regression (#4385): reserve-report-num.mjs and merge-tracker.mjs disagreed
-// on batch-state "failed" rows. reserve-report-num.mjs computed occupancy
+// Regression (#4385): scripts/reserve-report-num.mjs and scripts/merge-tracker.mjs disagreed
+// on batch-state "failed" rows. scripts/reserve-report-num.mjs computed occupancy
 // from report files and tracker rows only, so it re-issued a number that
-// batch-state.tsv marks "failed" -- and merge-tracker.mjs's anti-fabrication
+// batch-state.tsv marks "failed" -- and scripts/merge-tracker.mjs's anti-fabrication
 // guard then refuses to merge a tracker line for that exact number. The two
 // scripts must agree: a number batch-state marks "failed" is not available.
 
@@ -9,7 +9,7 @@ import { strict as assert } from 'assert';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { reserveReportNumbers, releaseReportNumbers } from '../reserve-report-num.mjs';
+import { reserveReportNumbers, releaseReportNumbers } from '../scripts/reserve-report-num.mjs';
 import { pass, fail } from './helpers.mjs';
 
 async function reserveIn(dir) {

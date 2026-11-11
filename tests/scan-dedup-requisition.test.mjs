@@ -30,7 +30,7 @@ import {
   matchesSeenCompanyRole,
   requisitionIdForDedup,
   requisitionIdsForDedup,
-} from '../scan.mjs';
+} from '../scripts/scan.mjs';
 
 console.log('\nscan.mjs — requisition-aware company+role dedupe');
 
@@ -174,7 +174,7 @@ tracked_companies:
       script: ${board.script}
 `);
 
-    const scan = () => execFileSync(NODE, [join(ROOT, 'scan.mjs')], {
+    const scan = () => execFileSync(NODE, [join(ROOT, 'scripts/scan.mjs')], {
       cwd: dir,
       env: { ...process.env, CAREER_OPS_ROOT: dir, CAREER_OPS_PORTALS: portals },
       encoding: 'utf-8',

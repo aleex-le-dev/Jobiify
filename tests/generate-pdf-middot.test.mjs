@@ -7,7 +7,7 @@ import { pathToFileURL } from 'url';
 
 console.log('\ngenerate-pdf.mjs — Catalan l·l survives ATS normalization');
 
-const { normalizeTextForATS } = await import(pathToFileURL(join(ROOT, 'generate-pdf.mjs')).href);
+const { normalizeTextForATS } = await import(pathToFileURL(join(ROOT, 'scripts/generate-pdf.mjs')).href);
 const body = (html) => normalizeTextForATS(`<p>${html}</p>`).html;
 
 const cases = [

@@ -29,7 +29,7 @@ import { useI18n } from "@/components/i18n-provider";
 
 // The /followups tracker: WHO needs a nudge today, HOW urgent, WHEN the next
 // touch is due, and the permanent history of every follow-up sent. The verdict
-// is the core's followup-cadence.mjs (via /api/followups?full=1) — this view
+// is the core's scripts/followup-cadence.mjs (via /api/followups?full=1) — this view
 // only filters, sorts, and records.
 
 const URGENCY_TABS = ["ALL", "OVERDUE", "URGENT", "WAITING", "COLD"] as const;
@@ -306,8 +306,8 @@ export function FollowupsView() {
           title={isFr ? "Cadence non disponible" : "Cadence unavailable"}
           body={
             isFr
-              ? "Le moteur de cadence (followup-cadence.mjs) n'a rien renvoyé — vérifiez que les scripts principaux sont présents."
-              : "The cadence engine (followup-cadence.mjs) returned nothing — check that the core scripts are present."
+              ? "Le moteur de cadence (scripts/followup-cadence.mjs) n'a rien renvoyé — vérifiez que les scripts principaux sont présents."
+              : "The cadence engine (scripts/followup-cadence.mjs) returned nothing — check that the core scripts are present."
           }
         />
       ) : !isPending && filtered.length === 0 ? (
@@ -582,7 +582,7 @@ function FollowupRow({
 
 function HistoryPanel({ entry: e, isFr, onRemove }: { entry: CadenceEntry; isFr?: boolean; onRemove: (num: number) => void }) {
   // Tolerate an older core engine (CAREER_OPS_ROOT can point at a separate
-  // checkout whose followup-cadence.mjs predates the per-entry followups[]).
+  // checkout whose scripts/followup-cadence.mjs predates the per-entry followups[]).
   const history = e.followups ?? [];
   return (
     <div className="space-y-2 pl-7 text-sm">

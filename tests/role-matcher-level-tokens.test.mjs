@@ -29,7 +29,7 @@ console.log('\nrole-matcher.mjs — a level stated on both sides must agree');
 
 try {
   const { roleFuzzyMatch, extractLevels } = await import(
-    pathToFileURL(join(ROOT, 'role-matcher.mjs')).href
+    pathToFileURL(join(ROOT, 'scripts/role-matcher.mjs')).href
   );
 
   const same = (label, a, b) => {
@@ -138,7 +138,7 @@ try {
       '',
     ].join('\n'));
 
-    execFileSync(process.execPath, [join(ROOT, 'merge-tracker.mjs')], {
+    execFileSync(process.execPath, [join(ROOT, 'scripts/merge-tracker.mjs')], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {

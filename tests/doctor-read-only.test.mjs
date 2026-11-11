@@ -17,7 +17,7 @@ function fixture(t) {
 }
 
 function doctor(dir, args = ['--json']) {
-  const result = spawnSync(process.execPath, [join(ROOT, 'doctor.mjs'), '--target', dir, ...args], {
+  const result = spawnSync(process.execPath, [join(ROOT, 'scripts/doctor.mjs'), '--target', dir, ...args], {
     cwd: dir, encoding: 'utf8', timeout: 30_000,
     env: { ...process.env, CAREER_OPS_ROOT: dir, CAREER_OPS_DATA_DIR: '', CAREER_OPS_CLI: 'claude' },
   });

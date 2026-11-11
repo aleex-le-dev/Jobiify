@@ -19,9 +19,9 @@ import { pass, fail, ROOT } from './helpers.mjs';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import * as yaml from 'js-yaml';
-import { buildTitleFilter, compileKeyword } from '../scan.mjs';
-import { AND_SEPARATOR } from '../title-keywords.mjs';
-import { parsePortals } from '../openrouter-runner.mjs';
+import { buildTitleFilter, compileKeyword } from '../scripts/scan.mjs';
+import { AND_SEPARATOR } from '../scripts/title-keywords.mjs';
+import { parsePortals } from '../scripts/openrouter-runner.mjs';
 
 console.log('\ntitle filter — `word:` prefix and dead-positive guard');
 
@@ -141,7 +141,7 @@ if (vetoed.length === 0) {
 }
 
 // ── 4. Both title-filtering paths must agree ─────────────────────────
-// openrouter-runner.mjs cannot import scan.mjs (scan.mjs creates data/ at
+// scripts/openrouter-runner.mjs cannot import scripts/scan.mjs (scripts/scan.mjs creates data/ at
 // import time), so it used to keep a second copy of the matching rules. The two
 // had drifted in three ways, none of which the shipped config can expose,
 // because it has positives and no malformed entries. Each case below is a
@@ -205,7 +205,7 @@ const bothPaths = [
 ];
 const disagreed = bothPaths.filter((t) => titleMatches(t) !== shipped(t));
 if (disagreed.length === 0) {
-  pass('scan.mjs and openrouter-runner agree on every intern/internal title');
+  pass('scripts/scan.mjs and openrouter-runner agree on every intern/internal title');
 } else {
   fail(`the two title-filter paths disagree on: ${JSON.stringify(disagreed)}`);
 }
@@ -301,7 +301,7 @@ if (accentWrong.length === 0) {
   fail(`word: boundary wrong for: ${JSON.stringify(accentWrong)}`);
 }
 
-// (b) A truthy non-string title must not throw. scan.mjs used `(title || '')`
+// (b) A truthy non-string title must not throw. scripts/scan.mjs used `(title || '')`
 // and openrouter-runner used `String(title ?? '')`; merging the two paths onto
 // the former would abort jobs.filter and lose a whole company's results.
 const anyTitle = buildTitleFilter({ positive: ['engineer'] });

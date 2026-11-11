@@ -19,7 +19,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildHtml } from '../generate-cover-letter.mjs';
+import { buildHtml } from '../scripts/generate-cover-letter.mjs';
 
 function template() {
   const dir = mkdtempSync(join(tmpdir(), 'cover-dateline-'));

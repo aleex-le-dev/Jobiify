@@ -1,5 +1,5 @@
 import { pass, fail } from './helpers.mjs';
-import { metricClaims, auditClaims } from '../verify-cv-facts.mjs';
+import { metricClaims, auditClaims } from '../scripts/verify-cv-facts.mjs';
 
 console.log('\nStandard identifiers are not count claims (EIP-712, ERC-4626, BIP-39)');
 

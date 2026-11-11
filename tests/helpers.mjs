@@ -1,5 +1,5 @@
 // tests/helpers.mjs — shared assertion helpers + counters for the test suite.
-// Moved verbatim from test-all.mjs (issue #1440); no framework by design:
+// Moved verbatim from scripts/test-all.mjs (issue #1440); no framework by design:
 // the suite must run on a fresh clone with only Node.
 import { execFileSync } from 'child_process';
 import { accessSync, constants, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync as _rmSync, statSync, symlinkSync, writeFileSync } from 'fs';
@@ -8,7 +8,7 @@ import { basename, join, dirname, resolve, sep } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { isNestedCheckout, trackedFiles } from '../lib/mjs-files.mjs';
 import { localToday } from '../lib/local-today.mjs';
-import { getCareerOpsRoot } from '../path-resolver.mjs';
+import { getCareerOpsRoot } from '../scripts/path-resolver.mjs';
 import { describeDrift, diffSnapshots, snapshotDataRoot } from './data-root-guard.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -18,11 +18,11 @@ export const NODE = process.execPath;
 
 // The suite must never follow a developer's own tracker override into their
 // real data. CAREER_OPS_TRACKER outranks the CAREER_OPS_ROOT that fixtures pin,
-// so with it set in the shell a test that runs normalize-statuses.mjs against
+// so with it set in the shell a test that runs scripts/normalize-statuses.mjs against
 // its fixture root rewrote the developer's tracker instead (and left a .bak
 // beside it), and a dozen checks failed on rows that were not theirs.
 //
-// Blanked here because test-all.mjs imports this module before it runs
+// Blanked here because scripts/test-all.mjs imports this module before it runs
 // anything, so the runner and each child it spawns start without the override;
 // a suite that imports these helpers is covered when run on its own as well.
 // Blanked rather than deleted: every reader trims the value and treats an empty
@@ -43,7 +43,7 @@ process.env.CAREER_OPS_TRACKER = '';
 //
 // So the suite gets a data root of its own. Pinned through CAREER_OPS_ROOT
 // because that outranks both CAREER_OPS_DATA_DIR and the `.career-ops-data`
-// marker (path-resolver.mjs), and set here for the reason the tracker override
+// marker (scripts/path-resolver.mjs), and set here for the reason the tracker override
 // is cleared here: the runner and every child it spawns inherit it, and a suite
 // run on its own is covered as well. A test that needs a particular root pins
 // its own, in its child's env or around its own import.
@@ -108,7 +108,7 @@ pinSandboxDataRoot();
 /**
  * Environment for a child that runs a COPY of the scripts as its own checkout.
  *
- * Many fixtures copy a script and path-resolver.mjs into a temp directory and
+ * Many fixtures copy a script and scripts/path-resolver.mjs into a temp directory and
  * expect the copy to treat that directory as its data root, which is what the
  * resolver does when nothing overrides it. Something does now — the pin above —
  * and a developer's exported CAREER_OPS_ROOT always did, so the expectation is
@@ -196,7 +196,7 @@ export function isolatedBatchStatePath(additionsDir) {
 // Node retries exactly that error class (EBUSY/EMFILE/ENFILE/ENOTEMPTY/EPERM)
 // with linear backoff when given maxRetries, so default it here. An explicit
 // option still wins, and a removal that keeps failing still throws. Same
-// wrapper test-all.mjs applies to its own call sites (#3066), shared so the
+// wrapper scripts/test-all.mjs applies to its own call sites (#3066), shared so the
 // suites under tests/ cannot drift from it.
 export const rmSync = (target, opts = {}) => _rmSync(target, { maxRetries: 10, retryDelay: 100, ...opts });
 
@@ -256,7 +256,7 @@ export function results() { return { passed, failed, warnings }; }
 /**
  * Add another process's counters to this one's.
  *
- * `test-all.mjs --jobs N` runs each discovered suite in a child process. The
+ * `scripts/test-all.mjs --jobs N` runs each discovered suite in a child process. The
  * child counts its own pass()/fail()/warn() calls and has already printed their
  * lines; the parent only needs the totals, so the summary line and the exit
  * code cover every suite exactly as they do when suites run in-process.
@@ -273,7 +273,7 @@ export function absorbResults({ passed: p = 0, failed: f = 0, warnings: w = 0 } 
 /**
  * Import one discovered pass/fail-style suite, containing a throw.
  *
- * Shared by the two places a suite is imported: test-all.mjs's in-process loop
+ * Shared by the two places a suite is imported: scripts/test-all.mjs's in-process loop
  * (`--jobs 1`) and tests/run-discovered-child.mjs (one suite per process), so a
  * crashing suite reads the same whichever way the run was started.
  *
@@ -326,7 +326,7 @@ export async function importSuiteContained(file, rel) {
 
 /**
  * Print the summary line and exit with the suite's exit code.
- * Moved verbatim from the tail of test-all.mjs — output must stay byte-identical.
+ * Moved verbatim from the tail of scripts/test-all.mjs — output must stay byte-identical.
  */
 export function finish() {
   // A discovered suite under tests/ that uses node:test reports through node's
@@ -452,7 +452,7 @@ export function run(cmd, args = [], opts = {}) {
   lastFailure = null;
   const exe = resolveAllowedExecutable(cmd);
   const env = opts.env ?? process.env;
-  const isolatedOpts = args.includes('merge-tracker.mjs') && env.CAREER_OPS_ADDITIONS
+  const isolatedOpts = args.includes('scripts/merge-tracker.mjs') && env.CAREER_OPS_ADDITIONS
     ? { ...opts, env: { ...env, CAREER_OPS_BATCH_STATE: isolatedBatchStatePath(env.CAREER_OPS_ADDITIONS) } }
     : opts;
   opts = isolatedOpts;
@@ -666,7 +666,7 @@ export function fileExists(path) { return existsSync(join(ROOT, path)); }
  * that second checkout is tracked HERE, so the index cannot name it — the
  * hazard is gone by construction instead of by a rule each walker remembers.
  *
- * Deterministic by construction (sorted), which is the property test-all.mjs's
+ * Deterministic by construction (sorted), which is the property scripts/test-all.mjs's
  * own `tests/` discovery relies on (#1440).
  *
  * A missing `dir` yields `[]` rather than throwing, so the caller reports its
@@ -795,7 +795,7 @@ function placePackage(nodeModulesDir, pkgName, source, link = symlinkSync) {
  * reach `ROOT/node_modules` from.
  *
  * The PDF sandboxes are created under `ROOT/output` and run a copy of
- * generate-pdf.mjs, whose siblings theme-style.mjs and tracker-utils.mjs both
+ * scripts/generate-pdf.mjs, whose siblings scripts/theme-style.mjs and scripts/tracker-utils.mjs both
  * `import * as yaml from 'js-yaml'`. That specifier resolves by walking parent
  * directories up into `ROOT/node_modules`, and the walk starts from the
  * importer's REALPATH, because --preserve-symlinks is off by default. On a
@@ -918,7 +918,7 @@ export function startsRegex(src, i) {
  * template TEXT and comments are not, but a template's `${...}` substitution
  * is, recursively.
  *
- * Not a JavaScript lexer, and deliberately not one: `test-all.mjs` states the
+ * Not a JavaScript lexer, and deliberately not one: `scripts/test-all.mjs` states the
  * suite runs "on a fresh clone with only Node", so there is no parser
  * dependency available to a test here. This covers the constructs a
  * scan-history call is actually written with — the status string argument
@@ -1091,7 +1091,7 @@ function linkInheritedDependencies(destDir, root, link) {
  * sandbox.
  *
  * A git worktree is not that state, though it looks like it: `join(root,
- * 'node_modules')` does not exist there either, while test-all.mjs and every
+ * 'node_modules')` does not exist there either, while scripts/test-all.mjs and every
  * script under test resolve their packages through the parent checkout's tree
  * by Node's upward walk. Reporting "not installed" there skipped (or, where the
  * caller throws on the reason, failed) suites whose dependencies were one
@@ -1359,7 +1359,7 @@ export async function captureConsoleErrors(fn) {
  * (#3801). So the fixture runs git through `hermeticGitRunner` rather than
  * through the updater's own `gitIn`, which inherits the environment as a real
  * install must. That also keeps this module on Node builtins alone: most suites
- * import it, and none of them should pull in update-system.mjs as a side effect
+ * import it, and none of them should pull in scripts/update-system.mjs as a side effect
  * of asking for `pass`/`fail`.
  *
  * @param {object} [options]
@@ -1423,7 +1423,7 @@ export function hermeticGitEnv(gitConfigPath, base = process.env) {
   //                          Measured: with it set, a commit made through this
   //                          env took its author from the ambient value.
   //   GIT_CONFIG             redirects the `git config` command, reads AND
-  //                          writes. The fixtures in test-all.mjs call `git config` to
+  //                          writes. The fixtures in scripts/test-all.mjs call `git config` to
   //                          set themselves up, so with it set that write lands
   //                          in the ambient file instead of the fixture: the
   //                          setting never takes effect, and the suite mutates

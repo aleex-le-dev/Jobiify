@@ -1,7 +1,7 @@
 /**
  * updater-rollback-behavior.test.mjs — BEHAVIORAL rollback tests (#2015 follow-up).
  *
- * The rest of updater-migration-tests.mjs verifies the updater by source-pattern
+ * The rest of scripts/updater-migration-tests.mjs verifies the updater by source-pattern
  * assertions (the file's convention, because apply()/revertPaths are ROOT-bound
  * with heavy side effects). This file drives the real `removeAdditionsNotInHead`
  * export against a throwaway git repo via the git-runner seam, so it verifies the
@@ -13,7 +13,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { pass, fail, hermeticGitRunner } from './helpers.mjs';
-import { removeAdditionsNotInHead, staleSystemFiles } from '../update-system.mjs';
+import { removeAdditionsNotInHead, staleSystemFiles } from '../scripts/update-system.mjs';
 
 // A throwaway git repo plus a ctx that binds the rollback helper's git runner
 // and filesystem root to it, so nothing touches the real working tree.
@@ -166,12 +166,12 @@ console.log('\n🧪 Testing updater rollback behavior (#2015)...');
   g('add', '-A');
   g('commit', '-qm', 'base');
 
-  writeFileSync(join(dir, 'browser-extract.mjs'), 'added by update');
-  g('add', 'browser-extract.mjs');
+  writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/browser-extract.mjs')), 'added by update');
+  g('add', 'scripts/browser-extract.mjs');
 
-  removeAdditionsNotInHead('browser-extract.mjs', new Set(), ctx);
+  removeAdditionsNotInHead('scripts/browser-extract.mjs', new Set(), ctx);
 
-  if (!existsSync(join(dir, 'browser-extract.mjs'))) {
+  if (!existsSync(join(dir, 'scripts/browser-extract.mjs'))) {
     pass('rollback removes an added file for a file pathspec');
   } else {
     fail('rollback left an added file for a file pathspec');

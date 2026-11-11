@@ -1,30 +1,30 @@
 #!/usr/bin/env node
 
 /**
- * set-status.mjs — canonical CLI to update a tracker row's status/note (#1428).
+ * scripts/set-status.mjs — canonical CLI to update a tracker row's status/note (#1428).
  *
  * data/applications.md is a shared surface with multiple readers and writers.
  * One canonical write path is safer than N agents hand-editing markdown, so
  * modes (apply Step 9, followup, batch) call this instead of editing the table.
  *
  * Usage:
- *   node set-status.mjs <report#|company> <state> [--note "..."] [--role "..."] [--force] [--dry-run] [--json]
+ *   node scripts/set-status.mjs <report#|company> <state> [--note "..."] [--role "..."] [--force] [--dry-run] [--json]
  *
  * Row resolution:
  *   - --row N     → exact match on the # column, stated explicitly
  *   - --report N  → match the row whose Report cell links report #N
  *   - numeric argument → exact match on the # column; if the tracker has a
- *     duplicate # (see #1704 — merge-tracker.mjs bug, now fixed, that could
+ *     duplicate # (see #1704 — scripts/merge-tracker.mjs bug, now fixed, that could
  *     assign the same # to two rows), --role narrows it, otherwise it fails
  *     ambiguous with a candidate list instead of silently editing whichever
  *     row was found first
  *   - otherwise → company match (normalized, same key as merge-tracker dedup);
- *     multiple hits are narrowed with --role (fuzzy, role-matcher.mjs), and
+ *     multiple hits are narrowed with --role (fuzzy, scripts/role-matcher.mjs), and
  *     anything still ambiguous fails with a numbered candidate list.
  *
  * Why --row/--report exist:
  *   Tracker row IDs and report IDs are two independent counters sharing one
- *   number space. reserve-report-num.mjs treats tracker row IDs as occupied
+ *   number space. scripts/reserve-report-num.mjs treats tracker row IDs as occupied
  *   when allocating a report number, so the sequences leapfrog and never
  *   realign; every row added WITHOUT an evaluation report (backfilled rows,
  *   #1799) widens the gap permanently. A bare numeric selector is therefore
@@ -46,8 +46,8 @@
  * OLD, --note NEW instead replaces whole notes at "; " boundaries (including
  * idempotent retries); a missing match fails without writing anything.
  *
- * The read-modify-write runs under the shared tracker lock (tracker-utils.mjs,
- * same lock as merge-tracker.mjs) and the file is replaced atomically. Only the
+ * The read-modify-write runs under the shared tracker lock (scripts/tracker-utils.mjs,
+ * same lock as scripts/merge-tracker.mjs) and the file is replaced atomically. Only the
  * Status and Notes cells of the matched row change; every other byte of the
  * tracker round-trips untouched.
  *
@@ -62,7 +62,7 @@
  *
  * When the new status is Interview and no JD is archived yet for the row
  * (no embedded `## Job Description` section, no jds/ capture), this also
- * triggers `archive-posting.mjs --report=N <url>` — the last reliable moment
+ * triggers `scripts/archive-posting.mjs --report=N <url>` — the last reliable moment
  * the posting is still likely live, and the last moment before interview-prep
  * would go looking for a JD that may no longer exist (#4506). The outcome
  * travels in the JSON output as `jdArchiveTriggered`. Same never-fails-the-
@@ -75,20 +75,20 @@
  * Date defaults to today; pass --on YYYY-MM-DD when the transition actually
  * happened earlier ("they replied Tuesday"). The append is observation-only:
  * if it fails, a warning goes to stderr and the exit code is unchanged — the
- * tracker remains the source of truth for state. Read by funnel-velocity.mjs.
+ * tracker remains the source of truth for state. Read by scripts/funnel-velocity.mjs.
  *
  * Two rules the reader enforces that this writer never has to think about,
  * because it always has a real prior status and always writes its own source.
  * Any other producer does have to, so they are stated here:
  *   - An unknown from- or to-state is the sentinel "-", never an empty cell.
- *     funnel-velocity.mjs reads the two columns differently: a from of "-"
+ *     scripts/funnel-velocity.mjs reads the two columns differently: a from of "-"
  *     parses to null, meaning no prior state, while a to of "-" is preserved
  *     as the literal "-", meaning an unknown target. Any other value goes
  *     through resolveCanonicalState, so an empty cell is rejected as
  *     `unknown from-state ""` or `unknown to-state ""` for its own column,
  *     and the row is dropped.
  *   - The source column is a closed set, and VALID_SOURCES in
- *     funnel-velocity.mjs is the authority on its members. Deliberately not
+ *     scripts/funnel-velocity.mjs is the authority on its members. Deliberately not
  *     enumerated here: a copy of that list in prose is wrong the first time a
  *     writer is added, and it would be wrong in three files at once.
  *     A value outside the set parses but is excluded from day-math. The row
@@ -106,7 +106,7 @@ import { execFileSync } from 'child_process';
 import { createHash } from 'node:crypto';
 import { extractTrackerReportNumbers, resolveColumns, parseTrackerRow, normalizeTextKey, splitTrackerCells, trackerRowSeparator } from './tracker-parse.mjs';
 import { roleFuzzyMatch } from './role-matcher.mjs';
-import { localToday } from './lib/local-today.mjs';
+import { localToday } from '../lib/local-today.mjs';
 import {
   resolveTrackerPath, writeFileAtomic, loadCanonicalStates, resolveCanonicalState,
   normalizeCompany, cell, CLI_EXIT, makeCliFailWith, makeCliFailUsage, acquireTrackerLockForCli, resolveWorkspaceRoot,
@@ -126,7 +126,7 @@ import { captureSlug, findCaptureForReport } from './jd-capture.mjs';
 // so on any configured data root the one supported way to change a status
 // answered "No tracker found at <CHECKOUT>/applications.md", naming a file the
 // user never configured. Same defect #3715 fixed in the analysis scripts.
-const CODE_ROOT = dirname(fileURLToPath(import.meta.url));
+const CODE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const STATES_FILE = join(CODE_ROOT, 'templates/states.yml');
 const JD_ARCHIVE_TIMEOUT_MS = Math.min(
@@ -135,13 +135,13 @@ const JD_ARCHIVE_TIMEOUT_MS = Math.min(
 );
 
 // LOCK_TIMEOUT is not destructured here — that exit path is raised inside
-// acquireTrackerLockForCli() itself (tracker-utils.mjs), via CLI_EXIT.LOCK_TIMEOUT.
+// acquireTrackerLockForCli() itself (scripts/tracker-utils.mjs), via CLI_EXIT.LOCK_TIMEOUT.
 const { OK: EXIT_OK, USAGE: EXIT_USAGE, NOT_FOUND: EXIT_NOT_FOUND, AMBIGUOUS: EXIT_AMBIGUOUS } = CLI_EXIT;
 
-const USAGE = `Usage: node set-status.mjs <report#|company> <state> [--note "..."] [--role "..."] [--on YYYY-MM-DD] [--force] [--dry-run] [--json]
-       node set-status.mjs --row N <state> [...]        (explicit tracker row ID)
-       node set-status.mjs --report N <state> [...]     (explicit report ID)
-       node set-status.mjs --report-link N <state> [...] (strict Report-cell identity)
+const USAGE = `Usage: node scripts/set-status.mjs <report#|company> <state> [--note "..."] [--role "..."] [--on YYYY-MM-DD] [--force] [--dry-run] [--json]
+       node scripts/set-status.mjs --row N <state> [...]        (explicit tracker row ID)
+       node scripts/set-status.mjs --report N <state> [...]     (explicit report ID)
+       node scripts/set-status.mjs --report-link N <state> [...] (strict Report-cell identity)
 
   <report#|company>  Row selector: tracker # (exact) or company name (normalized match)
   <state>            Canonical state from templates/states.yml (aliases accepted)
@@ -171,11 +171,11 @@ const USAGE = `Usage: node set-status.mjs <report#|company> <state> [--note "...
   name) over a bare number, and prefer any of them over --force.
 
 Examples:
-  node set-status.mjs --report 12 Applied
-  node set-status.mjs --report 12 Interview --note "recruiter screen booked"
-  node set-status.mjs "Acme Corp" Rejected --on 2026-08-01
-  node set-status.mjs "Acme Corp" Applied --role "Platform Engineer"
-  node set-status.mjs --row 7 Discarded --dry-run`;
+  node scripts/set-status.mjs --report 12 Applied
+  node scripts/set-status.mjs --report 12 Interview --note "recruiter screen booked"
+  node scripts/set-status.mjs "Acme Corp" Rejected --on 2026-08-01
+  node scripts/set-status.mjs "Acme Corp" Applied --role "Platform Engineer"
+  node scripts/set-status.mjs --row 7 Discarded --dry-run`;
 
 /**
  * Render the canonical states from states.yml for `--help`.
@@ -246,7 +246,7 @@ if (wantsHelp(rawArgs)) {
 // distinguishable from a CLI run's.
 //
 // The allow-list is narrow on purpose. The value is written to a file
-// funnel-velocity.mjs parses positionally and gates on its own source
+// scripts/funnel-velocity.mjs parses positionally and gates on its own source
 // allow-list, so an unrecognized label would be persisted here and then
 // silently dropped there. Rejecting it at the boundary keeps the two ends from
 // disagreeing about what a valid source is.
@@ -340,7 +340,7 @@ const stateInput = explicitSelector ? positional[0] : positional[1];
 // must not be treated as ambiguous.
 const isBareNumericSelector = selector !== null && /^\d+$/.test(selector);
 
-// Shared with every other canonical tracker-writer CLI (tracker-utils.mjs) so
+// Shared with every other canonical tracker-writer CLI (scripts/tracker-utils.mjs) so
 // the JSON-vs-human error contract can't drift between them.
 const failWith = makeCliFailWith(flags.json);
 
@@ -482,7 +482,7 @@ function resolveRow(rows) {
 
 // ── locked read-modify-write ─────────────────────────────────────
 
-// Shared with mark-pdf-ready.mjs (tracker-utils.mjs): dry-run never writes,
+// Shared with scripts/mark-pdf-ready.mjs (scripts/tracker-utils.mjs): dry-run never writes,
 // so it must not hold the exclusive lock — a read-only preview should not
 // block (or be blocked by) merge-tracker or another writer.
 const lock = await acquireTrackerLockForCli(APPS_FILE, { dryRun: flags.dryRun, failWith });
@@ -552,7 +552,7 @@ if (isBareNumericSelector && !flags.force) {
   // is empty, and the check passes with nothing compared — while a DIFFERENT
   // row may link exactly this number as its report.
   //
-  // That combination is not hypothetical: it is what merge-tracker.mjs's
+  // That combination is not hypothetical: it is what scripts/merge-tracker.mjs's
   // "Tracker #N already used; assigning #M" fallback produces. The backfilled
   // row occupying #N is what pushes the evaluated row to #M, so the row a stale
   // numeric selector lands on is precisely the report-less one this check could
@@ -640,8 +640,8 @@ const note = flags.note != null
 // pick up the same tracker row and do redundant or conflicting work, with the
 // collision only surfacing after the fact (#4506/#4507 — two sessions each
 // wrote a batch/tracker-additions/*.tsv for the same report under a
-// differently spelled company name). session-activity.mjs is a purely
-// advisory signal modeled on reserve-report-num.mjs's sentinel pattern: it
+// differently spelled company name). scripts/session-activity.mjs is a purely
+// advisory signal modeled on scripts/reserve-report-num.mjs's sentinel pattern: it
 // never blocks or changes the exit code, it only lets this run warn when
 // another session already claimed the same row.
 //
@@ -763,7 +763,7 @@ try {
     }
   }
 
-  // ── status-log append (transition ledger, read by funnel-velocity.mjs) ──
+  // ── status-log append (transition ledger, read by scripts/funnel-velocity.mjs) ──
   // Observation trail only: the tracker stays the source of truth for STATE,
   // the ledger records WHEN transitions happened. A failed append is a warning,
   // never a failure — the status write above already succeeded. Sibling of the
@@ -789,7 +789,7 @@ try {
   // the same Applied action. The tracker is already Applied, so there is no
   // normal transition to log; append one correction observation only when the
   // effective timeline does not already end at Applied. This is append-only
-  // and idempotent, and the correction source is folded by funnel-velocity.mjs
+  // and idempotent, and the correction source is folded by scripts/funnel-velocity.mjs
   // onto the repaired stage.
   if (flags.repairStatusLog && !statusChanged && newStatus === 'Applied' && !flags.dryRun) {
     const logPath = join(dirname(APPS_FILE), 'status-log.tsv');
@@ -853,7 +853,7 @@ try {
   // Release the claim once the write (and its log append) has finished, so
   // it never outlives the run — reached even if something above threw.
   // Never fails the status change: a release failure is only ever a warning,
-  // and the stale-sentinel handling in session-activity.mjs means a leaked
+  // and the stale-sentinel handling in scripts/session-activity.mjs means a leaked
   // claim self-heals once this process is no longer alive anyway.
   if (activityClaim) {
     try {
@@ -869,8 +869,8 @@ const changed = statusChanged || noteChanged;
 // ── follow-up seeding (#1430) ────────────────────────────────────
 //
 // The transition into Applied is where the first follow-up gets scheduled.
-// set-status.mjs used to only ANNOUNCE that — `followupSeedCandidate: true` —
-// and nothing consumed the flag: the only callers of followup-seed.mjs were
+// scripts/set-status.mjs used to only ANNOUNCE that — `followupSeedCandidate: true` —
+// and nothing consumed the flag: the only callers of scripts/followup-seed.mjs were
 // modes/apply.md and modes/followup.md, both agent instructions. So recording
 // an application from the web UI, or from this CLI directly, wrote the tracker
 // and the ledger correctly and scheduled nothing, silently (#3459).
@@ -947,14 +947,14 @@ if ((statusChanged || flags.repairFollowup) && newStatus === 'Applied') {
 // been pulled yet) AND the first moment prep material will actually be
 // wanted, so it is the right point to archive automatically rather than
 // leaving it to a human to remember. Detection reuses the same functions
-// check-jd-archive.mjs uses to decide "already covered" (#2789), so this
+// scripts/check-jd-archive.mjs uses to decide "already covered" (#2789), so this
 // never re-archives a row that already has a `## Job Description` section
 // or a resolvable jds/ capture.
 //
 // Same policy as the follow-up seeding above: never fails the status change,
 // never re-archives on an idempotent re-run into an already-Interview row
 // (statusChanged gates that), and does nothing on a dry run (nothing was
-// written yet for archive-posting.mjs to attach a --report to).
+// written yet for scripts/archive-posting.mjs to attach a --report to).
 let jdArchiveTriggered = null;
 if (statusChanged && newStatus === 'Interview' && !flags.dryRun) {
   try {
@@ -963,7 +963,7 @@ if (statusChanged && newStatus === 'Interview' && !flags.dryRun) {
     const jdsDir = join(workspaceRoot, 'jds');
 
     // Resolve the report cell to a real file path under reportsDir, the same
-    // containment discipline merge-tracker.mjs's resolveReportPath uses for
+    // containment discipline scripts/merge-tracker.mjs's resolveReportPath uses for
     // the same reason: the tracker is user-editable, and a report cell is
     // untrusted input until it is proven to land inside reports/. The link is
     // written relative to the TRACKER's own directory (docs: "../reports/..."
@@ -1007,7 +1007,7 @@ if (statusChanged && newStatus === 'Interview' && !flags.dryRun) {
         execFileSync(
           process.execPath,
           [
-            join(CODE_ROOT, 'archive-posting.mjs'),
+            join(CODE_ROOT, 'scripts/archive-posting.mjs'),
             `--report=${reportNum}`,
             `--company=${target.company}`,
             target.url,
@@ -1076,7 +1076,7 @@ if (flags.json) {
   // and asked the user to do by hand what now runs for them; leaving it
   // unconditional would read as a contradiction right under "Follow-up seeded".
   if (statusChanged && !flags.dryRun && newStatus === 'Applied' && !followupSeeded?.seeded && followupSeeded?.reason !== 'disabled') {
-    console.error('ℹ️  Status is Applied — consider seeding follow-ups in data/follow-ups.md (#1430: node followup-cadence.mjs)');
+    console.error('ℹ️  Status is Applied — consider seeding follow-ups in data/follow-ups.md (#1430: node scripts/followup-cadence.mjs)');
   }
 }
 process.exit(EXIT_OK);

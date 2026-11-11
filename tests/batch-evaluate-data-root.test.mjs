@@ -16,7 +16,7 @@
 // what AGENTS.md's `unpersonalized` warning exists to prevent — and that warning
 // cannot fire here, because this never looked at the data root at all.
 //
-// tracker-additions is the batch's OUTPUT, and merge-tracker.mjs:65 reads it
+// tracker-additions is the batch's OUTPUT, and scripts/merge-tracker.mjs:65 reads it
 // from DATA_ROOT. Written to the code root the rows are never merged, including
 // by the merge batch-evaluate spawns itself at the end of a run.
 //
@@ -42,7 +42,7 @@ function resolvedPaths(dataRoot, cwd, { via = 'CAREER_OPS_ROOT' } = {}) {
   // imports dotenv, which prints a banner to stdout that itself contains '{',
   // so indexOf('{') parses the banner and reports confident nonsense.
   const script = `
-    const { PATHS } = await import(${JSON.stringify(pathToFileURL(join(ROOT, 'batch-evaluate-gemini.mjs')).href)});
+    const { PATHS } = await import(${JSON.stringify(pathToFileURL(join(ROOT, 'scripts/batch-evaluate-gemini.mjs')).href)});
     process.stdout.write('<<<PATHS>>>' + JSON.stringify(PATHS) + '<<<END>>>');
   `;
   const r = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
@@ -85,12 +85,12 @@ test('modes/_profile.md resolves under the data root', () => {
 });
 
 test('batch/tracker-additions resolves where merge-tracker reads it', () => {
-  // Agreement, not a literal path: merge-tracker.mjs is the only consumer, and
+  // Agreement, not a literal path: scripts/merge-tracker.mjs is the only consumer, and
   // the two have to name the same directory or the rows are never merged.
   const f = roots();
   try {
     const p = resolvedPaths(f.dataRoot, f.decoyCwd);
-    // merge-tracker.mjs:65 resolves join(DATA_ROOT, 'batch/tracker-additions');
+    // scripts/merge-tracker.mjs:65 resolves join(DATA_ROOT, 'batch/tracker-additions');
     // recomputed here rather than imported, because importing merge-tracker for
     // one constant pulls in its lock and tracker machinery.
     const expected = join(f.dataRoot, 'batch', 'tracker-additions');
@@ -126,7 +126,7 @@ test('the three evaluators agree on which root each user-layer file uses', () =>
   // The structural half, and the reason this bug existed: two siblings read the
   // same files from the data root and this one did not. Checked as a comparison
   // between them so a future divergence reddens whichever file drifts.
-  const files = ['batch-evaluate-gemini.mjs', 'gemini-eval.mjs', 'ollama-eval.mjs'];
+  const files = ['scripts/batch-evaluate-gemini.mjs', 'scripts/gemini-eval.mjs', 'scripts/ollama-eval.mjs'];
   const offenders = [];
   for (const file of files) {
     const src = readFileSync(join(ROOT, file), 'utf-8');

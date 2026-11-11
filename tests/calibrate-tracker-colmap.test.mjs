@@ -1,8 +1,8 @@
 /**
- * calibrate-tracker-colmap.test.mjs — regression suite for calibrate.mjs's
+ * calibrate-tracker-colmap.test.mjs — regression suite for scripts/calibrate.mjs's
  * tracker loader.
  *
- * calibrate.mjs's `--self-test` covers computeCalibration() against in-memory
+ * scripts/calibrate.mjs's `--self-test` covers computeCalibration() against in-memory
  * rows, so it never exercises the step that turns applications.md into those
  * rows. That gap hid a column-map bug: loadTrackerRows() called
  * `resolveColumns(headerLine)` with a single string, but resolveColumns()
@@ -23,7 +23,7 @@
  * Run: node tests/calibrate-tracker-colmap.test.mjs
  */
 
-import { loadTrackerRows } from '../calibrate.mjs';
+import { loadTrackerRows } from '../scripts/calibrate.mjs';
 import { writeFileSync, mkdtempSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';

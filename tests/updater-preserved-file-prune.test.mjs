@@ -14,7 +14,7 @@
 
 import { pass, fail } from './helpers.mjs';
 import { join } from 'path';
-import { staleSystemFiles, isReferencedByPreservedFile } from '../update-system.mjs';
+import { staleSystemFiles, isReferencedByPreservedFile } from '../scripts/update-system.mjs';
 
 console.log('\n🧪 Testing preserved-file vs. stale-file prune interaction...');
 
@@ -90,9 +90,9 @@ console.log('\n🧪 Testing preserved-file vs. stale-file prune interaction...')
   // Scoping: only html/css/tex preserved files are read for references — a
   // preserved .mjs/.md file with the same substring by coincidence must not
   // count, since system scripts/docs are not known to reference fonts by path.
-  const preservedScript = ['build-cv-html.mjs'];
+  const preservedScript = ['scripts/build-cv-html.mjs'];
   const readScript = (path) => {
-    if (path.endsWith('build-cv-html.mjs')) return "// mentions eb-garamond-400.ttf in a comment, not a real reference";
+    if (path.endsWith('scripts/build-cv-html.mjs')) return "// mentions eb-garamond-400.ttf in a comment, not a real reference";
     throw new Error(`ENOENT: ${path}`);
   };
   if (!isReferencedByPreservedFile('fonts/eb-garamond-400.ttf', preservedScript, readScript)) {

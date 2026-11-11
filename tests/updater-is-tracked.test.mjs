@@ -11,7 +11,7 @@
  * isTracked() is what separates the cases, so each of its outcomes needs its
  * own oracle:
  *
- *   - false (not tracked) is the common path. The upgrade-tests.mjs PR gate
+ *   - false (not tracked) is the common path. The scripts/upgrade-tests.mjs PR gate
  *     covers it end to end by seeding a marker into the fixture install.
  *   - true (force-tracked) is rare. The PR gate reaches it as of the two-leg
  *     gate folded in from #2591 (`dismiss=tracked`), but only end to end, and
@@ -32,7 +32,7 @@
 import { writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { pass, fail, makeUpdaterRepo } from './helpers.mjs';
-import { isTracked } from '../update-system.mjs';
+import { isTracked } from '../scripts/update-system.mjs';
 
 // Shared with updater-add-paths.test.mjs so the git-isolation pins live in one
 // body: dropping one has to redden both suites, not leave this one quietly

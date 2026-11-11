@@ -5,7 +5,7 @@
 // `/** @typedef {import('../_types.js').PluginManifest} PluginManifest */` at
 // the top of a `// @ts-check`-enabled file to get IDE hints. The runtime
 // contract is enforced by _engine.mjs (validateManifest), not by these
-// annotations — exactly the providers/_types.js + scan.mjs split.
+// annotations — exactly the providers/_types.js + scripts/scan.mjs split.
 //
 // Files prefixed with _ are shared helpers and are NEVER discovered as plugins.
 //
@@ -17,7 +17,7 @@
 //
 // The unit of currency for the producer hooks is the SAME `Job` the scanner
 // uses — see providers/_types.js. Producers RETURN Job[]; the engine (never the
-// plugin) writes them through scan.mjs's canonical writers, so a plugin can
+// plugin) writes them through scripts/scan.mjs's canonical writers, so a plugin can
 // never break the web-facing data formats.
 
 /**

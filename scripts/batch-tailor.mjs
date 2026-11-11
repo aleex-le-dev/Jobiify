@@ -2,14 +2,14 @@
 
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { resolve, join } from 'path';
-import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
+import { flagValue, hasFlag, validateFlags } from '../lib/cli-flags.mjs';
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = fileURLToPath(new URL('../', import.meta.url));
 // CAREER_OPS_BATCH_STATE overrides the batch-state.tsv path — the same override
-// merge-tracker.mjs already honours, so tests can drive this script against a
+// scripts/merge-tracker.mjs already honours, so tests can drive this script against a
 // sandbox instead of the developer's real batch run.
 const batchStateFile = process.env.CAREER_OPS_BATCH_STATE
   ? resolve(process.env.CAREER_OPS_BATCH_STATE)
@@ -22,7 +22,7 @@ const reportsDir = join(getCareerOpsRoot(), 'reports');
 const USAGE = `career-ops batch tailor — bulk generate tailored CVs for high-scoring batch jobs
 
 Usage:
-  node batch-tailor.mjs [--min-score N]
+  node scripts/batch-tailor.mjs [--min-score N]
 
 Options:
   --min-score N   Minimum score to tailor (default: 4.0). The --min-score=N form works too.
@@ -130,7 +130,7 @@ for (let i = 0; i < toProcess.length; i++) {
     // Absolute: the state file already resolves through __dirname, so passing
     // this one bare handed the worker a cwd-relative path that only exists when
     // the script happens to run from the project root. modes/pdf.md is where
-    // the CV fact gate (verify-cv-facts.mjs, step 19) is instructed, so losing
+    // the CV fact gate (scripts/verify-cv-facts.mjs, step 19) is instructed, so losing
     // it silently drops the anti-fabrication check from a bulk CV run.
     join(__dirname, 'modes', 'pdf.md'),
     prompt

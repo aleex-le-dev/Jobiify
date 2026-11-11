@@ -62,9 +62,9 @@ try {
   check('hasFlag on a non-array is false', hasFlag(null, '--only'), false);
 
   // validateFlags — the unrecognized-flag / --help shape hand-rolled
-  // identically by scan-ats-full.mjs (#1633/#1635), reply-watch.mjs
-  // (#2743/#2745) and dedup-tracker.mjs (#2744/#2746), consolidated here for
-  // #2775 and reused as-is by scan.mjs's own fix (#2270).
+  // identically by scripts/scan-ats-full.mjs (#1633/#1635), scripts/reply-watch.mjs
+  // (#2743/#2745) and scripts/dedup-tracker.mjs (#2744/#2746), consolidated here for
+  // #2775 and reused as-is by scripts/scan.mjs's own fix (#2270).
   const { validateFlags } = await import(pathToFileURL(join(ROOT, 'lib/cli-flags.mjs')).href);
 
   // The all-valid path never calls process.exit, so it is safe to call
@@ -223,7 +223,7 @@ try {
 
   {
     // The guard that keeps this OPT-IN: without requireOperand the behaviour is
-    // unchanged, so callers with richer validation of their own (scan.mjs tells
+    // unchanged, so callers with richer validation of their own (scripts/scan.mjs tells
     // a missing value from a zero, a negative, a non-finite and a repeat) keep
     // reaching it.
     const r = runValidate(['--since'], ['--since', '--help', '-h'], 'USAGE-TEXT', { valueFlags: ['--since'] });

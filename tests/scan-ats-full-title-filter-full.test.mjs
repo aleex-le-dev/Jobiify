@@ -1,5 +1,5 @@
 // tests/scan-ats-full-title-filter-full.test.mjs — optional `title_filter_full`
-// override: the reverse sweep may run a stricter title profile than scan.mjs
+// override: the reverse sweep may run a stricter title profile than scripts/scan.mjs
 // without either scanner's config being a compromise between the two.
 import { join } from 'path';
 import { pathToFileURL } from 'url';
@@ -7,7 +7,7 @@ import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\nscan-ats-full — title_filter_full override');
 
-const mod = await import(pathToFileURL(join(ROOT, 'scan-ats-full.mjs')).href);
+const mod = await import(pathToFileURL(join(ROOT, 'scripts/scan-ats-full.mjs')).href);
 const { resolveTitleFilterConfig } = mod;
 
 const broad = { positive: ['Backend', 'Solana'] };
@@ -29,12 +29,12 @@ const strict = { positive: ['Solana', 'Smart Contract'] };
   else fail(`expected the title_filter_full object, got ${JSON.stringify(got)}`);
 }
 
-// scan.mjs must be unaffected — it reads config.title_filter directly and has
+// scripts/scan.mjs must be unaffected — it reads config.title_filter directly and has
 // no knowledge of the override, so the broad profile survives for the scanner
 // whose curated corpus makes a keyword like "Backend" safe.
 {
   const config = { title_filter: broad, title_filter_full: strict };
-  if (config.title_filter === broad) pass('title_filter left untouched for scan.mjs');
+  if (config.title_filter === broad) pass('title_filter left untouched for scripts/scan.mjs');
   else fail('resolution mutated title_filter');
 }
 

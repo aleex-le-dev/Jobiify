@@ -1,5 +1,5 @@
 import { pass, fail, rmSync, ROOT } from './helpers.mjs';
-import { processPipelineBatch, processOffer, PATHS } from '../batch-evaluate-gemini.mjs';
+import { processPipelineBatch, processOffer, PATHS } from '../scripts/batch-evaluate-gemini.mjs';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -18,11 +18,11 @@ async function testProcessOffer() {
     PATHS.reports = reportsDir;
     PATHS.trackerAdditions = additionsDir;
     
-    // reserve-report-num.mjs respects these env vars
+    // scripts/reserve-report-num.mjs respects these env vars
     process.env.CAREER_OPS_REPORTS_DIR = reportsDir;
     process.env.CAREER_OPS_TRACKER = join(work, 'applications.md');
 
-    // Create a dummy applications.md to satisfy reserve-report-num.mjs
+    // Create a dummy applications.md to satisfy scripts/reserve-report-num.mjs
     mkdirSync(work, { recursive: true });
     import('fs').then(fs => fs.writeFileSync(join(work, 'applications.md'), '# Applications Tracker\n\n| # | Date | Company | Role | Score | Status | PDF | Report | Notes |\n|---|------|---------|------|-------|--------|-----|--------|-------|\n'));
 
@@ -262,7 +262,7 @@ async function run() {
 }
 
 // Top-level await, not a floating `run()`: this suite is imported in-process by
-// test-all.mjs, and it sets CAREER_OPS_TRACKER for its own fixture. Without the
+// scripts/test-all.mjs, and it sets CAREER_OPS_TRACKER for its own fixture. Without the
 // await the import resolves immediately, the async work keeps running alongside
 // later sections, and that variable stays pointed at this temp directory for a
 // window whose length depends on how fast the fixture runs — which is exactly

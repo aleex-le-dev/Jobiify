@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * followup-cadence.mjs — Follow-up Cadence Tracker for career-ops
+ * scripts/followup-cadence.mjs — Follow-up Cadence Tracker for career-ops
  *
  * Parses applications.md + follow-ups.md, calculates follow-up cadence
  * for active applications, extracts contacts, and flags overdue entries.
  *
- * Run: node followup-cadence.mjs             (JSON to stdout)
- *      node followup-cadence.mjs --summary   (human-readable dashboard)
- *      node followup-cadence.mjs --overdue-only
- *      node followup-cadence.mjs --applied-days 10
+ * Run: node scripts/followup-cadence.mjs             (JSON to stdout)
+ *      node scripts/followup-cadence.mjs --summary   (human-readable dashboard)
+ *      node scripts/followup-cadence.mjs --overdue-only
+ *      node scripts/followup-cadence.mjs --applied-days 10
  */
 
 import { readFileSync, existsSync } from 'fs';
@@ -18,13 +18,13 @@ import * as yaml from 'js-yaml';
 import { loadCanonicalStates, foldStatusInput } from './tracker-utils.mjs';
 import { resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
-import { localToday } from './lib/local-today.mjs';
-import { flagValue, validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { localToday } from '../lib/local-today.mjs';
+import { flagValue, validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 // templates/states.yml is System Layer — resolved from the codebase, not from
 // the user's data root (#3500).
-const CODEBASE_ROOT = dirname(fileURLToPath(import.meta.url));
+const CODEBASE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const CAREER_OPS = getCareerOpsRoot();
 const APPS_FILE = resolveTrackerPath(CAREER_OPS);
 
@@ -239,7 +239,7 @@ const APPLIED_DATE_HAS_DATE_RE = new RegExp(APPLIED_DATE_SOURCE, 'i');
 // "2026-02-30" match it and are not real days.
 //
 // Whether that should be rejected here depends on the caller, so it is opt-in:
-//   - followup-seed.mjs WANTS the raw candidate. It validates the date itself
+//   - scripts/followup-seed.mjs WANTS the raw candidate. It validates the date itself
 //     and throws INVALID_DATE so a typo gets corrected rather than silently
 //     absorbed — pinning a follow-up off a wrong date is worse than refusing.
 //     Filtering here unconditionally would make that impossible date invisible
@@ -270,7 +270,7 @@ export function parseAppliedDate(notes, options = {}) {
   const own = matches.filter(m => !isCrossReferencedMention(text, m.index));
 
   // First-wins is preserved among a row's OWN dates: a later status date must
-  // not displace the submission date (see the fixture in test-all.mjs).
+  // not displace the submission date (see the fixture in scripts/test-all.mjs).
   // Cross-reference filtering is orthogonal to that ordering rule.
   if (own.length > 0) return own[0].date;
 
@@ -282,7 +282,7 @@ export function parseAppliedDate(notes, options = {}) {
   //
   // Both consumers degrade to a LABELLED evaluation-date fallback:
   // resolveAppliedDate below reports `appDateSource: 'evaluation-date-fallback'`,
-  // and followup-seed.mjs reports `appDateSource: 'evaluation-date'`. That was
+  // and scripts/followup-seed.mjs reports `appDateSource: 'evaluation-date'`. That was
   // not true when this was written — seed fell through to today(), unlabelled,
   // which made an old application look new and silently reset its follow-up
   // clock. #2607 changed seed's fallback so the claim below actually holds.
@@ -299,7 +299,7 @@ const CROSS_REF_LOOKBACK = 120;
 // identifier for THIS row, not a pointer at another tracker row. Anchored at the
 // end so it only matches a label sitting directly before the `#`, and the
 // separator excludes `.!?` so a sentence boundary cannot be swallowed into it.
-// Same vocabulary as tracker-parse.mjs's REQ_NUMBER_RE (used by merge-tracker.mjs), which reads the same
+// Same vocabulary as scripts/tracker-parse.mjs's REQ_NUMBER_RE (used by scripts/merge-tracker.mjs), which reads the same
 // Notes column.
 const REQ_LABELLED_HASH_RE = /\b(?:job\s*id|posting\s*id|requisition|req|jr|job|posting|ref(?:erence)?|r_)[\s:_-]*$/i;
 
@@ -358,8 +358,8 @@ function isCrossReferencedMention(text, index) {
     // A `#NNN` tagged as a req/job/posting/reference id is not a row reference:
     // "Req #1311 - applied 2026-08-06" is this row's own posting id followed by
     // this row's own date, and reading it as a cross-reference would discard a
-    // genuine date. The label vocabulary is the one merge-tracker.mjs already
-    // recognises in this same Notes column (tracker-parse.mjs REQ_NUMBER_RE), kept in sync by
+    // genuine date. The label vocabulary is the one scripts/merge-tracker.mjs already
+    // recognises in this same Notes column (scripts/tracker-parse.mjs REQ_NUMBER_RE), kept in sync by
     // being written the same way rather than imported — merge-tracker's regex
     // also captures the id itself, which is not wanted here.
     if (REQ_LABELLED_HASH_RE.test(window.slice(0, m.index))) continue;
@@ -429,7 +429,7 @@ export function resolveAppliedDate(app) {
   // requireValidCalendarDate: an impossible date in the notes must degrade to
   // the labelled fallback rather than be reported as a measured date. One bad
   // row must not fail the whole report, so this skips rather than throws —
-  // unlike followup-seed.mjs, which refuses to pin a follow-up off a bad date.
+  // unlike scripts/followup-seed.mjs, which refuses to pin a follow-up off a bad date.
   const fromNotes = parseAppliedDate(app?.notes, { requireValidCalendarDate: true });
   return fromNotes
     ? { appliedDate: fromNotes, appDateSource: 'notes' }
@@ -451,7 +451,7 @@ export function addDays(date, days) {
 }
 
 // --- Parse applications.md ---
-// Content-based core so any consumer (stats.mjs, tests) can classify rows
+// Content-based core so any consumer (scripts/stats.mjs, tests) can classify rows
 // from in-memory strings without touching disk. The disk-backed wrapper
 // below is what the CLI path uses.
 function parseTrackerContent(content) {
@@ -517,7 +517,7 @@ export function parseFollowups(content) {
 
 // `parseFollowups` is the disk-agnostic content parser upstream/main and its
 // callers use internally (analyzeFromContent, external scripts); the branch's
-// test-all.mjs imports it as `parseFollowupsContent`. Same function, two names.
+// scripts/test-all.mjs imports it as `parseFollowupsContent`. Same function, two names.
 export { parseFollowups as parseFollowupsContent };
 
 // --- Next-date overrides (pins) ---
@@ -531,7 +531,7 @@ export { parseFollowups as parseFollowupsContent };
 // it defaults to the pinned date itself. The LAST pin line per application wins.
 //
 // A trailing `— note` is accepted and ignored. Pins are written by hand as
-// often as by `followup-seed.mjs`, and a hand-written pin almost always wants
+// often as by `scripts/followup-seed.mjs`, and a hand-written pin almost always wants
 // to record WHY the date moved. Anchoring the pattern immediately after the
 // `(set …)` group made every annotated pin fail to match — silently, since a
 // non-matching line is indistinguishable from an ordinary bullet. The failure
@@ -775,7 +775,7 @@ export function resolveReportPath(reportField, appsFile = APPS_FILE, repoRoot = 
   const match = reportField.match(/\]\(([^)]+)\)/);
   if (!match) return null;
   // Report links in the tracker are normalized relative to the tracker file's
-  // own directory (see PR #760 — `merge-tracker.mjs --migrate`). Resolve against
+  // own directory (see PR #760 — `scripts/merge-tracker.mjs --migrate`). Resolve against
   // dirname(APPS_FILE), not the project root, otherwise relative paths like
   // `../reports/...` (the data/applications.md layout) escape above the project.
   const fullPath = join(dirname(appsFile), match[1]);
@@ -836,7 +836,7 @@ export function computeNextFollowupDate(status, appDate, lastFollowupDate, follo
 }
 
 // --- Main analysis ---
-// Content-based core so consumers outside this CLI (stats.mjs, tests) can
+// Content-based core so consumers outside this CLI (scripts/stats.mjs, tests) can
 // reuse the exact same cadence/urgency math — including the 'cold'
 // classification — without duplicating it or touching disk. `followupsContent`
 // missing/empty (the common case when data/follow-ups.md doesn't exist yet)
@@ -1081,17 +1081,17 @@ const KNOWN_FLAGS = ['--summary', '--json', '--overdue-only', '--applied-days', 
 const VALUE_FLAGS = ['--applied-days'];
 
 const USAGE = `Usage:
-  node followup-cadence.mjs                    # full JSON analysis to stdout
-  node followup-cadence.mjs --json             # same as above, JSON is the default
-  node followup-cadence.mjs --summary          # human-readable dashboard (wins over --json)
-  node followup-cadence.mjs --overdue-only     # only show overdue/urgent entries
-  node followup-cadence.mjs --applied-days 10  # override applied_first cadence (days)
-  node followup-cadence.mjs --help|-h          # print this usage block and exit`;
+  node scripts/followup-cadence.mjs                    # full JSON analysis to stdout
+  node scripts/followup-cadence.mjs --json             # same as above, JSON is the default
+  node scripts/followup-cadence.mjs --summary          # human-readable dashboard (wins over --json)
+  node scripts/followup-cadence.mjs --overdue-only     # only show overdue/urgent entries
+  node scripts/followup-cadence.mjs --applied-days 10  # override applied_first cadence (days)
+  node scripts/followup-cadence.mjs --help|-h          # print this usage block and exit`;
 
 // --- Run (CLI only; guarded so the module is safely importable for tests) ---
 if (isMainModule(import.meta.url)) {
   // Must run inside this guard, not at module top level: CADENCE (above) is a
-  // module-level singleton built at import time, and test-all.mjs section 12
+  // module-level singleton built at import time, and scripts/test-all.mjs section 12
   // dynamic-imports this module in-process to read it — validating the host
   // process's own argv there would false-positive on the test runner's flags.
   validateFlags(args, KNOWN_FLAGS, USAGE, { valueFlags: VALUE_FLAGS, requireOperand: true });
@@ -1116,7 +1116,7 @@ if (isMainModule(import.meta.url)) {
     console.log(JSON.stringify(result, null, 2));
   }
 
-  // An empty tracker is a new user, not a failure. analyze-patterns.mjs and the
+  // An empty tracker is a new user, not a failure. scripts/analyze-patterns.mjs and the
   // other tracker readers exit 0 here too; exiting 1 made the web dashboard read
   // a first run as "cadence unavailable".
   if (result.error && !result.noData) process.exit(1);

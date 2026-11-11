@@ -144,7 +144,7 @@ Archetype を検出した後、`modes/_profile.md` を読み、該当 archetype 
 
 0. **Cover letter:** フォームが許可する場合は必ず含める。CV と同じ visual design。JD quotes を proof points に mapping。最大 1 ページ。
 1. 評価前に `cv.md`、`_profile.md`、`article-digest.md`（存在する場合）を読む
-1b. **各セッションの最初の評価で:** `node cv-sync-check.mjs` を実行。warnings があればユーザーに知らせる
+1b. **各セッションの最初の評価で:** `node scripts/cv-sync-check.mjs` を実行。warnings があればユーザーに知らせる
 2. 求人の archetype を検出し、`_profile.md` に従って framing を適応させる
 3. マッチング時、CV の exact lines を引用する
 4. comp と company data のために WebSearch を使う
@@ -153,7 +153,7 @@ Archetype を検出した後、`modes/_profile.md` を読み、該当 archetype 
 7. 直接的で actionable に書く。fluff を避ける
 8. 日本語で生成する場合は、自然な tech Japanese を使う。短い文、action verbs、不要な受動態を避ける
 8b. PDF Professional Summary に case study URLs を含める（recruiter はそこだけ読む可能性がある）
-9. **Tracker additions as TSV** -- `applications.md` を新規追加のために直接編集しない。`batch/tracker-additions/` に TSV を書く。まず**列名の行**を書き、その下にデータ行をちょうど 1 行書く（AGENTS.md の "TSV Format for Tracker Additions" を参照）。この列名行があるからこそ `merge-tracker.mjs` は各フィールドを名前で解決でき、どちらの列が score でどちらが status かを推測せずに済む
+9. **Tracker additions as TSV** -- `applications.md` を新規追加のために直接編集しない。`batch/tracker-additions/` に TSV を書く。まず**列名の行**を書き、その下にデータ行をちょうど 1 行書く（AGENTS.md の "TSV Format for Tracker Additions" を参照）。この列名行があるからこそ `scripts/merge-tracker.mjs` は各フィールドを名前で解決でき、どちらの列が score でどちらが status かを推測せずに済む
 10. **すべての report header に `**URL:**` を含める**
 
 ### Tools
@@ -165,9 +165,9 @@ Archetype を検出した後、`modes/_profile.md` を読み、該当 archetype 
 | Playwright | 求人検証（browser_navigate + browser_snapshot）。**NEVER 2+ agents with Playwright in parallel.** |
 | Read | cv.md, _profile.md, article-digest.md, cv-template.html |
 | Write | Temporary HTML for PDF, reports .md, `batch/tracker-additions/` の tracker 追加用 TSV（`applications.md` は直接書き換えない） |
-| Edit | report など生成済みコンテンツの修正。tracker の表は直接編集しない：新しい行は TSV で追加して `node merge-tracker.mjs` でマージし、status と notes の変更は `node set-status.mjs` で行う |
+| Edit | report など生成済みコンテンツの修正。tracker の表は直接編集しない：新しい行は TSV で追加して `node scripts/merge-tracker.mjs` でマージし、status と notes の変更は `node scripts/set-status.mjs` で行う |
 | Canva MCP | Optional visual CV generation. Base design を duplicate し、text を edit して PDF export。`profile.yml` の `cv.canva_resume_design_id` が必要 |
-| Bash | `node generate-pdf.mjs`, `node merge-tracker.mjs`, `node set-status.mjs` |
+| Bash | `node scripts/generate-pdf.mjs`, `node scripts/merge-tracker.mjs`, `node scripts/set-status.mjs` |
 
 ### Time-to-offer priority
 - Working demo + metrics > perfection
@@ -285,7 +285,7 @@ _`voice-dna.md` が存在する場合、その §3 Banned List が canonical で
 - "demonstrated ability to" / "best practices"（practice 名を具体的に書く）
 
 ### Unicode normalization for ATS
-`generate-pdf.mjs` は em-dashes、smart quotes、zero-width characters を ATS 互換のため ASCII equivalents に自動 normalize する。ただし生成時点で避ける。
+`scripts/generate-pdf.mjs` は em-dashes、smart quotes、zero-width characters を ATS 互換のため ASCII equivalents に自動 normalize する。ただし生成時点で避ける。
 
 ### Vary sentence structure
 - すべての bullet を同じ verb で始めない

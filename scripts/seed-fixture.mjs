@@ -1,24 +1,24 @@
 #!/usr/bin/env node
 /**
- * seed-fixture.mjs — materialize a realistic user-data fixture into an install.
+ * scripts/seed-fixture.mjs — materialize a realistic user-data fixture into an install.
  *
  * Fixture states live in test-fixtures/upgrade/<state>/ and mirror the
  * user-layer files a real install of that era contains. Returns a SHA-256
  * manifest so callers can assert byte-identity later.
  *
  * Usage:
- *   node seed-fixture.mjs <targetDir> [--state state-v1.18]
- *   node seed-fixture.mjs --self-test
+ *   node scripts/seed-fixture.mjs <targetDir> [--state state-v1.18]
+ *   node scripts/seed-fixture.mjs --self-test
  */
 import { createHash } from 'crypto';
 import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, existsSync, mkdirSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, dirname, relative, sep } from 'path';
 import { fileURLToPath } from 'url';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { walkTree, isNestedCheckout } from './lib/walk-tree.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { walkTree, isNestedCheckout } from '../lib/walk-tree.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const FIXTURES = join(ROOT, 'test-fixtures', 'upgrade');
 export const DEFAULT_STATE = 'state-v1.18';
 
@@ -126,7 +126,7 @@ if (isMainModule(import.meta.url)) {
       process.exit(1);
     }
   } else {
-    console.error('Usage: node seed-fixture.mjs <targetDir> [--state name] | --self-test');
+    console.error('Usage: node scripts/seed-fixture.mjs <targetDir> [--state name] | --self-test');
     process.exit(1);
   }
 }

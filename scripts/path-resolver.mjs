@@ -2,7 +2,7 @@ import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync, readFileSync, realpathSync } from 'fs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(dirname(fileURLToPath(import.meta.url)));
 
 /**
  * Returns the resolved career-ops data directory root.
@@ -36,7 +36,7 @@ export function getCareerOpsRoot() {
  * two implementations briefly coexisted, the un-canonicalized one derived
  * different lock paths (/var vs /private/var) for the same file, and shared
  * writer exclusion silently broke. This module is the single source of truth;
- * tracker-utils.mjs re-exports from here so both import paths agree.
+ * scripts/tracker-utils.mjs re-exports from here so both import paths agree.
  * Deliberately dependency-light (fs/path only): test fixtures copy this file
  * standalone next to the scripts they exercise.
  */

@@ -51,4 +51,4 @@ jobs:
       - name: Check registry pins against latest releases
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: node validate-plugin-registry.mjs --check-stale
+        run: node scripts/validate-plugin-registry.mjs --check-stale

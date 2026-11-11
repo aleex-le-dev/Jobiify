@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * mark-pdf-ready.mjs — canonical CLI to flip a tracker row's PDF column ❌→✅ (#2172).
+ * scripts/mark-pdf-ready.mjs — canonical CLI to flip a tracker row's PDF column ❌→✅ (#2172).
  *
  * data/applications.md is a shared surface with multiple readers and writers.
  * Before this script, the PDF column had NO canonical writer at all — every
  * caller (the web dashboard's "pdf" mode) hand-edited the markdown table via
  * an LLM prompt instruction. This gives it the same one-canonical-write-path
- * treatment set-status.mjs already gives the Status column: same lock, same
+ * treatment scripts/set-status.mjs already gives the Status column: same lock, same
  * atomic write, same shared tracker-parse/tracker-utils primitives.
  *
  * Usage:
- *   node mark-pdf-ready.mjs <report#> [--dry-run] [--json]
+ *   node scripts/mark-pdf-ready.mjs <report#> [--dry-run] [--json]
  *
  * Row resolution is by REPORT NUMBER (the NNN in reports/NNN-{slug}-{date}.md),
  * not the tracker `#` column — those two numbers differ by design (see
@@ -23,8 +23,8 @@
  * Idempotent: a row whose PDF cell is already ✅ is a no-op success (changed:
  * false), so a retried render never fails this step.
  *
- * The read-modify-write runs under the shared tracker lock (tracker-utils.mjs,
- * same lock as merge-tracker.mjs / set-status.mjs) and the file is replaced
+ * The read-modify-write runs under the shared tracker lock (scripts/tracker-utils.mjs,
+ * same lock as scripts/merge-tracker.mjs / scripts/set-status.mjs) and the file is replaced
  * atomically. Only the PDF cell of the matched row changes; every other byte
  * of the tracker round-trips untouched.
  *
@@ -42,14 +42,14 @@ import {
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
 // The USER's data root, not this file's directory — same defect, same fix as
-// set-status.mjs above it in this change.
+// scripts/set-status.mjs above it in this change.
 const DATA_ROOT = getCareerOpsRoot();
 
 // LOCK_TIMEOUT is not destructured here — that exit path is raised inside
-// acquireTrackerLockForCli() itself (tracker-utils.mjs), via CLI_EXIT.LOCK_TIMEOUT.
+// acquireTrackerLockForCli() itself (scripts/tracker-utils.mjs), via CLI_EXIT.LOCK_TIMEOUT.
 const { OK: EXIT_OK, USAGE: EXIT_USAGE, NOT_FOUND: EXIT_NOT_FOUND, AMBIGUOUS: EXIT_AMBIGUOUS } = CLI_EXIT;
 
-const USAGE = `Usage: node mark-pdf-ready.mjs <report#> [--dry-run] [--json]
+const USAGE = `Usage: node scripts/mark-pdf-ready.mjs <report#> [--dry-run] [--json]
 
   <report#>    The NNN from reports/NNN-{slug}-{date}.md (NOT the tracker # column)
   --dry-run    Resolve and validate, but write nothing
@@ -82,7 +82,7 @@ if (positional.length !== 1) {
 
 const [reportSelector] = positional;
 
-// Shared with set-status.mjs (tracker-utils.mjs) so the JSON-vs-human error
+// Shared with scripts/set-status.mjs (scripts/tracker-utils.mjs) so the JSON-vs-human error
 // contract can't drift between the two canonical tracker-writer CLIs.
 const failWith = makeCliFailWith(flags.json);
 
@@ -98,7 +98,7 @@ if (!existsSync(APPS_FILE)) {
   failWith(EXIT_NOT_FOUND, 'no-tracker', `No tracker found at ${APPS_FILE}`);
 }
 
-// Shared with set-status.mjs (tracker-utils.mjs): dry-run never writes, so it
+// Shared with scripts/set-status.mjs (scripts/tracker-utils.mjs): dry-run never writes, so it
 // must not hold the exclusive lock — a read-only preview should not block
 // (or be blocked by) merge-tracker or another writer.
 const lock = await acquireTrackerLockForCli(APPS_FILE, { dryRun: flags.dryRun, failWith });
@@ -131,7 +131,7 @@ if (matches.length === 0) {
 if (matches.length > 1) {
   // An ambiguous report-number-to-row mapping is a tracker data bug (two rows
   // linking the same report), not a legitimate disambiguation case — refuse
-  // to guess which one to mark, same fail-closed stance as set-status.mjs's
+  // to guess which one to mark, same fail-closed stance as scripts/set-status.mjs's
   // duplicate-# guard.
   const candidates = matches.map(r => ({ num: r.num, company: r.company, role: r.role }));
   const listing = candidates.map(c => `#${c.num}\t${c.company}\t${c.role}`).join('\n');
@@ -144,7 +144,7 @@ const target = matches[0];
 // ── locked read-modify-write ─────────────────────────────────────
 
 const alreadyReady = target.pdf.trim() === '✅';
-// Matches set-status.mjs's contract: `changed` reflects whether a write WOULD
+// Matches scripts/set-status.mjs's contract: `changed` reflects whether a write WOULD
 // happen, computed independent of --dry-run, so a preview call can tell "would
 // mark" apart from "already ✅" without actually writing.
 const changed = !alreadyReady;

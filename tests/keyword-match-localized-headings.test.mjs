@@ -1,4 +1,4 @@
-// tests/keyword-match-localized-headings.test.mjs — keyword-match.mjs has to
+// tests/keyword-match-localized-headings.test.mjs — scripts/keyword-match.mjs has to
 // find the keyword section under the heading each evaluation mode writes.
 //
 // It looked for `## Keywords extracted` only. Three of the nineteen evaluation
@@ -8,7 +8,7 @@
 //
 // The mode files are the input here, not a copy of their headings: evaluation
 // modes are found by their Block F heading, the keyword heading by the 15-20
-// keyword instruction written under it, and keyword-match.mjs has to read what
+// keyword instruction written under it, and scripts/keyword-match.mjs has to read what
 // the mode writes. A retranslated, renamed or deleted keyword section fails
 // here instead of in somebody's `pdf` run.
 import assert from 'node:assert/strict';
@@ -17,7 +17,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
 import { listTree } from '../lib/walk-tree.mjs';
-import { KEYWORDS_HEADINGS, extractKeywords } from '../keyword-match.mjs';
+import { KEYWORDS_HEADINGS, extractKeywords } from '../scripts/keyword-match.mjs';
 import { pass, fail, NODE, ROOT, rmSync } from './helpers.mjs';
 
 console.log('\nkeyword-match: localized keyword headings');
@@ -71,9 +71,9 @@ for (const { rel, text } of modes) {
     const headings = keywordHeadingsIn(text);
     assert.equal(headings.length, 1,
       `expected one heading over the 15-20 keyword instruction, found ${headings.length} ${JSON.stringify(headings)}; ` +
-      'modes/pdf.md runs keyword-match.mjs on every report this mode writes');
+      'modes/pdf.md runs scripts/keyword-match.mjs on every report this mode writes');
     assert.deepEqual(keywordsUnder(headings[0]), KEYWORDS,
-      `"${headings[0]}" is not read: add its title to KEYWORDS_HEADINGS in keyword-match.mjs, and keep the old title, which reports on disk still carry`);
+      `"${headings[0]}" is not read: add its title to KEYWORDS_HEADINGS in scripts/keyword-match.mjs, and keep the old title, which reports on disk still carry`);
   });
 }
 
@@ -84,7 +84,7 @@ check('batch/batch-prompt.md: the keyword heading it writes is read', () => {
   const heading = text.match(/^- `(## [^`]*Keywords[^`]*)`$/m)?.[1];
   assert.ok(heading, 'no `## ...Keywords...` heading listed in batch/batch-prompt.md');
   assert.deepEqual(keywordsUnder(heading), KEYWORDS,
-    `"${heading}" is not read: add its title to KEYWORDS_HEADINGS in keyword-match.mjs`);
+    `"${heading}" is not read: add its title to KEYWORDS_HEADINGS in scripts/keyword-match.mjs`);
 });
 
 // ---- The reader -------------------------------------------------------------
@@ -106,7 +106,7 @@ check('case and Latin or Cyrillic accents do not hide the section', () => {
 
 check('headings that are not the keyword section are not read as one', () => {
   for (const heading of [
-    '## Keyword Coverage',     // what keyword-match.mjs prints, pasted right below the keyword list
+    '## Keyword Coverage',     // what scripts/keyword-match.mjs prints, pasted right below the keyword list
     '### Keywords extracted',  // level 3
     '## निकले गए Keywords',     // one Devanagari vowel sign away from modes/hi/naukri.md's title
   ]) {
@@ -133,7 +133,7 @@ check('the CLI scores a tailored HTML CV against a report written in Spanish', (
       '',
     ].join('\n'));
     writeFileSync(cv, '<html><body><p>Python and gRPC services on Kubernetes.</p></body></html>');
-    const out = execFileSync(NODE, [join(ROOT, 'keyword-match.mjs'), report, '--cv', cv, '--json'], {
+    const out = execFileSync(NODE, [join(ROOT, 'scripts/keyword-match.mjs'), report, '--cv', cv, '--json'], {
       encoding: 'utf-8', timeout: 30000, stdio: ['ignore', 'pipe', 'pipe'],
     });
     const result = JSON.parse(out);

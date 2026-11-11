@@ -16,7 +16,7 @@
 // would also make "maintenance" match `ai` again.
 
 import { pass, fail } from './helpers.mjs';
-import { compileKeyword, compilePositiveKeyword } from '../title-keywords.mjs';
+import { compileKeyword, compilePositiveKeyword } from '../scripts/title-keywords.mjs';
 
 console.log('\ntitle keywords — CJK characters are word boundaries');
 

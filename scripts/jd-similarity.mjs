@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 /**
- * jd-similarity.mjs — deterministic CV reuse recommendation for similar JDs.
+ * scripts/jd-similarity.mjs — deterministic CV reuse recommendation for similar JDs.
  *
  * This is deliberately a recommendation layer. It never evaluates a JD and
  * never deletes or overwrites an existing CV.
  *
  * Usage:
- *   node jd-similarity.mjs new-jd.txt previous-jd-or-cv.txt
+ *   node scripts/jd-similarity.mjs new-jd.txt previous-jd-or-cv.txt
  */
 
 import { readFileSync } from 'fs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 const STOP_WORDS = new Set([
   'and', 'the', 'for', 'with', 'from', 'that', 'this', 'have', 'will', 'you',
@@ -140,8 +140,8 @@ export function recommendCvReuse(newJd, previousText, options = {}) {
 const KNOWN_FLAGS = ['--help', '-h'];
 
 const USAGE = `Usage:
-  node jd-similarity.mjs new-jd.txt previous-jd-or-cv.txt
-  node jd-similarity.mjs --help                    # print this usage block and exit`;
+  node scripts/jd-similarity.mjs new-jd.txt previous-jd-or-cv.txt
+  node scripts/jd-similarity.mjs --help                    # print this usage block and exit`;
 
 function parseArgs(argv) {
   const args = argv.slice(2);

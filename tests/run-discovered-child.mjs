@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // tests/run-discovered-child.mjs — run ONE discovered pass/fail-style suite in
-// its own process, for `test-all.mjs --jobs N` with N > 1.
+// its own process, for `scripts/test-all.mjs --jobs N` with N > 1.
 //
-// With --jobs 1 test-all.mjs imports every discovered suite into its own
+// With --jobs 1 scripts/test-all.mjs imports every discovered suite into its own
 // process, one after another, and they share its counters. To run several at
 // once each suite needs a process of its own, and its counters have to get back
 // to the parent. This is that process: import the suite, then hand results() to

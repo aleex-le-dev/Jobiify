@@ -3,7 +3,7 @@
  * Structural coverage of translated modes (#3168). Offline, read-only, Node only.
  * Adapted from alinaqvi1129's initial checker in PR #3228.
  *
- * node i18n-drift.mjs [--lang tr ...] [--json | --summary]
+ * node scripts/i18n-drift.mjs [--lang tr ...] [--json | --summary]
  * Drift is advisory (exit 0); invalid arguments or unreadable inputs exit 1.
  *
  * Compare heading levels IN ORDER, never translated words. Coverage measures
@@ -16,11 +16,11 @@
 import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, join, posix, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { isNestedCheckout } from './lib/mjs-files.mjs';
-import { walkTree } from './lib/walk-tree.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { isNestedCheckout } from '../lib/mjs-files.mjs';
+import { walkTree } from '../lib/walk-tree.mjs';
 
-const ROOT = fileURLToPath(new URL('.', import.meta.url));
+const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const LANGUAGE = /^[a-z]{2}(?:-[A-Za-z0-9]{2,8})*$/;
 
 /** Top-level Markdown ATX/setext headings, with one-based source lines. */
@@ -297,7 +297,7 @@ function main(args) {
   }
   if (json && summary) throw new Error('choose --json or --summary');
   if (help) {
-    console.log('Usage: node i18n-drift.mjs [--lang tr ...] [--json | --summary]\nRead-only, offline. Drift exits 0; invalid arguments or unreadable inputs exit 1.');
+    console.log('Usage: node scripts/i18n-drift.mjs [--lang tr ...] [--json | --summary]\nRead-only, offline. Drift exits 0; invalid arguments or unreadable inputs exit 1.');
     return;
   }
   const selected = [...new Set(langs.length ? langs : discoverLangs())];

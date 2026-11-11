@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { funnelStageRank, parseStatusLogStages, recoverFunnelStages } from '../funnel-stages.mjs';
+import { funnelStageRank, parseStatusLogStages, recoverFunnelStages } from '../scripts/funnel-stages.mjs';
 
 test('stage rank treats a rejection as a reply and normalizes canonical case', () => {
   assert.equal(funnelStageRank(' rejected '), 2);

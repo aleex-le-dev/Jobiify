@@ -108,7 +108,7 @@ delete process.env.CAREER_OPS_CONNECTION_SCOPE;
 
 // Only per-tenant-host sources are scoped; single-host directories share one pool.
 {
-  const { SOURCES } = await import(pathToFileURL(join(ROOT, 'scan-ats-full.mjs')).href);
+  const { SOURCES } = await import(pathToFileURL(join(ROOT, 'scripts/scan-ats-full.mjs')).href);
   const single = ['greenhouse', 'lever', 'ashby'].every((s) => SOURCES[s].singleHost === true);
   const multi = ['workday', 'icims', 'bamboohr'].every((s) => !SOURCES[s].singleHost);
   if (single && multi) pass('single-host sources unscoped; workday, icims and bamboohr scoped');

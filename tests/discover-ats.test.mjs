@@ -1,5 +1,5 @@
 /**
- * tests/discover-ats.test.mjs — Systematic test suite for discover-ats.mjs
+ * tests/discover-ats.test.mjs — Systematic test suite for scripts/discover-ats.mjs
  *
  * Tests the pure, network-free functions with inline fixtures:
  * - deriveSlug (lowercasing, punctuation, edge cases)
@@ -13,7 +13,7 @@
  * - CLI behavior (--self-test, default preview never writes, --write opt-in,
  *   unknown --vendors, --help) via execFileSync — no live network.
  *
- * Run: node test-all.mjs --only discover-ats
+ * Run: node scripts/test-all.mjs --only discover-ats
  *      Running the file directly prints the same ✅/❌ lines, but a
  *      discovered suite reports through the shared counters and never
  *      exits — so a direct run returns 0 even when assertions fail.
@@ -35,8 +35,8 @@ import {
   resolveCompany,
   resolveWorkday,
   partitionBlacklisted,
-} from '../discover-ats.mjs';
-import { parseBlacklist } from '../scan.mjs';
+} from '../scripts/discover-ats.mjs';
+import { parseBlacklist } from '../scripts/scan.mjs';
 import * as yaml from 'js-yaml';
 import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
@@ -633,7 +633,7 @@ ok('wrong-typed workday hint → field dropped', !('workday' in wrongType.compan
 // ============================================================================
 console.log('\n--- 7. CLI behavior ---');
 
-const scriptPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'discover-ats.mjs');
+const scriptPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'scripts/discover-ats.mjs');
 
 // --self-test exits 0
 try {

@@ -1,11 +1,11 @@
 // invite-match regression coverage for split code/data roots (#3867, finding 4).
 //
-// applyRejectionStatus() spawns set-status.mjs, a sibling in the *code*
+// applyRejectionStatus() spawns scripts/set-status.mjs, a sibling in the *code*
 // checkout. It used to resolve that path off CAREER_OPS — the *data* root —
 // so with an external data root the child died with
 // `Cannot find module <data-root>/set-status.mjs`.
 //
-// The CLI is exercised as a child process because importing invite-match.mjs
+// The CLI is exercised as a child process because importing scripts/invite-match.mjs
 // resolves its roots at module load. Every path points at a disposable
 // external data root; no test reads or writes the repository's user-layer
 // fixtures.
@@ -37,11 +37,11 @@ function seedDataRoot() {
   return { dataRoot, tracker };
 }
 
-/** Run invite-match.mjs with the data root detached from the code checkout. */
+/** Run scripts/invite-match.mjs with the data root detached from the code checkout. */
 function runInviteMatchApply(dataRoot, tracker, stdin) {
   const env = { ...process.env, CAREER_OPS_ROOT: dataRoot, CAREER_OPS_TRACKER: tracker };
   delete env.CAREER_OPS_DATA_DIR;
-  const result = spawnSync(process.execPath, [join(CODE_ROOT, 'invite-match.mjs'), '--apply', '--id', '1'], {
+  const result = spawnSync(process.execPath, [join(CODE_ROOT, 'scripts/invite-match.mjs'), '--apply', '--id', '1'], {
     cwd: CODE_ROOT,
     env,
     input: stdin,
@@ -64,7 +64,7 @@ const REJECTION = [
   'After careful consideration we have decided not to move forward with your application.',
 ].join('\n');
 
-test('--apply resolves set-status.mjs from the code root, not the data root', () => {
+test('--apply resolves scripts/set-status.mjs from the code root, not the data root', () => {
   const { dataRoot, tracker } = seedDataRoot();
   try {
     const result = runInviteMatchApply(dataRoot, tracker, REJECTION);

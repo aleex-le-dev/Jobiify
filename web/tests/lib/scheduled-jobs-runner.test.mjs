@@ -103,11 +103,11 @@ test("scan command honors the selected engine and bounded filters", () => {
     limitPerAts: 999,
   };
   assert.deepEqual(buildScanCommand({ engine: "portals", filters }), {
-    script: "scan.mjs",
+    script: "scripts/scan.mjs",
     args: ["--since", "5", "--quiet"],
   });
   assert.deepEqual(buildScanCommand({ engine: "full", filters }), {
-    script: "scan-ats-full.mjs",
+    script: "scripts/scan-ats-full.mjs",
     args: ["--since", "5", "--ats", "lever,ashby", "--limit", "500", "--json"],
   });
 });
@@ -125,7 +125,7 @@ test("scheduled overlay falls back to portal title keywords and preserves hard l
     const result = executeJob(temp, job, {
       spawnFn: (_node, _args, options) => {
         assert.equal(options.env.CAREER_OPS_ROOT, temp);
-        assert.ok(fs.existsSync(path.join(options.cwd, "scan.mjs")));
+        assert.ok(fs.existsSync(path.join(options.cwd, "scripts/scan.mjs")));
         overlay = yaml.load(fs.readFileSync(options.env.CAREER_OPS_PORTALS, "utf8"));
         return { status: 0, stdout: JSON.stringify({ postingsKept: 0 }), stderr: "" };
       },

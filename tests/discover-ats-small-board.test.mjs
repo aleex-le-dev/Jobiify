@@ -1,14 +1,14 @@
 /**
  * tests/discover-ats-small-board.test.mjs — soft warning for small boards (#4772)
  *
- * discover-ats.mjs keeps resolving a board that lists only a few postings, but
+ * scripts/discover-ats.mjs keeps resolving a board that lists only a few postings, but
  * flags it: a `smallBoard` field in the JSON, a marker in --summary, and a
  * `# verify:` comment on the entry --write appends. The threshold and wording
- * are shared with audit-portals.mjs through lib/small-board.mjs. No network.
+ * are shared with scripts/audit-portals.mjs through lib/small-board.mjs. No network.
  */
 
-import { flagSmallBoards, renderPortalEntry, insertIntoTrackedCompanies } from '../discover-ats.mjs';
-import { DEFAULT_SMALL_THRESHOLD as AUDIT_THRESHOLD, classifyBoard } from '../audit-portals.mjs';
+import { flagSmallBoards, renderPortalEntry, insertIntoTrackedCompanies } from '../scripts/discover-ats.mjs';
+import { DEFAULT_SMALL_THRESHOLD as AUDIT_THRESHOLD, classifyBoard } from '../scripts/audit-portals.mjs';
 import { DEFAULT_SMALL_THRESHOLD, isSmallBoard, smallBoardDetail } from '../lib/small-board.mjs';
 import * as yaml from 'js-yaml';
 import { execFileSync } from 'child_process';
@@ -19,7 +19,7 @@ import { pass, fail } from './helpers.mjs';
 console.log('\ndiscover-ats.mjs — small board warning');
 
 const ok = (label, cond) => (cond ? pass(label) : fail(label));
-const script = join(dirname(fileURLToPath(import.meta.url)), '..', 'discover-ats.mjs');
+const script = join(dirname(fileURLToPath(import.meta.url)), '..', 'scripts/discover-ats.mjs');
 
 // Shared with audit-portals
 ok('threshold is shared with audit-portals', AUDIT_THRESHOLD === DEFAULT_SMALL_THRESHOLD);

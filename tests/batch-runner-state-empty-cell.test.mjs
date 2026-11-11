@@ -24,7 +24,7 @@ function fixture() {
   // localhost is refused by the JD prefetch guard before curl connects.
   writeFileSync(join(batch, 'batch-input.tsv'),
     'id\turl\tsource\tnotes\n1\thttp://localhost/jobs/1\ttest\tfirst\n2\thttp://localhost/jobs/2\ttest\tsecond\n');
-  writeFileSync(join(root, 'reserve-report-num.mjs'), [
+  writeFileSync((mkdirSync(join(root, 'scripts'), { recursive: true }), join(root, 'scripts/reserve-report-num.mjs')), [
     "import fs from 'node:fs';",
     "const f = new URL('./.counter', import.meta.url);",
     "let n = 0; try { n = Number(fs.readFileSync(f, 'utf8')); } catch {}",
@@ -32,7 +32,7 @@ function fixture() {
     "console.log(String(n).padStart(3, '0'));",
     '',
   ].join('\n'));
-  for (const name of ['merge-tracker.mjs', 'reconcile-pipeline.mjs', 'verify-pipeline.mjs']) {
+  for (const name of ['scripts/merge-tracker.mjs', 'scripts/reconcile-pipeline.mjs', 'scripts/verify-pipeline.mjs']) {
     writeFileSync(join(root, name), '// stub: the merge steps are not under test\n');
   }
   // A worker that dies without a byte of output.

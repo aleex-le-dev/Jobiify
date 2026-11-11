@@ -1,6 +1,6 @@
 // tests/output-language.test.mjs — headless engines honor language.output (#1897).
 //
-// Discovered suites run IN-PROCESS inside test-all.mjs: they must report via
+// Discovered suites run IN-PROCESS inside scripts/test-all.mjs: they must report via
 // the shared pass/fail counters from helpers.mjs and must never terminate the
 // process themselves — a stray exit call here would kill the whole suite
 // mid-run and forge its exit code (see the guard in test-all's runDiscovered).
@@ -13,7 +13,7 @@ import { listTree } from '../lib/walk-tree.mjs';
 import {
   outputLanguageInstruction,
   parseOutputLanguage,
-} from '../profile-language.mjs';
+} from '../scripts/profile-language.mjs';
 
 console.log('\noutput-language — headless engines honor language.output (#1897)');
 
@@ -38,10 +38,10 @@ check(directive.includes('regardless of the language of these instructions or th
 check(directive.includes('explain them in fr when needed'), 'directive preserves and explains market terms');
 
 const engines = [
-  'ollama-eval.mjs',
-  'openai-eval.mjs',
-  'gemini-eval.mjs',
-  'openrouter-runner.mjs',
+  'scripts/ollama-eval.mjs',
+  'scripts/openai-eval.mjs',
+  'scripts/gemini-eval.mjs',
+  'scripts/openrouter-runner.mjs',
 ];
 for (const engine of engines) {
   const source = readFileSync(join(ROOT, engine), 'utf-8');
@@ -54,7 +54,7 @@ for (const engine of engines) {
   );
 }
 
-const { buildSystemPrompt } = await import('../openrouter-runner.mjs');
+const { buildSystemPrompt } = await import('../scripts/openrouter-runner.mjs');
 const openrouterPrompt = buildSystemPrompt('MODE', {
   shared: 'SHARED',
   profileMode: 'PROFILE MODE',
@@ -63,7 +63,7 @@ const openrouterPrompt = buildSystemPrompt('MODE', {
 });
 check(openrouterPrompt.includes(outputLanguageInstruction('ja')), 'OpenRouter system prompt contains the resolved language instruction');
 
-const gemini = readFileSync(join(ROOT, 'gemini-eval.mjs'), 'utf-8');
+const gemini = readFileSync(join(ROOT, 'scripts/gemini-eval.mjs'), 'utf-8');
 check(!gemini.includes('in English, unless the JD is in another language'), 'Gemini no longer lets JD language override profile output');
 
 // ── the modes follow language.output, not the JD's language ─────────────
@@ -93,23 +93,23 @@ check(jdLanguageRules.length === 0, `no mode tells the agent to write in the JD'
 // A candidate running parallel campaigns in more than one market at once
 // (e.g. an immigrant applying in both Canada and China simultaneously)
 // declares language.modes_dir as an array instead of a single string.
-// gemini-eval.mjs is the one .mjs engine that reads modes_dir at all (the
+// scripts/gemini-eval.mjs is the one .mjs engine that reads modes_dir at all (the
 // others only read language.output); the primary (first) declared market
 // still drives the evaluation-mode file, and every declared market's
 // _shared.md is folded into context.
 check(
   gemini.includes('Array.isArray(rawModesDir)'),
-  'gemini-eval.mjs accepts modes_dir as either a single string or an array',
+  'scripts/gemini-eval.mjs accepts modes_dir as either a single string or an array',
 );
 
-// gemini-eval.mjs resolves modes_dir (a market vocabulary directory) against
+// scripts/gemini-eval.mjs resolves modes_dir (a market vocabulary directory) against
 // CODE_ROOT — the script's OWN directory, i.e. this checkout — never against
 // the sandboxed data root. So these fixtures point modes_dir at REAL market
 // directories already committed in this repo (modes/de, modes/zh — both fully
 // translated, per AGENTS.md) rather than fabricating fake ones; only
 // config/profile.yml, cv.md and modes/_profile.md need to live in the sandbox,
-// via CAREER_OPS_ROOT (getCareerOpsRoot() in path-resolver.mjs honors it).
-// Capture both streams because gemini-eval.mjs's missing-file warnings go
+// via CAREER_OPS_ROOT (getCareerOpsRoot() in scripts/path-resolver.mjs honors it).
+// Capture both streams because scripts/gemini-eval.mjs's missing-file warnings go
 // through console.warn (stderr). Use its deterministic --context-only seam so
 // these tests never contact Gemini (CodeRabbit, PR #3798).
 function runGeminiEval(modesDirYaml) {
@@ -124,7 +124,7 @@ function runGeminiEval(modesDirYaml) {
     const jdPath = join(tmp, 'mock-jd.txt');
     writeFileSync(jdPath, 'Job description text', 'utf-8');
 
-    const result = spawnSync(NODE, [join(ROOT, 'gemini-eval.mjs'), '--file', jdPath, '--no-save', '--context-only'], {
+    const result = spawnSync(NODE, [join(ROOT, 'scripts/gemini-eval.mjs'), '--file', jdPath, '--no-save', '--context-only'], {
       cwd: tmp,
       env: { ...process.env, GEMINI_API_KEY: 'mock-api-key-12345', CAREER_OPS_ROOT: tmp },
       encoding: 'utf-8',
@@ -133,7 +133,7 @@ function runGeminiEval(modesDirYaml) {
     const stdout = result.stdout || '';
     const stderr = result.stderr || '';
     const childSucceeded = !result.error && result.status === 0;
-    check(childSucceeded, 'gemini-eval.mjs context-only child exits successfully');
+    check(childSucceeded, 'scripts/gemini-eval.mjs context-only child exits successfully');
     if (!childSucceeded) {
       console.error(stderr || result.error?.message || `child exited ${result.status}`);
       return { stdout, stderr, tokenBudget: NaN, evalModeFile: null };
@@ -156,11 +156,11 @@ function runGeminiEval(modesDirYaml) {
 const twoMarket = runGeminiEval('  modes_dir:\n    - modes/de\n    - modes/zh');
 check(
   !twoMarket.stderr.includes('modes/de/_shared.md not found') && !twoMarket.stderr.includes('modes/de/angebot.md not found'),
-  'gemini-eval.mjs resolves the primary market in a 2-market modes_dir array',
+  'scripts/gemini-eval.mjs resolves the primary market in a 2-market modes_dir array',
 );
 check(
   !twoMarket.stderr.includes('modes/zh/_shared.md not found'),
-  "gemini-eval.mjs also resolves the secondary market's _shared.md in a 2-market array",
+  "scripts/gemini-eval.mjs also resolves the secondary market's _shared.md in a 2-market array",
 );
 
 // Array input with exactly one declared market behaves like the plain-string
@@ -168,7 +168,7 @@ check(
 const oneMarketArray = runGeminiEval('  modes_dir:\n    - modes/de');
 check(
   !oneMarketArray.stderr.includes('modes/de/_shared.md not found') && !oneMarketArray.stderr.includes('modes/de/angebot.md not found'),
-  'gemini-eval.mjs treats a one-element modes_dir array like a plain string',
+  'scripts/gemini-eval.mjs treats a one-element modes_dir array like a plain string',
 );
 // A bare `>` here would pass even if the fold silently broke: the two-market
 // fixture's config/profile.yml has an extra `- modes/zh` line, and profile.yml
@@ -197,7 +197,7 @@ check(
 const arabicMarket = runGeminiEval('  modes_dir: modes/ar');
 check(
   arabicMarket.evalModeFile === 'modes/ar/fursah.md' && Number.isFinite(arabicMarket.tokenBudget),
-  'gemini-eval.mjs resolves the Arabic fursah evaluation mode',
+  'scripts/gemini-eval.mjs resolves the Arabic fursah evaluation mode',
 );
 
 // Absent modes_dir keeps the historical default (modes/, oferta.md) — a
@@ -206,7 +206,7 @@ check(
 const noMarket = runGeminiEval('  output: en');
 check(
   Number.isFinite(noMarket.tokenBudget) && noMarket.tokenBudget !== oneMarketArray.tokenBudget,
-  'gemini-eval.mjs falls back to modes/ (oferta.md) when modes_dir is absent, unchanged from before #3793',
+  'scripts/gemini-eval.mjs falls back to modes/ (oferta.md) when modes_dir is absent, unchanged from before #3793',
 );
 
 // Regression (CodeRabbit, PR #3798): the FIRST declared market is primary.
@@ -218,7 +218,7 @@ check(
 const missingPrimary = runGeminiEval('  modes_dir:\n    - modes/does-not-exist-anywhere\n    - modes/de');
 check(
   missingPrimary.stderr.includes('modes_dir "modes/does-not-exist-anywhere" not found'),
-  'gemini-eval.mjs reports why the primary market could not be resolved',
+  'scripts/gemini-eval.mjs reports why the primary market could not be resolved',
 );
 // The missing primary must keep the default evaluation mode while preserving
 // valid secondary shared context from modes/de. Its budget therefore exceeds

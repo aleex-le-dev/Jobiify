@@ -9,16 +9,16 @@ This repository is two things at once, and which one you are working on depends 
 ## Setup, build and validate
 
 - Install: `npm install --ignore-scripts` (there is no lock file in the repo). Never install without `--ignore-scripts`, never add or upgrade dependencies.
-- Full suite: `node test-all.mjs --quick` (skips the dashboard build). Run it before you finish, every time.
-- One area: `node test-all.mjs --only <substring>` (for example `--only providers/themuse`).
+- Full suite: `node scripts/test-all.mjs --quick` (skips the dashboard build). Run it before you finish, every time.
+- One area: `node scripts/test-all.mjs --only <substring>` (for example `--only providers/themuse`).
 - Syntax: `npm run lint`.
 - Dashboard (Go): `npm run build:dashboard` only when you touched `dashboard/`.
-- New tests go in their own file under `tests/**/*.test.mjs` (auto-discovered). Never add a numbered section to `test-all.mjs`.
+- New tests go in their own file under `tests/**/*.test.mjs` (auto-discovered). Never add a numbered section to `scripts/test-all.mjs`.
 
 ## Files you must not touch
 
-- The **user layer** defined in `DATA_CONTRACT.md`: `cv.md`, `config/profile.yml`, `modes/_profile.md`, `modes/_custom.md`, `article-digest.md`, `portals.yml`, `data/`, `documents/`, `reports/`, `output/`, `interview-prep/`. These are the user's private files even when the repo ships an example.
-- The **control files**: `CLAUDE.md`, `AGENTS.md`, `modes/_shared.md`, `DATA_CONTRACT.md`, `update-system.mjs`, `updater-migration-tests.mjs`, anything under `.github/`, `package.json`, `package-lock.json`, everything under `plugins-registry/`, `plugins/_*.mjs`.
+- The **user layer** defined in `docs/projet/DATA_CONTRACT.md`: `cv.md`, `config/profile.yml`, `modes/_profile.md`, `modes/_custom.md`, `article-digest.md`, `portals.yml`, `data/`, `documents/`, `reports/`, `output/`, `interview-prep/`. These are the user's private files even when the repo ships an example.
+- The **control files**: `CLAUDE.md`, `AGENTS.md`, `modes/_shared.md`, `docs/projet/DATA_CONTRACT.md`, `scripts/update-system.mjs`, `scripts/updater-migration-tests.mjs`, anything under `.github/`, `package.json`, `package-lock.json`, everything under `plugins-registry/`, `plugins/_*.mjs`.
 - Anything under `web/` (owned by a separate track).
 
 If the task cannot be completed without touching one of these, stop and explain why in your report instead of doing it.

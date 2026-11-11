@@ -1,18 +1,18 @@
 // tests/cv-latex-cjk.test.mjs — end-to-end proof that the CJK template-selection
 // + generation pipeline wires together correctly (#3554 review gap, Scott-Emberson).
 //
-// The other CJK coverage in this PR (test-all.mjs's "20a" section) checks two things
+// The other CJK coverage in this PR (scripts/test-all.mjs's "20a" section) checks two things
 // in isolation: that templates/cv-template.cjk.tex, read as a static file, contains
 // fontspec/xeCJK/\setCJKmainfont; and that validateLatexContent() makes the right
 // call against hand-built .tex strings. Neither of those actually runs
-// build-cv-latex.mjs --template=cjk with a real CJK payload, so neither proves the
+// scripts/build-cv-latex.mjs --template=cjk with a real CJK payload, so neither proves the
 // template-selection flag and the generator are actually wired together for a real
 // user — a bug in resolveTemplate()'s --template=cjk plumbing, or in how
-// build-cv-latex.mjs escapes CJK text, would pass both existing checks and still
+// scripts/build-cv-latex.mjs escapes CJK text, would pass both existing checks and still
 // break this path end to end.
 //
 // Follows the run()/pass()/fail() convention tests/cv-latex-bullet-bold.test.mjs
-// uses for the same builder (build-cv-latex.mjs has no exports to unit test
+// uses for the same builder (scripts/build-cv-latex.mjs has no exports to unit test
 // directly — CLI end-to-end is the only way in).
 import { pass, fail, ROOT, NODE, run, lastRunFailure } from './helpers.mjs';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'fs';
@@ -59,11 +59,11 @@ try {
   const output = join(dir, 'cjk.tex');
   writeFileSync(input, JSON.stringify(PAYLOAD), 'utf-8');
 
-  if (run(NODE, [join(ROOT, 'build-cv-latex.mjs'), input, output, '--template=cjk']) === null) {
+  if (run(NODE, [join(ROOT, 'scripts/build-cv-latex.mjs'), input, output, '--template=cjk']) === null) {
     const f = lastRunFailure();
-    fail(`build-cv-latex.mjs --template=cjk crashed (exit ${f?.status}) - ${(f?.stderr || '').trim().split('\n').pop()}`);
+    fail(`scripts/build-cv-latex.mjs --template=cjk crashed (exit ${f?.status}) - ${(f?.stderr || '').trim().split('\n').pop()}`);
   } else if (!existsSync(output)) {
-    fail('build-cv-latex.mjs --template=cjk exited 0 but wrote no output file');
+    fail('scripts/build-cv-latex.mjs --template=cjk exited 0 but wrote no output file');
   } else {
     const tex = readFileSync(output, 'utf-8');
 
@@ -104,7 +104,7 @@ try {
     // produced, fed through validateLatexContent() with engine='tectonic', must
     // validate clean — proof generation and validation agree end to end, not
     // just in isolation against hand-built fixtures.
-    const { validateLatexContent } = await import(new URL('../generate-latex.mjs', import.meta.url).href);
+    const { validateLatexContent } = await import(new URL('../scripts/generate-latex.mjs', import.meta.url).href);
     const { issues } = validateLatexContent(tex, false, 'tectonic');
     if (issues.length === 0) {
       pass('generated CJK .tex validates clean under validateLatexContent(engine=tectonic)');

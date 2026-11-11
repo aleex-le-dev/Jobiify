@@ -1,6 +1,6 @@
 import { pass, fail } from './helpers.mjs';
-import { extractReqId, matchInvite } from '../invite-match.mjs';
-import { extractReqNumber } from '../tracker-parse.mjs';
+import { extractReqId, matchInvite } from '../scripts/invite-match.mjs';
+import { extractReqNumber } from '../scripts/tracker-parse.mjs';
 
 const reqId = extractReqId('Req ID: JR1234');
 const row = (num, status, notes) => ({ num, company: 'Acme', role: `Engineer ${num}`, status, notes });

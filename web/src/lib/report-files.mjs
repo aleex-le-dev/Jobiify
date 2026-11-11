@@ -8,7 +8,7 @@ import path from "node:path";
 /**
  * True for a `{n}-RESERVED.md` placeholder sentinel — never a real report.
  *
- * THE definition of that convention for `web/`. `reserve-report-num.mjs` writes
+ * THE definition of that convention for `web/`. `scripts/reserve-report-num.mjs` writes
  * an empty `NNN-RESERVED.md` to claim a report number before a worker has
  * written the report; it is deleted once the real report lands (or GC'd after
  * 4h if abandoned). Two consumers must agree on what that looks like:

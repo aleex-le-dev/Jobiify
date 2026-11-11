@@ -16,7 +16,7 @@ export { ATS_SOURCES } from "@/lib/explore";
 
 /**
  * ACL for the discovery engine — orchestrates the REAL core scanner
- * `scan-ats-full.mjs` (reverse ATS discovery, a contract entry-point). We run it
+ * `scripts/scan-ats-full.mjs` (reverse ATS discovery, a contract entry-point). We run it
  * with `--dry-run` so it writes NOTHING (the user reviews + chooses), point it at
  * an EPHEMERAL filter file (never the user's portals.yml), and surface its results.
  *
@@ -109,7 +109,7 @@ function ingestJsonOffer(
   onEvent({ kind: "offer", offer });
 }
 
-/** Mirrors `parseLiveOfferLine` in scan-ats-full.mjs — keep the two in sync. */
+/** Mirrors `parseLiveOfferLine` in scripts/scan-ats-full.mjs — keep the two in sync. */
 function parseLiveOfferLine(line: string): JsonOffer | null {
   const raw = line.trim();
   const start = raw.indexOf("{");
@@ -189,7 +189,7 @@ type ScannerRun = {
 };
 
 /**
- * Run ONE scan-ats-full.mjs child over `ats`, stopped after `timeoutMs`. Live
+ * Run ONE scripts/scan-ats-full.mjs child over `ats`, stopped after `timeoutMs`. Live
  * progress is forwarded as it arrives. Offers the child surfaces while it runs
  * (live stderr lines in --json mode, the human stdout in legacy mode) go into
  * `sink`, which every child of one run shares so no offer is emitted twice. In

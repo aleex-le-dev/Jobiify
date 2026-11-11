@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * verify-portals.mjs — ATS slug validator for portals.yml.
+ * scripts/verify-portals.mjs — ATS slug validator for portals.yml.
  *
  * When an entry is added to portals.yml, its ATS slug (the path segment in
  * `careers_url`, e.g. `jobs.lever.co/<slug>`) is easy to guess wrong — and a
@@ -18,18 +18,18 @@
  * unresolved (404/wrong) slug so a quiet board isn't mistaken for a typo.
  *
  * Usage:
- *   node verify-portals.mjs                 # sweep tracked_companies + job_boards in portals.yml
- *   node verify-portals.mjs --add cursor    # probe slug variants for one name
- *   node verify-portals.mjs --strict        # exit non-zero if any slug is unresolved
- *   node verify-portals.mjs --file <path>   # use a specific portals file
- *   node verify-portals.mjs --help          # print this usage block and exit
+ *   node scripts/verify-portals.mjs                 # sweep tracked_companies + job_boards in portals.yml
+ *   node scripts/verify-portals.mjs --add cursor    # probe slug variants for one name
+ *   node scripts/verify-portals.mjs --strict        # exit non-zero if any slug is unresolved
+ *   node scripts/verify-portals.mjs --file <path>   # use a specific portals file
+ *   node scripts/verify-portals.mjs --help          # print this usage block and exit
  *
  * Network: only the sweep / --add paths hit the network. Importing the module
  * (for tests) runs nothing — main() is guarded — and all network access goes
  * through an injectable `fetchJson`, so the pure logic is testable offline.
  * `--help`/`-h` and an unrecognized flag are both handled BEFORE that network
  * work starts (#4250) — this script had never adopted `lib/cli-flags.mjs`'s
- * `validateFlags()`, unlike its siblings (audit-portals.mjs, scan.mjs), so
+ * `validateFlags()`, unlike its siblings (scripts/audit-portals.mjs, scripts/scan.mjs), so
  * `--help` fell through main()'s argument checks untouched and ran the exact
  * same full portals.yml sweep as no flags at all. On a config with ~170
  * tracked companies that is minutes of sequential network probing with zero
@@ -43,8 +43,8 @@ import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 
-import { fetchJson as defaultFetchJson, fetchTextHead as defaultFetchText, makeHttpCtx } from './providers/_http.mjs';
-import { isBlockedAddress } from './providers/_ip-guard.mjs';
+import { fetchJson as defaultFetchJson, fetchTextHead as defaultFetchText, makeHttpCtx } from '../providers/_http.mjs';
+import { isBlockedAddress } from '../providers/_ip-guard.mjs';
 
 // The portal probes are the one place that keeps following redirects: they hit
 // the ATS vendors' own hosts, and a moved board answers with a 3xx. `_http.mjs`
@@ -84,15 +84,15 @@ const followRedirects = (fetchFn) => async (url, opts = {}) => {
 };
 const probeFetchJson = followRedirects(defaultFetchJson);
 const probeFetchText = followRedirects(defaultFetchText);
-import { decodeEntities } from './providers/_html-entities.mjs';
-import { asciiFold } from './lib/ascii-fold.mjs';
-import { loadProviders, resolveProvider } from './providers/_registry.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
+import { decodeEntities } from '../providers/_html-entities.mjs';
+import { asciiFold } from '../lib/ascii-fold.mjs';
+import { loadProviders, resolveProvider } from '../providers/_registry.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { flagValue, hasFlag, validateFlags } from '../lib/cli-flags.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
-// getCareerOpsRoot() (not a bare 'portals.yml'): scan.mjs, scan-ats-full.mjs
-// and audit-portals.mjs all resolve their default portals.yml against the
+// getCareerOpsRoot() (not a bare 'portals.yml'): scripts/scan.mjs, scripts/scan-ats-full.mjs
+// and scripts/audit-portals.mjs all resolve their default portals.yml against the
 // Data Root (CAREER_OPS_ROOT / CAREER_OPS_DATA_DIR / .career-ops-data —
 // AGENTS.md's Path Resolution Override & Precedence), so this script was the
 // one place still assuming the Data Root equals the current working
@@ -103,7 +103,7 @@ const DEFAULT_PORTALS_PATH = process.env.CAREER_OPS_PORTALS || join(DATA_ROOT, '
 
 // The core providers/ directory — the SAME plugins the scanner loads. Resolved
 // from this file's location so it's independent of the caller's cwd.
-const PROVIDERS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), 'providers');
+const PROVIDERS_DIR = resolve(dirname(dirname(fileURLToPath(import.meta.url))), 'providers');
 
 // How to turn a slug into a probe URL, and where the job list lives in the
 // response, for each supported ATS. Greenhouse/Ashby wrap jobs in `{ jobs }`;
@@ -217,7 +217,7 @@ export function parseAtsSlug(url) {
  * company name and picks one, and a wrong guess costs a 404. Offering them to
  * discoverAlternates is not. That result is attached as `suggested`, and
  * `fix-slugs --fix` writes it into portals.yml with no further identity check,
- * after which scan.mjs labels the other employer's postings with this
+ * after which scripts/scan.mjs labels the other employer's postings with this
  * company's name. Pass `firstWordSuffixes: false` on any path that writes.
  *
  * The bare first word stays on both paths deliberately: many boards really are
@@ -434,7 +434,7 @@ export function boardIdentityMatches(companyName, boardName) {
  * "owned by someone else" from "could not ask": both mean unconfirmed, and an
  * unconfirmed board must not be written into portals.yml unreviewed. A missed
  * suggestion costs an operator one `--add`, where the slug is shown beside the
- * company name; a wrong one relabels another employer's postings in scan.mjs.
+ * company name; a wrong one relabels another employer's postings in scripts/scan.mjs.
  * The reason is recorded so a transient outage is not read as a mismatch.
  *
  * Every ATS in the table above publishes an owner, so all three are confirmed
@@ -559,8 +559,8 @@ const PROBE_REQUEST_BUDGET = 4;
  * not it honors `maxPages`. `wasTripped()` reports a cut-off even when the
  * provider swallowed the sentinel internally (e.g. a per-locale try/catch).
  *
- * @param {import('./providers/_types.js').Context} base
- * @returns {{ctx: import('./providers/_types.js').Context, wasTripped: () => boolean}}
+ * @param {import('../providers/_types.js').Context} base
+ * @returns {{ctx: import('../providers/_types.js').Context, wasTripped: () => boolean}}
  */
 function boundedProbeCtx(base) {
   let used = 0;
@@ -583,8 +583,8 @@ function boundedProbeCtx(base) {
  * Probe one non-ATS entry through the provider plugin the scanner would use.
  *
  * @param {object} entry - portals.yml entry (tracked_companies or job_boards).
- * @param {import('./providers/_types.js').Provider} provider
- * @param {import('./providers/_types.js').Context} baseCtx
+ * @param {import('../providers/_types.js').Provider} provider
+ * @param {import('../providers/_types.js').Context} baseCtx
  * @returns {Promise<{provider,status,jobCount?,partial?,httpStatus?,errorKind?,reason?}>}
  *   status is 'live' (postings found), 'empty' (endpoint OK, no postings), or
  *   'missing' (the board 404s/errors — the company would silently drop from
@@ -823,11 +823,11 @@ const KNOWN_FLAGS = ['--add', '--strict', '--file', '--help', '-h'];
 const VALUE_FLAGS = ['--add', '--file'];
 
 const USAGE = `Usage:
-  node verify-portals.mjs                 # sweep tracked_companies + job_boards in portals.yml
-  node verify-portals.mjs --add cursor    # probe slug variants for one name
-  node verify-portals.mjs --strict        # exit non-zero if any slug is unresolved
-  node verify-portals.mjs --file <path>   # use a specific portals file
-  node verify-portals.mjs --help          # print this usage block and exit`;
+  node scripts/verify-portals.mjs                 # sweep tracked_companies + job_boards in portals.yml
+  node scripts/verify-portals.mjs --add cursor    # probe slug variants for one name
+  node scripts/verify-portals.mjs --strict        # exit non-zero if any slug is unresolved
+  node scripts/verify-portals.mjs --file <path>   # use a specific portals file
+  node scripts/verify-portals.mjs --help          # print this usage block and exit`;
 
 async function main() {
   const args = process.argv.slice(2);
@@ -841,8 +841,8 @@ async function main() {
   // it isn't itself another flag), and a bare `--file`/`--file=` reaches
   // resolve('') — the current directory — which readFileSync() then rejects
   // with a raw EISDIR instead of a usage error (CodeRabbit, #4254 review).
-  // Same shape already fixed the same way in process-quality.mjs, doctor.mjs,
-  // detect-reposts.mjs and others.
+  // Same shape already fixed the same way in scripts/process-quality.mjs, scripts/doctor.mjs,
+  // scripts/detect-reposts.mjs and others.
   validateFlags(args, KNOWN_FLAGS, USAGE, { valueFlags: VALUE_FLAGS, requireOperand: true });
 
   const strict = hasFlag(args, '--strict');
@@ -871,12 +871,12 @@ async function main() {
   // SuccessFactors, SmartRecruiters, …) get a real reachability probe instead
   // of an un-actionable "skipped".
   const providers = await loadProviders(PROVIDERS_DIR);
-  // Fold in enabled keyed/auth-gated provider plugins, exactly as scan.mjs does
+  // Fold in enabled keyed/auth-gated provider plugins, exactly as scripts/scan.mjs does
   // — without this the verifier resolves only providers/*.mjs and disagrees
   // with the scanner on every plugin-provider entry (#4026). No-op for a
   // plugin-free install (mergeProviderPlugins returns before config/plugins.yml
   // is read when it is absent).
-  const { mergeProviderPlugins } = await import('./plugins/_engine.mjs');
+  const { mergeProviderPlugins } = await import('../plugins/_engine.mjs');
   await mergeProviderPlugins(providers, { root: dirname(PROVIDERS_DIR), dataRoot: DATA_ROOT });
   const httpCtx = makeHttpCtx();
   const { found, results } = await verifyPortalsFile(filePath, { fetchJson, providers, httpCtx });
@@ -917,7 +917,7 @@ async function main() {
   }
 }
 
-// Only run main() when invoked directly (`node verify-portals.mjs`), not when
+// Only run main() when invoked directly (`node scripts/verify-portals.mjs`), not when
 // imported by tests. `|| ''` guards `node -e` invocations with no script arg.
 if (isMainModule(import.meta.url)) {
   main().catch((err) => {

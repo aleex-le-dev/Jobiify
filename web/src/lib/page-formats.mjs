@@ -1,9 +1,9 @@
 /**
- * page-formats.mjs — the page sizes generate-pdf.mjs accepts (#2185).
+ * page-formats.mjs — the page sizes scripts/generate-pdf.mjs accepts (#2185).
  *
  * A leaf module on purpose. Both the envelope parser (which validates the format
  * the agent declares) and the render pipeline (which passes it to
- * `generate-pdf.mjs --format=`) are CONSUMERS of this contract; neither owns it.
+ * `scripts/generate-pdf.mjs --format=`) are CONSUMERS of this contract; neither owns it.
  * Keeping it here stops a pure parser from having to import the module that
  * orchestrates child processes just to learn two constants, and leaves no room
  * for an import cycle if the renderer ever needs the parser.

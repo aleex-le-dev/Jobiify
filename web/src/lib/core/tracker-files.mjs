@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-// Synchronous mirror of path-resolver.mjs for the synchronous web readers.
+// Synchronous mirror of scripts/path-resolver.mjs for the synchronous web readers.
 // tracker-files.test.mjs checks parity against the core resolver, including
 // overrides, legacy layouts, and symlinks.
 export function resolveTrackerPath(root) {

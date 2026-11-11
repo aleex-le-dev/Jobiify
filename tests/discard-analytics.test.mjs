@@ -13,7 +13,7 @@ import { pathToFileURL } from 'url';
 console.log('\ndiscard-analytics — discard log parsing + aggregation');
 
 try {
-  const mod = await import(pathToFileURL(join(ROOT, 'discard-analytics.mjs')).href);
+  const mod = await import(pathToFileURL(join(ROOT, 'scripts/discard-analytics.mjs')).href);
   const { parseDiscardLog, aggregateDiscards, renderSummary } = mod;
   const check = (label, cond) => (cond ? pass(label) : fail(label));
 

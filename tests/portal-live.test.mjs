@@ -9,7 +9,7 @@ console.log('\nportal-live — interrogation en direct de portals.yml');
 const check = (cond, ok, ko) => (cond ? pass(ok) : fail(ko));
 
 try {
-  const { fetchLive } = await import(pathToFileURL(join(ROOT, 'portal-live.mjs')).href);
+  const { fetchLive } = await import(pathToFileURL(join(ROOT, 'scripts/portal-live.mjs')).href);
 
   const providers = new Map([
     ['ok', { id: 'ok', fetch: async (e) => [

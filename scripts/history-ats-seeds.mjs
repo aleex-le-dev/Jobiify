@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'fs';
 import path from 'path';
 import { atsVendorOf } from './ats-vendor.mjs';
-import { parseScanHistoryLine } from './lib/scan-history-columns.mjs';
+import { parseScanHistoryLine } from '../lib/scan-history-columns.mjs';
 import { detectColumns, extractCellUrl, isHeaderRow, isSeparatorRow, linkedReportNumbers, reportUrlForNumbers as reportUrlFromReports } from './tracker-parse.mjs';
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
 import { resolveWorkspaceRoot } from './tracker-utils.mjs';

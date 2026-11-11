@@ -8,7 +8,7 @@
 //
 // POSIX `rename(2)` replaces the destination atomically and cannot fail that
 // way, which is why this never reproduces on Linux/macOS CI. Measured on
-// Windows 11 / Node v24.18.0: `node test-all.mjs` failed 1-2 tests per run,
+// Windows 11 / Node v24.18.0: `node scripts/test-all.mjs` failed 1-2 tests per run,
 // non-deterministically, in tracker-writer-lock-tests.mjs (now
 // tests/tracker-writer-lock.test.mjs) and set-status-tests.mjs (now
 // tests/set-status.test.mjs). Both suites pass in isolation; only the full run
@@ -33,7 +33,7 @@ import {
   renameSyncWithRetry,
   writeFileAtomic,
   RENAME_RETRY_DELAYS_MS,
-} from '../tracker-utils.mjs';
+} from '../scripts/tracker-utils.mjs';
 
 console.log('\n📝 atomic tracker writes: rename contention is contention, not death (#2777)');
 
@@ -43,7 +43,7 @@ const mkErr = (code) => Object.assign(new Error(code), { code });
 // ── 1. Classifier table ──────────────────────────────────────────────────────
 // The codes come from measured Windows failures, not speculation. EPERM is the
 // one observed here; EACCES and EBUSY are the same family already recorded for
-// mkdir/rm in pipeline-lock.mjs.
+// mkdir/rm in scripts/pipeline-lock.mjs.
 {
   for (const code of ['EPERM', 'EACCES', 'EBUSY']) {
     ok(isRenameContention(mkErr(code)) === true, `isRenameContention treats ${code} as contention`);
@@ -151,7 +151,7 @@ const mkErr = (code) => Object.assign(new Error(code), { code });
 // A bare call anywhere else reintroduces the lost write one refactor from now,
 // which is exactly how the mkdir/rm half of #2777 survived two earlier fixes.
 {
-  const src = readFileSync(join(ROOT, 'tracker-utils.mjs'), 'utf-8');
+  const src = readFileSync(join(ROOT, 'scripts/tracker-utils.mjs'), 'utf-8');
 
   // renameSync must never be INVOKED directly. It may only appear as the
   // imported name and as renameSyncWithRetry's default parameter, neither of
@@ -159,7 +159,7 @@ const mkErr = (code) => Object.assign(new Error(code), { code });
   const directCalls = [...src.matchAll(/(?<![\w.])renameSync\s*\(/g)].length;
   ok(
     directCalls === 0,
-    `tracker-utils.mjs: no direct renameSync() call remains (found ${directCalls})`,
+    `scripts/tracker-utils.mjs: no direct renameSync() call remains (found ${directCalls})`,
   );
 
   // And the atomic path routes through the injectable seam exactly once.

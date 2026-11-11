@@ -31,7 +31,7 @@ import { NOTES_START, NOTES_END, profilePath as profileMemoryPath, readProfileMe
  */
 export function careerOpsRoot(): string {
   // `process.cwd()` is `<core>/web` for `next dev`/`next start`, so its parent is
-  // the core checkout — the same directory `path-resolver.mjs` calls `__dirname`.
+  // the core checkout — the same directory `scripts/path-resolver.mjs` calls `__dirname`.
   // resolveDataRoot() needs it explicitly because relative env values and marker
   // contents resolve against it; see data-root.mjs for why that base matters.
   //
@@ -76,7 +76,7 @@ export function rootScript(nameNoExt: string): string {
   return resolveRootScript(resolveCodeRoot(process.cwd(), process.env), nameNoExt);
 }
 
-// Feature-detect the core's `tracker.mjs delete --num` row-delete (#1200) by probing
+// Feature-detect the core's `scripts/tracker.mjs delete --num` row-delete (#1200) by probing
 // the local script source — older checkouts lack it, so the delete UI hides itself.
 export function trackerCanDelete(): boolean {
   try {
@@ -157,7 +157,7 @@ export type Application = {
  * Parse data/applications.md — the tracker table (source of truth).
  * The header-aware parsing lives in tracker-table.mjs, which resolves headers
  * through the SAME alias table the Node tooling uses (tracker-aliases.json,
- * exported by tracker-parse.mjs as HEADER_ALIASES) — one shared source, no
+ * exported by scripts/tracker-parse.mjs as HEADER_ALIASES) — one shared source, no
  * web-side mirror to drift (#954, PR #1598 review). A data-only root falls back
  * to the running system checkout for that system-layer alias table.
  */
@@ -220,7 +220,7 @@ export async function pdfPathStatusForReport(n: string): Promise<PdfPathForRepor
   const entry = pdfIndexEntryForReport(tsv, target);
   if (!entry.found) return { status: "not-found" };
   if (!entry.path) return { status: "rejected" };
-  // The manifest is a user-layer file (generate-pdf.mjs writes it, but nothing
+  // The manifest is a user-layer file (scripts/generate-pdf.mjs writes it, but nothing
   // stops a hand edit) turned into a filesystem read that this route then
   // serves — the path must be contained BY CONSTRUCTION, not by trusting the
   // writer. Rows are written relative to the WORKSPACE root (careerOpsRoot()),
@@ -245,13 +245,13 @@ export async function pdfPathForReport(n: string): Promise<string | null> {
 
 /**
  * Server-side lifecycle of the user's setup — mirrors the prerequisite list that
- * doctor.mjs uses (cv.md, config/profile.yml, modes/_profile.md, portals.yml), by
+ * scripts/doctor.mjs uses (cv.md, config/profile.yml, modes/_profile.md, portals.yml), by
  * plain file-stat (no subprocess). Drives the home branch: first-run (no CV) →
  * the CV takeover; in-between (CV but no profile) → gentle nudges; established.
  */
 export type LifecyclePhase = "first-run" | "in-between" | "established";
 /**
- * Server-side lifecycle, mirroring the core doctor.mjs prerequisite list with the
+ * Server-side lifecycle, mirroring the core scripts/doctor.mjs prerequisite list with the
  * SAME existsSync semantics (the SSOT the OnboardingBanner already reads via
  * /api/doctor). The 4 user-layer prereqs: cv.md, config/profile.yml,
  * modes/_profile.md, portals.yml (or CAREER_OPS_PORTALS).
@@ -260,7 +260,7 @@ export type LifecyclePhase = "first-run" | "in-between" | "established";
  *     already has data (a full pipeline/tracker with no cv.md is valid).
  *   - in-between → has cv/data but setup incomplete: dashboard + the nudge banner.
  *   - established → all 4 prereqs present.
- * onboardingNeeded mirrors doctor.mjs: true if ANY prereq is missing → show banner.
+ * onboardingNeeded mirrors scripts/doctor.mjs: true if ANY prereq is missing → show banner.
  */
 /** Absolute portals.yml path: CAREER_OPS_PORTALS when set, else <root>/portals.yml. */
 export function portalsConfigPath(root = careerOpsRoot(), env: NodeJS.ProcessEnv = process.env): string {
@@ -283,8 +283,8 @@ export function doctorState(snapshot?: Pick<PipelineSummary, "applications" | "i
       return false;
     }
   };
-  // Keep this list shaped like doctor.mjs USER_LAYER_PREREQS so the #2369
-  // freeze in test-all.mjs can grep the paths. portals.yml alone resolves
+  // Keep this list shaped like scripts/doctor.mjs USER_LAYER_PREREQS so the #2369
+  // freeze in scripts/test-all.mjs can grep the paths. portals.yml alone resolves
   // through portalsConfigPath (CAREER_OPS_PORTALS when set).
   const prereqs = [
     ["cv.md", "cv.md"],
@@ -346,7 +346,7 @@ export type ReportData = { content: string; file: string };
  *
  *  Both the linked lookup and the fallback scan skip `{n}-RESERVED.md`
  *  placeholder files.
- *  `reserve-report-num.mjs` writes an empty `NNN-RESERVED.md` sentinel to
+ *  `scripts/reserve-report-num.mjs` writes an empty `NNN-RESERVED.md` sentinel to
  *  claim a report number before a worker has actually written the report;
  *  it's normally deleted once the real report lands (or GC'd after 4h if
  *  abandoned). But "RESERVED" sorts alphabetically before nearly every real
@@ -578,7 +578,7 @@ export function readLanguageConfig(): LanguageConfig {
         };
         // The first declared entry is primary. Do not filter it away and
         // silently promote a later market into the evaluation slot. This
-        // mirrors gemini-eval.mjs: invalid primary -> default modes, while
+        // mirrors scripts/gemini-eval.mjs: invalid primary -> default modes, while
         // valid secondary markets remain available as shared context.
         const primary = resolveDeclaredDir(rawCandidates[0]);
         const extras = rawCandidates.slice(1).map(resolveDeclaredDir).filter(

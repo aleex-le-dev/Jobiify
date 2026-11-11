@@ -1,8 +1,8 @@
-// tests/contacts-vcf-data-root.test.mjs — contacts.mjs --vcf measures its write
+// tests/contacts-vcf-data-root.test.mjs — scripts/contacts.mjs --vcf measures its write
 // guard against the data root, the same root it reads contacts from and
 // defaults its output into.
 //
-// contacts.mjs resolves three things:
+// scripts/contacts.mjs resolves three things:
 //
 //   CONTACTS_PATH = join(DATA_ROOT, 'data/contacts.tsv')    (read)
 //   DEFAULT_VCF   = join(DATA_ROOT, 'output/contacts.vcf')  (default target)
@@ -26,7 +26,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ROOT, rmSync } from './helpers.mjs';
 
-const SCRIPT = join(ROOT, 'contacts.mjs');
+const SCRIPT = join(ROOT, 'scripts/contacts.mjs');
 
 const CONTACT = [
   'Jane Doe', 'Acme', 'recruiter', 'Talent Partner', '', 'jane@acme.example', '', '-', 'met at screen',

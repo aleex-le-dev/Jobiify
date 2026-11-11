@@ -92,4 +92,4 @@ This exercises layout, pagination, and ATS assertions without comparing or
 updating committed PNGs. Native fonts and rasterizers can still alter geometry
 or page counts, so investigate differences in the canonical container before
 changing the expected result. A native smoke check does not replace the Linux
-snapshot gate or the full `node test-all.mjs` contribution gate.
+snapshot gate or the full `node scripts/test-all.mjs` contribution gate.

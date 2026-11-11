@@ -88,7 +88,7 @@ npm run build        # production build
 
 Set `CAREER_OPS_ROOT=/path/to/checkout` in `web/.env.local` to point the app at
 a different career-ops directory (useful for testing against sample data).
-Root scripts such as `doctor.mjs` run from the checkout that holds `web/`, not
+Root scripts such as `scripts/doctor.mjs` run from the checkout that holds `web/`, not
 from `CAREER_OPS_ROOT`; set `CAREER_OPS_CODE_ROOT` when the app runs outside it.
 
 Every route but build assets is gated by the same-origin + loopback guard in
@@ -196,7 +196,7 @@ Suites live in `web/tests/`, mirroring the path of what they test under
 `tests/lib/clean-chips.test.mjs`. Name the file `{module}.test.mjs`.
 
 Root-level scripts are the one exception: `server.mjs` is tested by
-`tests/lib/server-launcher.test.mjs`, because `test-all.mjs`'s parity check gates
+`tests/lib/server-launcher.test.mjs`, because `scripts/test-all.mjs`'s parity check gates
 only `web/tests/lib/` and a suite outside it would never run in the required check.
 
 `npm test` discovers them with a glob (`tests/**/*.test.mjs`), so a new suite

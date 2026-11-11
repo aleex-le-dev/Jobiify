@@ -3,7 +3,7 @@
 //
 // batch/ is where the batch workers write their output: tailored CV and
 // cover-letter JSON, prefetched job-description text, per-run state. That is
-// user-layer content by DATA_CONTRACT.md's definition even though the scripts
+// user-layer content by docs/projet/DATA_CONTRACT.md's definition even though the scripts
 // that produce it are system layer, and .github/workflows/no-user-data.yml had
 // no pattern for it — a staged batch/cv-*.json passed the guard and printed
 // "OK". .gitignore stops the accident; this guard is the layer that stops a
@@ -15,7 +15,7 @@
 // would wall off every edit to batch-runner.sh; exempting without the block
 // would restore the original hole.
 //
-// The guard also has to keep pace with update-system.mjs's USER_PATHS: a
+// The guard also has to keep pace with scripts/update-system.mjs's USER_PATHS: a
 // user-layer path added there and not here (documents/, modes/_brief.md —
 // #4891) is private data the guard waves through. The last test below fails
 // the moment the two lists drift, unless the gap is allowlisted with a reason.
@@ -32,7 +32,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { USER_PATHS } from '../update-system.mjs';
+import { USER_PATHS } from '../scripts/update-system.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const WORKFLOW = '.github/workflows/no-user-data.yml';
@@ -181,7 +181,7 @@ test('the guard exempts every tracked source under batch/', () => {
   );
 });
 
-// update-system.mjs USER_PATHS entries the guard deliberately does not block.
+// scripts/update-system.mjs USER_PATHS entries the guard deliberately does not block.
 // Each one needs a reason; an entry here that leaves USER_PATHS fails below.
 const NOT_GUARDED = new Map([
   ['voice-dna.md', 'ships as a populated system default, so edits to it are legit'],
@@ -189,11 +189,11 @@ const NOT_GUARDED = new Map([
   ['.claude/hooks/', 'project harness config, not gitignored, may legitimately be committed'],
 ]);
 
-test('the guard blocks every update-system.mjs user-layer path not allowlisted', () => {
+test('the guard blocks every scripts/update-system.mjs user-layer path not allowlisted', () => {
   const isBlocked = loadGuard();
 
   const stale = [...NOT_GUARDED.keys()].filter((p) => !USER_PATHS.includes(p));
-  assert.deepEqual(stale, [], `NOT_GUARDED names paths update-system.mjs no longer lists: ${stale.join(', ')}`);
+  assert.deepEqual(stale, [], `NOT_GUARDED names paths scripts/update-system.mjs no longer lists: ${stale.join(', ')}`);
 
   // A directory entry is probed with a file under it, since the guard sees
   // file paths from listFiles, never bare directories.
@@ -203,7 +203,7 @@ test('the guard blocks every update-system.mjs user-layer path not allowlisted',
   assert.deepEqual(
     unguarded,
     [],
-    `update-system.mjs USER_PATHS entries the no-user-data guard lets through — add them to ` +
+    `scripts/update-system.mjs USER_PATHS entries the no-user-data guard lets through — add them to ` +
       `${WORKFLOW} or to NOT_GUARDED with a reason: ${unguarded.join(', ')}`,
   );
 });

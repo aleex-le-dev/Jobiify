@@ -27,7 +27,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { pass, fail } from './helpers.mjs';
-import { gitIn, isGeneratedTemplateArtifact, staleSystemFiles, locallyModifiedSystemFiles } from '../update-system.mjs';
+import { gitIn, isGeneratedTemplateArtifact, staleSystemFiles, locallyModifiedSystemFiles } from '../scripts/update-system.mjs';
 
 console.log('\n🧪 Testing generated-template-artifact carve-out (#3636)...');
 

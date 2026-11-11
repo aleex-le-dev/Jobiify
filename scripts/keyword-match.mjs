@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * keyword-match.mjs — ATS keyword coverage check for career-ops
+ * scripts/keyword-match.mjs — ATS keyword coverage check for career-ops
  *
  * Closes the evaluation loop: given a report's keyword section (`## Keywords
  * extracted`, or the translated heading a localized evaluation mode writes) and
@@ -10,18 +10,18 @@
  * DIAGNOSTIC ONLY. Never edits the CV or injects keywords. Upholds the project
  * rule: "Keywords get reformulated, never fabricated" (modes/_shared.md).
  *
- * Run: node keyword-match.mjs <report-file>             (markdown block to stdout)
- *      node keyword-match.mjs <report-file> --cv <path>  (override CV; .html is
+ * Run: node scripts/keyword-match.mjs <report-file>             (markdown block to stdout)
+ *      node scripts/keyword-match.mjs <report-file> --cv <path>  (override CV; .html is
  *                                                         text-extracted first —
  *                                                         use the tailored CV to
  *                                                         verify the sent document)
- *      node keyword-match.mjs <report-file> --json        (structured JSON)
- *      node keyword-match.mjs --self-test                 (built-in assertions)
+ *      node scripts/keyword-match.mjs <report-file> --json        (structured JSON)
+ *      node scripts/keyword-match.mjs --self-test                 (built-in assertions)
  */
 
 import { readFileSync, existsSync, statSync  } from 'fs';
 import { join, isAbsolute, basename } from 'path';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { extractSkills } from './skill-extract.mjs';
 
@@ -177,7 +177,7 @@ export function analyzeCoverage(keywords, cvText) {
  * tailored CV exited 1 on every one of them.
  *
  * Each title is copied from the mode that writes it, never translated here, the
- * sourcing rule ARCHETYPE_LABELS in analyze-patterns.mjs follows. A title stays
+ * sourcing rule ARCHETYPE_LABELS in scripts/analyze-patterns.mjs follows. A title stays
  * after its mode changes, because reports already on disk carry it.
  * tests/keyword-match-localized-headings.test.mjs reads every evaluation mode
  * and fails on a keyword heading that is missing here.
@@ -207,7 +207,7 @@ export const KEYWORDS_HEADINGS = [
  * Comparison key for a heading title: case, runs of whitespace and Latin or
  * Cyrillic accents are ignored. Accents matter in practice: modes/fr/offre.md
  * writes `Mots-cles`, which French spells with an accent that agents restore
- * (analyze-patterns.mjs meets the same slip as `Archétype`), and Russian is
+ * (scripts/analyze-patterns.mjs meets the same slip as `Archétype`), and Russian is
  * often typed with `е` for `ё`. Only U+0300–U+036F is removed after NFD;
  * Devanagari vowel signs and Hangul jamo lie outside that block, so those
  * titles still compare exactly.
@@ -350,7 +350,7 @@ export function formatCoverageMarkdown(result, sourceLabel, keywordNote) {
 
 /**
  * Built-in deterministic assertions (no I/O, no network). Exits 0 on success,
- * 1 on failure. Used by CI via `node keyword-match.mjs --self-test`.
+ * 1 on failure. Used by CI via `node scripts/keyword-match.mjs --self-test`.
  */
 function runSelfTest() {
   const cv = [
@@ -429,7 +429,7 @@ if (isMainModule(import.meta.url)) {
     }
 
     if (!reportArg) {
-      console.error('Usage: node keyword-match.mjs <report-file> [--cv <path>] [--json]');
+      console.error('Usage: node scripts/keyword-match.mjs <report-file> [--cv <path>] [--json]');
       process.exit(1);
     }
 

@@ -10,7 +10,7 @@ if (process.platform === 'win32') {
 }
 
 /**
- * gemini-eval.mjs — Gemini-powered Job Offer Evaluator for career-ops
+ * scripts/gemini-eval.mjs — Gemini-powered Job Offer Evaluator for career-ops
  *
  * A free-tier alternative to the Claude-based pipeline.
  * Reads evaluation logic from modes/oferta.md + modes/_shared.md,
@@ -18,9 +18,9 @@ if (process.platform === 'win32') {
  * passed as a command-line argument.
  *
  * Usage:
- *   node gemini-eval.mjs "Paste full JD text here"
- *   node gemini-eval.mjs --file ./jds/my-job.txt
- *   node gemini-eval.mjs --posting-url https://acme.com/jobs/42 --file ./jds/my-job.txt
+ *   node scripts/gemini-eval.mjs "Paste full JD text here"
+ *   node scripts/gemini-eval.mjs --file ./jds/my-job.txt
+ *   node scripts/gemini-eval.mjs --posting-url https://acme.com/jobs/42 --file ./jds/my-job.txt
  *
  * Requires:
  *   GEMINI_API_KEY in .env (or environment variable)
@@ -45,10 +45,10 @@ if (process.platform === 'win32') {
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname, resolve, relative, isAbsolute } from 'path';
 import { fileURLToPath } from 'url';
-import { TokenAccumulator, formatBreakdown } from './utils/token-tracker.mjs';
+import { TokenAccumulator, formatBreakdown } from '../utils/token-tracker.mjs';
 import {
   isPostingUrl, normalizedTrackerScore, slugifyCompany, tsvSafe,
-} from './lib/tracker-addition.mjs';
+} from '../lib/tracker-addition.mjs';
 
 const tracker = new TokenAccumulator();
 tracker.recordZeroToken('scan');
@@ -58,7 +58,7 @@ import { outputLanguageInstruction, parseOutputLanguage } from './profile-langua
 import {
   formatReportNumber, releaseReportNumbers, reserveReportNumbers,
 } from './reserve-report-num.mjs';
-import { buildBudgetedPrompt } from './lib/context-budget.mjs';
+import { buildBudgetedPrompt } from '../lib/context-budget.mjs';
 import * as yaml from 'js-yaml';
 
 // ---------------------------------------------------------------------------
@@ -77,10 +77,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 // Paths
 // ---------------------------------------------------------------------------
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
-import { localToday } from './lib/local-today.mjs';
+import { localToday } from '../lib/local-today.mjs';
 import { TSV_ADDITION_HEADER } from './tracker-parse.mjs';
 
-const CODE_ROOT = dirname(fileURLToPath(import.meta.url));
+const CODE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 
 const PATHS = {
@@ -195,9 +195,9 @@ if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
   Evaluate a job offer using Google Gemini instead of Claude.
 
   USAGE
-    node gemini-eval.mjs "<JD text>"
-    node gemini-eval.mjs --file ./jds/my-job.txt
-    node gemini-eval.mjs --model gemini-3.6-flash "<JD text>"
+    node scripts/gemini-eval.mjs "<JD text>"
+    node scripts/gemini-eval.mjs --file ./jds/my-job.txt
+    node scripts/gemini-eval.mjs --model gemini-3.6-flash "<JD text>"
 
   OPTIONS
     --file <path>    Read JD from a file instead of inline text
@@ -215,10 +215,10 @@ if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
     3. Run: npm install   (installs @google/generative-ai + dotenv)
 
   EXAMPLES
-    node gemini-eval.mjs "We are looking for a Senior AI Engineer..."
-    node gemini-eval.mjs --file ./jds/openai-swe.txt
-    node gemini-eval.mjs --posting-url https://acme.com/jobs/42 --file ./jds/openai-swe.txt
-    node gemini-eval.mjs --context-only --file ./jds/openai-swe.txt  # print context budget without calling Gemini
+    node scripts/gemini-eval.mjs "We are looking for a Senior AI Engineer..."
+    node scripts/gemini-eval.mjs --file ./jds/openai-swe.txt
+    node scripts/gemini-eval.mjs --posting-url https://acme.com/jobs/42 --file ./jds/openai-swe.txt
+    node scripts/gemini-eval.mjs --context-only --file ./jds/openai-swe.txt  # print context budget without calling Gemini
 `);
   process.exit(0);
 }
@@ -588,7 +588,7 @@ ${evaluationText.replace(/---SCORE_SUMMARY---[\s\S]*?---END_SUMMARY---/, '').tri
         'Gemini evaluation',
       ];
       // Optional `url` column, appended only when there is a real URL to put in
-      // it. merge-tracker.mjs matches on the URL FIRST -- the one tier that can
+      // it. scripts/merge-tracker.mjs matches on the URL FIRST -- the one tier that can
       // prove two same-title rows are different openings -- so writing it here
       // puts the row on that tier at merge time instead of leaving it to a
       // later `--backfill-urls`. Label and value are appended together: the
@@ -610,7 +610,7 @@ ${evaluationText.replace(/---SCORE_SUMMARY---[\s\S]*?---END_SUMMARY---/, '').tri
 
     if (reportSaved) {
       try {
-        const mergeOutput = execFileSync(process.execPath, [join(CODE_ROOT, 'merge-tracker.mjs')], {
+        const mergeOutput = execFileSync(process.execPath, [join(CODE_ROOT, 'scripts/merge-tracker.mjs')], {
           cwd: CODE_ROOT,
           encoding: 'utf-8',
           stdio: ['ignore', 'pipe', 'pipe'],

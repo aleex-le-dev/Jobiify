@@ -1,23 +1,23 @@
 #!/usr/bin/env node
 
 /**
- * portal-live.mjs — interroge EN DIRECT tous les portails de portals.yml
- * (tracked_companies + job_boards) via la même couche de providers que scan.mjs,
+ * scripts/portal-live.mjs — interroge EN DIRECT tous les portails de portals.yml
+ * (tracked_companies + job_boards) via la même couche de providers que scripts/scan.mjs,
  * et imprime TOUTES les offres actuelles en JSON sur stdout.
  *
- * Différences avec scan.mjs, voulues pour l'Explorer web :
+ * Différences avec scripts/scan.mjs, voulues pour l'Explorer web :
  *   - aucune écriture (ni pipeline.md, ni scan-history.tsv) ;
  *   - aucune déduplication contre l'historique : une offre déjà vue reste visible ;
  *   - aucun filtre titre/lieu : l'appelant applique les filtres du profil et la
  *     zone de trajet (une seule règle côté web, voir web/src/lib/core/zone.ts).
  *
- * `local-parser` est ignoré (comme audit-portals.mjs) : ce script ne lance
+ * `local-parser` est ignoré (comme scripts/audit-portals.mjs) : ce script ne lance
  * jamais de commande configurée dans un fichier portals.
  *
  * Usage :
- *   node portal-live.mjs                 # portals.yml de la racine de données
- *   node portal-live.mjs --portals f.yml # autre fichier
- *   node portal-live.mjs --concurrency 6
+ *   node scripts/portal-live.mjs                 # portals.yml de la racine de données
+ *   node scripts/portal-live.mjs --portals f.yml # autre fichier
+ *   node scripts/portal-live.mjs --concurrency 6
  *
  * Sortie : {"version":"jobiify.portal-live@1","offers":[{company,title,url,location,postedAt,source,category?,portal}],"errors":[{name,error}]}
  */
@@ -27,13 +27,13 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 
-import { makeHttpCtx } from './providers/_http.mjs';
-import { loadProviders, resolveProvider } from './providers/_registry.mjs';
-import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
+import { makeHttpCtx } from '../providers/_http.mjs';
+import { loadProviders, resolveProvider } from '../providers/_registry.mjs';
+import { flagValue, hasFlag, validateFlags } from '../lib/cli-flags.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
-const CODE_ROOT = dirname(fileURLToPath(import.meta.url));
+const CODE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const PROVIDERS_DIR = join(CODE_ROOT, 'providers');
 
 /** @param {unknown} v */
@@ -96,10 +96,10 @@ export async function fetchLive(entries, { providers, httpCtx = null, concurrenc
 async function main() {
   const args = process.argv.slice(2);
   validateFlags(args, ['--portals', '--concurrency', '--help', '-h'],
-    'Usage: node portal-live.mjs [--portals <file>] [--concurrency <n>]',
+    'Usage: node scripts/portal-live.mjs [--portals <file>] [--concurrency <n>]',
     { valueFlags: ['--portals', '--concurrency'], requireOperand: true });
   if (hasFlag(args, '--help') || hasFlag(args, '-h')) {
-    console.log('Usage: node portal-live.mjs [--portals <file>] [--concurrency <n>]\nPrints every live posting of portals.yml as JSON (no writes, no dedup, no filters).');
+    console.log('Usage: node scripts/portal-live.mjs [--portals <file>] [--concurrency <n>]\nPrints every live posting of portals.yml as JSON (no writes, no dedup, no filters).');
     return;
   }
   const portalsPath = flagValue(args, '--portals') || process.env.CAREER_OPS_PORTALS || join(getCareerOpsRoot(), 'portals.yml');

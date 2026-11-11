@@ -1,5 +1,5 @@
 // doctorState must look for portals where the scanner does: CAREER_OPS_PORTALS
-// when set, otherwise <root>/portals.yml. doctor.mjs gained that in #5166; the
+// when set, otherwise <root>/portals.yml. scripts/doctor.mjs gained that in #5166; the
 // web onboarding banner still only checked the default path.
 //
 // Run: npm test -- tests/lib/doctor-state-portals.test.mjs

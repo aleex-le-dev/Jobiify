@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * ollama-eval.mjs — Ollama-powered Job Offer Evaluator for career-ops
+ * scripts/ollama-eval.mjs — Ollama-powered Job Offer Evaluator for career-ops
  *
  * Local, free, private alternative to the Claude-based pipeline.
  * Reads evaluation logic from modes/oferta.md + modes/_shared.md,
@@ -8,9 +8,9 @@
  * passed as a CLI argument or file.
  *
  * Usage:
- *   node ollama-eval.mjs "Paste full JD text here"
- *   node ollama-eval.mjs --file ./jds/my-job.txt
- *   node ollama-eval.mjs --model qwen2.5:72b --file ./jds/my-job.txt
+ *   node scripts/ollama-eval.mjs "Paste full JD text here"
+ *   node scripts/ollama-eval.mjs --file ./jds/my-job.txt
+ *   node scripts/ollama-eval.mjs --model qwen2.5:72b --file ./jds/my-job.txt
  *
  * Requires:
  *   Ollama running locally — https://ollama.com
@@ -26,17 +26,17 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { localToday } from './lib/local-today.mjs';
+import { localToday } from '../lib/local-today.mjs';
 import { TSV_ADDITION_HEADER } from './tracker-parse.mjs';
 import { outputLanguageInstruction, parseOutputLanguage } from './profile-language.mjs';
 import {
   formatReportNumber, releaseReportNumbers, reserveReportNumbers,
 } from './reserve-report-num.mjs';
-import { TokenAccumulator, formatBreakdown, normalizeOpenAIUsage } from './utils/token-tracker.mjs';
-import { buildBudgetedPrompt } from './lib/context-budget.mjs';
+import { TokenAccumulator, formatBreakdown, normalizeOpenAIUsage } from '../utils/token-tracker.mjs';
+import { buildBudgetedPrompt } from '../lib/context-budget.mjs';
 import {
   isPostingUrl, normalizedTrackerScore, slugifyCompany, tsvSafe,
-} from './lib/tracker-addition.mjs';
+} from '../lib/tracker-addition.mjs';
 
 const tracker = new TokenAccumulator();
 tracker.recordZeroToken('scan');
@@ -47,7 +47,7 @@ try {
   config();
 } catch { /* dotenv optional */ }
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 
 // ---------------------------------------------------------------------------
@@ -60,7 +60,7 @@ const PATHS = {
   profile: join(DATA_ROOT, 'modes', '_profile.md'),
   profileYml: join(DATA_ROOT, 'config', 'profile.yml'),
   reports: join(DATA_ROOT, 'reports'),
-  // CAREER_OPS_ADDITIONS mirrors merge-tracker.mjs:43. Writing under DATA_ROOT
+  // CAREER_OPS_ADDITIONS mirrors scripts/merge-tracker.mjs:43. Writing under DATA_ROOT
   // regardless would drop the addition somewhere the merge it instructs never
   // looks, so the evaluation would sit there unread.
   trackerAdditions: process.env.CAREER_OPS_ADDITIONS
@@ -82,9 +82,9 @@ if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
   Evaluate a job offer using a local Ollama model instead of Claude.
 
   USAGE
-    node ollama-eval.mjs "<JD text>"
-    node ollama-eval.mjs --file ./jds/my-job.txt
-    node ollama-eval.mjs --model qwen2.5:72b "<JD text>"
+    node scripts/ollama-eval.mjs "<JD text>"
+    node scripts/ollama-eval.mjs --file ./jds/my-job.txt
+    node scripts/ollama-eval.mjs --model qwen2.5:72b "<JD text>"
 
   OPTIONS
     --file <path>    Read JD from a file instead of inline text
@@ -102,9 +102,9 @@ if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
     4. Run this script
 
   EXAMPLES
-    node ollama-eval.mjs "We are looking for a Senior AI Engineer..."
-    node ollama-eval.mjs --file ./jds/openai-swe.txt
-    OLLAMA_MODEL=mistral-nemo node ollama-eval.mjs --file ./jds/job.txt
+    node scripts/ollama-eval.mjs "We are looking for a Senior AI Engineer..."
+    node scripts/ollama-eval.mjs --file ./jds/openai-swe.txt
+    OLLAMA_MODEL=mistral-nemo node scripts/ollama-eval.mjs --file ./jds/job.txt
 `);
   process.exit(0);
 }
@@ -158,7 +158,7 @@ if (!jdText) {
 
 // A posting URL is the tracker's deterministic dedup key, so it is taken only in
 // a form that can actually become one. Parsed, not prefix-matched: `https://`
-// satisfies a prefix test and merge-tracker.mjs:697 would then classify it as
+// satisfies a prefix test and scripts/merge-tracker.mjs:697 would then classify it as
 // the URL extra, but normalizeUrl yields no key for it -- so it would sit in the
 // URL column looking like a key while deduping nothing. A placeholder written
 // there would be worse still, handing every such row the same key.
@@ -207,7 +207,7 @@ function readFile(path, label) {
 
    If you intentionally want to use a remote endpoint (e.g. tunnelled
    Ollama on a home server), set:
-     OLLAMA_ALLOW_REMOTE=1 node ollama-eval.mjs ...
+     OLLAMA_ALLOW_REMOTE=1 node scripts/ollama-eval.mjs ...
 `);
     process.exit(1);
   }
@@ -482,7 +482,7 @@ ${evaluationText.replace(/---SCORE_SUMMARY---[\s\S]*?---END_SUMMARY---/, '').tri
 
     // AGENTS.md Pipeline Integrity rule 1: never hand the user a row to paste
     // into data/applications.md. Evaluations persist as a tracker addition and
-    // merge-tracker.mjs applies dedup, status validation, report-link
+    // scripts/merge-tracker.mjs applies dedup, status validation, report-link
     // normalization and the tracker lock. A pasted literal skipped all of that,
     // and at 8 cells it was also silently dropped by every reader's width guard.
     // Field order is the TSV contract's -- status BEFORE score; merge-tracker
@@ -514,7 +514,7 @@ ${evaluationText.replace(/---SCORE_SUMMARY---[\s\S]*?---END_SUMMARY---/, '').tri
       'utf-8',
     );
     console.log(`\n📊  Tracker addition saved: batch/tracker-additions/${additionName}`);
-    console.log('    Run `node merge-tracker.mjs` to merge it into the tracker.');
+    console.log('    Run `node scripts/merge-tracker.mjs` to merge it into the tracker.');
   } catch (err) {
     console.warn(`⚠️   Could not save report: ${err.message}`);
   } finally {

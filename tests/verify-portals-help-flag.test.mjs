@@ -1,16 +1,16 @@
-// tests/verify-portals-help-flag.test.mjs — verify-portals.mjs must not run
+// tests/verify-portals-help-flag.test.mjs — scripts/verify-portals.mjs must not run
 // a live sweep on --help or on an unrecognized flag (#4250).
 //
-// Before this fix, `node verify-portals.mjs --help` never looked at --help
+// Before this fix, `node scripts/verify-portals.mjs --help` never looked at --help
 // at all: main() hand-rolled its argument parsing with args.indexOf() and
 // had no --help/-h check anywhere, so it fell straight through into the same
 // full portals.yml sweep as no flags at all. On a config with ~170 tracked
 // companies that is minutes of sequential network probing with zero output
-// until it finishes — reported as "verify-portals.mjs hangs with no output
+// until it finishes — reported as "scripts/verify-portals.mjs hangs with no output
 // on Windows", with the specific clue that --help "behaves the same [as no
-// args]". Same failure class already fixed identically in scan.mjs (#2270,
-// see tests/scan-help-flag.test.mjs), scan-ats-full.mjs (#1633/#1635),
-// reply-watch.mjs (#2743/#2745) and dedup-tracker.mjs (#2744/#2746), now
+// args]". Same failure class already fixed identically in scripts/scan.mjs (#2270,
+// see tests/scan-help-flag.test.mjs), scripts/scan-ats-full.mjs (#1633/#1635),
+// scripts/reply-watch.mjs (#2743/#2745) and scripts/dedup-tracker.mjs (#2744/#2746), now
 // shared via lib/cli-flags.mjs's validateFlags() (#2775).
 //
 // HERMETIC: every run pins CAREER_OPS_PORTALS at ENV_PORTALS, a path that
@@ -60,14 +60,14 @@ after(() => {
 });
 
 function runVerify(...args) {
-  const r = spawnSync(process.execPath, [join(ROOT, 'verify-portals.mjs'), ...args], {
+  const r = spawnSync(process.execPath, [join(ROOT, 'scripts/verify-portals.mjs'), ...args], {
     cwd: ROOT,
     encoding: 'utf-8',
     timeout: 30_000,
     env: { ...process.env, CAREER_OPS_PORTALS: ENV_PORTALS },
   });
-  assert.equal(r.error, undefined, `verify-portals.mjs failed to spawn: ${r.error?.message}`);
-  assert.equal(r.signal, null, `verify-portals.mjs was killed by ${r.signal} (timeout?)`);
+  assert.equal(r.error, undefined, `scripts/verify-portals.mjs failed to spawn: ${r.error?.message}`);
+  assert.equal(r.signal, null, `scripts/verify-portals.mjs was killed by ${r.signal} (timeout?)`);
   return { ...r, all: `${r.stdout ?? ''}${r.stderr ?? ''}` };
 }
 
@@ -75,7 +75,7 @@ test('--help prints usage and exits 0, without reaching the portals check', () =
   const r = runVerify('--help');
   assert.equal(r.status, 0, `expected exit 0, got ${r.status}: ${r.all}`);
   assert.match(r.stdout, /Usage:/);
-  assert.match(r.stdout, /node verify-portals\.mjs/);
+  assert.match(r.stdout, /node scripts\/verify-portals\.mjs/);
   assert.doesNotMatch(r.all, NOTHING_TO_VERIFY, '--help must exit before any sweep logic runs');
 });
 

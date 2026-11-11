@@ -1,9 +1,9 @@
 /**
- * tracker-utils.mjs — shared helpers for rewriting `data/applications.md` rows.
+ * scripts/tracker-utils.mjs — shared helpers for rewriting `data/applications.md` rows.
  *
  * The tracker is a markdown table that several scripts mutate in place
- * (`dedup-tracker.mjs`, `normalize-statuses.mjs`, `merge-tracker.mjs`,
- * `set-status.mjs`). Keeping the row-rewrite, path-resolution, locking, and
+ * (`scripts/dedup-tracker.mjs`, `scripts/normalize-statuses.mjs`, `scripts/merge-tracker.mjs`,
+ * `scripts/set-status.mjs`). Keeping the row-rewrite, path-resolution, locking, and
  * atomic-write logic here means a fix lands once instead of drifting between
  * copies — and every writer excludes every other writer through the same lock.
  */
@@ -13,7 +13,7 @@ import { join, dirname, basename, resolve, relative, isAbsolute, sep } from 'pat
 import { createHash, randomUUID } from 'crypto';
 import { tmpdir } from 'os';
 import * as yaml from 'js-yaml';
-// One definition for both locks: this module and pipeline-lock.mjs implement
+// One definition for both locks: this module and scripts/pipeline-lock.mjs implement
 // the same directory-lock protocol on purpose, and #2777 showed how the two
 // copies drift — pipeline-lock learned that Windows answers mkdir/rm with
 // EPERM/EACCES/EBUSY under contention while this file still treated anything
@@ -57,8 +57,8 @@ export function rebuildRow(parts) {
 
 /**
  * The ONE rule for "this Report cell links to a report that is not on disk",
- * shared by verify-pipeline.mjs (Check 3), merge-tracker.mjs (merge-time
- * warning, #4748) and fix-report-links.mjs (#4750) so the three can never
+ * shared by scripts/verify-pipeline.mjs (Check 3), scripts/merge-tracker.mjs (merge-time
+ * warning, #4748) and scripts/fix-report-links.mjs (#4750) so the three can never
  * disagree about which rows are broken.
  *
  * The link is the first markdown `](target)` in the cell. It resolves when it
@@ -126,7 +126,7 @@ export function normalizeCompany(name) {
 // legitimately carry more than one ("Acme Holdings Inc." → "acme holdings").
 // These are unambiguous enough that removing several in a row is safe.
 //
-// Shared by invite-match.mjs's normalizeCompanyName() (which chain-strips them)
+// Shared by scripts/invite-match.mjs's normalizeCompanyName() (which chain-strips them)
 // and companiesMatchIgnoringCorporateForm() below (which accepts them as a
 // corporate-form tail). Exported so both read one vocabulary: a private second
 // copy is exactly the identity drift #2445 set out to remove. International
@@ -203,7 +203,7 @@ export const MIN_STEM_CHARS = 3;
  * neither of those is a prefix of the other. It also means an extra token that
  * is NOT a corporate form ("Acme Robotics") still reads as a different
  * employer, which is the conservative direction: over-merging is unrecoverable
- * here (dedup-tracker.mjs drops the losing line, and applications.md is
+ * here (scripts/dedup-tracker.mjs drops the losing line, and applications.md is
  * gitignored with no backup), while under-merging leaves a duplicate row the
  * user can already see.
  *
@@ -246,7 +246,7 @@ export function companiesMatchIgnoringCorporateForm(a, b) {
  * Two ranges that must differ are two constants; only the ranges that must
  * agree are shared, which is the single export below.
  *
- * Exported because verify-pipeline.mjs has to recognize exactly what cell()
+ * Exported because scripts/verify-pipeline.mjs has to recognize exactly what cell()
  * removes: stripping only stops NEW bytes entering, and a second copy of this
  * range would let the write path and the detector disagree about what counts.
  */
@@ -345,8 +345,8 @@ export function resolveWorkspaceRootFor(rootDir) {
  *
  * One definition for every reader, because the manifest path was previously
  * rebuilt from a literal in each script — and each picked its own base
- * directory, so `merge-tracker.mjs` derived it from the tracker while
- * `sync-pdf-flags.mjs` and `find.mjs` used their own install directory. Scripts
+ * directory, so `scripts/merge-tracker.mjs` derived it from the tracker while
+ * `scripts/sync-pdf-flags.mjs` and `scripts/find.mjs` used their own install directory. Scripts
  * that resolve the tracker from `CAREER_OPS_TRACKER` then read one workspace's
  * manifest against another's tracker (#2471).
  *
@@ -377,7 +377,7 @@ export { canonicalizeTrackerPath };
  *
  * This protects recursive lock cleanup from accepting paths that escape the
  * system temp directory through `..` segments or unrelated absolute roots.
- * Also the shared boundary check for outcome.mjs's --clean-output (#2653,
+ * Also the shared boundary check for scripts/outcome.mjs's --clean-output (#2653,
  * #2911), where an output/ path must be validated before ever being deleted.
  *
  * @param {string} childPath - Candidate path to validate.
@@ -429,7 +429,7 @@ function nearestExistingPath(pathValue) {
  * containing a link to somewhere else lets a path spell itself as contained
  * while pointing outside — and the deletion is unrecoverable.
  *
- * Mirrors `isWorkspaceOutputPath` in generate-pdf.mjs, which guards the far
+ * Mirrors `isWorkspaceOutputPath` in scripts/generate-pdf.mjs, which guards the far
  * lower-stakes *write* path. Lives here so a third copy is not needed; that
  * one should be migrated onto this rather than left to drift (see #2911).
  *
@@ -456,7 +456,7 @@ export function pathIsInsideCanonical(childPath, parentDir) {
  * Compute the tracker lock directory for a tracker file.
  *
  * The lock name is derived from a hash of the canonical tracker path, so every
- * writer (`merge-tracker.mjs`, `set-status.mjs`) that targets the same tracker
+ * writer (`scripts/merge-tracker.mjs`, `scripts/set-status.mjs`) that targets the same tracker
  * contends on the same lock. `CAREER_OPS_TRACKER_LOCK` exists for tests and
  * unusual local layouts, but lock directories are removed recursively, so
  * env-provided paths must be absolute, live under the OS temp directory, and
@@ -805,7 +805,7 @@ export const RENAME_RETRY_DELAYS_MS = [1, 2, 5, 10, 25, 50, 100];
 /**
  * Is this error Windows saying "the destination is busy right now"?
  *
- * Exported for the same reason `pipeline-lock.mjs` exports `isMkdirContention`
+ * Exported for the same reason `scripts/pipeline-lock.mjs` exports `isMkdirContention`
  * and `isRmContention`: one definition, testable, and no second copy to drift.
  *
  * @param {unknown} err - Error thrown by a rename attempt.
@@ -838,7 +838,7 @@ function sleepSync(ms) {
  * `readFileSync` from a reporting script. The handle is released in
  * milliseconds, so a short backoff converts a lost write into a completed one.
  *
- * This mirrors `isMkdirContention` / `isRmContention` in pipeline-lock.mjs.
+ * This mirrors `isMkdirContention` / `isRmContention` in scripts/pipeline-lock.mjs.
  * Same reasoning as #2777: treating portable-looking contention as fatal is how
  * a write gets LOST, and the tracker is the canonical store.
  *
@@ -904,7 +904,7 @@ export function writeFileAtomic(path, content, { mode } = {}) {
  * state or alias lands in one file and every consumer follows.
  *
  * `description` and `terminal` are passed through for callers that EXPLAIN the
- * states rather than list them (set-status.mjs --help). Both default rather
+ * states rather than list them (scripts/set-status.mjs --help). Both default rather
  * than throw: an entry omitting them is still a usable state.
  *
  * @param {string} statesPath - Path to templates/states.yml.
@@ -1006,7 +1006,7 @@ export function resolveCanonicalStateId(input, states) {
 
 /**
  * Canonical process-exit codes shared by every locked, single-purpose
- * tracker-writer CLI (set-status.mjs, mark-pdf-ready.mjs, ...) — one source
+ * tracker-writer CLI (scripts/set-status.mjs, scripts/mark-pdf-ready.mjs, ...) — one source
  * so a new script can't drift from the numbering an existing one already
  * commits to (callers/CI may depend on these exact values).
  */

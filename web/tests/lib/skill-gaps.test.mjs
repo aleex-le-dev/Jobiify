@@ -18,7 +18,7 @@ const payload = (meta = {}, gaps = null) => ({
 });
 
 test("a CV with no recognised skills is flagged, because the map still renders", () => {
-  // upskill.mjs: nothing can be subtracted as already-held, so the map fills
+  // scripts/upskill.mjs: nothing can be subtracted as already-held, so the map fills
   // with skills the user may already have. A confident list of things to learn
   // that you already know is worse than no list.
   const m = skillGapModel(payload({ knownSkillCount: 0 }));
@@ -41,7 +41,7 @@ test("a map drawn from a minority of reports says so", () => {
 });
 
 test("gaps from Gap tables alone are still flagged as thin", () => {
-  // The case the first version got wrong. upskill.mjs reads a report's Gap
+  // The case the first version got wrong. scripts/upskill.mjs reads a report's Gap
   // TABLE as well as its Machine Summary — verified against the core:
   // parseReportGaps() on a table-only report returns hasMachineSummary false
   // and the gap text anyway. So a pipeline with ZERO summaries can produce a
@@ -120,7 +120,7 @@ test("skip blockers pass through with the skip count, and malformed rows drop", 
   assert.equal(m.skips, 20);
 
   const older = skillGapModel(payload());
-  assert.deepEqual([older.blockers, older.skips], [[], 0], "an upskill.mjs without skipBlockers renders no blocker list");
+  assert.deepEqual([older.blockers, older.skips], [[], 0], "an scripts/upskill.mjs without skipBlockers renders no blocker list");
 });
 
 test("a blocker line names the verdict split, the close calls, and the matching nudge", () => {

@@ -9,7 +9,7 @@ sweep** that drafts (never sends) chase-up emails for aging applications.
 
 Three independent pieces, smallest first. You can use any of them on their own.
 
-- **[1. Schedule the scan](#1-schedule-the-scan)** — run `node scan.mjs` on cron /
+- **[1. Schedule the scan](#1-schedule-the-scan)** — run `node scripts/scan.mjs` on cron /
   launchd / Windows Task Scheduler. Zero tokens: the scanner only reads public
   job-board APIs and appends URLs to `data/pipeline.md`.
 - **[2. Triage the queue](#2-triage-the-queue)** — a Read/Write-only prompt that
@@ -37,7 +37,7 @@ Three independent pieces, smallest first. You can use any of them on their own.
 
 ## 1. Schedule the scan
 
-`node scan.mjs` is safe to run unattended — it's idempotent (already-seen URLs are
+`node scripts/scan.mjs` is safe to run unattended — it's idempotent (already-seen URLs are
 deduped) and costs nothing. Pick your platform.
 
 Replace `/path/to/career-ops` with your checkout path, and make sure `node` is on
@@ -52,14 +52,14 @@ day-of-month field resets at each month boundary, so the gap across month-end ca
 be 1–3 days rather than a strict rolling 72 hours:
 
 ```cron
-0 9 */3 * * cd /path/to/career-ops && /usr/local/bin/node scan.mjs >> data/scan.log 2>&1
+0 9 */3 * * cd /path/to/career-ops && /usr/local/bin/node scripts/scan.mjs >> data/scan.log 2>&1
 ```
 
 For a simpler, exactly-even cadence, run it **daily** and let the scanner's dedup
 absorb the days you don't need — `0 9 * * *` — or on weekdays only, at 8am:
 
 ```cron
-0 8 * * 1-5 cd /path/to/career-ops && /usr/local/bin/node scan.mjs >> data/scan.log 2>&1
+0 8 * * 1-5 cd /path/to/career-ops && /usr/local/bin/node scripts/scan.mjs >> data/scan.log 2>&1
 ```
 
 ### macOS — launchd (survives sleep better than cron)
@@ -76,7 +76,7 @@ Save as `~/Library/LaunchAgents/io.career-ops.scan.plist`, then
   <key>ProgramArguments</key>
   <array>
     <string>/usr/local/bin/node</string>
-    <string>scan.mjs</string>
+    <string>scripts/scan.mjs</string>
   </array>
   <key>WorkingDirectory</key> <string>/path/to/career-ops</string>
   <key>StartCalendarInterval</key>
@@ -118,7 +118,7 @@ check in the current user's interactive session; you must be logged in. Use `web
 daily scan without the web UI, use the lower-level Task Scheduler recipe below.
 
 ```powershell
-$action  = New-ScheduledTaskAction -Execute "node.exe" -Argument "scan.mjs" -WorkingDirectory "C:\path\to\career-ops"
+$action  = New-ScheduledTaskAction -Execute "node.exe" -Argument "scripts/scan.mjs" -WorkingDirectory "C:\path\to\career-ops"
 $trigger = New-ScheduledTaskTrigger -Daily -At 9am
 Register-ScheduledTask -TaskName "career-ops scan" -Action $action -Trigger $trigger -Description "Recurring career-ops job scan"
 ```
@@ -192,7 +192,7 @@ so this piece runs `claude -p` (or your CLI's headless equivalent, see
 1. Resolves its own repo root (`REPO="$(cd "$(dirname "${0}")/.." && pwd)"`)
    so the script works from any checkout path without edits.
 2. Runs `claude -p` with a prompt that drives `modes/followup.md`:
-   read the cadence (`node followup-cadence.mjs`), draft a follow-up for
+   read the cadence (`node scripts/followup-cadence.mjs`), draft a follow-up for
    every overdue/urgent entry, and **write the drafts to a dated file**
    (`output/followup-drafts-{date}.md`) instead of trying to act on them.
 3. Logs start/end to `data/followup-sweep.log` (gitignored).
@@ -273,7 +273,7 @@ If you also run a scan-and-score agent (custom, or one you've built per
 `AGENTS.md` → Skill Modes), it's worth adding a floor score below which a
 match auto-merges into `data/applications.md`. A workable heuristic: after
 you've accumulated some real outcomes, run
-`node analyze-patterns.mjs | jq .scoreThreshold` — it reports the lowest
+`node scripts/analyze-patterns.mjs | jq .scoreThreshold` — it reports the lowest
 score among your historical positive outcomes. Add a rule to your own
 `modes/_custom.md` (never `modes/_shared.md` — see the Data Contract) like:
 
@@ -292,5 +292,5 @@ silently discarding the evaluation itself.
 - **Complements batch-eval savings.** This is the *scheduling + first-glance* layer
   that comes *before* evaluation. Optimizations to the evaluation stage itself are
   separate and stack on top.
-- **Nothing new to install.** `node scan.mjs` already ships; the triage is a prompt,
+- **Nothing new to install.** `node scripts/scan.mjs` already ships; the triage is a prompt,
   not a dependency.

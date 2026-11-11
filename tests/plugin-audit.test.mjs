@@ -5,10 +5,10 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { auditPlugin } from '../plugin-audit.mjs';
+import { auditPlugin } from '../scripts/plugin-audit.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const SCRIPT = join(ROOT, 'plugin-audit.mjs');
+const SCRIPT = join(ROOT, 'scripts/plugin-audit.mjs');
 
 function runAudit(...args) {
   const r = spawnSync(process.execPath, [SCRIPT, ...args], {
@@ -16,22 +16,22 @@ function runAudit(...args) {
     encoding: 'utf-8',
     timeout: 10_000,
   });
-  assert.equal(r.error, undefined, `plugin-audit.mjs failed to spawn: ${r.error?.message}`);
-  assert.equal(r.signal, null, `plugin-audit.mjs was killed by ${r.signal} (timeout?)`);
+  assert.equal(r.error, undefined, `scripts/plugin-audit.mjs failed to spawn: ${r.error?.message}`);
+  assert.equal(r.signal, null, `scripts/plugin-audit.mjs was killed by ${r.signal} (timeout?)`);
   return { ...r, all: `${r.stdout ?? ''}${r.stderr ?? ''}` };
 }
 
 test('--help prints usage and exits 0', () => {
   const r = runAudit('--help');
   assert.match(r.stdout, /Usage:/);
-  assert.match(r.stdout, /node plugin-audit\.mjs <plugin-dir>/);
+  assert.match(r.stdout, /node scripts\/plugin-audit\.mjs <plugin-dir>/);
   assert.equal(r.status, 0, '--help must exit 0');
 });
 
 test('-h prints usage and exits 0', () => {
   const r = runAudit('-h');
   assert.match(r.stdout, /Usage:/);
-  assert.match(r.stdout, /node plugin-audit\.mjs <plugin-dir>/);
+  assert.match(r.stdout, /node scripts\/plugin-audit\.mjs <plugin-dir>/);
   assert.equal(r.status, 0, '-h must exit 0');
 });
 

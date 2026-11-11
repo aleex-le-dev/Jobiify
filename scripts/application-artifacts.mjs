@@ -11,8 +11,8 @@
 import { mkdirSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
 import { parseArgs } from 'util';
-import { validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 const DEFAULT_OUTPUT_ROOT = resolve('output');
 const DECISIONS = new Set(['reuse', 'reuse-with-edits', 'regenerate']);
@@ -117,7 +117,7 @@ const KNOWN_FLAGS = ['--report', '--company', '--role', '--version', '--root', '
 const VALUE_FLAGS = ['--report', '--company', '--role', '--version', '--root'];
 
 const USAGE = `Usage:
-  node application-artifacts.mjs --report N --company NAME --role ROLE [--version N] [--root DIR] [--init]
+  node scripts/application-artifacts.mjs --report N --company NAME --role ROLE [--version N] [--root DIR] [--init]
 
 Prints the resolved artifact paths for one application as JSON. The directory
 key is stable for a report/company/role tuple, so the JD, source CV, tailored

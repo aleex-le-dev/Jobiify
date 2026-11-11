@@ -23,7 +23,7 @@ import {
   companyTokens, matchCompany, parseCsv, findHeaderRow, parseConnectedOn,
   parseConnections, parseTrackerTargets, joinConnections, parseKnownContacts,
   secondDegreeSearchUrl,
-} from '../linkedin-join.mjs';
+} from '../scripts/linkedin-join.mjs';
 
 const tier = (a, b) => matchCompany(companyTokens(a), companyTokens(b));
 

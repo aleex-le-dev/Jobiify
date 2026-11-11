@@ -1,23 +1,25 @@
 // tests/updater-self-bootstrap-backup.test.mjs — #3207 recovery guarantee.
 
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { backupSystemFiles } from '../update-system.mjs';
+import { backupSystemFiles } from '../scripts/update-system.mjs';
 import { pass, fail } from './helpers.mjs';
 
 const dir = mkdtempSync(join(tmpdir(), 'co-bootstrap-backup-'));
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
 try {
-  const updater = join(dir, 'update-system.mjs');
+  const updater = join(dir, 'scripts/update-system.mjs');
+  mkdirSync(join(dir, 'scripts'), { recursive: true });
+  mkdirSync(join(dir, 'scripts'), { recursive: true });
   writeFileSync(updater, 'local fork fix\n');
 
-  const [saved] = backupSystemFiles(['update-system.mjs'], { root: dir });
+  const [saved] = backupSystemFiles(['scripts/update-system.mjs'], { root: dir });
   writeFileSync(updater, 'fetched upstream updater\n');
 
-  if (saved.backup === 'update-system.mjs.bak'
+  if (saved.backup === 'scripts/update-system.mjs.bak'
       && readFileSync(`${updater}.bak`, 'utf8') === 'local fork fix\n'
       && readFileSync(updater, 'utf8') === 'fetched upstream updater\n') {
     pass('self-bootstrap preserves the local updater before loading upstream');
@@ -32,7 +34,7 @@ try {
     fail('backup failures must retain both the path and error');
   }
 
-  const source = readFileSync(join(root, 'update-system.mjs'), 'utf8');
+  const source = readFileSync(join(root, 'scripts/update-system.mjs'), 'utf8');
   // apply() pins FETCH_HEAD to an immutable SHA once per run and addresses that
   // SHA everywhere afterwards (#3052), so this ordering check follows the pinned
   // ref rather than the pseudo-ref it replaced.

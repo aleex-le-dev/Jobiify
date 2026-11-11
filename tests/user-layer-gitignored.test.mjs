@@ -178,7 +178,7 @@ for (const path of timestampedBackupProbes) {
 }
 
 // The backups' sibling, from the same two writers: the temp file an atomic
-// write renames into place. `.{name}.{pid}.{ts}.{uuid}.tmp` (tracker-utils.mjs
+// write renames into place. `.{name}.{pid}.{ts}.{uuid}.tmp` (scripts/tracker-utils.mjs
 // writeFileAtomic and web/src/lib/core/safe-write.ts atomicWrite), plus the
 // `{file}.tmp-{pid}-{uuid}` shape safe-write.ts used before they were aligned —
 // a checkout that predates the alignment can still have one lying around.
@@ -204,7 +204,7 @@ for (const path of atomicWriteTempProbes) {
   else fail(`${path}: git check-ignore could not answer — ${stderr}`);
 }
 
-// The tracker's DERIVED SQLite index (tracker.mjs, #918), which carries the
+// The tracker's DERIVED SQLite index (scripts/tracker.mjs, #918), which carries the
 // same content as the markdown it indexes — company, role, score, status,
 // notes.
 //
@@ -212,7 +212,7 @@ for (const path of atomicWriteTempProbes) {
 // it. But resolveTrackerPath() falls back to `<root>/applications.md` when
 // data/applications.md is absent, and the index follows the markdown, so on
 // the legacy layout it sits in the repo root instead. That is also every fresh
-// clone: `node test-all.mjs` leaves one there, 36KB, ready for `git add .`.
+// clone: `node scripts/test-all.mjs` leaves one there, 36KB, ready for `git add .`.
 //
 // The nested probes are the ones that decide the SHAPE of the rule. A
 // root-anchored `/*.db` covers the repo root and nothing else, and would still
@@ -223,7 +223,7 @@ for (const path of atomicWriteTempProbes) {
 // on its own: it is already covered by the blanket `data/*` rule at the top of
 // the file, so it passes either way.
 //
-// Built as a cross-product rather than hand-listed. tracker.mjs derives every
+// Built as a cross-product rather than hand-listed. scripts/tracker.mjs derives every
 // one of these from a single path — DB_PATH is resolveTrackerPath() with .md
 // swapped for .db, and SQLite appends the sidecar suffixes to that — so any
 // directory that can hold the index can hold all three names. Enumerating them
@@ -302,7 +302,7 @@ for (const path of derivedIndexProbes) {
 }
 
 // Not user-layer data, but the same mechanism: this one is about what a
-// reflexive `git add .` can swallow. test-all.mjs builds its script-runner
+// reflexive `git add .` can swallow. scripts/test-all.mjs builds its script-runner
 // sandbox with mkdtempSync under the repo ROOT, and a suite interrupted
 // mid-run (a flake, a Ctrl-C) leaves that copy behind: ~650MB and ~1000
 // stageable files. The copied .gitignore does travel with it and does keep the

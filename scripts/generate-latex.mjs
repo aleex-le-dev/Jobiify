@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * generate-latex.mjs — Validate and compile a generated .tex CV file to PDF
+ * scripts/generate-latex.mjs — Validate and compile a generated .tex CV file to PDF
  *
  * Usage:
- *   node generate-latex.mjs <input.tex> [output.pdf]
- *   node generate-latex.mjs <input.tex> [output.pdf] --compile-only
+ *   node scripts/generate-latex.mjs <input.tex> [output.pdf]
+ *   node scripts/generate-latex.mjs <input.tex> [output.pdf] --compile-only
  *
  * Default: validates career-ops template structure (from templates/cv-template.tex).
  * --compile-only: skip template validation; compile any user-owned .tex (latex-tex mode).
  *
- * Requires: a repo-local tectonic (`node install-latex-engine.mjs`, see
- * install-latex-engine.mjs), or tectonic / pdflatex on PATH.
+ * Requires: a repo-local tectonic (`node scripts/install-latex-engine.mjs`, see
+ * scripts/install-latex-engine.mjs), or tectonic / pdflatex on PATH.
  */
 
 import { readFile, writeFile, stat, copyFile, rm } from 'fs/promises';
@@ -19,12 +19,12 @@ import { resolve, basename, dirname, join } from 'path';
 import { execFileSync } from 'child_process';
 import { existsSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
-const INSTALL_HINT = 'node install-latex-engine.mjs';
+const INSTALL_HINT = 'node scripts/install-latex-engine.mjs';
 
 const MIN_SECTIONS = 4;
 
@@ -51,7 +51,7 @@ const CJK_RE = /\p{Script=Han}|\p{Script=Hiragana}|\p{Script=Katakana}|\p{Script
 const CJK_PACKAGE_RE = /\\usepackage(?:\[[^\]]*\])?\{[^}]*\b(?:xeCJK|ctex)\b[^}]*\}|\\documentclass(?:\[[^\]]*\])?\{ctex(?:art|rep|book)?\}/;
 
 /**
- * Where install-latex-engine.mjs puts tectonic: next to the scripts.
+ * Where scripts/install-latex-engine.mjs puts tectonic: next to the scripts.
  * @param {string} [root]
  * @param {string} [platform]
  * @returns {string}
@@ -67,7 +67,7 @@ let resolvedEngineBin = null;
 /**
  * Resolve the LaTeX engine, preferring tectonic (XeTeX backend, supports CJK
  * via fontspec/xeCJK) over pdflatex (no CJK support). A repo-local tectonic
- * from install-latex-engine.mjs is tried before PATH.
+ * from scripts/install-latex-engine.mjs is tried before PATH.
  * @returns {string|null}
  */
 export function resolveLatexEngine() {
@@ -125,7 +125,7 @@ export function validateLatexContent(content, compileOnly, engine = null) {
       // tectonic's backend is XeTeX, so fontspec/xeCJK (loaded by
       // templates/cv-template.cjk.tex) can render CJK glyphs — no issue.
     } else if (engine === 'tectonic') {
-      issues.push('CJK characters detected but no CJK package (xeCJK/ctex) is loaded. Generate from the CJK-aware template instead: `node build-cv-latex.mjs <input.json> <output.tex> --template=cjk` (templates/cv-template.cjk.tex), or use `pdf` mode (HTML to PDF, which renders CJK) for these CVs.');
+      issues.push('CJK characters detected but no CJK package (xeCJK/ctex) is loaded. Generate from the CJK-aware template instead: `node scripts/build-cv-latex.mjs <input.json> <output.tex> --template=cjk` (templates/cv-template.cjk.tex), or use `pdf` mode (HTML to PDF, which renders CJK) for these CVs.');
     } else {
       issues.push(`CJK characters detected. This CJK-aware LaTeX path needs a XeTeX-based engine (fontspec/xeCJK) — pdfLaTeX cannot compile it. Install tectonic (\`${INSTALL_HINT}\`, one-time download) and regenerate from the CJK-aware template (\`--template=cjk\`), or use \`pdf\` mode (HTML to PDF, which renders CJK) for these CVs.`);
     }
@@ -289,9 +289,9 @@ export async function compileLatexFile(absPath, content, outputPath, compileOnly
 const KNOWN_FLAGS = ['--compile-only', '--help', '-h'];
 
 const USAGE = `Usage:
-  node generate-latex.mjs <input.tex> [output.pdf]                 # validate career-ops template structure, then compile
-  node generate-latex.mjs <input.tex> [output.pdf] --compile-only  # skip template validation; compile any user-owned .tex (latex-tex mode)
-  node generate-latex.mjs --help|-h                                # print this usage block and exit
+  node scripts/generate-latex.mjs <input.tex> [output.pdf]                 # validate career-ops template structure, then compile
+  node scripts/generate-latex.mjs <input.tex> [output.pdf] --compile-only  # skip template validation; compile any user-owned .tex (latex-tex mode)
+  node scripts/generate-latex.mjs --help|-h                                # print this usage block and exit
 
 Requires a repo-local tectonic (${INSTALL_HINT}) or tectonic/pdflatex on PATH.`;
 

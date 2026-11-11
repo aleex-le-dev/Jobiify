@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // The DEMAND loop: surface follow-ups due, via the core's own
-// followup-cadence.mjs --json (the SAME calculator the CLI uses) — we never
+// scripts/followup-cadence.mjs --json (the SAME calculator the CLI uses) — we never
 // reimplement the cadence logic, we read its verdict (mirrors /api/doctor).
 // Default: capped list for the home card. `?full=1`: the complete cadence
 // (entries + metadata + cadenceConfig) for the /followups tracker page.

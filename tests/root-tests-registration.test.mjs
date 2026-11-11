@@ -2,7 +2,7 @@
 // reachable by something that runs it.
 //
 // Two conventions put a suite at the repo root, and discovery reaches neither:
-// test-all.mjs discovers tests/**/*.test.mjs (#1440) and stops there. #3388
+// scripts/test-all.mjs discovers tests/**/*.test.mjs (#1440) and stops there. #3388
 // emptied the `*.test.mjs` half — all nine moved into tests/, the list naming
 // them was deleted, and tests/no-root-suites.test.mjs now asserts the root
 // stays empty of that pattern.
@@ -10,7 +10,7 @@
 // The `*-tests.mjs` half was never in scope for that series. A handful of such
 // suites remain at the root (#3765 moved four more into tests/, #4759 one
 // more), most of them named one by one in the `scripts` list in
-// test-all.mjs — the same hand-maintained list #3306 set out to remove, which
+// scripts/test-all.mjs — the same hand-maintained list #3306 set out to remove, which
 // survived because `scripts` also carries ~40 `--self-test` CLI invocations
 // that have nothing to do with this. A list is a thing you can forget, and it
 // was forgotten once already: jd-similarity.test.mjs shipped with 20 assertions
@@ -27,21 +27,21 @@
 //
 // ── Reachability is checked against two surfaces, with no exemption list ─────
 //
-// The first draft of this guard (#3735 step 4) exempted upgrade-tests.mjs by
-// name, because it is invoked by the workflow rather than by test-all.mjs.
+// The first draft of this guard (#3735 step 4) exempted scripts/upgrade-tests.mjs by
+// name, because it is invoked by the workflow rather than by scripts/test-all.mjs.
 // @artemtrofymenko's review is the reason it does not: an exemption list is a
 // hand-maintained list of one, which is the shape this file exists to remove.
 // The second file to earn a workflow-only invocation gets added to it or gets
 // forgotten, and the guard is back to the thing it replaced. There are two
 // surfaces that run things, so both are read:
 //
-//   test-all.mjs               the `scripts` list
+//   scripts/test-all.mjs               the `scripts` list
 //   .github/workflows/*.yml    `node <file>` invocations
 //
 // The MATCH RULE DIFFERS PER SURFACE, because the surfaces differ
 // syntactically and a single rule would be wrong on one of them:
 //
-//   - test-all.mjs: the name must appear as a STRING LITERAL in the source.
+//   - scripts/test-all.mjs: the name must appear as a STRING LITERAL in the source.
 //     Every real registration is `{ name: 'x-tests.mjs', ... }`; a prose
 //     mention is not a literal. The question this answers is "is this name a
 //     value in the code?", and a comment holds no values by construction.
@@ -49,10 +49,10 @@
 //     filename surviving in a comment after its invocation is gone must not
 //     read as registered. Not hypothetical — reviewing #3735, a plain
 //     `grep -q` over each filename reported eight of eight registered; the
-//     eighth was test-all.mjs:6549, a comment.
+//     eighth was scripts/test-all.mjs:6549, a comment.
 //
 //   - workflows: the name must be the FIRST COMMAND of a `run:` script. In
-//     YAML it is a bare shell token (`run: node upgrade-tests.mjs --pr-gate`),
+//     YAML it is a bare shell token (`run: node scripts/upgrade-tests.mjs --pr-gate`),
 //     so the literal rule would match nothing and every workflow-run suite
 //     would read as unreachable.
 //
@@ -86,20 +86,20 @@ console.log('\ntest-all.mjs — root -tests.mjs suites are reachable');
 //    and a wrong or unreadable ROOT produces exactly that reading while
 //    measuring nothing — a silent pass, the same shape as the bug this file
 //    exists to prevent. Same sentinel as tests/no-root-suites.test.mjs:
-//    test-all.mjs is the harness itself and cannot move without this check's
+//    scripts/test-all.mjs is the harness itself and cannot move without this check's
 //    premise moving with it. statSync().isFile() rather than existsSync(), so a
 //    directory of that name cannot satisfy the premise either.
 let rootOk = false;
 try {
-  rootOk = statSync(join(ROOT, 'test-all.mjs')).isFile();
+  rootOk = statSync(join(ROOT, 'scripts/test-all.mjs')).isFile();
 } catch {
   rootOk = false;
 }
 
 if (rootOk) {
-  pass('ROOT is the repo root — test-all.mjs is a file there, so an empty result means empty');
+  pass('ROOT is the repo root — scripts/test-all.mjs is a file there, so an empty result means empty');
 } else {
-  fail(`ROOT does not hold test-all.mjs as a file (${ROOT}) — this guard is looking in the wrong place and would otherwise pass on any tree`);
+  fail(`ROOT does not hold scripts/test-all.mjs as a file (${ROOT}) — this guard is looking in the wrong place and would otherwise pass on any tree`);
 }
 
 if (rootOk) {
@@ -108,9 +108,9 @@ if (rootOk) {
   // for isDirectory() and #3364 for a Windows clone with core.symlinks=false.
   let suites = null;
   try {
-    suites = readdirSync(ROOT, { withFileTypes: true })
+    suites = readdirSync(join(ROOT, 'scripts'), { withFileTypes: true })
       .filter((e) => (e.isFile() || e.isSymbolicLink()) && e.name.endsWith('-tests.mjs'))
-      .map((e) => e.name)
+      .map((e) => `scripts/${e.name}`)
       .sort();
   } catch (err) {
     fail(`ROOT is unreadable (${ROOT}): ${err.code || err.message} — the scan did not run, so this is not a clean tree`);
@@ -132,12 +132,12 @@ if (rootOk) {
   }
 
   if (suites && suites.length > 0) {
-    // ── Surface 1: the scripts list in test-all.mjs ──────────────────────────
+    // ── Surface 1: the scripts list in scripts/test-all.mjs ──────────────────────────
     // Deliberately NOT a parse of the `scripts` array. A suite reached by any
     // mechanism in this file — that list, an inline run(), a future glob —
     // names the file, and the question is "does anything run this", not "which
     // section does".
-    const harnessSrc = readFileSync(join(ROOT, 'test-all.mjs'), 'utf-8');
+    const harnessSrc = readFileSync(join(ROOT, 'scripts/test-all.mjs'), 'utf-8');
 
     // harnessMatches is defined once, below, and used by BOTH the live check
     // and the fixtures — see the note there for why a second copy is worse
@@ -145,7 +145,7 @@ if (rootOk) {
     const registeredInHarness = (name) => harnessMatches(registeredNames(harnessSrc), name);
 
     // ── Surface 2: node invocations in the workflows ─────────────────────────
-    // .github/ ships to installs (SYSTEM_PATHS, update-system.mjs:432), so this
+    // .github/ ships to installs (SYSTEM_PATHS, scripts/update-system.mjs:432), so this
     // surface exists off CI too. Its absence is reported rather than silently
     // treated as "no invocations": that reading would fail a workflow-run suite
     // for the wrong reason and send the reader looking for a missing
@@ -183,10 +183,10 @@ if (rootOk) {
 
     const unreachable = suites.filter((n) => !registeredInHarness(n) && !invokedByWorkflow(n));
     if (unreachable.length === 0) {
-      pass(`every root-level *-tests.mjs is reachable — a scripts registration in test-all.mjs, or a node invocation in a workflow (${suites.length} checked)`);
+      pass(`every root-level *-tests.mjs is reachable — a scripts registration in scripts/test-all.mjs, or a node invocation in a workflow (${suites.length} checked)`);
     } else {
       fail(
-        `${unreachable.length} root-level suite(s) are never run — nothing in test-all.mjs or .github/workflows names them:\n` +
+        `${unreachable.length} root-level suite(s) are never run — nothing in scripts/test-all.mjs or .github/workflows names them:\n` +
           unreachable.map((n) => `    ${n}`).join('\n') +
           "\n  Add an entry to the `scripts` list: { name: '<file>', expectExit: 0 }" +
           '\n  — or, if it is a flag-driven harness with no bare-invocation mode, a workflow step: run: node <file> --<flag>',
@@ -209,7 +209,7 @@ function warnOrFailWorkflows(code) {
  * A scanner, not a regex strip. The first version removed whole-line and block
  * comments and then required quote characters around the name, which still
  * accepted a TRAILING `// registered 'foo-tests.mjs'` (CodeRabbit, #3765).
- * Regex literals are skipped explicitly: test-all.mjs contains
+ * Regex literals are skipped explicitly: scripts/test-all.mjs contains
  * `/from ['"]node:test['"]/`, and treating that `'` as a string opener would
  * swallow real code and change the answer.
  */
@@ -331,7 +331,7 @@ export function firstCommandLine(script) {
  * The cost is false REDS, and this file already takes that direction for
  * indirect invocations: a false red is read and resolved by whoever wrote the
  * workflow, and the fix is to put the invocation in its own step. All three
- * upgrade-tests.mjs steps are already `run: node upgrade-tests.mjs --<flag>`.
+ * scripts/upgrade-tests.mjs steps are already `run: node scripts/upgrade-tests.mjs --<flag>`.
  */
 export function invokesNode(scripts, name) {
   const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -343,12 +343,12 @@ export function invokesNode(scripts, name) {
 }
 
 /**
- * Whether `name` is REGISTERED in `src` — the source of test-all.mjs.
+ * Whether `name` is REGISTERED in `src` — the source of scripts/test-all.mjs.
  *
  * A registration is the `name:` value of a `scripts` entry:
  *
- *     { name: 'updater-migration-tests.mjs', expectExit: 0 },
- *     { name: 'contacts.mjs --self-test', expectExit: 0 },
+ *     { name: 'scripts/updater-migration-tests.mjs', expectExit: 0 },
+ *     { name: 'scripts/contacts.mjs --self-test', expectExit: 0 },
  *
  * so the value may carry flags after the filename. Nothing else counts.
  *
@@ -359,7 +359,7 @@ export function invokesNode(scripts, name) {
  * a log line or a doc string is a literal too, so
  * `fail(\`x-tests.mjs is gone\`)` read as a registration (CodeRabbit, #3765) —
  * a suite named only where it is reported MISSING counted as evidence it runs.
- * Latent rather than live at the time (test-all.mjs builds those messages by
+ * Latent rather than live at the time (scripts/test-all.mjs builds those messages by
  * interpolating `${name}`, so no such literal existed), but it is the same
  * false-GREEN class as the comment mention this file already rejects, and the
  * whole point here is that a mention is not an invocation.
@@ -376,11 +376,11 @@ export function harnessMatches(literals, name) {
 }
 
 /**
- * The `name:` values of the entries in test-all.mjs's `scripts` list.
+ * The `name:` values of the entries in scripts/test-all.mjs's `scripts` list.
  *
  * Scoped to that array, and within it to the DIRECT `name:` property of an
  * entry — brace depth 1, outside any string. `name:` is an ordinary property
- * key and an ordinary run of characters: test-all.mjs carries 64 of them and
+ * key and an ordinary run of characters: scripts/test-all.mjs carries 64 of them and
  * only 41 are registrations, the rest being test titles, fixture names and
  * plugin ids. Scoping to the array removed those. It did not remove a `name:`
  * written INSIDE a quoted value on an entry, e.g.
@@ -506,7 +506,7 @@ for (const [src, want, label] of WORKFLOW_CASES) {
   const got = invokesNode([src], 'x-tests.mjs');
   if (got !== want) ruleFailures.push(`workflow rule: ${label} → ${got}, want ${want}`);
 }
-// A regex literal containing quotes must not derail the scanner — test-all.mjs
+// A regex literal containing quotes must not derail the scanner — scripts/test-all.mjs
 // has exactly this shape and it decides every harness answer below it.
 if (stringLiterals(`const re = /from ['"]node:test['"]/; const n = 'x-tests.mjs';`).includes('x-tests.mjs') !== true) {
   ruleFailures.push('harness rule: a regex literal containing quotes swallowed the code after it');

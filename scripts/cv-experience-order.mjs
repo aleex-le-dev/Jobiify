@@ -1,8 +1,8 @@
-// cv-experience-order.mjs — reverse-chronological guard for rendered CVs.
+// scripts/cv-experience-order.mjs — reverse-chronological guard for rendered CVs.
 //
-// Split out of generate-pdf.mjs (which already sits near the repo's practical
+// Split out of scripts/generate-pdf.mjs (which already sits near the repo's practical
 // file-size ceiling) following the existing *-core.mjs convention used by
-// liveness-core.mjs and cv-sections-core.mjs.
+// scripts/liveness-core.mjs and scripts/cv-sections-core.mjs.
 
 const MONTHS = new Map([
   ['jan', 1], ['feb', 2], ['mar', 3], ['apr', 4], ['may', 5], ['jun', 6],
@@ -49,7 +49,7 @@ export function parseExperienceStart(period) {
  * A period made safe to quote back in an error or warning. It comes out of the
  * CV and the message goes to a terminal or a log, so C0/C1 controls and bidi
  * overrides are stripped (either can repaint a terminal line) and the length
- * is capped: the treatment generate-pdf.mjs's displayTitle() gives section
+ * is capped: the treatment scripts/generate-pdf.mjs's displayTitle() gives section
  * titles, repeated here because importing it would be circular. The date is
  * still parsed from the original text.
  *

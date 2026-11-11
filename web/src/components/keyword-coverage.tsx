@@ -6,7 +6,7 @@ import { coverageModel, coverageBand } from "@/lib/keyword-coverage.mjs";
 import type { CoverageModel } from "@/lib/keyword-coverage.mjs";
 
 // ATS keyword coverage for this report's JD against the CV, from the core's
-// keyword-match.mjs via /api/keyword-match.
+// scripts/keyword-match.mjs via /api/keyword-match.
 //
 // Sits on the report because that is where the decision is — "is my CV going to
 // read as a match for this JD?" is asked while looking at the offer, not on a
@@ -25,7 +25,7 @@ const BAND_CLASS: Record<string, string> = {
 
 const REASON_COPY: Record<string, string> = {
   "no-keywords": "This report has no “Keywords extracted” block, so there is nothing to compare the CV against.",
-  "no-script": "keyword-match.mjs isn’t in this Jobiify checkout.",
+  "no-script": "scripts/keyword-match.mjs isn’t in this Jobiify checkout.",
   "no-report": "The report file couldn’t be found.",
   failed: "The keyword check didn’t complete.",
   unparseable: "The keyword check returned something unreadable.",

@@ -1,4 +1,4 @@
-// tests/contact-lookup.test.mjs — coverage for contact-lookup.mjs (#4691)
+// tests/contact-lookup.test.mjs — coverage for scripts/contact-lookup.mjs (#4691)
 //
 // `contacto` checks data/contacts.tsv for a saved contact at the SAME company
 // before running a cold WebSearch, so a prior interviewer or a contact from
@@ -9,7 +9,7 @@
 //     empty/placeholder-query guards
 //   - the CLI: --company (JSON/--summary), missing operand, --self-test,
 //     --help, unknown flag
-//   - contacts.mjs's VALID_TYPES now accepting `internal-referral`
+//   - scripts/contacts.mjs's VALID_TYPES now accepting `internal-referral`
 //
 // Fictional names/companies throughout — data/contacts.tsv is user-layer,
 // gitignored third-party PII and no fixture here resembles anyone real.
@@ -20,11 +20,12 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'nod
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { findContactsByCompany } from '../contact-lookup.mjs';
-import { parseContacts } from '../contacts.mjs';
+import { findContactsByCompany } from '../scripts/contact-lookup.mjs';
+import { parseContacts } from '../scripts/contacts.mjs';
 
 const CODE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const SCRIPT = join(CODE_ROOT, 'contact-lookup.mjs');
+const SCRIPT = join(CODE_ROOT, 'scripts/contact-lookup.mjs');
+mkdirSync(join(CODE_ROOT, 'scripts'), { recursive: true });
 
 const row = (cells) => cells.join('\t');
 
@@ -79,7 +80,7 @@ test('findContactsByCompany: "?" placeholder query never matches every row', () 
   assert.deepEqual(findContactsByCompany(contacts, '?'), []);
 });
 
-// --- 2. internal-referral type (contacts.mjs VALID_TYPES) -------------------
+// --- 2. internal-referral type (scripts/contacts.mjs VALID_TYPES) -------------------
 
 test('parseContacts: internal-referral is a recognized type, not flagged off-enum', () => {
   const content = row(['Priya Shah', 'Northwind Robotics', 'internal-referral', 'Eng Director', '', '', '', '014', '']);
@@ -210,23 +211,23 @@ test('CLI: a company with no saved contacts.tsv at all answers empty, not a cras
 });
 
 // --- 4. modes/contacto.md wiring (#4691) ------------------------------------
-// Moved here from test-all.mjs's inline checks (CodeRabbit, PR #4692): inline
+// Moved here from scripts/test-all.mjs's inline checks (CodeRabbit, PR #4692): inline
 // checks are skipped by `--only`, while files under tests/ are auto-discovered.
 
 test('contacto checks for a saved contact at the same company before a cold WebSearch', () => {
   const contactoModeDoc = readFileSync(join(CODE_ROOT, 'modes', 'contacto.md'), 'utf-8');
-  assert.match(contactoModeDoc, /contact-lookup\.mjs/, 'should reference contact-lookup.mjs');
+  assert.match(contactoModeDoc, /contact-lookup\.mjs/, 'should reference scripts/contact-lookup.mjs');
   assert.match(contactoModeDoc, /internal-referral/, 'should reference the internal-referral contact type');
   assert.match(contactoModeDoc, /Internal Referral/, 'should define the Internal Referral persona');
 
   // Ordering: the saved-contact check must come before step 1's WebSearch,
   // not just be mentioned somewhere in the document.
-  const lookupIndex = contactoModeDoc.indexOf('contact-lookup.mjs');
+  const lookupIndex = contactoModeDoc.indexOf('scripts/contact-lookup.mjs');
   const webSearchIndex = contactoModeDoc.indexOf('Find ONE target** via WebSearch');
   assert.ok(lookupIndex >= 0 && webSearchIndex >= 0, 'both anchors must exist in the doc');
   assert.ok(
     lookupIndex < webSearchIndex,
-    'contact-lookup.mjs check must appear before step 1\'s WebSearch target discovery'
+    'scripts/contact-lookup.mjs check must appear before step 1\'s WebSearch target discovery'
   );
 
   // Fallback: both the decline branch and the no-match branch must continue
@@ -246,7 +247,7 @@ test('contacto checks for a saved contact at the same company before a cold WebS
 test('contacto does not auto-reclassify a saved contact to internal-referral on a company match alone', () => {
   const contactoModeDoc = readFileSync(join(CODE_ROOT, 'modes', 'contacto.md'), 'utf-8');
   // CodeRabbit (PR #4692): a step-0 match surfaced purely by normalized
-  // company (contact-lookup.mjs's findContactsByCompany) must not silently
+  // company (scripts/contact-lookup.mjs's findContactsByCompany) must not silently
   // overwrite a saved `peer` row's type -- `peer` explicitly documents NO
   // prior relationship, so flipping it to `internal-referral` on a company
   // match + "sure, reach out" would misrepresent the relationship.

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * generate-pdf.mjs — HTML → PDF via Playwright
+ * scripts/generate-pdf.mjs — HTML → PDF via Playwright
  *
  * Usage:
  *   node career-ops/generate-pdf.mjs <input.html> <output.pdf> [--format=letter|a4] [--country=XX] [--report=NNN] [--kind=cv|cover] [--allow-reorder] [--allow-nonchronological] [--max-pages=N] [--strict-pages] [--skip-fact-check]
@@ -51,11 +51,11 @@ import { readStyleTokens, injectThemeStyle, readCvSectionOrder } from './theme-s
 import { validateCvExperienceOrder } from './cv-experience-order.mjs';
 import { resolvePdfIndexPath, resolveTrackerPath, resolveWorkspaceRootFor, writeFileAtomic } from './tracker-utils.mjs';
 import { withPipelineLock } from './pipeline-lock.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { stripEmptyRenderedSections } from './cv-sections-core.mjs';
-import { PAGE_CSS_SIZE, PAGE_FORMATS, normalizePageFormat, pageFormatForCountry, resolvePageFormat } from './lib/page-format.mjs';
+import { PAGE_CSS_SIZE, PAGE_FORMATS, normalizePageFormat, pageFormatForCountry, resolvePageFormat } from '../lib/page-format.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(dirname(fileURLToPath(import.meta.url)));
 const trackerPath = resolveTrackerPath(getCareerOpsRoot());
 // Derive the workspace root from the uncanonicalized tracker path (#3169): a
 // repo that symlinks only its data/ out (the #524 workaround) must still resolve
@@ -122,7 +122,7 @@ function canonicalWorkspaceRoot() { return refreshRootCache().canonical; }
  * p through realpath — the path itself when it exists, otherwise its nearest
  * existing ancestor with the not-yet-created tail re-appended (the output PDF and
  * its directory may not exist yet) — then checks containment against the
- * realpathed workspace root (mirrors canonicalizeTrackerPath in tracker-utils.mjs).
+ * realpathed workspace root (mirrors canonicalizeTrackerPath in scripts/tracker-utils.mjs).
  *
  * @param {string} absPath - Already-resolved absolute candidate path.
  * @param {string} label - 'input' | 'output', used in the thrown message.
@@ -629,7 +629,7 @@ export function validateCvSectionOrder(html, cvMarkdown, { allowReorder = false 
 export const CV_SECTION_KEYS = [...new Set(SECTION_ALIASES.values())];
 
 // The all-caps comments the templates use to delimit sections, matched exactly
-// as cv-sections-core.mjs matches them when stripping empty sections.
+// as scripts/cv-sections-core.mjs matches them when stripping empty sections.
 const SECTION_MARKER_RE = /<!--\s+[A-Z][A-Z ]*-->/g;
 const SECTION_TITLE_RE = /class=["'][^"']*\bsection-title\b[^"']*["'][^>]*>([\s\S]*?)<\/[^>]+>/gi;
 
@@ -1110,7 +1110,7 @@ export function reorderCvSections(html, order) {
     if (unresolved.length === 0 || unrecognized.size === 0) return;
     const names = unresolved.map(name => `"${displayTitle(name)}"`).join(', ');
     const titles = [...unrecognized.values()].map(title => `"${title}"`).join(', ');
-    console.warn(`⚠️  config/profile.yml cv.sections names ${names}, which matched no section in this CV. The CV also renders ${unrecognized.size} section title(s) the section-order alias table doesn't recognize (${titles}) — if one of those is the section you meant, its title needs an entry in SECTION_ALIASES in generate-pdf.mjs. Otherwise the name has no effect and can be dropped.`);
+    console.warn(`⚠️  config/profile.yml cv.sections names ${names}, which matched no section in this CV. The CV also renders ${unrecognized.size} section title(s) the section-order alias table doesn't recognize (${titles}) — if one of those is the section you meant, its title needs an entry in SECTION_ALIASES in scripts/generate-pdf.mjs. Otherwise the name has no effect and can be dropped.`);
   };
   if (chosen.length < 2) {
     reportUnresolved();
@@ -1301,7 +1301,7 @@ export const ARTIFACT_KINDS = ['cv', 'cover'];
  * Decide which artifact a render produces, for the manifest's `kind` column.
  *
  * Resolved here rather than in the CLI because every path converges on
- * renderInPage(): the CLI, the --batch manifest, generate-cover-letter.mjs, and
+ * renderInPage(): the CLI, the --batch manifest, scripts/generate-cover-letter.mjs, and
  * the ad-hoc scripts that call the exported renderHtmlToPdf() directly. A
  * caller that forgets to declare a cover letter is the normal case, not the
  * exceptional one, so the default has to be derived rather than assumed to be
@@ -1314,7 +1314,7 @@ export const ARTIFACT_KINDS = ['cv', 'cover'];
  *      its CV filed as a CV.
  *   3. `cover` as the leading or trailing token: both real conventions, the
  *      `cover-...` prefix and the `{company}-{role}-cover.pdf` suffix that
- *      generate-cover-letter.mjs writes.
+ *      scripts/generate-cover-letter.mjs writes.
  *   4. 'cv', the overwhelmingly common render.
  *
  * Anchored to the ends of the name on purpose: an unanchored "cover" would read
@@ -1390,7 +1390,7 @@ export function applyManifestRow(existingLines, row) {
  * the tracker workspace with forward slashes. One row per PDF path, and one row
  * per (report number, kind) so a report's CV and its cover letter coexist while
  * a regenerated document still supersedes its own stale entry. kind is appended
- * last because find.mjs, outcome.mjs and the web reader all parse this file
+ * last because scripts/find.mjs, scripts/outcome.mjs and the web reader all parse this file
  * positionally; a reordered header would break them silently. The file is
  * gitignored: it references gitignored output/ artifacts and is meaningless on
  * another machine.
@@ -1405,7 +1405,7 @@ async function updatePDFManifest(reportNum, pdfPath, htmlPath, format, kind) {
   mkdirSync(dirname(manifestPath), { recursive: true });
   // Read, supersede and write under one lock, and publish atomically. Every
   // render is its own process (batch-runner.sh --parallel N starts N workers,
-  // each running generate-pdf.mjs), and this is a read-modify-write of one
+  // each running scripts/generate-pdf.mjs), and this is a read-modify-write of one
   // shared file: two renders that read the same manifest each wrote back their
   // own row plus the old rows, so whichever wrote last erased the other's row.
   return withPipelineLock(manifestPath, () => {
@@ -1423,7 +1423,7 @@ async function updatePDFManifest(reportNum, pdfPath, htmlPath, format, kind) {
 
     writeFileAtomic(
       manifestPath,
-      '# report\tpdf\thtml\tformat\tdate\tkind - written by generate-pdf.mjs, do not edit\n' +
+      '# report\tpdf\thtml\tformat\tdate\tkind - written by scripts/generate-pdf.mjs, do not edit\n' +
         lines.join('\n') + '\n'
     );
     return relPDF;
@@ -1433,7 +1433,7 @@ async function updatePDFManifest(reportNum, pdfPath, htmlPath, format, kind) {
 /**
  * Fact gate shared by the single-file and --batch paths.
  *
- * generate-cover-letter.mjs already blocks on assertFacts before importing
+ * scripts/generate-cover-letter.mjs already blocks on assertFacts before importing
  * Playwright, on the reasoning that a failed gate must not leave a misleading
  * artifact behind. A tailored CV is the same class of document and carries the
  * numbers a reader acts on, but the CV path enforced the gate only as an
@@ -1453,7 +1453,7 @@ async function updatePDFManifest(reportNum, pdfPath, htmlPath, format, kind) {
 async function runFactGate(html, label) {
   // Imported lazily, by the callers' guard. A static import is resolved at module
   // load whether or not the gate runs, and the page-budget/batch suites copy
-  // generate-pdf.mjs alone into a temp workspace — a static import of a sibling
+  // scripts/generate-pdf.mjs alone into a temp workspace — a static import of a sibling
   // that isn't copied made every one of those suites die with
   // ERR_MODULE_NOT_FOUND before reaching the behaviour under test. Those
   // fixtures also ship no cv.md, so the gate is never entered there. If the
@@ -1624,8 +1624,8 @@ async function generatePDF() {
   }
 
   if (!inputPath || !outputPath) {
-    console.error('Usage: node generate-pdf.mjs <input.html> <output.pdf> [--format=letter|a4] [--country=XX] [--report=NNN] [--kind=cv|cover] [--allow-reorder] [--allow-nonchronological] [--max-pages=N] [--strict-pages] [--skip-fact-check]');
-    console.error('   or: node generate-pdf.mjs --batch=<manifest.json> [--format=letter|a4] [--country=XX] [--allow-reorder] [--allow-nonchronological] [--max-pages=N] [--strict-pages] [--skip-fact-check]');
+    console.error('Usage: node scripts/generate-pdf.mjs <input.html> <output.pdf> [--format=letter|a4] [--country=XX] [--report=NNN] [--kind=cv|cover] [--allow-reorder] [--allow-nonchronological] [--max-pages=N] [--strict-pages] [--skip-fact-check]');
+    console.error('   or: node scripts/generate-pdf.mjs --batch=<manifest.json> [--format=letter|a4] [--country=XX] [--allow-reorder] [--allow-nonchronological] [--max-pages=N] [--strict-pages] [--skip-fact-check]');
     console.error('');
     console.error('Batch mode renders every document in the JSON manifest (an array of');
     console.error('{input, output, format?, country?, reportNum?, kind?}) through one shared Chromium and writes');

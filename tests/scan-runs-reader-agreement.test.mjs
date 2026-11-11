@@ -4,7 +4,7 @@
 // #3511 anchored the scanners' user data to the data root and pinned it well,
 // including that appendScanRunSummary() writes under the data root. This adds
 // the half that check cannot make: it asserts where the WRITER puts the file,
-// never asking stats.mjs where it actually looks. Move stats.mjs's own constant
+// never asking scripts/stats.mjs where it actually looks. Move scripts/stats.mjs's own constant
 // and tests/scan-data-paths-under-data-root.test.mjs stays green — verified —
 // because from the writer's side nothing has changed.
 //
@@ -48,8 +48,8 @@ function roundTrip() {
   mkdirSync(join(decoyCwd, 'data'), { recursive: true });
   try {
     const script = `
-      const scan  = await import(${url('scan.mjs')});
-      const stats = await import(${url('stats.mjs')});
+      const scan  = await import(${url('scripts/scan.mjs')});
+      const stats = await import(${url('scripts/stats.mjs')});
       scan.appendScanRunSummary(${JSON.stringify(COUNTERS)});   // default path
       const all = stats.computeAllStats();                       // default path
       process.stdout.write(JSON.stringify({ runs: all.runs ?? null }));
@@ -66,17 +66,17 @@ function roundTrip() {
   }
 }
 
-test('a run scan.mjs just wrote is visible to stats.mjs', () => {
+test('a run scripts/scan.mjs just wrote is visible to scripts/stats.mjs', () => {
   const out = roundTrip();
   assert.ok(
     out.runs,
-    'stats.mjs found no scan runs at all — the counters appendScanRunSummary() just wrote '
+    'scripts/stats.mjs found no scan runs at all — the counters appendScanRunSummary() just wrote '
     + 'are not where computeAllStats() looks. The two constants are resolved in separate '
     + 'files, so either side can drift without the other noticing.',
   );
   assert.equal(
     out.runs.totalRuns ?? out.runs.runs ?? 0,
     1,
-    `stats.mjs did not see the appended run: ${JSON.stringify(out.runs)}`,
+    `scripts/stats.mjs did not see the appended run: ${JSON.stringify(out.runs)}`,
   );
 });

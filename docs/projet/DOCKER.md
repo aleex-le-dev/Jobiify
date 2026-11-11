@@ -43,13 +43,13 @@ The `./cops` wrapper forwards any command into the container.
 | Apply update | `./cops update` |
 | Rollback | `./cops rollback` |
 | Interactive shell | `./cops shell` |
-| Raw node script | `./cops node check-liveness.mjs <url>` |
+| Raw node script | `./cops node scripts/check-liveness.mjs <url>` |
 | Build dashboard | `./cops bash -c 'cd dashboard && go build -buildvcs=false -o career-dashboard . && ./career-dashboard --path ..'` |
 
 Unknown subcommands fall through to `docker compose exec` so anything works:
 
 ```bash
-./cops node test-all.mjs --quick
+./cops node scripts/test-all.mjs --quick
 ./cops bash -c 'find reports -name "*.md" | wc -l'
 ```
 
@@ -65,7 +65,7 @@ Unknown subcommands fall through to `docker compose exec` so anything works:
 ## How it works
 
 - `Dockerfile` — installs Node, Playwright/Chromium (preinstalled in base image),
-  Go (for the dashboard), LaTeX (for `generate-latex.mjs`), and project deps.
+  Go (for the dashboard), LaTeX (for `scripts/generate-latex.mjs`), and project deps.
 - `docker-compose.yml` — bind-mounts the project at `/app` so host edits appear
   inside the container immediately. `node_modules` lives in a named volume to
   avoid host/container ABI mismatches.

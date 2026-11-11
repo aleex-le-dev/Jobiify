@@ -1,7 +1,7 @@
-// tests/dedup-tracker-status-aliases.test.mjs — dedup-tracker.mjs ranks every
+// tests/dedup-tracker-status-aliases.test.mjs — scripts/dedup-tracker.mjs ranks every
 // spelling of a status the way templates/states.yml defines it.
 //
-// dedup-tracker.mjs used to rank statuses from a hand-copied table of spellings.
+// scripts/dedup-tracker.mjs used to rank statuses from a hand-copied table of spellings.
 // A row whose Status was an alias that table did not carry ("Sent", "Aplicada",
 // "Başvuruldu", "Mülakat"...) ranked 0, the same as SKIP. Two consequences, both
 // silent:
@@ -18,7 +18,7 @@
 // states.yml cannot be read: with no vocabulary every status would rank 0, so it
 // must stop before it touches the tracker.
 //
-// Drives the REAL dedup-tracker.mjs CLI against a temp tracker via the
+// Drives the REAL scripts/dedup-tracker.mjs CLI against a temp tracker via the
 // CAREER_OPS_TRACKER hook: the deletion is what loses data, so the rows left in
 // the file are what is asserted.
 import { pass, fail, rmSync, linkRepoPackage, ROOT } from './helpers.mjs';
@@ -30,7 +30,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const DEDUP = join(HERE, '..', 'dedup-tracker.mjs');
+const DEDUP = join(HERE, '..', 'scripts/dedup-tracker.mjs');
 const ok = (name, fn) => { try { fn(); pass(name); } catch (e) { fail(`${name} — ${e.message}`); } };
 
 const HEADER = '| # | Date | Company | Role | Score | Status | PDF | Report | Notes |';
@@ -120,7 +120,7 @@ ok('a bold alias with a trailing date ("**Entrevista** 2026-06-01") is still rea
 const IN_MOTION = ['applied', 'responded', 'assessment', 'interview', 'offer', 'hired'];
 const NOT_IN_MOTION = ['evaluated', 'rejected', 'discarded', 'skip'];
 
-const { loadCanonicalStates } = await import(pathToFileURL(join(ROOT, 'tracker-utils.mjs')).href);
+const { loadCanonicalStates } = await import(pathToFileURL(join(ROOT, 'scripts/tracker-utils.mjs')).href);
 const states = loadCanonicalStates(join(ROOT, 'templates', 'states.yml'));
 
 ok('every state in states.yml is classified here as in motion or not', () => {
@@ -160,8 +160,8 @@ ok(`all ${spellings.length} labels and aliases in states.yml are ranked as the s
 // dedups normally, so the refusals below are caused by states.yml and not by a
 // file this list forgot.
 const SANDBOX_FILES = [
-  'dedup-tracker.mjs', 'path-resolver.mjs', 'role-matcher.mjs', 'url-key.mjs',
-  'tracker-utils.mjs', 'tracker-parse.mjs', 'tracker-aliases.json', 'pipeline-lock.mjs',
+  'scripts/dedup-tracker.mjs', 'scripts/path-resolver.mjs', 'scripts/role-matcher.mjs', 'scripts/url-key.mjs',
+  'scripts/tracker-utils.mjs', 'scripts/tracker-parse.mjs', 'tracker-aliases.json', 'scripts/pipeline-lock.mjs',
   'lib/cli-flags.mjs', 'lib/linkedin-url.mjs',
 ];
 const DUPLICATE_ROWS = [
@@ -174,7 +174,7 @@ function inSandbox(statesYml, fn) {
   try {
     for (const file of SANDBOX_FILES) {
       mkdirSync(dirname(join(dir, file)), { recursive: true });
-      copyFileSync(join(ROOT, file), join(dir, file));
+      (mkdirSync(join(dir, file, '..'), { recursive: true }), (mkdirSync(join(dir, file, '..'), { recursive: true }), copyFileSync(join(ROOT, file), join(dir, file))));
     }
     linkRepoPackage(dir, 'js-yaml');
     if (statesYml !== null) {
@@ -184,7 +184,7 @@ function inSandbox(statesYml, fn) {
     const tracker = join(dir, 'data', 'applications.md');
     mkdirSync(dirname(tracker), { recursive: true });
     writeFileSync(tracker, trackerText(DUPLICATE_ROWS));
-    const r = spawnSync(process.execPath, [join(dir, 'dedup-tracker.mjs')], {
+    const r = spawnSync(process.execPath, [join(dir, 'scripts/dedup-tracker.mjs')], {
       encoding: 'utf-8',
       env: { ...process.env, CAREER_OPS_TRACKER: tracker },
     });

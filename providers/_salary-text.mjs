@@ -1,7 +1,7 @@
 // @ts-check
 // Shared free-text salary parsing: one reading of an amount or range string
 // ("80-90k", "$123,684—$254,644 USD", "45.000,00") for every caller that turns
-// written compensation into numbers — salary-gap.mjs's observation log and the
+// written compensation into numbers — scripts/salary-gap.mjs's observation log and the
 // providers whose payload carries salary only as free text. Files prefixed
 // with _ are never loaded as providers (see _registry.mjs).
 

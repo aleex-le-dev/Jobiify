@@ -136,7 +136,7 @@ test("toolScopeFor: evaluate gets no write-capable tool", () => {
 
 
 test("toolScopeFor: fix-portal keeps Write and Bash on purpose", () => {
-  // Given this kind genuinely runs verify-portals.mjs and edits portals.yml
+  // Given this kind genuinely runs scripts/verify-portals.mjs and edits portals.yml
   const allowed = toolNames(toolScopeFor("fix-portal").allowed);
 
   // Then it retains write access — tracker merge / pdf generation live in the

@@ -1,7 +1,7 @@
 // The follow-ups lock exists to stop a LOST UPDATE, so the test has to produce one.
 //
 // data/follow-ups.md is read-modify-written from two directions: the web's
-// log/override routes and the core's cadence seeder (followup-seed.mjs). Each
+// log/override routes and the core's cadence seeder (scripts/followup-seed.mjs). Each
 // writer reads the whole file, adds its own line, and writes the whole file
 // back. Unserialized, two overlapping writers each start from the same snapshot
 // and the second's full-file write discards the first's line — no error, a
@@ -21,16 +21,16 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-// Resolved from this file, not the cwd: test-all.mjs runs these suites from the
+// Resolved from this file, not the cwd: scripts/test-all.mjs runs these suites from the
 // repo root, where `cwd/..` points outside the checkout and every core case
 // would skip as "not resolvable" while reporting green.
 const CORE =
   process.env.CAREER_OPS_ROOT ||
   path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const coreSeed = path.join(CORE, "followup-seed.mjs");
+const coreSeed = path.join(CORE, "scripts/followup-seed.mjs");
 
 // The guard has to answer "can this be imported", not "is the file there".
-// followup-seed.mjs imports js-yaml, so a web-only install (web-ci.yml runs
+// scripts/followup-seed.mjs imports js-yaml, so a web-only install (web-ci.yml runs
 // `npm ci` in web/ alone) has the file and not its dependencies; existsSync
 // would call that runnable and the cases would fail on ERR_MODULE_NOT_FOUND
 // instead of skipping (mirrors tracker-lock.test.mjs / #2922).

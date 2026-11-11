@@ -179,7 +179,7 @@ async function main() {
 
 // Run the CLI only when invoked as a script. mintToken is imported by the test
 // suite; an unguarded main() would run on import with the importer's argv,
-// print usage, and set the IMPORTER's exit code to 2 (test-all.mjs imports
+// print usage, and set the IMPORTER's exit code to 2 (scripts/test-all.mjs imports
 // test files in-process, so that turned the whole suite red).
 if (isMainModule(import.meta.url)) {
   main().catch(err => {

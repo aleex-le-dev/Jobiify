@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * classify-tier.mjs — Seniority-tier classifier for job titles
+ * scripts/classify-tier.mjs — Seniority-tier classifier for job titles
  *
  * Classifies a job title into one of the following tiers:
  *   - 'intern'
@@ -13,8 +13,8 @@
  * Default tier is 'mid' if no keywords match.
  */
 
-import { validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 /**
  * Classifies a job title into exactly one seniority tier.
@@ -161,7 +161,7 @@ export function classifyTier(title) {
   // still reads "Senior Intern Coordinator" as senior: there the senior word
   // genuinely leads the title.
   //
-  // This is not cosmetic: scan.mjs drops a posting whose tier is in
+  // This is not cosmetic: scripts/scan.mjs drops a posting whose tier is in
   // `skip_tiers` without naming it, so a junior candidate skipping `senior`
   // silently lost the internships they were scanning for.
   //
@@ -201,9 +201,9 @@ const isDirect = isMainModule(import.meta.url);
 const KNOWN_FLAGS = ['--test', '--help', '-h'];
 
 const USAGE = `Usage:
-  node classify-tier.mjs "<job-title>"   # print the seniority tier
-  node classify-tier.mjs --test          # run the inline test cases
-  node classify-tier.mjs --help          # show this message
+  node scripts/classify-tier.mjs "<job-title>"   # print the seniority tier
+  node scripts/classify-tier.mjs --test          # run the inline test cases
+  node scripts/classify-tier.mjs --help          # show this message
 
 Tiers: intern, entry, mid, senior. Defaults to mid when no keyword matches.`;
 
@@ -240,7 +240,7 @@ function runTests() {
   ];
 
   let failed = 0;
-  console.log("Running classify-tier.mjs tests...");
+  console.log("Running scripts/classify-tier.mjs tests...");
   for (const { title, expected } of testCases) {
     const result = classifyTier(title);
     if (result === expected) {

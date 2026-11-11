@@ -3,9 +3,9 @@
 // data/pipeline.md under the pipeline lock, not write back the copy it read
 // when the run started.
 //
-// A run takes minutes (liveness check + model call per offer). scan.mjs,
-// plugins.mjs and agent-inbox.mjs append to the same file meanwhile, and
-// scan.mjs has already recorded each appended offer in scan-history.tsv, so an
+// A run takes minutes (liveness check + model call per offer). scripts/scan.mjs,
+// scripts/plugins.mjs and scripts/agent-inbox.mjs append to the same file meanwhile, and
+// scripts/scan.mjs has already recorded each appended offer in scan-history.tsv, so an
 // offer erased by the final write is never queued again.
 //
 // No Playwright and no model: the merge is the exported finishPipelineBatch /
@@ -15,9 +15,9 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { finishPipelineBatch, mergeProcessedLines } from '../batch-evaluate-gemini.mjs';
-import { lockDirFor, withPipelineLock } from '../pipeline-lock.mjs';
-import { appendToPipeline } from '../scan.mjs';
+import { finishPipelineBatch, mergeProcessedLines } from '../scripts/batch-evaluate-gemini.mjs';
+import { lockDirFor, withPipelineLock } from '../scripts/pipeline-lock.mjs';
+import { appendToPipeline } from '../scripts/scan.mjs';
 
 const PENDING = [
   '- [ ] https://example.test/job/1 | Co1 | Role 1',

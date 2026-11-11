@@ -29,12 +29,12 @@ esac
 # can place outside the checkout. Every path here used to be built from
 # PROJECT_DIR, so under an external data root workers were scored against the
 # checkout's template profile, and their reports and tracker lines were looked
-# for in directories reserve-report-num.mjs and merge-tracker.mjs never read
-# (#5115). path-resolver.mjs owns the precedence, so ask it instead of
+# for in directories scripts/reserve-report-num.mjs and scripts/merge-tracker.mjs never read
+# (#5115). scripts/path-resolver.mjs owns the precedence, so ask it instead of
 # re-deriving it in bash. It prints nothing when the data root is the checkout,
 # which keeps DATA_ROOT spelled exactly like PROJECT_DIR in the default layout.
 DATA_ROOT="$PROJECT_DIR"
-if [[ -f "$PROJECT_DIR/path-resolver.mjs" ]]; then
+if [[ -f "$PROJECT_DIR/scripts/path-resolver.mjs" ]]; then
   if ! resolved_data_root="$(node --input-type=module -e '
     import { realpathSync } from "node:fs";
     import { dirname } from "node:path";
@@ -46,8 +46,8 @@ if [[ -f "$PROJECT_DIR/path-resolver.mjs" ]]; then
     if (real(root) !== real(dirname(resolver))) {
       process.stdout.write(process.platform === "win32" ? root.replace(/\\/g, "/") : root);
     }
-  ' "$PROJECT_DIR/path-resolver.mjs")"; then
-    echo "ERROR: could not resolve the career-ops data root through path-resolver.mjs" >&2
+  ' "$PROJECT_DIR/scripts/path-resolver.mjs")"; then
+    echo "ERROR: could not resolve the career-ops data root through scripts/path-resolver.mjs" >&2
     exit 1
   fi
   if [[ -n "$resolved_data_root" ]]; then
@@ -64,7 +64,7 @@ DISCARD_LOG="$LOGS_DIR/discard.log"
 TRACKER_DIR="$DATA_ROOT/batch/tracker-additions"
 REPORTS_DIR="$DATA_ROOT/reports"
 # The runner's own bookkeeping (input, state, logs, locks) stays beside the
-# script. reserve-report-num.mjs and merge-tracker.mjs default batch-state.tsv
+# script. scripts/reserve-report-num.mjs and scripts/merge-tracker.mjs default batch-state.tsv
 # to the data root, where this runner never writes it, so name the real file
 # for them: both skip report numbers this run recorded as failed. Built from
 # PROJECT_DIR, which is the form node can open under Git Bash (see above).
@@ -840,24 +840,24 @@ reserve_report_num_unlocked() {
   local id="$1" url="$2" started="$3" retries="$4"
 
   # Use the shared, cross-process-atomic reservation system (O_CREAT|O_EXCL
-  # sentinel files in reserve-report-num.mjs) instead of the old bash-native
+  # sentinel files in scripts/reserve-report-num.mjs) instead of the old bash-native
   # max(existing report files, batch-state.tsv numbers)+1 scan. The bash-native
   # version had zero visibility into reservations made by any OTHER process
-  # calling `node reserve-report-num.mjs` directly -- e.g. an interactively
+  # calling `node scripts/reserve-report-num.mjs` directly -- e.g. an interactively
   # dispatched Agent evaluating one offer with a browser tool while a batch
   # run is in flight. Both could independently compute the same "next" number
   # and collide on disk. Found 2026-07-30: two separate collisions (report
   # 049, report 051) in one batch run for exactly this reason -- routing every
   # caller through the same node script means they all share one real lock.
   local report_num=""
-  report_num=$(node "$PROJECT_DIR/reserve-report-num.mjs" 2>/dev/null | tr -d '[:space:]') || report_num=""
+  report_num=$(node "$PROJECT_DIR/scripts/reserve-report-num.mjs" 2>/dev/null | tr -d '[:space:]') || report_num=""
   # No number means the allocator failed (lock timeout, unwritable reports/,
   # exhausted retries). Returning success with an empty number let the caller
   # launch a paid worker with a blank "Report number:" and write an empty
   # report_num cell into batch-state.tsv; the retry wrapper below is what
   # handles a failed reservation, so fail here and let it.
   if [[ ! "$report_num" =~ ^[0-9]+$ ]]; then
-    echo "    ❌ reserve-report-num.mjs returned no report number for offer id=$id" >&2
+    echo "    ❌ scripts/reserve-report-num.mjs returned no report number for offer id=$id" >&2
     return 1
   fi
   update_state_unlocked "$id" "$url" "processing" "$started" "-" "$report_num" "-" "-" "$retries"
@@ -871,7 +871,7 @@ reserve_report_num_unlocked() {
 release_report_num() {
   local report_num="$1"
   [[ -n "$report_num" && "$report_num" != "-" ]] || return 0
-  node "$PROJECT_DIR/reserve-report-num.mjs" --release "$report_num" >/dev/null 2>&1 || true
+  node "$PROJECT_DIR/scripts/reserve-report-num.mjs" --release "$report_num" >/dev/null 2>&1 || true
 }
 
 reserve_report_num() {
@@ -879,14 +879,14 @@ reserve_report_num() {
 }
 
 # Succeed if reports/ holds a real report for this number. The reservation
-# sentinel ({num}-RESERVED.md) never counts: reserve-report-num.mjs creates it
+# sentinel ({num}-RESERVED.md) never counts: scripts/reserve-report-num.mjs creates it
 # before the worker runs, so counting it would mark a no-op worker completed.
 #
 # A plain glob loop, not `compgen -G`: compgen exists only when bash is built
 # with programmable completion, and some distro builds (NixOS among them) omit
 # it from non-interactive shells. There, compgen fails, the check sees no
 # report, and every worker is recorded as failed even though its report is on
-# disk. merge-tracker.mjs then refuses those reports as possibly fabricated.
+# disk. scripts/merge-tracker.mjs then refuses those reports as possibly fabricated.
 has_report_file() {
   local report_num="$1" f
   for f in "$REPORTS_DIR/${report_num}"-*.md; do
@@ -1074,24 +1074,24 @@ process_offer() {
 
   # ATS API fallback (#4246). When the static fetch above left $jd_file empty
   # (thin JS shell, curl failure, curl absent), ask the ATS's own public API
-  # through fetch-jd.mjs before the worker falls back to WebFetch, which hits
+  # through scripts/fetch-jd.mjs before the worker falls back to WebFetch, which hits
   # the same unrendered shell on Ashby and embedded Greenhouse boards.
   # The call lives here and not in the worker prompt on purpose: the offer URL
   # is untrusted, and here it travels as one argv element ("$url"), never as
-  # text inside a shell command the worker composes. fetch-jd.mjs only talks to
+  # text inside a shell command the worker composes. scripts/fetch-jd.mjs only talks to
   # the known ATS API hosts it resolves from the URL, so a private or unknown
   # host is a miss (exit 1), not a request.
   local jd_api_words=0
-  if [[ ! -s "$jd_file" && -f "$PROJECT_DIR/fetch-jd.mjs" ]]; then
+  if [[ ! -s "$jd_file" && -f "$PROJECT_DIR/scripts/fetch-jd.mjs" ]]; then
     local jd_api_tmp
     jd_api_tmp="$(mktemp "${TMPDIR:-/tmp}/batch-jd-api.XXXXXX")"
-    if node "$PROJECT_DIR/fetch-jd.mjs" "$url" > "$jd_api_tmp" 2>/dev/null; then
+    if node "$PROJECT_DIR/scripts/fetch-jd.mjs" "$url" > "$jd_api_tmp" 2>/dev/null; then
       jd_api_words=$(wc -w < "$jd_api_tmp" 2>/dev/null) || jd_api_words=0
       jd_api_words="${jd_api_words//[^0-9]/}"
       jd_api_words="${jd_api_words:-0}"
       if [[ "$jd_api_words" -ge "$prefetch_min_words" ]]; then
         cat "$jd_api_tmp" > "$jd_file"
-        echo "    ℹ️  JD prefetch: ${jd_api_words} words from the ATS API (fetch-jd.mjs)"
+        echo "    ℹ️  JD prefetch: ${jd_api_words} words from the ATS API (scripts/fetch-jd.mjs)"
       fi
     fi
     rm -f "$jd_api_tmp"
@@ -1283,7 +1283,7 @@ process_offer() {
     # Without this check such offers were silently marked "completed" with no
     # report file on disk and score "-" (found 2026-07-29, offer id 6 / report
     # 019 — Deepgram JD unextractable in headless mode). Only the downstream
-    # reconcile-pipeline.mjs safety net (which leaves an entry in Pending when
+    # scripts/reconcile-pipeline.mjs safety net (which leaves an entry in Pending when
     # its report file is missing) prevented the offer from being lost.
     # Extract only the LAST ```json fenced block in the log -- that's the
     # worker's one authoritative final result (batch-prompt.md Step 6), not
@@ -1459,13 +1459,13 @@ process_offer() {
 merge_tracker() {
   echo ""
   echo "=== Merging tracker additions ==="
-  node "$PROJECT_DIR/merge-tracker.mjs"
+  node "$PROJECT_DIR/scripts/merge-tracker.mjs"
   echo ""
   echo "=== Reconciling pipeline.md ==="
-  node "$PROJECT_DIR/reconcile-pipeline.mjs" || echo "⚠️  Pipeline reconcile had issues (see above)"
+  node "$PROJECT_DIR/scripts/reconcile-pipeline.mjs" || echo "⚠️  Pipeline reconcile had issues (see above)"
   echo ""
   echo "=== Verifying pipeline integrity ==="
-  node "$PROJECT_DIR/verify-pipeline.mjs" || echo "⚠️  Verification found issues (see above)"
+  node "$PROJECT_DIR/scripts/verify-pipeline.mjs" || echo "⚠️  Verification found issues (see above)"
 }
 
 report_progress() {
@@ -1623,11 +1623,11 @@ watch_status() {
   echo "Showing final status:"
   print_status_table
 
-  # Chain verify-pipeline.mjs
-  if [[ -f "$PROJECT_DIR/verify-pipeline.mjs" ]]; then
+  # Chain scripts/verify-pipeline.mjs
+  if [[ -f "$PROJECT_DIR/scripts/verify-pipeline.mjs" ]]; then
     echo ""
     echo "=== Running pipeline verification ==="
-    node "$PROJECT_DIR/verify-pipeline.mjs" || echo "⚠️  Verification found issues"
+    node "$PROJECT_DIR/scripts/verify-pipeline.mjs" || echo "⚠️  Verification found issues"
   fi
 }
 

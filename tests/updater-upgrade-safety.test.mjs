@@ -1,10 +1,10 @@
 /**
  * updater-upgrade-safety.test.mjs — BEHAVIORAL upgrade-safety tests (#2337, #2007).
  *
- * #2337: `update-system.mjs apply()` overwrites every SYSTEM_PATHS file with a
+ * #2337: `scripts/update-system.mjs apply()` overwrites every SYSTEM_PATHS file with a
  * raw `git checkout FETCH_HEAD -- <path>` in a loop — not a merge, no divergence
  * detection. A local, un-upstreamed fix to a system-layer file (the concrete case
- * was a fix to generate-cover-letter.mjs reverted across v1.22→1.24) is silently
+ * was a fix to scripts/generate-cover-letter.mjs reverted across v1.22→1.24) is silently
  * discarded. `locallyModifiedSystemFiles()` is the pure ctx-seamed export that
  * flags those at-risk files so apply() can preserve them (and write a `.bak`)
  * before the checkout loop.
@@ -14,7 +14,7 @@
  * (apply() does not expose that loop as a callable export), against a throwaway
  * git repo via the git-runner seam — no network, no career-ops-v* tags, no
  * apply() call. They
- * run in-process on every PR (test-all.mjs auto-discovers tests/**\/*.test.mjs),
+ * run in-process on every PR (scripts/test-all.mjs auto-discovers tests/**\/*.test.mjs),
  * so the never-touch-user-data property and the #2337 detection are gated on
  * every change, matching the reference pattern in updater-rollback-behavior.test.mjs.
  */
@@ -24,7 +24,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync
 import { tmpdir } from 'os';
 import { join, dirname } from 'path';
 import { pass, fail } from './helpers.mjs';
-import { gitIn, locallyModifiedSystemFiles, revertPaths } from '../update-system.mjs';
+import { gitIn, locallyModifiedSystemFiles, revertPaths } from '../scripts/update-system.mjs';
 
 // A throwaway git repo plus a ctx that binds the seam's git runner and
 // filesystem root to it, so nothing touches the real working tree. autocrlf is
@@ -62,7 +62,7 @@ console.log('\n🧪 Testing updater upgrade safety (#2337, #2007)...');
   const { dir, g, ctx } = makeRepo('co-upgrade-diverge-');
 
   // BASE commit: original blobs for three system files.
-  writeFixture(dir, 'generate-cover-letter.mjs', ['// cover base']);   // will diverge locally
+  writeFixture(dir, 'scripts/generate-cover-letter.mjs', ['// cover base']);   // will diverge locally
   writeFixture(dir, 'modes/_shared.md', ['shared base']);              // upstream-updated, local unchanged
   writeFixture(dir, 'modes/oferta.md', ['oferta base']);               // locally changed, upstream identical
   g('add', '-A');
@@ -70,7 +70,7 @@ console.log('\n🧪 Testing updater upgrade safety (#2337, #2007)...');
 
   // Upstream branch (the FETCH_HEAD stand-in) diverges from BASE.
   g('checkout', '-q', '-b', 'upstream');
-  writeFixture(dir, 'generate-cover-letter.mjs', ['// cover UPSTREAM edit']);
+  writeFixture(dir, 'scripts/generate-cover-letter.mjs', ['// cover UPSTREAM edit']);
   writeFixture(dir, 'modes/_shared.md', ['shared UPSTREAM edit']);
   writeFixture(dir, 'modes/oferta.md', ['oferta CONVERGENT edit']);    // same text local will adopt
   writeFixture(dir, 'modes/upstream-only.md', ['upstream ships this file']); // only on upstream
@@ -79,16 +79,16 @@ console.log('\n🧪 Testing updater upgrade safety (#2337, #2007)...');
 
   // Local HEAD diverges from BASE independently.
   g('checkout', '-q', 'main');
-  writeFixture(dir, 'generate-cover-letter.mjs', ['// cover LOCAL un-upstreamed sentinel']);
+  writeFixture(dir, 'scripts/generate-cover-letter.mjs', ['// cover LOCAL un-upstreamed sentinel']);
   // modes/_shared.md left untouched → still equals BASE (normal upstream update).
   writeFixture(dir, 'modes/oferta.md', ['oferta CONVERGENT edit']);    // identical to upstream's blob
   g('add', '-A');
   g('commit', '-qm', 'local changes');
 
-  const paths = ['generate-cover-letter.mjs', 'modes/_shared.md', 'modes/oferta.md', 'modes/pdf/'];
+  const paths = ['scripts/generate-cover-letter.mjs', 'modes/_shared.md', 'modes/oferta.md', 'modes/pdf/'];
   const atRisk = locallyModifiedSystemFiles(paths, 'upstream', ctx);
 
-  if (atRisk.includes('generate-cover-letter.mjs')) {
+  if (atRisk.includes('scripts/generate-cover-letter.mjs')) {
     pass('#2337: flags a locally-diverged system file about to be overwritten by a different upstream blob');
   } else {
     fail(`#2337 regression: locallyModifiedSystemFiles did NOT flag the overwritten local edit (got: ${JSON.stringify(atRisk)})`);
@@ -142,12 +142,12 @@ console.log('\n🧪 Testing updater upgrade safety (#2337, #2007)...');
 // every update and never updates again without `--force`.
 {
   const { dir, g, ctx } = makeRepo('co-upgrade-orphan-');
-  writeFixture(dir, 'generate-cover-letter.mjs', ['// cover base']);
+  writeFixture(dir, 'scripts/generate-cover-letter.mjs', ['// cover base']);
   g('add', '-A');
   g('commit', '-qm', 'base');
   // An orphan branch is a second, unrelated root commit: no merge-base with main.
   g('checkout', '-q', '--orphan', 'foreign');
-  writeFixture(dir, 'generate-cover-letter.mjs', ['// cover FOREIGN root']);
+  writeFixture(dir, 'scripts/generate-cover-letter.mjs', ['// cover FOREIGN root']);
   g('add', '-A');
   g('commit', '-qm', 'foreign root');
   g('checkout', '-q', 'main');   // clean tree, no shared history with `foreign`
@@ -155,7 +155,7 @@ console.log('\n🧪 Testing updater upgrade safety (#2337, #2007)...');
   let result;
   let threw = false;
   try {
-    result = locallyModifiedSystemFiles(['generate-cover-letter.mjs'], 'foreign', ctx);
+    result = locallyModifiedSystemFiles(['scripts/generate-cover-letter.mjs'], 'foreign', ctx);
   } catch {
     threw = true;
   }
@@ -178,7 +178,7 @@ console.log('\n🧪 Testing updater upgrade safety (#2337, #2007)...');
 {
   const { dir, g, ctx } = makeRepo('co-upgrade-deleted-');
   writeFixture(dir, 'modes/_shared.md', ['shared base']);
-  writeFixture(dir, 'generate-cover-letter.mjs', ['// cover base']);
+  writeFixture(dir, 'scripts/generate-cover-letter.mjs', ['// cover base']);
   g('add', '-A');
   g('commit', '-qm', 'base');
 
@@ -221,25 +221,25 @@ console.log('\n🧪 Testing updater upgrade safety (#2337, #2007)...');
   // The third entry exists ONLY on upstream: the checkout introduces it, and
   // rollback must delete it (it is not in HEAD), exercising revertPaths'
   // removeAdditionsNotInHead fallback rather than the plain restore branch.
-  const fixtureSystemPaths = ['generate-cover-letter.mjs', 'modes/_shared.md', 'modes/upstream-only.mjs'];
+  const fixtureSystemPaths = ['scripts/generate-cover-letter.mjs', 'modes/_shared.md', 'modes/upstream-only.mjs'];
   const upstreamOnly = 'modes/upstream-only.mjs';
 
   // BASE / HEAD: known user content (explicit \n) + system baselines.
   writeFixture(dir, 'cv.md', ['# CV', 'Jane Doe', 'local STAR story']);
   writeFixture(dir, 'data/applications.md', ['# Applications Tracker', '| # | Company |']);
   writeFixture(dir, 'modes/_profile.md', ['# Profile', 'archetype: local']);
-  writeFixture(dir, 'generate-cover-letter.mjs', ['// cover SYS base']);
+  writeFixture(dir, 'scripts/generate-cover-letter.mjs', ['// cover SYS base']);
   writeFixture(dir, 'modes/_shared.md', ['shared SYS base']);
   g('add', '-A');
   g('commit', '-qm', 'base');
 
   const userShaBefore = Object.fromEntries(userFiles.map(f => [f, sha256(dir, f)]));
-  const sysBlobBefore = g('rev-parse', 'HEAD:generate-cover-letter.mjs');
+  const sysBlobBefore = g('rev-parse', 'HEAD:scripts/generate-cover-letter.mjs');
 
   // Upstream branch changes BOTH system and user files. Only system paths are
   // checked out below, so the divergent upstream user content must never appear.
   g('checkout', '-q', '-b', 'upstream');
-  writeFixture(dir, 'generate-cover-letter.mjs', ['// cover SYS UPSTREAM']);
+  writeFixture(dir, 'scripts/generate-cover-letter.mjs', ['// cover SYS UPSTREAM']);
   writeFixture(dir, 'modes/_shared.md', ['shared SYS UPSTREAM']);
   writeFixture(dir, upstreamOnly, ['// new system file introduced by the update']); // absent from HEAD
   writeFixture(dir, 'cv.md', ['# CV', 'UPSTREAM CONTENT — MUST NOT APPEAR']);
@@ -269,8 +269,8 @@ console.log('\n🧪 Testing updater upgrade safety (#2337, #2007)...');
   if (userIntact) {
     pass('user-layer byte-identity: cv.md, data/applications.md, modes/_profile.md are SHA-256 identical after the system-path checkout');
   }
-  const sysBlobAfter = g('rev-parse', 'HEAD:generate-cover-letter.mjs'); // HEAD unchanged; worktree/index updated
-  if (readFileSync(join(dir, 'generate-cover-letter.mjs'), 'utf-8').includes('UPSTREAM')) {
+  const sysBlobAfter = g('rev-parse', 'HEAD:scripts/generate-cover-letter.mjs'); // HEAD unchanged; worktree/index updated
+  if (readFileSync(join(dir, 'scripts/generate-cover-letter.mjs'), 'utf-8').includes('UPSTREAM')) {
     pass('control: the system-layer sentinel DID change (proving the checkout actually ran)');
   } else {
     fail('the system file did not change — the checkout loop was a no-op, so byte-identity proves nothing');
@@ -285,8 +285,8 @@ console.log('\n🧪 Testing updater upgrade safety (#2337, #2007)...');
   // ── 3. rollback round-trip: revertPaths restores system, users stay identical ──
   revertPaths([...fixtureSystemPaths], initialStaged, ctx);
 
-  const sysWorktreeReverted = readFileSync(join(dir, 'generate-cover-letter.mjs'), 'utf-8');
-  const sysBlobReverted = g('rev-parse', ':generate-cover-letter.mjs'); // index blob after revert
+  const sysWorktreeReverted = readFileSync(join(dir, 'scripts/generate-cover-letter.mjs'), 'utf-8');
+  const sysBlobReverted = g('rev-parse', ':scripts/generate-cover-letter.mjs'); // index blob after revert
   if (sysBlobReverted === sysBlobBefore && sysWorktreeReverted.includes('SYS base')
       && !sysWorktreeReverted.includes('UPSTREAM')) {
     pass('rollback round-trip: revertPaths returns the system file to its prior blob');

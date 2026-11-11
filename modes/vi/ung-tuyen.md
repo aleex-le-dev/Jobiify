@@ -90,7 +90,7 @@ Không sang Bước 6 cho đến khi preflight được giải quyết.
 4. Nếu có mục `## Application Answers` → khôi phục bằng bộ đọc nghiêm ngặt, không bao giờ bằng cách đọc lại markdown đã render như văn xuôi:
 
    ```bash
-   node application-answers.mjs --report reports/NNN-company-role-date.md --read --strict
+   node scripts/application-answers.mjs --report reports/NNN-company-role-date.md --read --strict
    ```
 
    - **Exit 0** → JSON trên stdout là bản nền của các câu trả lời trước đó. `null` nghĩa là báo cáo không có mục này; coi như đơn mới.
@@ -98,7 +98,7 @@ Không sang Bước 6 cho đến khi preflight được giải quyết.
    - **Block H** (`## H) Draft Application Answers`, soạn lúc đánh giá khi chưa thấy form) có bộ đọc riêng:
 
      ```bash
-     node application-answers.mjs --report reports/NNN-company-role-date.md --read-draft
+     node scripts/application-answers.mjs --report reports/NNN-company-role-date.md --read-draft
      ```
 
      - In ra `{"freeText": [...]}`, hoặc `null` khi báo cáo không có Block H. Không có `--strict` tương ứng: `freeText` rỗng nghĩa là khối tồn tại nhưng không theo quy ước, đó là kết quả bình thường chứ không phải báo cáo hỏng.
@@ -111,13 +111,13 @@ Nếu vai trò trên màn hình khác với vai trò đã đánh giá:
 - **Thông báo cho ứng viên**: "Vai trò đã đổi từ [X] sang [Y]. Bạn muốn tôi đánh giá lại hay điều chỉnh câu trả lời theo chức danh mới?"
 - **Nếu điều chỉnh**: điều chỉnh câu trả lời theo vai trò mới mà không đánh giá lại, chỉ sau khi ứng viên chấp nhận tường minh sự lệch này
 - **Nếu đánh giá lại**: chạy đánh giá A-F đầy đủ, cập nhật báo cáo, tạo lại Block H
-- **Sau khi đánh giá lại**: ghi TSV với chức danh vai trò mới (quy tắc 9 trong `_shared.md`) và gộp bằng `node merge-tracker.mjs`. Báo cáo được cập nhật tại chỗ và giữ nguyên số, nên bước gộp khớp TSV với dòng hiện có theo số đó: chức danh được thay và trạng thái được giữ nguyên.
+- **Sau khi đánh giá lại**: ghi TSV với chức danh vai trò mới (quy tắc 9 trong `_shared.md`) và gộp bằng `node scripts/merge-tracker.mjs`. Báo cáo được cập nhật tại chỗ và giữ nguyên số, nên bước gộp khớp TSV với dòng hiện có theo số đó: chức danh được thay và trạng thái được giữ nguyên.
 
 ## Bước 4b — Xác định CV đã điều chỉnh (nguồn sự thật cho các trường kinh nghiệm)
 
 Tài liệu tải lên form là CV đã điều chỉnh mà mode `pdf` tạo cho báo cáo này -- `cv/tailored/vNNN/cv.pdf` của bundle đang hoạt động, hoặc `output/cv-{candidate}-{company}-{YYYY-MM-DD}.pdf`. Nó cố ý không phải `cv.md`: các gạch đầu dòng được chọn lại và sắp xếp lại, framing vai trò được viết lại theo lĩnh vực của nhà tuyển dụng. Người duyệt đọc các trường có cấu trúc cạnh tài liệu đính kèm, nên form điền từ `cv.md` mâu thuẫn với CV đính kèm.
 
-Xác định CV đã điều chỉnh trước khi soạn hay điền gì, đúng các bước của `modes/apply.md` → "Step 4b" (bundle trước bằng `node application-artifacts.mjs --report {report#} --company "{company}" --role "{role}"`, rồi `data/pdf-index.tsv` chỉ như gợi ý, rồi khớp tên file trong `output/` theo ranh giới token công ty). Nếu `output/` có nhiều hơn một CV cho công ty đó, đừng lấy file mới nhất: hỏi CV nào được tạo cho báo cáo này. `cover-…` không bao giờ là CV.
+Xác định CV đã điều chỉnh trước khi soạn hay điền gì, đúng các bước của `modes/apply.md` → "Step 4b" (bundle trước bằng `node scripts/application-artifacts.mjs --report {report#} --company "{company}" --role "{role}"`, rồi `data/pdf-index.tsv` chỉ như gợi ý, rồi khớp tên file trong `output/` theo ranh giới token công ty). Nếu `output/` có nhiều hơn một CV cho công ty đó, đừng lấy file mới nhất: hỏi CV nào được tạo cho báo cáo này. `cover-…` không bao giờ là CV.
 
 ## Bước 6 — Phân tích câu hỏi của form
 
@@ -225,17 +225,17 @@ Mục phải gồm:
 
 Ghi mục này ở cuối báo cáo, hoặc chỉ thay mục `## Application Answers` hiện có nếu đã tồn tại. Không đổi tên, sắp xếp lại hay sửa các block A-H hiện có hay `## Keywords extracted`.
 
-Dùng `application-answers.mjs` khi có thể để định dạng/upsert mục:
+Dùng `scripts/application-answers.mjs` khi có thể để định dạng/upsert mục:
 
 ```bash
-node application-answers.mjs --report reports/NNN-company-role-date.md --input answers.json --state filled
+node scripts/application-answers.mjs --report reports/NNN-company-role-date.md --input answers.json --state filled
 ```
 
 ## Bước 9 — Sau khi nộp (tùy chọn)
 
 Nếu ứng viên xác nhận đã nộp đơn:
-1. Cập nhật trạng thái sang Applied bằng CLI chuẩn: `node set-status.mjs --report <report#> Applied` (không bao giờ sửa tay bảng). Nếu ứng viên nộp vào ngày khác hôm nay, thêm `--on YYYY-MM-DD` với ngày nộp thực tế.
-2. Gieo lịch follow-up: chạy `node followup-seed.mjs {num} --json` (`{num}` là số dòng tracker). Nếu ứng viên nộp vào ngày khác hôm nay, truyền `--date YYYY-MM-DD` với ngày nộp thực tế. Lệnh idempotent, chạy lại an toàn.
+1. Cập nhật trạng thái sang Applied bằng CLI chuẩn: `node scripts/set-status.mjs --report <report#> Applied` (không bao giờ sửa tay bảng). Nếu ứng viên nộp vào ngày khác hôm nay, thêm `--on YYYY-MM-DD` với ngày nộp thực tế.
+2. Gieo lịch follow-up: chạy `node scripts/followup-seed.mjs {num} --json` (`{num}` là số dòng tracker). Nếu ứng viên nộp vào ngày khác hôm nay, truyền `--date YYYY-MM-DD` với ngày nộp thực tế. Lệnh idempotent, chạy lại an toàn.
 3. Làm mới mục `## Application Answers` của báo cáo với giá trị trường cuối cùng và `**State:** submitted`
 4. Gợi ý bước tiếp theo: chạy mode `contacto` (`/career-ops contacto` nếu có) để nhắn LinkedIn cho hiring manager
 

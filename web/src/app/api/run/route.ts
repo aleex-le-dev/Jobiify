@@ -61,7 +61,7 @@ export async function POST(req: Request) {
   // it to modes/oferta.md meant a configured market passed a check on a file the
   // run never opens, and would have missed a market dir with no evaluation mode.
   const lang = readLanguageConfig();
-  const needsScript: Record<string, string> = { evaluate: lang.evalModeFile, "fix-portal": "verify-portals.mjs", pdf: "generate-pdf.mjs", cover: "modes/cover.md" };
+  const needsScript: Record<string, string> = { evaluate: lang.evalModeFile, "fix-portal": "scripts/verify-portals.mjs", pdf: "scripts/generate-pdf.mjs", cover: "modes/cover.md" };
   const required = needsScript[kind];
   // CAREER_OPS_ROOT is runtime user data, not a build input. Tracing this
   // dynamic path would copy the whole web project into every server bundle.
@@ -135,7 +135,7 @@ export async function POST(req: Request) {
       ? readInbox().find((j) => j.url === input)?.postedAt ?? readScanDates().get(input)
       : undefined;
   // Which CV template the worker fills. Resolved HERE, for the same reason `lang`
-  // is: the worker has no Bash (#2172), so it cannot run cv-templates.mjs and the
+  // is: the worker has no Bash (#2172), so it cannot run scripts/cv-templates.mjs and the
   // prompt used to name the base template outright, silently ignoring cv.template
   // (#4034). Only pdf fills a template, so nothing else pays for the lookup.
   // The root is passed, not re-derived: a relative CAREER_OPS_PROFILE resolves
@@ -170,7 +170,7 @@ export async function POST(req: Request) {
   const args = isClaude ? claudeCliArgs({ kind, prompt }) : (spec.streamArgs ?? spec.args)(prompt);
 
   // Tracker-mutating runs hold a write token so a row delete can't race their
-  // merge (tracker.mjs delete doesn't yet share a lock with merge-tracker,
+  // merge (scripts/tracker.mjs delete doesn't yet share a lock with merge-tracker,
   // see run-registry). evaluate's agent no longer writes; the backend persist
   // path below still merges the tracker, so the token stays.
   const writeToken = kind === "evaluate" || kind === "pdf" ? acquireTrackerWrite() : null;
@@ -265,7 +265,7 @@ export async function POST(req: Request) {
       // (renderPdf, below) starts only after this timer's window and has no
       // timeout of its own, so an agent that runs close to its full budget
       // would otherwise leave the platform's hard maxDuration cutoff to kill
-      // generate-pdf.mjs mid-render. 600s agent / ~200s render is ample —
+      // scripts/generate-pdf.mjs mid-render. 600s agent / ~200s render is ample —
       // a Chromium PDF render normally takes low tens of seconds even with a
       // cold Playwright launch.
       // pdf keeps 600s because its render+mark phase runs AFTER this timer; a
@@ -421,7 +421,7 @@ export async function POST(req: Request) {
       // Render + mark-tracker-ready live in pdf-render.mjs (plain, dependency-
       // injected, unit-tested) so the render-then-mark orchestration isn't
       // buried untested inside this transport-layer closure. Runs generate-
-      // pdf.mjs and mark-pdf-ready.mjs as plain Node child processes — no agent
+      // pdf.mjs and scripts/mark-pdf-ready.mjs as plain Node child processes — no agent
       // CLI or its sandbox involved — so a browser launch never depends on an
       // interactive approval nobody is present to grant in a headless/web-
       // triggered run (#2172). The tracker is marked ✅ only after a CONFIRMED

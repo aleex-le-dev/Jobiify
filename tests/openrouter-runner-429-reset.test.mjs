@@ -1,7 +1,7 @@
 // tests/openrouter-runner-429-reset.test.mjs — a model's 429 count is reset
 // when it answers, so only CONSECUTIVE 429s blacklist it.
 //
-// openrouter-runner.mjs documents the rule ("auto-blacklist after 3 consecutive
+// scripts/openrouter-runner.mjs documents the rule ("auto-blacklist after 3 consecutive
 // 429s") but rateLimitCounts[model] was only ever incremented. Three scattered
 // 429s over a batch, with successful answers in between, blacklisted a model
 // that was working, and the entry was persisted to data/model-blacklist.json for
@@ -64,7 +64,7 @@ async function loadRunner(dataRoot, label) {
   delete process.env.CAREER_OPS_MODEL;
   process.env.OPENROUTER_API_KEY = 'test-key';
   try {
-    const url = `${pathToFileURL(join(ROOT, 'openrouter-runner.mjs')).href}?429-reset=${label}`;
+    const url = `${pathToFileURL(join(ROOT, 'scripts/openrouter-runner.mjs')).href}?429-reset=${label}`;
     return await import(url);
   } finally {
     for (const n of names) {

@@ -4,9 +4,9 @@ import { tmpdir } from 'os';
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { rmSync } from './helpers.mjs';
-import { applicationArtifactPaths, ensureApplicationArtifactDirs, slugifySegment, writeReuseDecision } from '../application-artifacts.mjs';
-import { repoRelativeManifestPath, workspaceRelativeManifestPath } from '../generate-pdf.mjs';
-import { getCareerOpsRoot } from '../path-resolver.mjs';
+import { applicationArtifactPaths, ensureApplicationArtifactDirs, slugifySegment, writeReuseDecision } from '../scripts/application-artifacts.mjs';
+import { repoRelativeManifestPath, workspaceRelativeManifestPath } from '../scripts/generate-pdf.mjs';
+import { getCareerOpsRoot } from '../scripts/path-resolver.mjs';
 
 function expectError(label, action, pattern) {
   try {
@@ -77,7 +77,7 @@ try {
   }
 
   const cli = spawnSync(process.execPath, [
-    fileURLToPath(new URL('../application-artifacts.mjs', import.meta.url)),
+    fileURLToPath(new URL('../scripts/application-artifacts.mjs', import.meta.url)),
     '--report', 'bad', '--company', 'Acme', '--role', 'Engineer', '--init',
   ], { encoding: 'utf8' });
   if (cli.status === 1

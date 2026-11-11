@@ -18,7 +18,7 @@ import { tmpdir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
 import { ROOT, rmSync } from './helpers.mjs';
 import { buildCtx, runHook, mergeProviderPlugins } from '../plugins/_engine.mjs';
-import { getCareerOpsRoot } from '../path-resolver.mjs';
+import { getCareerOpsRoot } from '../scripts/path-resolver.mjs';
 
 const manifest = { id: 'ctx-demo', allowedHosts: [], requiredEnv: [], optionalEnv: [], allowsLocalhost: false };
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * contact-lookup.mjs — Saved-Contact Company Lookup for career-ops (#4691)
+ * scripts/contact-lookup.mjs — Saved-Contact Company Lookup for career-ops (#4691)
  *
  * `contacto` finds ONE fresh outreach target per application via WebSearch —
  * but if the candidate already has a saved contact at the SAME company in
@@ -13,25 +13,25 @@
  * MATCHING. Deliberately exact-key, not fuzzy: `data/contacts.tsv`'s company
  * column is normally written by `contacto`/`add` from the SAME company string
  * already in the tracker, so it reuses normalizeCompany() from
- * tracker-utils.mjs — the identical key merge-tracker.mjs, set-status.mjs and
- * company-history.mjs already use for same-company lookups — rather than a
+ * scripts/tracker-utils.mjs — the identical key scripts/merge-tracker.mjs, scripts/set-status.mjs and
+ * scripts/company-history.mjs already use for same-company lookups — rather than a
  * second, drifting definition of "same company" (see AGENTS.md's Data
  * Contract on reusing shared helpers instead of inventing new ones). This is
- * NOT linkedin-join.mjs's fuzzy token matching: that script joins against
+ * NOT scripts/linkedin-join.mjs's fuzzy token matching: that script joins against
  * free-text LinkedIn export data, which genuinely needs tolerance for
  * "Siemens" vs "Siemens Digital Industries Software"; this one joins against
  * a phonebook the candidate's own prior session wrote, where a fuzzy match
  * would risk surfacing a contact at an unrelated, similarly-named company as
  * a false "warm lead".
  *
- * contacts.mjs itself stays zero-dep on purpose (its CLI tests copy just that
- * script + lib/ + path-resolver.mjs into an isolated temp dir), so this
- * lookup lives in its own file rather than growing contacts.mjs's dependency
- * footprint with tracker-utils.mjs's js-yaml / tracker-aliases.json chain.
+ * scripts/contacts.mjs itself stays zero-dep on purpose (its CLI tests copy just that
+ * script + lib/ + scripts/path-resolver.mjs into an isolated temp dir), so this
+ * lookup lives in its own file rather than growing scripts/contacts.mjs's dependency
+ * footprint with scripts/tracker-utils.mjs's js-yaml / tracker-aliases.json chain.
  *
- * Run: node contact-lookup.mjs --company "Acme"            (JSON to stdout)
- *      node contact-lookup.mjs --company "Acme" --summary  (human-readable)
- *      node contact-lookup.mjs --self-test
+ * Run: node scripts/contact-lookup.mjs --company "Acme"            (JSON to stdout)
+ *      node scripts/contact-lookup.mjs --company "Acme" --summary  (human-readable)
+ *      node scripts/contact-lookup.mjs --self-test
  *
  * Issue #4691 — github.com/career-ops-hq/career-ops
  */
@@ -41,8 +41,8 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { parseContacts } from './contacts.mjs';
 import { normalizeCompany } from './tracker-utils.mjs';
-import { validateFlags, flagValue } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { validateFlags, flagValue } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
 const DATA_ROOT = getCareerOpsRoot();
@@ -52,10 +52,10 @@ const CONTACTS_PATH = join(DATA_ROOT, 'data/contacts.tsv');
 const KNOWN_FLAGS = ['--company', '--summary', '--self-test', '--help', '-h'];
 
 const USAGE = `Usage:
-  node contact-lookup.mjs --company <name>            # JSON: saved contacts at <name>
-  node contact-lookup.mjs --company <name> --summary  # human-readable
-  node contact-lookup.mjs --self-test                  # run the in-memory test suite
-  node contact-lookup.mjs --help                       # print this usage block and exit`;
+  node scripts/contact-lookup.mjs --company <name>            # JSON: saved contacts at <name>
+  node scripts/contact-lookup.mjs --company <name> --summary  # human-readable
+  node scripts/contact-lookup.mjs --self-test                  # run the in-memory test suite
+  node scripts/contact-lookup.mjs --help                       # print this usage block and exit`;
 
 const args = isMainModule(import.meta.url) ? process.argv.slice(2) : [];
 validateFlags(args, KNOWN_FLAGS, USAGE, { valueFlags: ['--company'], requireOperand: true });
@@ -116,7 +116,7 @@ function selfTest() {
   const exact = findContactsByCompany(contacts, 'Acme Inc.');
   assert(exact.length === 2, `exact company name finds both Acme contacts, got ${exact.length}`);
 
-  // Punctuation/case-insensitive, via normalizeCompany (tracker-utils.mjs):
+  // Punctuation/case-insensitive, via normalizeCompany (scripts/tracker-utils.mjs):
   // "ACME, Inc" must still match "Acme Inc." — same normalization the tracker
   // itself uses for same-company dedup.
   const folded = findContactsByCompany(contacts, 'ACME, Inc');
@@ -133,7 +133,7 @@ function selfTest() {
   assert(initech.length === 1 && initech[0].name === 'Jörg Müller', 'distinct company matches only its own contact');
 
   // Empty/placeholder company name never matches every row (normalizeCompany
-  // folds '?' etc. to '' — see tracker-utils.mjs's own `?` -> '' convention).
+  // folds '?' etc. to '' — see scripts/tracker-utils.mjs's own `?` -> '' convention).
   assert(findContactsByCompany(contacts, '').length === 0, 'empty query -> empty array, never "matches everything"');
   assert(findContactsByCompany(contacts, '?').length === 0, '"?" placeholder query -> empty array');
 

@@ -18,7 +18,7 @@ import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'fs
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { pass, fail } from './helpers.mjs';
-import { withFollowupsLock } from '../followup-seed.mjs';
+import { withFollowupsLock } from '../scripts/followup-seed.mjs';
 
 console.log('\n🔗 withFollowupsLock — the lock other codebases have to share');
 

@@ -30,7 +30,7 @@ func funnelRank(status string) int {
 
 // StatusLedger is what the dashboard needs from status-log.tsv, the
 // append-only transition ledger beside the tracker
-// ({tracker#}\t{date}\t{from}\t{to}\t{source}\t{note}, see DATA_CONTRACT.md).
+// ({tracker#}\t{date}\t{from}\t{to}\t{source}\t{note}, see docs/projet/DATA_CONTRACT.md).
 type StatusLedger struct {
 	// Reached is the highest funnel stage each tracker # ever reached, so a
 	// row that moved on to Rejected still counts the Interview it had.
@@ -80,7 +80,7 @@ type ledgerObservation struct {
 // Reached keeps its long-standing, lenient rule: any line with a numeric
 // tracker # and non-empty date/from/to contributes both states' ranks.
 //
-// LatestDate mirrors foldObservations in funnel-velocity.mjs rather than
+// LatestDate mirrors foldObservations in scripts/funnel-velocity.mjs rather than
 // taking a plain maximum, because the ledger is append-only and corrects
 // itself by appending: a `to` of "-" retracts the row's latest surviving
 // observation (so a mis-click's later date does not linger), and a

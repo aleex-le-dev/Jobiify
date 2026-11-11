@@ -2,7 +2,7 @@
 // the developer's shell must not reach the suite.
 //
 // The override outranks CAREER_OPS_ROOT, and fixtures pin only the root. With
-// the variable inherited, `node test-all.mjs` ran normalize-statuses.mjs against
+// the variable inherited, `node scripts/test-all.mjs` ran scripts/normalize-statuses.mjs against
 // the developer's own tracker: a `**Applied**` cell there came back as
 // `Applied`, with an applications.md.bak left next to it.
 //
@@ -25,7 +25,7 @@ const ROW = '| 1 | 2026-01-01 | Acme Widgets | Coordinator | 4.0/5 | **Applied**
 const dir = mkdtempSync(join(tmpdir(), 'co-inherited-tracker-'));
 try {
   // "The developer's" tracker: outside the fixture root, with a cell that
-  // normalize-statuses.mjs would rewrite if it were pointed at this file.
+  // scripts/normalize-statuses.mjs would rewrite if it were pointed at this file.
   const outside = join(dir, 'theirs');
   mkdirSync(outside);
   const inherited = join(outside, 'applications.md');
@@ -38,7 +38,7 @@ try {
 
   // The child (tests/fixtures/writer-under-fixture-root.mjs) starts with the
   // override, loads the helpers the way a suite does, then does what the
-  // path-resolution section of test-all.mjs does: pin a fixture root and run the
+  // path-resolution section of scripts/test-all.mjs does: pin a fixture root and run the
   // writer through run().
   const env = { ...process.env, CAREER_OPS_TRACKER: inherited };
   delete env.CAREER_OPS_ROOT;
@@ -63,7 +63,7 @@ try {
   }
 
   // Control: the writer did run, and on the fixture. Without this the check
-  // above would also pass if normalize-statuses.mjs had done nothing at all.
+  // above would also pass if scripts/normalize-statuses.mjs had done nothing at all.
   const fixtureAfter = readFileSync(fixtureTracker, 'utf-8');
   if (fixtureAfter.includes('| Applied |') && !fixtureAfter.includes('**Applied**')) {
     pass('the writer normalised the fixture tracker instead (control)');

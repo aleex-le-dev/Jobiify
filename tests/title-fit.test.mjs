@@ -9,7 +9,7 @@ import { pathToFileURL } from 'url';
 
 console.log('\ntitle-fit.mjs — free banded title/profile overlap hint (#3260)');
 
-// update-system.mjs ships tests/ but never web/ (#3269), so this suite also runs
+// scripts/update-system.mjs ships tests/ but never web/ (#3269), so this suite also runs
 // on installs that have no web/, where the import threw and test-all counted
 // the missing module as a failure. Same three branches as
 // tests/profile-keywords-parity.test.mjs: an absent web/ skips, but a module

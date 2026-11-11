@@ -1,4 +1,4 @@
-// tests/stats.test.mjs — moved verbatim from test-all.mjs (#1604).
+// tests/stats.test.mjs — moved verbatim from scripts/test-all.mjs (#1604).
 import { pass, fail, run, NODE, ROOT, lastRunFailure } from './helpers.mjs';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 
 console.log('\nstats.mjs — lifetime pipeline stats aggregator (#1604)');
 try {
-  const stats = await import(pathToFileURL(join(ROOT, 'stats.mjs')).href);
+  const stats = await import(pathToFileURL(join(ROOT, 'scripts/stats.mjs')).href);
   const states = [...Array(10).fill('Applied'), ...Array(5).fill('Responded'), ...Array(2).fill('Interview'), ...Array(12).fill('Rejected')];
   const numbered = new Map(states.map((s,i) => [i+1,s]));
   const transitions = [18,19,20].map(n => `${n}\t2026-09-01\tInterview\tRejected\tset-status\t`).join('\n');
@@ -177,7 +177,7 @@ try {
 
   // Cold-classification wiring (#2123): activeApps stays purely status-based
   // (backward compatible for existing consumers); activeAppsLive subtracts
-  // rows followup-cadence.mjs's own cadence math independently flags 'cold'
+  // rows scripts/followup-cadence.mjs's own cadence math independently flags 'cold'
   // (Applied, zero response after applied_max_followups follow-ups).
   const coldTrackerMd = [
     '| # | Date | Company | Role | Score | Status | PDF | Report | Notes |',
@@ -194,7 +194,7 @@ try {
   ].join('\n');
   const coldNums = stats.computeColdAppNums(coldTrackerMd, coldFollowupsMd);
   if (coldNums.size === 1 && coldNums.has(1)) {
-    pass('computeColdAppNums reuses followup-cadence.mjs cadence math to flag app #1 cold');
+    pass('computeColdAppNums reuses scripts/followup-cadence.mjs cadence math to flag app #1 cold');
   } else {
     fail(`computeColdAppNums wrong output: ${JSON.stringify([...coldNums])}`);
   }
@@ -271,45 +271,45 @@ try {
 
   // CLI smoke — must emit the full contract with null sections in a checkout
   // with no user data (exactly the CI environment).
-  const cliOut = run(NODE, [join(ROOT, 'stats.mjs')]);
+  const cliOut = run(NODE, [join(ROOT, 'scripts/stats.mjs')]);
   const parsed = JSON.parse(cliOut);
   if (parsed && parsed.metadata && 'tracker' in parsed && 'scan' in parsed && 'portals' in parsed
       && 'followups' in parsed && 'funnel' in parsed && 'runs' in parsed) {
-    pass('stats.mjs CLI emits the full JSON contract (sections null when sources missing)');
+    pass('scripts/stats.mjs CLI emits the full JSON contract (sections null when sources missing)');
   } else {
-    fail(`stats.mjs CLI missing sections: ${parsed ? Object.keys(parsed).join(',') : cliOut}`);
+    fail(`scripts/stats.mjs CLI missing sections: ${parsed ? Object.keys(parsed).join(',') : cliOut}`);
   }
-  const summaryOut = run(NODE, [join(ROOT, 'stats.mjs'), '--summary']);
+  const summaryOut = run(NODE, [join(ROOT, 'scripts/stats.mjs'), '--summary']);
   if (summaryOut && summaryOut.includes('Pipeline Stats')) {
-    pass('stats.mjs --summary renders the human table');
+    pass('scripts/stats.mjs --summary renders the human table');
   } else {
-    fail('stats.mjs --summary missing header');
+    fail('scripts/stats.mjs --summary missing header');
   }
 
   // --help smoke: must print usage, exit 0, and not read any data file.
-  const helpOut = run(NODE, [join(ROOT, 'stats.mjs'), '--help']);
+  const helpOut = run(NODE, [join(ROOT, 'scripts/stats.mjs'), '--help']);
   if (helpOut && helpOut.includes('Usage:') && helpOut.includes('--summary') && helpOut.includes('--help|-h')) {
-    pass('stats.mjs --help prints the usage block and exits 0');
+    pass('scripts/stats.mjs --help prints the usage block and exits 0');
   } else {
-    fail(`stats.mjs --help missing usage output: ${helpOut}`);
+    fail(`scripts/stats.mjs --help missing usage output: ${helpOut}`);
   }
 
   // -h alias smoke: same behavior as --help.
-  const hOut = run(NODE, [join(ROOT, 'stats.mjs'), '-h']);
+  const hOut = run(NODE, [join(ROOT, 'scripts/stats.mjs'), '-h']);
   if (hOut && hOut.includes('Usage:') && hOut.includes('--help|-h')) {
-    pass('stats.mjs -h prints the usage block and exits 0');
+    pass('scripts/stats.mjs -h prints the usage block and exits 0');
   } else {
-    fail(`stats.mjs -h missing usage output: ${hOut}`);
+    fail(`scripts/stats.mjs -h missing usage output: ${hOut}`);
   }
 
   // Unknown flag smoke: must fail cleanly and report the invalid-flag message.
-  const bogusOut = run(NODE, [join(ROOT, 'stats.mjs'), '--bogus']);
+  const bogusOut = run(NODE, [join(ROOT, 'scripts/stats.mjs'), '--bogus']);
   const bogusFailure = lastRunFailure();
   const bogusOutput = `${bogusFailure?.stdout ?? ''}\n${bogusFailure?.stderr ?? ''}`;
   if (bogusOut === null && bogusFailure?.status !== 0 && /invalid|unrecognized|unknown/i.test(bogusOutput)) {
-    pass('stats.mjs --bogus rejects unknown flags with a non-zero exit status');
+    pass('scripts/stats.mjs --bogus rejects unknown flags with a non-zero exit status');
   } else {
-    fail(`stats.mjs --bogus did not fail as expected: exit=${bogusFailure?.status ?? 'null'} output=${bogusOutput.trim()}`);
+    fail(`scripts/stats.mjs --bogus did not fail as expected: exit=${bogusFailure?.status ?? 'null'} output=${bogusOutput.trim()}`);
   }
 
   // --summary cold-classification integration (#2123): the CLI resolves its
@@ -323,17 +323,17 @@ try {
     mkdirSync(join(coldRoot, 'data'));
     writeFileSync(join(coldRoot, 'data', 'applications.md'), coldTrackerMd);
     writeFileSync(join(coldRoot, 'data', 'follow-ups.md'), coldFollowupsMd);
-    const coldSummaryOut = run(NODE, [join(ROOT, 'stats.mjs'), '--summary'], {
+    const coldSummaryOut = run(NODE, [join(ROOT, 'scripts/stats.mjs'), '--summary'], {
       env: { ...process.env, CAREER_OPS_ROOT: coldRoot, CAREER_OPS_DATA_DIR: '' },
     });
     if (coldSummaryOut && coldSummaryOut.includes('3 active (2 live, 1 cold)')) {
-      pass('stats.mjs --summary integrates live/cold counts into the existing Tracker line');
+      pass('scripts/stats.mjs --summary integrates live/cold counts into the existing Tracker line');
     } else {
-      fail(`stats.mjs --summary missing live/cold breakdown: ${coldSummaryOut}`);
+      fail(`scripts/stats.mjs --summary missing live/cold breakdown: ${coldSummaryOut}`);
     }
   } finally {
     rmSync(coldRoot, { recursive: true, force: true });
   }
 } catch (e) {
-  fail(`stats.mjs tests crashed: ${e.message}`);
+  fail(`scripts/stats.mjs tests crashed: ${e.message}`);
 }

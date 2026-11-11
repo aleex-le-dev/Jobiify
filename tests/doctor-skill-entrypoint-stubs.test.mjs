@@ -1,9 +1,9 @@
-// tests/doctor-skill-entrypoint-stubs.test.mjs — doctor.mjs's skill-entrypoint
+// tests/doctor-skill-entrypoint-stubs.test.mjs — scripts/doctor.mjs's skill-entrypoint
 // stub warning (career-ops#4589).
 //
 // A checkout without symlink support (core.symlinks=false) writes each per-CLI
 // SKILL.md entrypoint as a regular file holding only the symlink target text.
-// update-system.mjs apply repairs that, but returns early on an install that is
+// scripts/update-system.mjs apply repairs that, but returns early on an install that is
 // already up to date, so a fresh Windows clone never reaches the repair and the
 // CLI just loads an empty skill. This pins the doctor check that says so.
 import { pass, fail, NODE, ROOT } from './helpers.mjs';
@@ -14,7 +14,7 @@ import { dirname, join } from 'path';
 
 console.log('\ndoctor.mjs — skill entrypoint stubs');
 
-const DOCTOR = join(ROOT, 'doctor.mjs');
+const DOCTOR = join(ROOT, 'scripts/doctor.mjs');
 const POINTER = '../../../.agents/skills/career-ops/SKILL.md';
 const CLAUDE = '.claude/skills/career-ops/SKILL.md';
 const OPENCODE = '.opencode/skills/career-ops/SKILL.md';
@@ -67,7 +67,7 @@ function skillWarning(state) {
     } else {
       fail(`apply listed before materialization: ${JSON.stringify(warning)}`);
     }
-    if (warning && warning.includes(join(dir, 'update-system.mjs')) && warning.includes(join(dir, 'scaffolder', 'bin', 'skill-entrypoints.mjs'))) {
+    if (warning && warning.includes(join(dir, 'scripts/update-system.mjs')) && warning.includes(join(dir, 'scaffolder', 'bin', 'skill-entrypoints.mjs'))) {
       pass('both commands are built from the checked root, not the current directory');
     } else {
       fail(`remedy commands are not rooted at the checked checkout: ${JSON.stringify(warning)}`);

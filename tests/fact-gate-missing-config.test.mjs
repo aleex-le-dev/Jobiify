@@ -12,7 +12,7 @@
 // cv-facts.json is in a normal state. The assertions below pin the
 // distinction, not a verdict change.
 //
-// Run:  node test-all.mjs --only fact-gate-missing-config
+// Run:  node scripts/test-all.mjs --only fact-gate-missing-config
 
 import { pass, fail, ROOT, NODE } from './helpers.mjs';
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'fs';
@@ -22,7 +22,7 @@ import { tmpdir } from 'os';
 // Namespace import on purpose: a named import of a not-yet-existing export is a
 // SyntaxError at link time, which kills the whole suite before a single
 // assertion runs and reports one opaque failure instead of the real set.
-import * as factGate from '../verify-cv-facts.mjs';
+import * as factGate from '../scripts/verify-cv-facts.mjs';
 
 const { loadFactConfig, verifyFacts } = factGate;
 
@@ -95,7 +95,7 @@ try {
 
   // 4. The CLI render path says so out loud, and still exits 0.
   const cli = (configPath) => spawnSync(NODE, [
-    join(ROOT, 'verify-cv-facts.mjs'), target, '--source', source, '--config', configPath,
+    join(ROOT, 'scripts/verify-cv-facts.mjs'), target, '--source', source, '--config', configPath,
   ], { cwd: tmp, encoding: 'utf-8', timeout: 30_000 });
 
   const cliMissing = cli(missingConfig);
@@ -116,7 +116,7 @@ try {
   }
 
   const cliJson = spawnSync(NODE, [
-    join(ROOT, 'verify-cv-facts.mjs'), target, '--source', source, '--config', missingConfig, '--json',
+    join(ROOT, 'scripts/verify-cv-facts.mjs'), target, '--source', source, '--config', missingConfig, '--json',
   ], { cwd: tmp, encoding: 'utf-8', timeout: 30_000 });
   let parsed = null;
   try { parsed = JSON.parse(cliJson.stdout); } catch { /* reported below */ }
@@ -129,7 +129,7 @@ try {
   // 5. The two document render paths surface it too. Asserted at source level:
   //    both gate calls sit behind a Playwright import, so exercising them here
   //    would mean rendering a real PDF to test one console line.
-  for (const script of ['generate-pdf.mjs', 'generate-cover-letter.mjs']) {
+  for (const script of ['scripts/generate-pdf.mjs', 'scripts/generate-cover-letter.mjs']) {
     const src = readFileSync(join(ROOT, script), 'utf-8');
     if (/configMissing[\s\S]{0,200}?console\.(warn|error)/.test(src)) {
       pass(`${script} warns when the fact-gate config is missing`);

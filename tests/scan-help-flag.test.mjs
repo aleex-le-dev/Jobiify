@@ -1,13 +1,13 @@
-// tests/scan-help-flag.test.mjs — scan.mjs must not run a live scan on
+// tests/scan-help-flag.test.mjs — scripts/scan.mjs must not run a live scan on
 // --help or on an unrecognized flag (#2270).
 //
-// Before this fix, `node scan.mjs --help` never looked at --help at all: it
+// Before this fix, `node scripts/scan.mjs --help` never looked at --help at all: it
 // fell straight through argument parsing into a full live scan, reading
 // portals.yml, hitting every configured ATS, and appending to
 // pipeline.md/scan-history.tsv — the exact "unrecognized/mistyped flag
 // silently falls through to live behavior" failure class already fixed
-// (identically) in scan-ats-full.mjs (#1633/#1635), reply-watch.mjs
-// (#2743/#2745) and dedup-tracker.mjs (#2744/#2746), now shared via
+// (identically) in scripts/scan-ats-full.mjs (#1633/#1635), scripts/reply-watch.mjs
+// (#2743/#2745) and scripts/dedup-tracker.mjs (#2744/#2746), now shared via
 // lib/cli-flags.mjs's validateFlags() (#2775).
 //
 // HERMETIC: every run pins CAREER_OPS_PORTALS at a path that does not exist.
@@ -28,14 +28,14 @@ const NO_PORTALS = join(tmpdir(), 'career-ops-no-such-portals.yml');
 const PORTALS_NOT_FOUND = /portals\.yml not found/i;
 
 function runScan(...args) {
-  const r = spawnSync(process.execPath, [join(ROOT, 'scan.mjs'), ...args], {
+  const r = spawnSync(process.execPath, [join(ROOT, 'scripts/scan.mjs'), ...args], {
     cwd: ROOT,
     encoding: 'utf-8',
     timeout: 30_000,
     env: { ...process.env, CAREER_OPS_PORTALS: NO_PORTALS },
   });
-  assert.equal(r.error, undefined, `scan.mjs failed to spawn: ${r.error?.message}`);
-  assert.equal(r.signal, null, `scan.mjs was killed by ${r.signal} (timeout?)`);
+  assert.equal(r.error, undefined, `scripts/scan.mjs failed to spawn: ${r.error?.message}`);
+  assert.equal(r.signal, null, `scripts/scan.mjs was killed by ${r.signal} (timeout?)`);
   return { ...r, all: `${r.stdout ?? ''}${r.stderr ?? ''}` };
 }
 
@@ -43,7 +43,7 @@ test('--help prints usage and exits 0, without reaching the portals check', () =
   const r = runScan('--help');
   assert.equal(r.status, 0, `expected exit 0, got ${r.status}: ${r.all}`);
   assert.match(r.stdout, /Usage:/);
-  assert.match(r.stdout, /node scan\.mjs/);
+  assert.match(r.stdout, /node scripts\/scan\.mjs/);
   assert.doesNotMatch(r.all, PORTALS_NOT_FOUND, '--help must exit before any scan logic runs');
 });
 
@@ -87,7 +87,7 @@ test('--since 7 (a recognized value-taking flag) still reaches normal scan logic
 });
 
 test('--since -5 (negative value) is not misread as an unrecognized flag', () => {
-  // The value itself is rejected by scan.mjs's own --since validator further
+  // The value itself is rejected by scripts/scan.mjs's own --since validator further
   // down the pipeline, not by the flag allowlist — so this must NOT print
   // "unrecognized flag(s): -5".
   const r = runScan('--since', '-5');

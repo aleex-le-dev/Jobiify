@@ -221,7 +221,7 @@ export function buildJobUrl(tenant, pid) {
 /**
  * Assemble a location string. Prefers the flat `location` field, else joins
  * the `locations[]` array. Deduped, joined with " · " like ashby's
- * secondaryLocations handling so scan.mjs's location_filter sees every city
+ * secondaryLocations handling so scripts/scan.mjs's location_filter sees every city
  * a multi-site role is open to.
  *
  * @param {any} p
@@ -328,7 +328,7 @@ export function parseEightfoldResponse(json, tenant, companyName) {
 /**
  * Resolve the page cap: a positive integer `max_pages` on the entry, capped
  * at MAX_PAGES_CAP; then narrowed further by ctx.maxPages when the caller is
- * only probing (verify-portals.mjs's health check passes 1).
+ * only probing (scripts/verify-portals.mjs's health check passes 1).
  *
  * @param {any} entry
  * @param {any} ctx
@@ -413,7 +413,7 @@ export default {
             // PCSX refusing too (403), or simply not existing on this host
             // (404/410), makes the original 403 the real story: a WAF or
             // datacenter-IP block. Surfacing the probe's 404 instead read as
-            // "board gone" to dead-boards.mjs, which skips a board after three
+            // "board gone" to scripts/dead-boards.mjs, which skips a board after three
             // misses. Any other probe failure (a 429, a 5xx, a network error) is
             // its own problem, and reporting the v2 403 in its place would read
             // as a deterministic block when the tenant is only busy or down.

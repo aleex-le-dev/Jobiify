@@ -23,7 +23,7 @@ function normalizeOutputLanguage(value) {
  * finished work.
  *
  * `source` makes that inspectable without changing what any existing caller
- * receives. `doctor.mjs` is the primary signal now (checkProfileShape reports
+ * receives. `scripts/doctor.mjs` is the primary signal now (checkProfileShape reports
  * an unparseable profile on the first message of every session); this is for a
  * caller that wants to say so at generation time.
  *

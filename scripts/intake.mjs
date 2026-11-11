@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// intake.mjs — deterministic half of the `intake` mode (#1723).
+// scripts/intake.mjs — deterministic half of the `intake` mode (#1723).
 //
 // Scans the documents/ intake folder (master CV, LinkedIn export, diplomas,
 // reference letters), extracts text from each source locally, and
 // fingerprints every source so re-runs surface only genuinely new material.
 //
-// Division of labor (mirrors modes/add.md + add-entry.mjs):
+// Division of labor (mirrors modes/add.md + scripts/add-entry.mjs):
 //   - this script: enumeration, text extraction, idempotency bookkeeping —
 //     everything deterministic. It NEVER writes cv.md / config/profile.yml /
 //     modes/_profile.md; per repo convention those are agent-edited only,
@@ -15,7 +15,7 @@
 //     source-annotated writes.
 //
 // PDF extraction ladder (zero new package.json deps, mirrors the
-// generate-latex.mjs engine ladder): born-digital PDFs — the dominant case
+// scripts/generate-latex.mjs engine ladder): born-digital PDFs — the dominant case
 // for CVs / LinkedIn "Save to PDF" exports / transcripts — carry a text
 // layer that `pdftotext -layout` (Poppler) extracts directly. No extractor
 // on PATH degrades to an install hint, never a crash. Scanned/image-only
@@ -23,15 +23,15 @@
 // convert them).
 //
 // Usage:
-//   node intake.mjs                 # scan + extract, JSON to stdout
-//   node intake.mjs --summary       # human-readable table instead of JSON
-//   node intake.mjs --text <path>   # full extracted text of one source
-//   node intake.mjs --commit <path …>
+//   node scripts/intake.mjs                 # scan + extract, JSON to stdout
+//   node scripts/intake.mjs --summary       # human-readable table instead of JSON
+//   node scripts/intake.mjs --text <path>   # full extracted text of one source
+//   node scripts/intake.mjs --commit <path …>
 //                                   # record the confirmed sources as ingested
 //                                   # (run only after the user confirmed)
-//   node intake.mjs --commit --all  # record every source with new material —
+//   node scripts/intake.mjs --commit --all  # record every source with new material —
 //                                   # only when the user merged all of them
-//   node intake.mjs --self-test     # pure-function self-test, no filesystem
+//   node scripts/intake.mjs --self-test     # pure-function self-test, no filesystem
 
 import { createHash } from 'crypto';
 import { execFileSync } from 'child_process';
@@ -40,12 +40,12 @@ import {
 } from 'fs';
 import { dirname, extname, join, relative, resolve, sep } from 'path';
 import { fileURLToPath } from 'url';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { writeFileAtomic } from './tracker-utils.mjs';
-import { isNestedCheckout } from './lib/mjs-files.mjs';
+import { isNestedCheckout } from '../lib/mjs-files.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const DOCS_DIR = process.env.CAREER_OPS_DOCUMENTS_DIR || join(DATA_ROOT, 'documents');
 const STATE_FILE = process.env.CAREER_OPS_INTAKE_STATE || join(DATA_ROOT, 'data', 'intake-state.json');
@@ -463,7 +463,7 @@ function main() {
   const textIdx = args.indexOf('--text');
   if (textIdx !== -1) {
     const target = args[textIdx + 1];
-    if (!target) { console.error('Usage: node intake.mjs --text <path relative to documents/>'); process.exit(1); }
+    if (!target) { console.error('Usage: node scripts/intake.mjs --text <path relative to documents/>'); process.exit(1); }
     const abs = resolve(DOCS_DIR, target);
     // Scan output only ever emits paths inside documents/ — refuse anything
     // that resolves outside it.
@@ -505,8 +505,8 @@ function main() {
     // Refuse before writing: no paths and no --all is a mistake, not consent.
     if (!all && only.length === 0) {
       console.error(
-        'Nothing to commit. Pass the confirmed sources — node intake.mjs --commit <path> [<path> …] — '
-        + 'or node intake.mjs --commit --all when every source with new material was merged. '
+        'Nothing to commit. Pass the confirmed sources — node scripts/intake.mjs --commit <path> [<path> …] — '
+        + 'or node scripts/intake.mjs --commit --all when every source with new material was merged. '
         + 'Nothing was recorded.',
       );
       process.exit(1);

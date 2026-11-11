@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { pass, fail, rmSync } from './helpers.mjs';
-import { atsFromUrl, careersUrlFor, companyKey, findTrackedEntry, diagnose, appendMiss, loadDatasets } from '../coverage-check.mjs';
+import { atsFromUrl, careersUrlFor, companyKey, findTrackedEntry, diagnose, appendMiss, loadDatasets } from '../scripts/coverage-check.mjs';
 
 console.log('\ncoverage-check.mjs — coverage-miss diagnosis');
 

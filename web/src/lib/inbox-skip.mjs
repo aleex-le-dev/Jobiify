@@ -131,7 +131,7 @@ export async function setInboxSkip(pipelinePath, url, done, options = {}) {
 
   const mod = await import(/* webpackIgnore: true */ pathToFileURL(lockModule).href);
   if (typeof mod.withPipelineLock !== "function") {
-    throw new Error("pipeline-lock.mjs has no withPipelineLock");
+    throw new Error("scripts/pipeline-lock.mjs has no withPipelineLock");
   }
   try {
     return await mod.withPipelineLock(pipelinePath, run, {

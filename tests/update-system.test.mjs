@@ -7,7 +7,7 @@ import { spawnSync } from 'child_process';
 import { tmpdir } from 'os';
 import { join, delimiter } from 'path';
 import { pass, fail } from './helpers.mjs';
-import { gitIn, formatLocalVersion } from '../update-system.mjs';
+import { gitIn, formatLocalVersion } from '../scripts/update-system.mjs';
 
 const NODE = process.execPath;
 const ROOT = join(process.cwd());
@@ -27,8 +27,10 @@ console.log('\n🧪 Testing updater version short SHA formatting (#3883)...');
 
     const expectedSha = gitIn(dir, 'rev-parse', '--short', 'HEAD');
     
-    const scriptPath = join(dir, 'update-system.mjs');
-    copyFileSync(join(ROOT, 'update-system.mjs'), scriptPath);
+    const scriptPath = join(dir, 'scripts/update-system.mjs');
+    mkdirSync(join(dir, 'scripts'), { recursive: true });
+    mkdirSync(join(scriptPath, '..'), { recursive: true });
+    copyFileSync(join(ROOT, 'scripts/update-system.mjs'), scriptPath);
 
     const formatted = formatLocalVersion(dir);
     if (formatted === `1.32.0 (${expectedSha})`) {
@@ -39,7 +41,7 @@ console.log('\n🧪 Testing updater version short SHA formatting (#3883)...');
 
     const statusRes = spawnSync(NODE, [scriptPath, 'status'], { cwd: dir, encoding: 'utf-8' });
     if (statusRes.stdout.trim() === `career-ops v1.32.0 (${expectedSha})`) {
-      pass('update-system.mjs status includes short SHA on git checkout');
+      pass('scripts/update-system.mjs status includes short SHA on git checkout');
     } else {
       fail(`status output wrong: ${statusRes.stdout.trim()}`);
     }
@@ -53,7 +55,7 @@ console.log('\n🧪 Testing updater version short SHA formatting (#3883)...');
     const checkRes = spawnSync(NODE, [scriptPath, 'check'], { cwd: dir, encoding: 'utf-8', env });
     const checkJson = JSON.parse(checkRes.stdout.trim());
     if (checkJson.local === '1.32.0' && checkJson.local_sha === expectedSha) {
-      pass('update-system.mjs check splits local and local_sha on git checkout');
+      pass('scripts/update-system.mjs check splits local and local_sha on git checkout');
     } else {
       fail(`check output wrong: ${checkRes.stdout.trim()}`);
     }
@@ -68,8 +70,10 @@ console.log('\n🧪 Testing updater version short SHA formatting (#3883)...');
   try {
     writeFileSync(join(dir, 'VERSION'), '1.32.0\n');
     
-    const scriptPath = join(dir, 'update-system.mjs');
-    copyFileSync(join(ROOT, 'update-system.mjs'), scriptPath);
+    const scriptPath = join(dir, 'scripts/update-system.mjs');
+    mkdirSync(join(dir, 'scripts'), { recursive: true });
+    mkdirSync(join(scriptPath, '..'), { recursive: true });
+    copyFileSync(join(ROOT, 'scripts/update-system.mjs'), scriptPath);
 
     const formatted = formatLocalVersion(dir);
     if (formatted === '1.32.0') {
@@ -80,7 +84,7 @@ console.log('\n🧪 Testing updater version short SHA formatting (#3883)...');
 
     const statusRes = spawnSync(NODE, [scriptPath, 'status'], { cwd: dir, encoding: 'utf-8' });
     if (statusRes.stdout.trim() === 'career-ops v1.32.0' && statusRes.stderr.trim() === '') {
-      pass('update-system.mjs status returns version alone with empty stderr on non-git directory');
+      pass('scripts/update-system.mjs status returns version alone with empty stderr on non-git directory');
     } else {
       fail(`status output wrong: stdout=${statusRes.stdout.trim()} stderr=${statusRes.stderr.trim()}`);
     }
@@ -94,7 +98,7 @@ console.log('\n🧪 Testing updater version short SHA formatting (#3883)...');
     const checkRes = spawnSync(NODE, [scriptPath, 'check'], { cwd: dir, encoding: 'utf-8', env });
     const checkJson = JSON.parse(checkRes.stdout.trim());
     if (checkJson.local === '1.32.0' && !checkJson.local_sha) {
-      pass('update-system.mjs check includes local without local_sha on non-git directory');
+      pass('scripts/update-system.mjs check includes local without local_sha on non-git directory');
     } else {
       fail(`check output wrong: ${checkRes.stdout.trim()}`);
     }

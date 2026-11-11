@@ -1,7 +1,7 @@
 // _profile-keywords.mjs — shared fallback for keyword-required providers.
 // Currently used by vdab.mjs; other keyword-required providers (e.g.
 // arbeitsagentur.mjs) can opt in later. Files prefixed with _ are never
-// loaded as providers by scan.mjs (see _registry.mjs), so this is a helper
+// loaded as providers by scripts/scan.mjs (see _registry.mjs), so this is a helper
 // module.
 //
 // A user who has completed onboarding already has target roles recorded in
@@ -18,9 +18,9 @@
 import { existsSync, readFileSync } from 'fs';
 import * as yaml from 'js-yaml';
 
-// Matches the CAREER_OPS_PROFILE override already honored by scan.mjs,
-// cv-templates.mjs, followup-cadence.mjs, plugins/_engine.mjs, and
-// test-all.mjs — without this, a user with that env var set would get
+// Matches the CAREER_OPS_PROFILE override already honored by scripts/scan.mjs,
+// scripts/cv-templates.mjs, scripts/followup-cadence.mjs, plugins/_engine.mjs, and
+// scripts/test-all.mjs — without this, a user with that env var set would get
 // silently different fallback behavior here than everywhere else.
 // Read at call time, not at import: a module-level constant froze whatever
 // the variable held when the first provider loaded, so a test could not

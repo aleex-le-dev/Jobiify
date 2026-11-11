@@ -12,7 +12,7 @@ appended to `portals.yml`, without you having to remember to do it by hand. This
 page shows the house rule that automates that, and how to check the file afterwards.
 
 > `portals.yml` is a **user-layer** file. Whatever you configure here survives
-> `node update-system.mjs`. Nothing on this page requires editing a system file.
+> `node scripts/update-system.mjs`. Nothing on this page requires editing a system file.
 
 ---
 
@@ -27,14 +27,14 @@ you have to remember:
   JD or URL, name a company out loud, or we finish evaluating one), check
   `portals.yml` first. If it is not already in `tracked_companies` — under any
   name variant — add it immediately, without waiting to be asked:
-  1. `node discover-ats.mjs "<Company>"` to resolve the ATS (preview only;
+  1. `node scripts/discover-ats.mjs "<Company>"` to resolve the ATS (preview only;
      `--write` appends the resolved entries to `portals.yml`).
   2. If unresolved or the board is empty, add a manual entry: `careers_url` plus
      `api` when the ATS is known, or `scan_method: websearch` + `scan_query` when
      no public ATS exists or the site blocks plain HTTP.
   3. `enabled: true` by default, and a `notes:` line saying what the company is
      and which report/URL it came from.
-  4. Confirm in one line what was added; run `node validate-portals.mjs` after
+  4. Confirm in one line what was added; run `node scripts/validate-portals.mjs` after
      adding several at once.
   Only skip the add when I say the company is a one-off or not worth tracking.
 ```
@@ -49,8 +49,8 @@ Prefer not to automate it? The same steps work on demand: paste a job URL and as
 *"add this company to `portals.yml`"*, or run discovery yourself:
 
 ```bash
-node discover-ats.mjs "Acme Corp"           # preview — writes nothing
-node discover-ats.mjs "Acme Corp" --write   # append the resolved entries
+node scripts/discover-ats.mjs "Acme Corp"           # preview — writes nothing
+node scripts/discover-ats.mjs "Acme Corp" --write   # append the resolved entries
 ```
 
 ---
@@ -61,19 +61,19 @@ Run these after any edit. The first ones are pure config checks with **zero LLM
 tokens** — no model needed.
 
 ```bash
-node validate-portals.mjs                                  # schema + config sanity
-node discover-ats.mjs "<Company>"                          # does the ATS resolve?
-node verify-portals.mjs                                    # does the board answer?
-node audit-portals.mjs --company "<Company>" --summary     # what is actually on the board?
+node scripts/validate-portals.mjs                                  # schema + config sanity
+node scripts/discover-ats.mjs "<Company>"                          # does the ATS resolve?
+node scripts/verify-portals.mjs                                    # does the board answer?
+node scripts/audit-portals.mjs --company "<Company>" --summary     # what is actually on the board?
 ```
 
-- **`validate-portals.mjs`** — catches malformed entries, unknown fields, and
+- **`scripts/validate-portals.mjs`** — catches malformed entries, unknown fields, and
   config the scanner would silently skip. This is the everyday check.
-- **`discover-ats.mjs`** — resolves a company to its ATS and shows the entries it
+- **`scripts/discover-ats.mjs`** — resolves a company to its ATS and shows the entries it
   *would* write. Preview by default; `--write` appends them.
-- **`verify-portals.mjs`** — proves each board actually responds. `--strict` exits
+- **`scripts/verify-portals.mjs`** — proves each board actually responds. `--strict` exits
   non-zero if any slug is unresolved, which is handy in a script.
-- **`audit-portals.mjs`** — goes further than "does it answer": it fetches each
+- **`scripts/audit-portals.mjs`** — goes further than "does it answer": it fetches each
   board and reports *whose* postings are on it. Verdicts to watch are `no-provider`
   (enabled but nothing claims it, so the scanner skips it silently) and `empty` /
   `error` (the board answers but returns nothing). Keep a `--json` snapshot and
@@ -83,7 +83,7 @@ node audit-portals.mjs --company "<Company>" --summary     # what is actually on
 Then confirm the scanner actually reads it, without spending tokens:
 
 ```bash
-node scan.mjs --company "<Company>" --dry-run --json
+node scripts/scan.mjs --company "<Company>" --dry-run --json
 ```
 
 A dry run resolves the company, fetches (or parses) its board, and prints what it
@@ -110,7 +110,7 @@ Both interactive and headless invocation work; see
 [Automation](AUTOMATION.md) if you want the check to run on a schedule.
 
 A good rule after adding several companies at once: ask the agent to run
-`node validate-portals.mjs` **and** `node audit-portals.mjs --summary`, so you see
+`node scripts/validate-portals.mjs` **and** `node scripts/audit-portals.mjs --summary`, so you see
 both "is it well-formed" and "is it returning real postings".
 
 ---
@@ -120,10 +120,10 @@ both "is it well-formed" and "is it returning real postings".
 "0 jobs" is not the same as "broken", and the difference is worth knowing:
 
 - **Board answers, zero postings** — the entry is valid, the board is simply empty
-  right now. `audit-portals.mjs` labels this `empty`. Nothing to fix.
+  right now. `scripts/audit-portals.mjs` labels this `empty`. Nothing to fix.
 - **No provider claims it (`no-provider`)** — the entry is enabled but its
-  `careers_url` matches no provider, so `scan.mjs` skips it on every run while it
-  reads as coverage. `audit-portals.mjs` flags this first because it is the easiest
+  `careers_url` matches no provider, so `scripts/scan.mjs` skips it on every run while it
+  reads as coverage. `scripts/audit-portals.mjs` flags this first because it is the easiest
   of these to miss.
 - **Wrong entity** — the board is real and full of jobs, but they belong to a
   parent company, a regional subsidiary, or a same-named unrelated tenant. No

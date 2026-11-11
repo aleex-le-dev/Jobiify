@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // The follow-up cadence knobs live in config/profile.yml → followup_cadence
-// (a USER-LAYER file) — the SAME keys the core followup-cadence.mjs reads, so
+// (a USER-LAYER file) — the SAME keys the core scripts/followup-cadence.mjs reads, so
 // tuning them here changes the CLI's verdict too. Reads are live; writes are
 // merge-safe + atomic and never clobber the rest of the profile (mirrors the
 // /api/profile guards for the malformed-YAML and first-create cases).
@@ -25,7 +25,7 @@ function isObj(v: unknown): v is Record<string, unknown> {
 /**
  * PURE defaults, read from the core rather than copied (#2369).
  *
- * `followup-cadence.mjs --json` emits `cadenceDefaults` (DEFAULT_CADENCE) next
+ * `scripts/followup-cadence.mjs --json` emits `cadenceDefaults` (DEFAULT_CADENCE) next
  * to `cadenceConfig` (defaults + the user's profile overrides). The form needs
  * the PURE defaults for its placeholders: sourcing them from `cadenceConfig`
  * would render a user's own override as the default they'd be reverting to.

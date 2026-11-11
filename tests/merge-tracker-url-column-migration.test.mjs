@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { isolatedBatchStatePath } from './helpers.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const MERGE = join(ROOT, 'merge-tracker.mjs');
+const MERGE = join(ROOT, 'scripts/merge-tracker.mjs');
 const LEGACY_HEADER = '| # | Date | Company | Role | Score | Status | PDF | Report | Notes |';
 const LEGACY_SEPARATOR = '|---|------|---------|------|-------|--------|-----|--------|-------|';
 

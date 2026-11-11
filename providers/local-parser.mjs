@@ -15,7 +15,7 @@ const LOCAL_PARSER_MAX_BUFFER_BYTES = 2_000_000;
 // `parser.command` / `parser.script` come from portals.yml, which on a shared or
 // template config is not fully trusted. The command must be a known interpreter
 // or a file inside this project — never an arbitrary binary like `rm` or `curl`.
-const PROJECT_ROOT = realpathSync(resolve(fileURLToPath(new URL('..', import.meta.url))));
+const PROJECT_ROOT = realpathSync(resolve(fileURLToPath(new URL('../', import.meta.url))));
 const ALLOWED_INTERPRETERS = new Set(['python3', 'python', 'node', 'deno', 'bun', 'sh', 'bash']);
 
 // `{careers_url}` and `{company}` are interpolated into the parser's argv. Validate
@@ -139,7 +139,7 @@ function normalizeLocation(value) {
 
 // The ECMA-262 Date range: ±100,000,000 days from the epoch, in ms. A raw
 // number outside this range is finite but produces an Invalid Date, which
-// throws RangeError downstream (scan.mjs's postedAtIsoDate calls toISOString()).
+// throws RangeError downstream (scripts/scan.mjs's postedAtIsoDate calls toISOString()).
 const MAX_VALID_EPOCH_MS = 8_640_000_000_000_000;
 
 // NaN-safe coercion for an optional parser-supplied posting date. Accepts an

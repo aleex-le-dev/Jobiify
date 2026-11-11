@@ -36,8 +36,8 @@ test("the data root is never consulted — scripts never resolve into it (#524)"
 });
 
 test("resolveRootScript assembles <codeRoot>/<name>.mjs", () => {
-  assert.equal(resolveRootScript("/engine", "doctor"), path.join("/engine", "doctor.mjs"));
-  assert.equal(resolveRootScript("/engine", "scan-ats-full"), path.join("/engine", "scan-ats-full.mjs"));
+  assert.equal(resolveRootScript("/engine", "doctor"), path.join("/engine", "scripts/doctor.mjs"));
+  assert.equal(resolveRootScript("/engine", "scan-ats-full"), path.join("/engine", "scripts/scan-ats-full.mjs"));
 });
 
 test("blank CAREER_OPS_CODE_ROOT falls back like an unset var", () => {
@@ -64,7 +64,7 @@ function tmpdir(prefix) {
 function fakeCheckout() {
   const root = tmpdir("code-root-checkout-");
   fs.mkdirSync(path.join(root, "web"));
-  fs.writeFileSync(path.join(root, "doctor.mjs"), "");
+  fs.writeFileSync((fs.mkdirSync(path.join(root, 'scripts'), { recursive: true }), path.join(root, "scripts/doctor.mjs")), "");
   return root;
 }
 
@@ -90,7 +90,7 @@ function rootScriptFrom(cwd, env) {
 test("rootScript: by default the checkout web/ lives in, even with CAREER_OPS_ROOT on a data-only dir", { skip: skipTs }, () => {
   const checkout = fakeCheckout();
   const dataOnly = tmpdir("code-root-data-");
-  assert.equal(rootScriptFrom(path.join(checkout, "web"), { CAREER_OPS_ROOT: dataOnly }), path.join(checkout, "doctor.mjs"));
+  assert.equal(rootScriptFrom(path.join(checkout, "web"), { CAREER_OPS_ROOT: dataOnly }), path.join(checkout, "scripts/doctor.mjs"));
 });
 
 test("rootScript: the absolute script path is returned once, not joined onto the checkout again", { skip: skipTs }, () => {
@@ -104,5 +104,5 @@ test("rootScript: the absolute script path is returned once, not joined onto the
 test("rootScript: CAREER_OPS_CODE_ROOT overrides the checkout", { skip: skipTs }, () => {
   const checkout = fakeCheckout();
   const engine = fakeCheckout();
-  assert.equal(rootScriptFrom(path.join(checkout, "web"), { CAREER_OPS_CODE_ROOT: engine }), path.join(engine, "doctor.mjs"));
+  assert.equal(rootScriptFrom(path.join(checkout, "web"), { CAREER_OPS_CODE_ROOT: engine }), path.join(engine, "scripts/doctor.mjs"));
 });

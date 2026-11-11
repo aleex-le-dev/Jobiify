@@ -31,7 +31,7 @@ career-ops interacts with career portals and job boards (Greenhouse, Lever, Ashb
 - Do not use this tool to scrape platforms that prohibit automated access.
 - Do not use this tool to spam employers, overwhelm ATS systems, or submit mass applications.
 - Any consequences from ToS violations — including IP bans, account restrictions, or legal action from platforms — are solely the responsibility of the user.
-- The maintainers actively reject contributions that facilitate ToS violations (see CONTRIBUTING.md).
+- The maintainers actively reject contributions that facilitate ToS violations (see docs/projet/CONTRIBUTING.md).
 
 ## 5. Acceptable Use
 
@@ -63,7 +63,7 @@ If you use paid AI providers (Anthropic API, OpenAI API, etc.), you are solely r
 
 ## 9. MIT License
 
-As stated in the [LICENSE](LICENSE) file:
+As stated in the [LICENSE](../../LICENSE) file:
 
 > THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
@@ -75,7 +75,7 @@ rights to use, modify, and redistribute the code; it does not grant
 rights to use the project name in commercial product naming,
 endorsement claims, or affiliation messaging.
 
-See [TRADEMARK.md](TRADEMARK.md) for permitted uses, restricted uses,
+See [docs/projet/TRADEMARK.md](TRADEMARK.md) for permitted uses, restricted uses,
 and how to request written permission for commercial naming or
 endorsement.
 

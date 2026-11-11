@@ -17,7 +17,7 @@ function runFixtureBatch({ offers, parallel, workerSeconds = 0 }) {
   writeFileSync(join(batchDir, 'batch-prompt.md'), 'Fixture prompt for {{URL}} {{ID}}\n');
   writeFileSync(join(batchDir, 'batch-input.tsv'), ['id\turl\tsource\tnotes',
     ...Array.from({ length: offers }, (_, i) => `${i + 1}\thttps://jobs.example.com/acme/${i + 1}\tfixture\t-`)].join('\n') + '\n');
-  writeFileSync(join(dir, 'reserve-report-num.mjs'), [
+  writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/reserve-report-num.mjs')), [
     "import { readFileSync, writeFileSync, existsSync } from 'node:fs';",
     "if (!process.argv.includes('--release')) {",
     "  const n = (existsSync('counter.txt') ? parseInt(readFileSync('counter.txt', 'utf8'), 10) : 0) + 1;",
@@ -25,7 +25,7 @@ function runFixtureBatch({ offers, parallel, workerSeconds = 0 }) {
     "  console.log(String(n).padStart(3, '0'));",
     '}',
   ].join('\n') + '\n');
-  for (const script of ['merge-tracker', 'reconcile-pipeline', 'verify-pipeline']) writeFileSync(join(dir, `${script}.mjs`), '\n');
+  for (const script of ['merge-tracker', 'reconcile-pipeline', 'verify-pipeline']) writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts', `${script}.mjs`)), '\n');
   writeFileSync(join(binDir, 'curl'), '#!/usr/bin/env bash\nexit 1\n');
   writeFileSync(join(binDir, 'claude'), `#!/usr/bin/env bash\nsleep ${workerSeconds}\nexit 1\n`);
   for (const f of ['batch/batch-runner.sh', 'bin/curl', 'bin/claude']) chmodSync(join(dir, f), 0o755);

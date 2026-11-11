@@ -5,7 +5,7 @@ import { careerOpsRoot, rootScript, findReportFile } from "@/lib/career-ops";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// ATS keyword coverage for one report, from the core's keyword-match.mjs.
+// ATS keyword coverage for one report, from the core's scripts/keyword-match.mjs.
 //
 // The report is resolved through findReportFile(), never from the query string:
 // it parses the id as an integer and containment-checks the result against the
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 // this route passes to the script is a path the core itself vouched for.
 //
 // Diagnostic only, like the script — it reads a CV and a report and reports
-// coverage. It never edits either, which is the project rule keyword-match.mjs
+// coverage. It never edits either, which is the project rule scripts/keyword-match.mjs
 // states in its own header: "Keywords get reformulated, never fabricated".
 export async function GET(req: Request) {
   const id = (new URL(req.url).searchParams.get("report") ?? "").trim();

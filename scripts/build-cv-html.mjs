@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 
-// Deterministic HTML CV renderer (#557 — the HTML twin of build-cv-latex.mjs).
+// Deterministic HTML CV renderer (#557 — the HTML twin of scripts/build-cv-latex.mjs).
 //
 // The agent reads cv.md + config/profile.yml, tailors the content, and writes a
 // compact JSON payload. This script merges that payload into the resolved CV
 // template (default templates/cv-template.html; pass a path resolved by
-// cv-templates.mjs to honor config-selectable templates, #1691) — it owns every
+// scripts/cv-templates.mjs to honor config-selectable templates, #1691) — it owns every
 // tag, class, and the HTML escaping,
 // so the model never has to emit the full document. That moves the PDF step's
 // output tokens from full HTML markup down to the structured JSON payload while
 // producing byte-for-byte the same ATS-safe template the agent fills today.
 //
 // The script does NOT parse cv.md / YAML: the authoritative read of the source
-// files stays in the agent (same contract as build-cv-latex.mjs / modes/latex.md).
-// generate-pdf.mjs remains the single PDF renderer and is unchanged.
+// files stays in the agent (same contract as scripts/build-cv-latex.mjs / modes/latex.md).
+// scripts/generate-pdf.mjs remains the single PDF renderer and is unchanged.
 //
 // Section HTML partials (#2183):
 //   A template pack can ship a sections/ directory alongside the main template
@@ -40,11 +40,11 @@ import { tmpdir } from 'os';
 import * as yaml from 'js-yaml';
 import { stripEmptySections } from './cv-sections-core.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { hasRequiredFields, validatePayload } from './lib/cv-payload-schema.mjs';
-import { PAGE_WIDTHS, resolvePageFormat } from './lib/page-format.mjs';
-import { PARTIAL_SECTIONS, declaredSections, parseMeta } from './lib/template-manifest.mjs';
+import { hasRequiredFields, validatePayload } from '../lib/cv-payload-schema.mjs';
+import { PAGE_WIDTHS, resolvePageFormat } from '../lib/page-format.mjs';
+import { PARTIAL_SECTIONS, declaredSections, parseMeta } from '../lib/template-manifest.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const TEMPLATE_PATH = resolve(__dirname, 'templates', 'cv-template.html');
 const PLACEHOLDER_RE = /\{\{[A-Z_]+\}\}/g;
@@ -733,7 +733,7 @@ function buildTitle(candidate) {
 function renderReport(payload, partials) {
   const sectionTitles = { ...DEFAULT_SECTION_TITLES, ...(payload.sections || {}) };
   const candidate = payload.candidate || {};
-  // The sheet this body has to fit is chosen by generate-pdf.mjs, so both read
+  // The sheet this body has to fit is chosen by scripts/generate-pdf.mjs, so both read
   // the same resolver rather than each keeping a fallback of their own.
   const pageWidth = PAGE_WIDTHS[resolvePageFormat(payload.page_format, { profilePath: PROFILE_PATH, country: payload.country })];
 
@@ -787,7 +787,7 @@ function renderHtml(template, payload, templatePath) {
   html = html.replace(/\n([ \t]*)\{\{TITLE_BLOCK\}\}/g, (_, indent) => (titleBlock ? `\n${indent}${titleBlock}` : ''));
 
   // Drop the optional sections (projects, education) that have no entries, so
-  // an absent one leaves no bare header behind. See cv-sections-core.mjs.
+  // an absent one leaves no bare header behind. See scripts/cv-sections-core.mjs.
   html = stripEmptySections(html, payload, 'html');
 
   for (const [key, value] of Object.entries(substitutions)) {
@@ -802,7 +802,7 @@ function renderHtml(template, payload, templatePath) {
 }
 
 // Payload validation lives in lib/cv-payload-schema.mjs, shared with
-// build-cv-latex.mjs: the two formats have different key contracts (this one's
+// scripts/build-cv-latex.mjs: the two formats have different key contracts (this one's
 // education entry is {title, org, year, description}; the LaTeX one is
 // {institution, degree, dates, coursework}), and keeping both tables in one
 // place is what lets each reject the other's vocabulary by name (#3523).
@@ -962,7 +962,7 @@ async function runMarkdown(args) {
   const outputPath = args[outIdx + 1];
   const [inputPath, templateArg] = args.filter((a, i) => i !== outIdx && i !== outIdx + 1);
   if (!inputPath || !outputPath || outputPath.startsWith('--')) {
-    console.error('Usage: node build-cv-html.mjs <input.json> --markdown <output.md> [template.html]');
+    console.error('Usage: node scripts/build-cv-html.mjs <input.json> --markdown <output.md> [template.html]');
     process.exit(1);
   }
   const absInput = resolve(inputPath);
@@ -1009,13 +1009,13 @@ async function main() {
 
   if (args.length === 0 || args.includes('--help')) {
     console.error('Usage:');
-    console.error('  node build-cv-html.mjs <input.json> <output.html> [template.html]');
-    console.error('  node build-cv-html.mjs --preview <input.json> [template.html]');
-    console.error('  node build-cv-html.mjs <input.json> --markdown <output.md> [template.html]');
-    console.error('  node build-cv-html.mjs --test');
+    console.error('  node scripts/build-cv-html.mjs <input.json> <output.html> [template.html]');
+    console.error('  node scripts/build-cv-html.mjs --preview <input.json> [template.html]');
+    console.error('  node scripts/build-cv-html.mjs <input.json> --markdown <output.md> [template.html]');
+    console.error('  node scripts/build-cv-html.mjs --test');
     console.error('');
     console.error('  [template.html] defaults to templates/cv-template.html. Pass the path');
-    console.error('  printed by `node cv-templates.mjs resolve cv` to use a selected template.');
+    console.error('  printed by `node scripts/cv-templates.mjs resolve cv` to use a selected template.');
     console.error('');
     console.error('  Section partials (#2183):');
     console.error('  If a sections/ directory exists alongside the template file,');
@@ -1045,7 +1045,7 @@ async function main() {
     ? [args[1], resolve(DATA_ROOT, 'output', 'cv-preview.html'), args[2]]
     : args;
   if (!inputPath || !outputPath) {
-    console.error('Usage: node build-cv-html.mjs <input.json> <output.html> [template.html]');
+    console.error('Usage: node scripts/build-cv-html.mjs <input.json> <output.html> [template.html]');
     process.exit(1);
   }
 

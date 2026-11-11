@@ -29,7 +29,7 @@ var (
 	reArchetypeYAML  = regexp.MustCompile(`(?m)^archetype:\s*"?([^"\n]+)"?\s*$`)
 	reReportURL      = regexp.MustCompile(`(?m)^\*\*URL:\*\*\s*(https?://\S+)`)
 	// Backslash escapes a markdown link destination may carry; mirrors the
-	// unescape in tracker-parse.mjs markdownLinkDestination().
+	// unescape in scripts/tracker-parse.mjs markdownLinkDestination().
 	reMarkdownDestEscape = regexp.MustCompile(`\\([\\()<> ])`)
 	reBatchID            = regexp.MustCompile(`(?m)^\*\*Batch ID:\*\*\s*(\d+)`)
 	reDiscardReasons     = regexp.MustCompile(`(?s)discard_reasons:\s*\n((?:\s*-\s*.+?\n)+)`)
@@ -38,7 +38,7 @@ var (
 
 // resolveReportPath converts a report link from the tracker into a path
 // relative to careerOpsPath. Links are normally relative to the tracker
-// file's own directory (see merge-tracker.mjs link normalization, #760);
+// file's own directory (see scripts/merge-tracker.mjs link normalization, #760);
 // legacy trackers may still carry root-relative links, so fall back to the
 // raw link when the tracker-relative resolution does not exist on disk.
 func resolveReportPath(careerOpsPath, trackerPath, link string) string {
@@ -55,10 +55,10 @@ func resolveReportPath(careerOpsPath, trackerPath, link string) string {
 	return link
 }
 
-// repoRootMarker identifies a career-ops checkout. path-resolver.mjs is chosen
+// repoRootMarker identifies a career-ops checkout. scripts/path-resolver.mjs is chosen
 // because that file IS the Node implementation of this same resolution, so the
 // two cannot disagree about which directory is the root.
-const repoRootMarker = "path-resolver.mjs"
+const repoRootMarker = "scripts/path-resolver.mjs"
 
 // ancestorWithMarker returns the first directory at or above `start` that holds
 // the marker, or "" when there is none.
@@ -88,9 +88,9 @@ func ancestorWithMarker(start string) (string, error) {
 // FindRepoRoot locates the career-ops checkout independent of the working
 // directory, or "" when it cannot be found.
 //
-// AGENTS.md and DATA_CONTRACT.md both say a relative CAREER_OPS_ROOT /
+// AGENTS.md and docs/projet/DATA_CONTRACT.md both say a relative CAREER_OPS_ROOT /
 // CAREER_OPS_TRACKER is "resolved relative to the repository root", and
-// path-resolver.mjs does that with no reference to cwd at all — it resolves
+// scripts/path-resolver.mjs does that with no reference to cwd at all — it resolves
 // against its own __dirname.
 //
 // Two sources, in order of reliability:
@@ -658,7 +658,7 @@ func ComputeMetrics(apps []model.CareerApplication) model.PipelineMetrics {
 // NormalizeStatus normalizes raw status text to a canonical form.
 // Aliases match templates/states.yml, which Node and web load directly. Keep
 // them in sync; TestNormalizeStatusCoversStatesYAML fails on a states.yml
-// spelling this function resolves differently, and test-all.mjs guards the
+// spelling this function resolves differently, and scripts/test-all.mjs guards the
 // other direction (no literal here that states.yml has never heard of).
 func NormalizeStatus(raw string) string {
 	// Strip markdown bold and trailing dates
@@ -767,7 +767,7 @@ func splitTrackerRow(line string) []string {
 // placeholder the callers already treat as absent).
 //
 // This is a PORT of extractCellUrl / parseMarkdownLinks / markdownLinkDestination
-// in tracker-parse.mjs, not an approximation of it. It used to be two regexes,
+// in scripts/tracker-parse.mjs, not an approximation of it. It used to be two regexes,
 // and they disagreed with Node at the edges: a hand-edited cell holding two
 // adjacent links read as one malformed URL spanning both. The JobURL tier and
 // merge-tracker's dedup key must agree on a row's URL, so the boundary rules —
@@ -799,7 +799,7 @@ type markdownLink struct {
 }
 
 // parseMarkdownLinks returns every markdown link in value, in order. Mirrors
-// parseMarkdownLinks in tracker-parse.mjs: the label ends at the first
+// parseMarkdownLinks in scripts/tracker-parse.mjs: the label ends at the first
 // unescaped `]`, it must be followed directly by `(`, and the destination runs
 // to the `)` that balances it, so `(remote)` inside a href survives whole.
 // Works on runes; every delimiter involved is ASCII.
@@ -860,7 +860,7 @@ func parseMarkdownLinks(value string) []markdownLink {
 // markdownLinkDestination extracts the destination from the text between `](`
 // and its balancing `)`: an angle-bracketed `<...>` form, or the run up to the
 // first whitespace outside parentheses. Mirrors markdownLinkDestination in
-// tracker-parse.mjs, including undoing the same escapes.
+// scripts/tracker-parse.mjs, including undoing the same escapes.
 func markdownLinkDestination(raw string) (string, bool) {
 	r := []rune(strings.TrimLeftFunc(raw, unicode.IsSpace))
 	if len(r) > 0 && r[0] == '<' {
@@ -925,7 +925,7 @@ var legacyTrackerColumns = map[string]int{
 // names to column indices in splitTrackerRow field space. It returns nil unless
 // the essential columns are all present, so a stray pipe line cannot yield a
 // bogus mapping and the caller falls back to legacyTrackerColumns. Mirrors
-// detectColumns in tracker-parse.mjs (#954).
+// detectColumns in scripts/tracker-parse.mjs (#954).
 func detectTrackerColumns(lines []string) map[string]int {
 	for _, line := range lines {
 		if !strings.HasPrefix(strings.TrimSpace(line), "|") {
@@ -936,7 +936,7 @@ func detectTrackerColumns(lines []string) map[string]int {
 		for i, c := range cells {
 			if name, ok := trackerHeaderAliases[strings.ToLower(c)]; ok {
 				// Unconditional assign: with a duplicated header name the LAST
-				// occurrence wins, matching detectColumns in tracker-parse.mjs
+				// occurrence wins, matching detectColumns in scripts/tracker-parse.mjs
 				// (which this function mirrors) — first-wins here made the two
 				// runtimes map the same header row differently.
 				m[name] = i
@@ -981,7 +981,7 @@ func UpdateApplicationStatusAndNotes(careerOpsPath string, app model.CareerAppli
 		return fmt.Errorf("unrecognized status: %q", newStatus)
 	}
 	if app.ReportNumber == "" {
-		return fmt.Errorf("application has no report identity; use set-status.mjs --row to select a tracker row")
+		return fmt.Errorf("application has no report identity; use scripts/set-status.mjs --row to select a tracker row")
 	}
 	return runStatusWriter(careerOpsPath, app.ReportNumber, newStatus, notesAppend)
 }
@@ -1063,7 +1063,7 @@ func ComputeProgressMetrics(apps []model.CareerApplication, history ...map[int]i
 	// An app in "interview" has passed through evaluated -> applied -> responded -> assessment -> interview.
 	// "hired" is terminal success and proves every earlier stage (a landed job
 	// proves the offer, the interviews, the response, and the submission), so it
-	// counts into all four existing funnel tiers — matching computeFunnel() in stats.mjs, the
+	// counts into all four existing funnel tiers — matching computeFunnel() in scripts/stats.mjs, the
 	// canonical funnel definition, whose docstring already describes this exact
 	// math as mirroring this function.
 	total := len(apps)

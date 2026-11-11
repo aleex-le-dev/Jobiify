@@ -26,8 +26,8 @@
 // JavaScript string literal, `var jobs = JSON.parse('[…]')`, with HTML
 // `Job_Description`, `Date_Opened` and a free-text `Salary`.
 // parseZohoDetailPage() reads it without evaluating any script; the scan
-// uses it only under the opt-in below, and liveness-api.mjs /
-// browser-extract.mjs use it for a posting's liveness and JD text.
+// uses it only under the opt-in below, and scripts/liveness-api.mjs /
+// scripts/browser-extract.mjs use it for a posting's liveness and JD text.
 //
 //   - name: Example Zoho Recruit Co
 //     careers_url: https://exampleco.zohorecruit.com/jobs/Careers
@@ -233,7 +233,7 @@ const DETAIL_RECORD_RE = /\bjobs\s*=\s*JSON\.parse\(\s*'((?:[^'\\]|\\[\s\S])*)'\
 /**
  * The posting record embedded in a detail page, or null when the page carries
  * none (a removed posting, an error page, a markup change). Exported for
- * liveness-api.mjs and browser-extract.mjs.
+ * scripts/liveness-api.mjs and scripts/browser-extract.mjs.
  * @param {unknown} html
  * @returns {Record<string, any> | null}
  */

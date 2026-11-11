@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 
 /**
- * verify-ats.mjs — Score a generated CV's ATS-friendliness (deterministic, read-only).
+ * scripts/verify-ats.mjs — Score a generated CV's ATS-friendliness (deterministic, read-only).
  *
- * The twin of verify-cv-facts.mjs: that gate guards *what* a CV claims; this one
+ * The twin of scripts/verify-cv-facts.mjs: that gate guards *what* a CV claims; this one
  * guards *whether an ATS can parse it at all*. No LLM, no network, no writes — it
  * reads one CV HTML (the output of `pdf` mode, before PDF rendering) and reports a
  * 0-100 structural score, a letter grade, and a list of concrete, fixable issues.
  *
  * Usage:
- *   node verify-ats.mjs <generated-cv.html>
- *   node verify-ats.mjs <generated-cv.html> --keywords "python,kubernetes,rag"
- *   node verify-ats.mjs <generated-cv.html> --role "Senior Backend Engineer"
- *   node verify-ats.mjs <generated-cv.html> --min-score 80 --json
- *   node verify-ats.mjs --self-test
+ *   node scripts/verify-ats.mjs <generated-cv.html>
+ *   node scripts/verify-ats.mjs <generated-cv.html> --keywords "python,kubernetes,rag"
+ *   node scripts/verify-ats.mjs <generated-cv.html> --role "Senior Backend Engineer"
+ *   node scripts/verify-ats.mjs <generated-cv.html> --min-score 80 --json
+ *   node scripts/verify-ats.mjs --self-test
  *
  * Exit code: 0 when the structural score >= --min-score (default 70) and no
  * critical issue is present; 1 otherwise. Keyword coverage is reported but never
@@ -23,8 +23,8 @@
 import { readFileSync, statSync } from 'fs';
 import { isAbsolute, join, basename } from 'path';
 import { fileURLToPath } from 'url';
-import { isMainModule } from './lib/is-main-module.mjs'; 
-import { asciiFold } from './lib/ascii-fold.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs'; 
+import { asciiFold } from '../lib/ascii-fold.mjs';
 
 const DEFAULT_MIN_SCORE = 70;
 
@@ -417,7 +417,7 @@ function extractHeadings(html) {
   // construction. Without it `Compétences` never matches `competenc` and
   // `Expérience` never matches `experience`, so an accented heading reads
   // as a missing section (#4261). Same fix lib/ascii-fold.mjs documents for
-  // verify-portals.mjs and providers/_trust-validator.mjs; this was the third
+  // scripts/verify-portals.mjs and providers/_trust-validator.mjs; this was the third
   // instance. The unfolded text is kept too: folding is lossy for scripts with
   // no ASCII base letter (スキル, مهارات), whose patterns must match the original.
   return out
@@ -987,7 +987,7 @@ function runSelfTest() {
   // A white VALUE on a property that merely ends in `color` is visible text
   // (a badge, a bordered callout), not white-on-white stuffing. `color:#fff`
   // is a substring of `background-color:#fff`, so the signal is anchored on
-  // the start of a declaration. This mirrors atsLint in cv-templates.mjs.
+  // the start of a declaration. This mirrors atsLint in scripts/cv-templates.mjs.
   for (const [label, style] of [
     ['white background-color with dark text', 'background-color:#fff; color:#111'],
     ['named white background-color with dark text', 'background-color:white;color:#222'],
@@ -1300,7 +1300,7 @@ if (isMainModule(import.meta.url)) {
 
     const helpRequested = args.includes('--help') || args.includes('-h');
     if (!targetArg || helpRequested) {
-      console.log(`Usage: node verify-ats.mjs <generated-cv.html> [--keywords "a,b,c"] [--role "..."] [--min-score N] [--json]
+      console.log(`Usage: node scripts/verify-ats.mjs <generated-cv.html> [--keywords "a,b,c"] [--role "..."] [--min-score N] [--json]
 
 Scores a generated CV's HTML for ATS parseability (0-100 + letter grade) and lists
 concrete, fixable issues. Deterministic, read-only. Exits 0 when score >= --min-score

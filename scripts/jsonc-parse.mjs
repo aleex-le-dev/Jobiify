@@ -1,9 +1,9 @@
 /**
- * jsonc-parse.mjs — JSON.parse for config files written in JSONC.
+ * scripts/jsonc-parse.mjs — JSON.parse for config files written in JSONC.
  *
  * OpenCode accepts JSONC for its project config (`opencode.jsonc`): `//` and
  * comments, plus trailing commas before a closing brace or bracket. Feeding
- * that to `JSON.parse` throws, and doctor.mjs read the throw as "the Playwright
+ * that to `JSON.parse` throws, and scripts/doctor.mjs read the throw as "the Playwright
  * MCP server is not configured" — a commented-out config reported as a missing
  * one (#2252).
  *

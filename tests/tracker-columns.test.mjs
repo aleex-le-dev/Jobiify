@@ -1,7 +1,7 @@
 /**
  * tracker-columns.test.mjs — regression tests for header-name column mapping.
  *
- * merge-tracker.mjs and verify-pipeline.mjs used to parse applications.md by
+ * scripts/merge-tracker.mjs and scripts/verify-pipeline.mjs used to parse applications.md by
  * fixed column position. Inserting a column (e.g. a Location column after Role)
  * shifted every later index by one — Location was read as Score, Score as
  * Status — so verify-pipeline flagged false errors and merge-tracker wrote
@@ -11,8 +11,8 @@
  * each reader and writer keeps every value in its own column, across layouts.
  *
  * In-process by default (#4758). This was `tracker-columns-tests.mjs` at the
- * repo root, and it started 75 node processes: merge-tracker.mjs and
- * tracker.mjs read their paths from the environment once, at module load, so
+ * repo root, and it started 75 node processes: scripts/merge-tracker.mjs and
+ * scripts/tracker.mjs read their paths from the environment once, at module load, so
  * a fresh process per case was the only way to point them at a new sandbox.
  * Its runtime was spawn count × cold start — 14s locally, over 30s once on
  * windows-latest — and grew with every case added. Both scripts now export a
@@ -32,19 +32,19 @@ import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { format } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { resolveTsvColumns, resolveColumns, parseTrackerRow, HEADER_ALIASES, extractCellUrl } from '../tracker-parse.mjs';
-import { normalizeUrl } from '../url-key.mjs';
-import { canonicalizeTrackerPath } from '../path-resolver.mjs';
-import { mergeTracker } from '../merge-tracker.mjs';
-import { runTracker, removeRowByNum } from '../tracker.mjs';
-import { loadSeenCompanyRoles } from '../scan.mjs';
+import { resolveTsvColumns, resolveColumns, parseTrackerRow, HEADER_ALIASES, extractCellUrl } from '../scripts/tracker-parse.mjs';
+import { normalizeUrl } from '../scripts/url-key.mjs';
+import { canonicalizeTrackerPath } from '../scripts/path-resolver.mjs';
+import { mergeTracker } from '../scripts/merge-tracker.mjs';
+import { runTracker, removeRowByNum } from '../scripts/tracker.mjs';
+import { loadSeenCompanyRoles } from '../scripts/scan.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const NODE = process.execPath;
 
 // web/ lives deliberately OUTSIDE the auto-updater's world (its own
-// release-please component; see validate-system-paths-coverage.mjs
-// EXCLUDE_PREFIXES), so installs updated via `update-system.mjs apply` have
+// release-please component; see scripts/validate-system-paths-coverage.mjs
+// EXCLUDE_PREFIXES), so installs updated via `scripts/update-system.mjs apply` have
 // the core WITHOUT the web/ tree. The web-reader tests below exercise the
 // real alias chain on fresh clones and CI, and skip cleanly on core-only
 // installs instead of crashing the whole suite with ERR_MODULE_NOT_FOUND.
@@ -54,7 +54,7 @@ const WEB = HAS_WEB ? {} : { skip: 'web/ not present (core-only install; web/ is
 // Windows (`D:\...` reads as a URL scheme).
 const webTable = () => import('../web/src/lib/tracker-table.mjs');
 
-// tracker.mjs's index is node:sqlite. package.json now requires a Node that
+// scripts/tracker.mjs's index is node:sqlite. package.json now requires a Node that
 // ships it unflagged (22.13+, #4801), so this normally never skips; it stays
 // as the same guard test-all keeps on its own tracker index section, so a
 // runtime without node:sqlite skips every case that syncs, queries or exports
@@ -147,7 +147,7 @@ async function merge(sb, flags = {}) {
   return { code, stdout: text() };
 }
 
-// Run one tracker.mjs command in-process against the sandbox tracker + index.
+// Run one scripts/tracker.mjs command in-process against the sandbox tracker + index.
 async function runTrackerIn(sb, command, ...args) {
   let stdout = '';
   let stderr = '';
@@ -160,7 +160,7 @@ async function runTrackerIn(sb, command, ...args) {
   return { code, stdout, stderr };
 }
 
-// Sync the sandbox tracker into the tracker.mjs index and return one parsed
+// Sync the sandbox tracker into the scripts/tracker.mjs index and return one parsed
 // row by company name (row is null when sync/query fails or the row is absent).
 async function syncAndQueryRow(sb, company) {
   const sync = await runTrackerIn(sb, 'sync');
@@ -182,7 +182,7 @@ function makeSandbox(trackerContent, additions = {}) {
   // warning per report not referenced by this fixture's tracker -- 213 of them
   // at 256 reports. That made a verify case slow enough to trip its own 30s
   // timeout under full-suite load. Same fixture bug as the #1704 block in
-  // test-all.mjs (see PATCHES.md patch 10).
+  // scripts/test-all.mjs (see PATCHES.md patch 10).
   const reportsDir = join(dir, 'reports');
   mkdirSync(additionsDir, { recursive: true });
   mkdirSync(reportsDir, { recursive: true });
@@ -207,7 +207,7 @@ function makeSandbox(trackerContent, additions = {}) {
 
 const removeSandbox = (sb) => rmSync(sb.dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 
-// Pin scan.mjs's extra dedupe sources inside the sandbox. The module-level
+// Pin scripts/scan.mjs's extra dedupe sources inside the sandbox. The module-level
 // paths are relative to process.cwd(), so an in-process call would otherwise
 // read the developer's real data/scan-history.tsv and data/pipeline.md — CI
 // only escapes that because both files are gitignored.
@@ -252,7 +252,7 @@ describe('merge-tracker CLI: 10-column tracker', () => {
   let sb, res, cells;
   before(async () => {
     sb = makeSandbox(HEADER_10, { '2-globex.tsv': TSV_WITH_LOCATION });
-    res = await runScript('merge-tracker.mjs', [], sb);
+    res = await runScript('scripts/merge-tracker.mjs', [], sb);
     // cells: ['', num, date, company, role, location, score, status, pdf, report, notes, '']
     cells = cellsOf(dataRows(sb.tracker).find(l => l.includes('Globex')));
   });
@@ -277,7 +277,7 @@ describe('verify-pipeline: 10-column tracker', () => {
   let sb, res;
   before(async () => {
     sb = makeSandbox(HEADER_10);
-    res = await runScript('verify-pipeline.mjs', [], sb);
+    res = await runScript('scripts/verify-pipeline.mjs', [], sb);
   });
   after(() => removeSandbox(sb));
 
@@ -293,7 +293,7 @@ describe('legacy 9-column tracker', () => {
   before(async () => {
     sb = makeSandbox(HEADER_9, { '2-globex.tsv': TSV_NO_LOCATION });
     mergeRes = await merge(sb);
-    verify = await runScript('verify-pipeline.mjs', [], sb);
+    verify = await runScript('scripts/verify-pipeline.mjs', [], sb);
     // cells: ['', num, date, company, role, score, status, pdf, report, notes, '']
     cells = cellsOf(dataRows(sb.tracker).find(l => l.includes('Globex')));
   });
@@ -310,10 +310,10 @@ describe('legacy 9-column tracker', () => {
   });
 });
 
-// ── Test 4: tracker.mjs maps a 10-column tracker by header (#1596) ──────────
-// tracker.mjs used a fixed 9-cell destructure, so a Location column shifted
+// ── Test 4: scripts/tracker.mjs maps a 10-column tracker by header (#1596) ──────────
+// scripts/tracker.mjs used a fixed 9-cell destructure, so a Location column shifted
 // Score into Status and folded the real Notes cell away.
-describe('tracker.mjs: 10-column tracker', SQLITE, () => {
+describe('scripts/tracker.mjs: 10-column tracker', SQLITE, () => {
   let sb, got;
   before(async () => {
     sb = makeSandbox(HEADER_10);
@@ -324,16 +324,16 @@ describe('tracker.mjs: 10-column tracker', SQLITE, () => {
   });
   after(() => removeSandbox(sb));
 
-  test('tracker.mjs: Role read from Role column on 10-col tracker', () => {
+  test('scripts/tracker.mjs: Role read from Role column on 10-col tracker', () => {
     assert.equal(got.row.role, 'Engineer');
   });
-  test('tracker.mjs: Score not shifted on 10-col tracker', () => {
+  test('scripts/tracker.mjs: Score not shifted on 10-col tracker', () => {
     assert.equal(got.row.score, '4.0/5');
   });
-  test('tracker.mjs: Status not shifted on 10-col tracker', () => {
+  test('scripts/tracker.mjs: Status not shifted on 10-col tracker', () => {
     assert.equal(got.row.status, 'Applied');
   });
-  test('tracker.mjs: Notes intact on 10-col tracker', () => {
+  test('scripts/tracker.mjs: Notes intact on 10-col tracker', () => {
     assert.equal(got.row.notes, 'seed row');
   });
 });
@@ -346,10 +346,10 @@ test('removeRowByNum: report column resolved by header on 10-col tracker', () =>
   assert.equal(res.report, '[1](reports/001-acme-2026-01-01.md)');
 });
 
-// ── Test 6: scan.mjs seen-set maps company/role by header ───────────────────
+// ── Test 6: scripts/scan.mjs seen-set maps company/role by header ───────────────────
 // loadSeenCompanyRoles used a positional regex, so a 10-col tracker produced
 // keys like "engineer::remote" and scan dedup missed real matches.
-describe('scan.mjs seen-set: 10-column tracker', () => {
+describe('scripts/scan.mjs seen-set: 10-column tracker', () => {
   let sb, seen;
   before(() => {
     sb = makeSandbox(HEADER_10);
@@ -357,16 +357,16 @@ describe('scan.mjs seen-set: 10-column tracker', () => {
   });
   after(() => removeSandbox(sb));
 
-  test('scan.mjs: seen-set keys company::role on 10-col tracker', () => {
+  test('scripts/scan.mjs: seen-set keys company::role on 10-col tracker', () => {
     assert.ok(seen.has('acme::engineer'), `got [${[...seen].join(', ')}]`);
   });
-  test('scan.mjs: seen-set has no shifted-column garbage keys', () => {
+  test('scripts/scan.mjs: seen-set has no shifted-column garbage keys', () => {
     assert.ok(![...seen].some(k => k.includes('remote') || k.includes('4.0/5')), `got [${[...seen].join(', ')}]`);
   });
 });
 
 // ── Test 6b: normalize-statuses maps Status/Score/Notes by header (#1955) ───
-// normalize-statuses.mjs read Status at parts[6], Score at parts[5] and Notes
+// scripts/normalize-statuses.mjs read Status at parts[6], Score at parts[5] and Notes
 // at parts[9]. On a 10-column tracker every one of those lands a column early:
 // the Score cell was normalized as if it were a status — a `—` score (the
 // tracker's own "no evaluation" sentinel) mapped to Discarded and OVERWROTE
@@ -383,7 +383,7 @@ describe('normalize-statuses: 10-column tracker', () => {
   let sb, res, rowOf;
   before(async () => {
     sb = makeSandbox(TEN_COL_MESSY);
-    res = await runScript('normalize-statuses.mjs', [], sb);
+    res = await runScript('scripts/normalize-statuses.mjs', [], sb);
     const rows = dataRows(sb.tracker);
     rowOf = (company) => rows.find(l => l.includes(company)) || '';
   });
@@ -419,14 +419,14 @@ describe('contract: an unknown extra column', () => {
   let sb, verify, got, seen, norm, before_, after_;
   before(async () => {
     sb = makeSandbox(HEADER_UNKNOWN);
-    verify = await runScript('verify-pipeline.mjs', [], sb);
+    verify = await runScript('scripts/verify-pipeline.mjs', [], sb);
     got = await syncAndQueryRow(sb, 'Acme');
     seen = loadSeenCompanyRoles(sb.tracker, undefined, sandboxSources(sb));
     // The seed status is already canonical, so a header-aware run is a strict
     // no-op: the file must come back byte-identical and nothing may be reported
     // as an unknown status.
     before_ = readFileSync(sb.tracker, 'utf-8');
-    norm = await runScript('normalize-statuses.mjs', [], sb);
+    norm = await runScript('scripts/normalize-statuses.mjs', [], sb);
     after_ = readFileSync(sb.tracker, 'utf-8');
   });
   after(() => removeSandbox(sb));
@@ -435,7 +435,7 @@ describe('contract: an unknown extra column', () => {
     assert.equal(verify.code, 0, verify.stdout);
     assert.match(verify.stdout, /0 errors/);
   });
-  test('contract: tracker.mjs skips an unknown extra column', SQLITE, () => {
+  test('contract: scripts/tracker.mjs skips an unknown extra column', SQLITE, () => {
     assert.equal(got.sync.code, 0, got.sync.stderr);
     assert.ok(got.row, got.query.stdout);
     assert.deepEqual(
@@ -443,7 +443,7 @@ describe('contract: an unknown extra column', () => {
       { role: 'Engineer', score: '4.0/5', status: 'Applied' },
     );
   });
-  test('contract: scan.mjs seen-set skips an unknown extra column', () => {
+  test('contract: scripts/scan.mjs seen-set skips an unknown extra column', () => {
     assert.deepEqual([...seen], ['acme::engineer']);
   });
   test('contract: normalize-statuses skips an unknown extra column', () => {
@@ -455,7 +455,7 @@ describe('contract: an unknown extra column', () => {
 
 // ── Test 8: web read path resolves headers via the SHARED alias table ───────
 // web/src/lib/tracker-table.mjs (behind readApplications() in career-ops.ts)
-// loads tracker-aliases.json — the same file tracker-parse.mjs exports as
+// loads tracker-aliases.json — the same file scripts/tracker-parse.mjs exports as
 // HEADER_ALIASES — instead of mirroring it. Passing ROOT here exercises the
 // REAL alias file, so an alias added/renamed there is either honored by the
 // web reader too or fails this test; a second drifting table can't come back.
@@ -683,7 +683,7 @@ describe('--migrate-via', () => {
   let sb, first, content, second;
   before(async () => {
     sb = makeSandbox(HEADER_9);
-    first = await runScript('merge-tracker.mjs', ['--migrate-via'], sb);
+    first = await runScript('scripts/merge-tracker.mjs', ['--migrate-via'], sb);
     content = readFileSync(sb.tracker, 'utf-8');
     second = await merge(sb, { migrateVia: true });
   });
@@ -716,7 +716,7 @@ describe('dedup-tracker: unknown-employer keying', () => {
   let sb, res, rows;
   before(async () => {
     sb = makeSandbox(BLIND_TRACKER);
-    res = await runScript('dedup-tracker.mjs', [], sb);
+    res = await runScript('scripts/dedup-tracker.mjs', [], sb);
     rows = dataRows(sb.tracker);
   });
   after(() => removeSandbox(sb));
@@ -747,7 +747,7 @@ describe('verify-pipeline: Via checks', () => {
   let sb, res;
   before(async () => {
     sb = makeSandbox(VIA_ISSUES);
-    res = await runScript('verify-pipeline.mjs', [], sb);
+    res = await runScript('scripts/verify-pipeline.mjs', [], sb);
   });
   after(() => removeSandbox(sb));
 
@@ -898,7 +898,7 @@ describe('web reader: row-shape contract', WEB, () => {
 // score BEFORE status, and the two were reconciled by identifying the score
 // cell by CONTENT (`looksLikeScoreCell`). That discriminator has an
 // undecidable case in this repo's own conventions: `—` is a score sentinel
-// (#1799) AND a status meaning Discarded (normalize-statuses.mjs), so a
+// (#1799) AND a status meaning Discarded (scripts/normalize-statuses.mjs), so a
 // discarded, never-scored row carries `—` in both cells and no content rule can
 // order them. Additions may now carry a HEADER row, after which columns resolve
 // by NAME through the same alias table as the tracker, and no order is
@@ -1176,7 +1176,7 @@ describe('headed additions: what optional-cell leniency must not accept', () => 
 
 // The evaluate prompt no longer embeds a tracker row. The agent does not
 // write the addition. report-persist.trackerTsvLine is the web emitter, and
-// persist-evaluation-report.mjs writes those same bytes. A header spelled
+// scripts/persist-evaluation-report.mjs writes those same bytes. A header spelled
 // differently than tracker-aliases.json knows would not go red anywhere:
 // merge-tracker would read the row as headerless and fall back to content
 // sniffing, the path that cannot order two dash sentinels. Assert the
@@ -1209,7 +1209,7 @@ describe('web persist emitter: TSV header matches the ingest contract', WEB, () 
   });
 });
 
-// ═══ tracker.mjs export: the round-trip carries the LAYOUT (#3703) ══════════
+// ═══ scripts/tracker.mjs export: the round-trip carries the LAYOUT (#3703) ══════════
 // `sync` read the tracker by header NAME and `export` wrote it back by fixed
 // POSITION, so a customized layout round-tripped every VALUE correctly and lost
 // the COLUMN — silently, and `--out data/applications.md` writes that result
@@ -1225,7 +1225,7 @@ async function syncThenExport(content) {
 }
 
 // ── a Location + URL layout survives sync → export byte-for-byte ────────────
-test('tracker.mjs export: Location/URL layout round-trips byte-for-byte', SQLITE, async (t) => {
+test('scripts/tracker.mjs export: Location/URL layout round-trips byte-for-byte', SQLITE, async (t) => {
   const CUSTOM = `# Applications Tracker
 
 | # | Date | Company | Location | Role | Score | Status | PDF | Report | Notes | URL |
@@ -1240,7 +1240,7 @@ test('tracker.mjs export: Location/URL layout round-trips byte-for-byte', SQLITE
 });
 
 // ── Test 17: an unknown user column keeps its own values, not just its header ─
-test('tracker.mjs export: unknown extra column keeps its per-row values', SQLITE, async (t) => {
+test('scripts/tracker.mjs export: unknown extra column keeps its per-row values', SQLITE, async (t) => {
   const CUSTOM = `# Applications Tracker
 
 | # | Date | Company | Priority | Role | Score | Status | PDF | Report | Notes |
@@ -1255,7 +1255,7 @@ test('tracker.mjs export: unknown extra column keeps its per-row values', SQLITE
 });
 
 // ── Test 18: the legacy 9-column layout is unchanged ────────────────────────
-test('tracker.mjs export: legacy 9-column layout round-trips unchanged', SQLITE, async (t) => {
+test('scripts/tracker.mjs export: legacy 9-column layout round-trips unchanged', SQLITE, async (t) => {
   const { sb, exported } = await syncThenExport(HEADER_9);
   t.after(() => removeSandbox(sb));
   assert.equal(exported.code, 0, exported.stderr);
@@ -1265,7 +1265,7 @@ test('tracker.mjs export: legacy 9-column layout round-trips unchanged', SQLITE,
 // ── Test 19: --out over the tracker preserves the custom columns ────────────
 // The adoption path from the issue: export a repaired copy back over
 // applications.md. Adopting it used to cost the user Location, Via and URL.
-describe('tracker.mjs export --out over the tracker', SQLITE, () => {
+describe('scripts/tracker.mjs export --out over the tracker', SQLITE, () => {
   const CUSTOM = `# Applications Tracker
 
 | # | Date | Company | Via | Role | Score | Status | PDF | Report | Notes | URL |
@@ -1283,13 +1283,13 @@ describe('tracker.mjs export --out over the tracker', SQLITE, () => {
   });
   after(() => removeSandbox(sb));
 
-  test('tracker.mjs export --out: Via and URL survive adoption over the tracker', () => {
+  test('scripts/tracker.mjs export --out: Via and URL survive adoption over the tracker', () => {
     assert.equal(res.code, 0, res.stderr);
     assert.deepEqual([cells[4], cells[11]], ['Hays', 'https://acme.example/jobs/1'], after_);
   });
   // The point of exporting over the tracker is the repair: a non-canonical
   // status is normalized while the custom columns stay put.
-  test('tracker.mjs export --out: non-canonical status still repaired', () => {
+  test('scripts/tracker.mjs export --out: non-canonical status still repaired', () => {
     assert.equal(cells[7], 'Applied', after_);
   });
 });
@@ -1299,7 +1299,7 @@ describe('tracker.mjs export --out over the tracker', SQLITE, () => {
 // decision the user makes, not a silent drop under a "backed up to .bak" line.
 // The refusal goes through the CLI: it is an exit code, and it is decided while
 // export holds the tracker lock.
-describe('tracker.mjs export: unplaceable cells', SQLITE, () => {
+describe('scripts/tracker.mjs export: unplaceable cells', SQLITE, () => {
   const WIDE = `# Applications Tracker
 
 | # | Date | Company | Role | Score | Status | PDF | Report | Notes | URL |
@@ -1312,21 +1312,21 @@ describe('tracker.mjs export: unplaceable cells', SQLITE, () => {
     await runTrackerIn(sb, 'sync');
     stdoutRun = await runTrackerIn(sb, 'export');
     before_ = readFileSync(sb.tracker, 'utf-8');
-    refused = await runScript('tracker.mjs', ['export', '--out', sb.tracker], sb);
+    refused = await runScript('scripts/tracker.mjs', ['export', '--out', sb.tracker], sb);
     afterRefusal = readFileSync(sb.tracker, 'utf-8');
     forced = await runTrackerIn(sb, 'export', '--out', sb.tracker, '--force');
     afterForce = readFileSync(sb.tracker, 'utf-8');
   });
   after(() => removeSandbox(sb));
 
-  test('tracker.mjs export: names the columns it cannot reproduce', () => {
+  test('scripts/tracker.mjs export: names the columns it cannot reproduce', () => {
     assert.match(stdoutRun.stderr, /cannot be reproduced by export/);
   });
-  test('tracker.mjs export --out: refuses to overwrite when columns would be dropped', () => {
+  test('scripts/tracker.mjs export --out: refuses to overwrite when columns would be dropped', () => {
     assert.equal(refused.code, 1, refused.stdout);
     assert.equal(afterRefusal, before_);
   });
-  test('tracker.mjs export --out --force: writes once the drop is acknowledged', () => {
+  test('scripts/tracker.mjs export --out --force: writes once the drop is acknowledged', () => {
     assert.equal(forced.code, 0, forced.stderr);
     assert.notEqual(afterForce, before_);
   });
@@ -1338,7 +1338,7 @@ describe('tracker.mjs export: unplaceable cells', SQLITE, () => {
 // the PRE-#3703 schema by hand rather than by mutating a current index: a test
 // that assumes the new `extras` column exists cannot fail cleanly against the
 // old code, it aborts on "no such column" (PR #3794 review).
-describe('tracker.mjs export: pre-#3703 index', SQLITE, () => {
+describe('scripts/tracker.mjs export: pre-#3703 index', SQLITE, () => {
   const CUSTOM = `# Applications Tracker
 
 | # | Date | Company | Location | Role | Score | Status | PDF | Report | Notes |
@@ -1369,12 +1369,12 @@ describe('tracker.mjs export: pre-#3703 index', SQLITE, () => {
   });
   after(() => removeSandbox(sb));
 
-  test('tracker.mjs export: a pre-#3703 index is rebuilt, exporting the source header', () => {
+  test('scripts/tracker.mjs export: a pre-#3703 index is rebuilt, exporting the source header', () => {
     const headerLine = exported.stdout.split('\n').find(l => l.startsWith('| #')) ?? '';
     assert.equal(exported.code, 0, exported.stderr);
     assert.match(headerLine, /\| Location \|/);
   });
-  test('tracker.mjs export: the rebuilt stale index round-trips byte-for-byte', () => {
+  test('scripts/tracker.mjs export: the rebuilt stale index round-trips byte-for-byte', () => {
     assert.equal(exported.stdout, CUSTOM);
   });
 });
@@ -1385,9 +1385,9 @@ describe('tracker.mjs export: pre-#3703 index', SQLITE, () => {
 // `status` column fails the CREATE INDEX — and that handle used to stay open.
 // A stand-in DatabaseSync, because a leaked handle is only observable on
 // Windows (the file cannot be deleted); this pins the close itself.
-describe('tracker.mjs openDb: failed schema setup', () => {
+describe('scripts/tracker.mjs openDb: failed schema setup', () => {
   test('openDb closes the database when schema setup throws, then rethrows', async () => {
-    const { openDb } = await import('../tracker.mjs');
+    const { openDb } = await import('../scripts/tracker.mjs');
     const dir = mkdtempSync(join(tmpdir(), 'co-opendb-'));
     try {
       let closed = 0;
@@ -1418,7 +1418,7 @@ describe('tracker.mjs openDb: failed schema setup', () => {
 // `export` emitted a fixed skeleton, so `--out` over the tracker deleted a
 // localized title, a legend, an archive section and a trailing note — and the
 // drop gate never saw it, because it counted only cells past the header width.
-test('tracker.mjs export: title, preamble and trailing note survive the round-trip', SQLITE, async (t) => {
+test('scripts/tracker.mjs export: title, preamble and trailing note survive the round-trip', SQLITE, async (t) => {
   const RICH = `# Seguimiento de candidaturas
 
 Legend: ✅ sent · ❌ not sent.
@@ -1439,7 +1439,7 @@ Last reviewed 2026-09-01.
 // A second table's rows are indexed against the FIRST table's columns, so
 // replaying its heading and header would frame a shifted row as intact. It is
 // reported as a loss instead, and `--out` refuses.
-describe('tracker.mjs export: a second table', SQLITE, () => {
+describe('scripts/tracker.mjs export: a second table', SQLITE, () => {
   const ARCHIVED = `# Applications Tracker
 
 | # | Date | Company | Role | Score | Status | PDF | Report | Notes | URL |
@@ -1463,21 +1463,21 @@ describe('tracker.mjs export: a second table', SQLITE, () => {
   });
   after(() => removeSandbox(sb));
 
-  test('tracker.mjs export: a section between table rows is named as a loss', () => {
+  test('scripts/tracker.mjs export: a section between table rows is named as a loss', () => {
     assert.match(exported.stderr, /## Archive \(2025\)/);
     assert.match(exported.stderr, /cannot be reproduced by export/);
   });
-  test('tracker.mjs export --out: refuses to flatten a tracker with an archive section', () => {
+  test('scripts/tracker.mjs export --out: refuses to flatten a tracker with an archive section', () => {
     assert.equal(refused.code, 1, refused.stderr);
     assert.equal(afterRefusal, before_);
   });
   // The archived row was indexed against the FIRST table's header, so emitting
   // it under the active table invents an empty URL cell for it. Naming it as a
   // loss is the only honest option; forcing must not move it (PR #3794 review).
-  test('tracker.mjs export: the later table\'s row is named as a loss', () => {
+  test('scripts/tracker.mjs export: the later table\'s row is named as a loss', () => {
     assert.match(exported.stderr, /row #9 \(Oldco/);
   });
-  test('tracker.mjs export --force: the archived row is NOT re-emitted under the active table', () => {
+  test('scripts/tracker.mjs export --force: the archived row is NOT re-emitted under the active table', () => {
     assert.equal(forced.code, 0, forced.stderr);
     assert.doesNotMatch(afterForce, /Oldco/);
   });
@@ -1487,7 +1487,7 @@ describe('tracker.mjs export: a second table', SQLITE, () => {
 // The lines around the table are prose the export COPIES. Trimming them edited
 // a user's indentation and trailing spaces with nothing in the loss list able
 // to see it (PR #3794 review).
-describe('tracker.mjs export: prose whitespace', SQLITE, () => {
+describe('scripts/tracker.mjs export: prose whitespace', SQLITE, () => {
   const INDENTED_PROSE = [
     '# Applications Tracker',
     '',
@@ -1507,12 +1507,12 @@ describe('tracker.mjs export: prose whitespace', SQLITE, () => {
   });
   after(() => removeSandbox(sb));
 
-  test('tracker.mjs export: prologue/epilogue whitespace survives verbatim', () => {
+  test('scripts/tracker.mjs export: prologue/epilogue whitespace survives verbatim', () => {
     assert.equal(exported.code, 0, exported.stderr);
     assert.equal(exported.stdout, INDENTED_PROSE);
   });
   // Nothing was lost, so the gate must not fire — a false refusal is its own bug.
-  test('tracker.mjs export --out: no false refusal when nothing is lost', () => {
+  test('scripts/tracker.mjs export --out: no false refusal when nothing is lost', () => {
     assert.equal(written.code, 0, written.stderr);
   });
 });
@@ -1520,7 +1520,7 @@ describe('tracker.mjs export: prose whitespace', SQLITE, () => {
 // ── Test 28: a cell the render had to rewrite is a reported loss ────────────
 // A stray pipe is folded into Notes at sync time and comes back as '│' — the
 // VALUE changed, so a silent `--out` edits the tracker (PR #3794 review).
-describe('tracker.mjs export: a sanitized cell', SQLITE, () => {
+describe('scripts/tracker.mjs export: a sanitized cell', SQLITE, () => {
   const STRAY = `# Applications Tracker
 
 | # | Date | Company | Role | Score | Status | PDF | Report | Notes |
@@ -1536,10 +1536,10 @@ describe('tracker.mjs export: a sanitized cell', SQLITE, () => {
   });
   after(() => removeSandbox(sb));
 
-  test('tracker.mjs export: a sanitized cell is named with its before/after', () => {
+  test('scripts/tracker.mjs export: a sanitized cell is named with its before/after', () => {
     assert.match(exported.stderr, /note \| extra.*note │ extra/);
   });
-  test('tracker.mjs export --out: refuses when a cell value would change', () => {
+  test('scripts/tracker.mjs export --out: refuses when a cell value would change', () => {
     assert.equal(refused.code, 1, refused.stderr);
     assert.equal(afterRefusal, before_);
   });
@@ -1549,7 +1549,7 @@ describe('tracker.mjs export: a sanitized cell', SQLITE, () => {
 // resolveColumns needs `startsWith('|')` and detectLayout trimmed on its own,
 // so an indented header gave the LEGACY map on read and the real map on write:
 // Berlin moved into Role and Applied into PDF (PR #3794 review).
-test('tracker.mjs export: an indented table keeps every cell in its own column', SQLITE, async (t) => {
+test('scripts/tracker.mjs export: an indented table keeps every cell in its own column', SQLITE, async (t) => {
   const INDENTED = [
     '# Applications Tracker',
     '',
@@ -1569,7 +1569,7 @@ test('tracker.mjs export: an indented table keeps every cell in its own column',
 // isHeaderRow only fires when the alias table resolves the FULL schema, so a
 // Spanish header (puntuación/estado are unmapped) recorded no layout at all and
 // exported as the English default, exit 0 (PR #3794 review).
-test('tracker.mjs export: an unresolvable localized header round-trips verbatim', SQLITE, async (t) => {
+test('scripts/tracker.mjs export: an unresolvable localized header round-trips verbatim', SQLITE, async (t) => {
   const SPANISH = `# Seguimiento
 
 | # | Fecha | Empresa | Puesto | Puntuación | Estado | PDF | Informe | Notas |
@@ -1583,7 +1583,7 @@ test('tracker.mjs export: an unresolvable localized header round-trips verbatim'
 });
 
 // ── Test 26: CRLF line endings survive ─────────────────────────────────────
-test('tracker.mjs export: CRLF line endings are not rewritten to LF', SQLITE, async (t) => {
+test('scripts/tracker.mjs export: CRLF line endings are not rewritten to LF', SQLITE, async (t) => {
   const CRLF = [
     '# Applications Tracker',
     '',
@@ -1645,7 +1645,7 @@ describe('#3516: tracker URL cell as a markdown link', () => {
 
   // The shared row parser — not merge-tracker alone — returns the href, so
   // every script reading `.url` off a parsed row gets the key without knowing
-  // the form (scan.mjs's same-title requisition dedup among them, #4267).
+  // the form (scripts/scan.mjs's same-title requisition dedup among them, #4267).
   test('#3516: parseTrackerRow returns the href for both written forms', () => {
     const lines = trackerWith(
       `| 1 | 2026-01-01 | Temporal | Engineer | 4.0/5 | Applied | ✅ | — | linked | [ashby](${HREF}) |`,
@@ -1801,7 +1801,7 @@ describe('#3516: tracker URL cell as a markdown link', () => {
   // Main's Location/URL export test pins a BARE cell; this pins the linked form
   // beside it. The export is offered as a repaired copy to adopt, so a changed
   // cell would be a silent re-key — exact, not equivalent.
-  test('#3516: linked AND bare URL cells both round-trip through tracker.mjs sync/export byte-for-byte', SQLITE, async (t) => {
+  test('#3516: linked AND bare URL cells both round-trip through scripts/tracker.mjs sync/export byte-for-byte', SQLITE, async (t) => {
     const BOTH_FORMS = trackerWith(
       '| 1 | 2026-01-01 | Temporal | Engineer | 4.0/5 | Applied | ✅ | [1](../reports/1.md) | linked, ATS label | [ashby](https://jobs.ashbyhq.com/temporal/8a65908d) |',
       '| 2 | 2026-01-02 | Snowflake | Director | 4.2/5 | Applied | ❌ | [2](../reports/2.md) | linked, host label | [careers.snowflake.com](https://careers.snowflake.com/us/en/job/4735b223) |',
@@ -1832,7 +1832,7 @@ describe('#3516: tracker URL cell as a markdown link', () => {
   test('#3516: --migrate-urls --dry-run reports without writing', async (t) => {
     const sb = makeSandbox(MIGRATE_FIXTURE);
     t.after(() => removeSandbox(sb));
-    const res = await runScript('merge-tracker.mjs', ['--migrate-urls', '--dry-run'], sb);
+    const res = await runScript('scripts/merge-tracker.mjs', ['--migrate-urls', '--dry-run'], sb);
     assert.equal(res.code, 0, res.stdout);
     assert.match(res.stdout, /would be rendered/);
     assert.equal(readFileSync(sb.tracker, 'utf-8'), MIGRATE_FIXTURE);

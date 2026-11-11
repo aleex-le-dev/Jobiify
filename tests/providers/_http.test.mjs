@@ -74,7 +74,7 @@ if (isRetryableError(nonTypeErrorLookalike) === true) {
 }
 
 // isRefusedRedirectError() — the same verdict, now reachable by name so a
-// second consumer (discover-ats.mjs, which reports it to a human) cannot drift
+// second consumer (scripts/discover-ats.mjs, which reports it to a human) cannot drift
 // from the retry layer's answer. Asserted directly rather than only through
 // isRetryableError: a caller that needs "is this a refused redirect" gets a
 // wrong answer from "is this retryable" for every 4xx, which is not a redirect

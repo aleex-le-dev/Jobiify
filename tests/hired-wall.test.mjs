@@ -11,8 +11,8 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { execFileSync } from 'child_process';
 import { pass, fail, ROOT } from './helpers.mjs';
-import { parseLedger, ledgerLine, renderCard, rebuildWall, buildSvg } from '../hired-wall-build.mjs';
-import { hiredRows, weeksFromScanHistory, buildIssueUrl } from '../hired-share.mjs';
+import { parseLedger, ledgerLine, renderCard, rebuildWall, buildSvg } from '../scripts/hired-wall-build.mjs';
+import { hiredRows, weeksFromScanHistory, buildIssueUrl } from '../scripts/hired-share.mjs';
 
 console.log('\nHired Wall — ledger, cards, SVG, share flow');
 
@@ -75,13 +75,13 @@ const FIXTURE_AVATAR = join(ROOT, 'tests', 'fixtures', 'avatar-8x8.png');
 {
   const dir = mkdtempSync(join(tmpdir(), 'hired-wall-'));
   mkdirSync(join(dir, 'docs'), { recursive: true });
-  writeFileSync(join(dir, 'HIRED.md'), '# W\n\n<!-- ENTRIES -->\n\n<!-- /ENTRIES -->\n');
-  execFileSync(process.execPath, [join(ROOT, 'hired-wall-build.mjs'), '--add',
+  writeFileSync((mkdirSync(join(dir, 'docs/projet'), { recursive: true }), join(dir, 'docs/projet/HIRED.md')), '# W\n\n<!-- ENTRIES -->\n\n<!-- /ENTRIES -->\n');
+  execFileSync(process.execPath, [join(ROOT, 'scripts/hired-wall-build.mjs'), '--add',
     '--root', dir, '--level', 'role',
     '--role', 'Dev" --> <img onerror=x>', '--story', 'a "quoted" story --> with terminators',
     '--link', 'https://github.com/career-ops-hq/career-ops/issues/99',
     '--avatar-fixture', FIXTURE_AVATAR]);
-  const out = readFileSync(join(dir, 'HIRED.md'), 'utf8');
+  const out = readFileSync(join(dir, 'docs/projet/HIRED.md'), 'utf8');
   const entries = parseLedger(out);
   // The danger is live markup: after clean() the angle brackets are gone, so
   // the WORD "onerror" may survive as inert text. Assert no tag can render.
@@ -97,11 +97,11 @@ const FIXTURE_AVATAR = join(ROOT, 'tests', 'fixtures', 'avatar-8x8.png');
   // A non-allowlisted link must be refused entirely.
   let refused = false;
   try {
-    execFileSync(process.execPath, [join(ROOT, 'hired-wall-build.mjs'), '--add', '--root', dir,
+    execFileSync(process.execPath, [join(ROOT, 'scripts/hired-wall-build.mjs'), '--add', '--root', dir,
       '--level', 'role', '--role', 'X', '--link', 'https://evil.example/phish',
       '--avatar-fixture', FIXTURE_AVATAR], { stdio: 'pipe' });
   } catch { refused = true; }
-  const after = parseLedger(readFileSync(join(dir, 'HIRED.md'), 'utf8'));
+  const after = parseLedger(readFileSync(join(dir, 'docs/projet/HIRED.md'), 'utf8'));
   if (refused && after.length === 1) pass('non-github/santifer.io link is refused');
   else fail('a foreign link was accepted into the ledger');
   rmSync(dir, { recursive: true, force: true });
@@ -113,22 +113,22 @@ const FIXTURE_AVATAR = join(ROOT, 'tests', 'fixtures', 'avatar-8x8.png');
   mkdirSync(join(dir, 'docs'), { recursive: true });
   const wall = '# W\n\n<!-- ENTRIES -->\n\n<!-- /ENTRIES -->\n';
   const countJson = '{\n  "count": 0,\n  "updatedAt": "2000-01-01"\n}\n';
-  writeFileSync(join(dir, 'HIRED.md'), wall);
+  writeFileSync((mkdirSync(join(dir, 'docs/projet'), { recursive: true }), join(dir, 'docs/projet/HIRED.md')), wall);
   writeFileSync(join(dir, 'docs', 'hired-count.json'), countJson);
   writeFileSync(join(dir, 'docs', 'hired-wall.svg'), 'old-svg');
-  const unchanged = () => readFileSync(join(dir, 'HIRED.md'), 'utf8') === wall
+  const unchanged = () => readFileSync(join(dir, 'docs/projet/HIRED.md'), 'utf8') === wall
     && readFileSync(join(dir, 'docs', 'hired-count.json'), 'utf8') === countJson
     && readFileSync(join(dir, 'docs', 'hired-wall.svg'), 'utf8') === 'old-svg';
   for (const extra of [[], ['--fetch-avatars']]) {
     let refused = false;
     try {
-      execFileSync(process.execPath, [join(ROOT, 'hired-wall-build.mjs'), '--root', dir, ...extra], { stdio: 'pipe' });
+      execFileSync(process.execPath, [join(ROOT, 'scripts/hired-wall-build.mjs'), '--root', dir, ...extra], { stdio: 'pipe' });
     } catch { refused = true; }
     const label = ['--root', ...extra].join(' ');
     if (refused && unchanged()) pass(`no action flag (${label}) exits non-zero and writes nothing`);
     else fail(`no action flag (${label}): refused=${refused}, files unchanged=${unchanged()}`);
   }
-  execFileSync(process.execPath, [join(ROOT, 'hired-wall-build.mjs'), '--rebuild', '--root', dir], { stdio: 'pipe' });
+  execFileSync(process.execPath, [join(ROOT, 'scripts/hired-wall-build.mjs'), '--rebuild', '--root', dir], { stdio: 'pipe' });
   if (readFileSync(join(dir, 'docs', 'hired-wall.svg'), 'utf8').startsWith('<svg')) pass('--rebuild still writes the derived surfaces');
   else fail('--rebuild did not regenerate docs/hired-wall.svg');
   rmSync(dir, { recursive: true, force: true });

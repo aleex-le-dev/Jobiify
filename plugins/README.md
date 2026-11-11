@@ -16,7 +16,7 @@ changes. Two gates must both be satisfied:
 
 1. **Enable** the plugin in `config/plugins.yml` (copy `config/plugins.example.yml`).
 2. **Provide its keys** in your own `.env` (each plugin declares which it needs).
-   Run `node doctor.mjs` or `node plugins.mjs list` to see what's missing.
+   Run `node scripts/doctor.mjs` or `node scripts/plugins.mjs list` to see what's missing.
 
 ## Anatomy of a plugin
 
@@ -60,10 +60,10 @@ to `data/pipeline.md` through the canonical writer, so a plugin can't break the
 data formats the web reads. Non-provider hooks run explicitly:
 
 ```bash
-node plugins.mjs list
-node plugins.mjs run gmail                       # ingest
-node plugins.mjs run notion search "platform"    # search
-node plugins.mjs run notion export [--dry-run]   # export
+node scripts/plugins.mjs list
+node scripts/plugins.mjs run gmail                       # ingest
+node scripts/plugins.mjs run notion search "platform"    # search
+node scripts/plugins.mjs run notion export [--dry-run]   # export
 ```
 
 ### The `ctx` object
@@ -96,7 +96,7 @@ shadowed by it. Bundled plugins always win an id collision.
 career-ops is plain ESM with no build step, so the engine **cannot truly
 sandbox** a plugin's imports. `allowedHosts`, the scoped `ctx.env`, and the
 no-auto-submit hook taxonomy constrain an **honest** plugin and make every loaded
-plugin visible (`doctor` / `plugins.mjs list`) — but they are not a hard
+plugin visible (`doctor` / `scripts/plugins.mjs list`) — but they are not a hard
 boundary against malicious code, which can reach `process.env` or the network
 directly. Containment is the same as everywhere else in open source:
 
@@ -120,4 +120,4 @@ These don't belong in the plugin layer — they're a different direction:
   No hook can submit, and `humanInTheLoop: true` is mandatory. This holds
   everywhere, in core and plugins alike.
 
-See `CONTRIBUTING.md` → "Scope" for the full boundary.
+See `docs/projet/CONTRIBUTING.md` → "Scope" for the full boundary.

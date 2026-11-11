@@ -2,7 +2,7 @@
  * updater-signature-ledger-drift.test.mjs — a new manifesto signature must not
  * read as system drift on every install (#4062).
  *
- * SIGNATURES.md is an append-only ledger of who signed MANIFESTO.md. It used
+ * SIGNATURES.md is an append-only ledger of who signed docs/projet/MANIFESTO.md. It used
  * to sit in SYSTEM_PATHS, which put it inside the pathspec check() diffs:
  *
  *   systemTreeDiffers(SYSTEM_PATHS, 'FETCH_HEAD')
@@ -15,7 +15,7 @@
  * false positive as #3149, from a third independent cause (after the SHA-vs-
  * content bug of #2630 and the ignore-rule route of #2756).
  *
- * These tests drive the REAL manifest — read out of update-system.mjs with
+ * These tests drive the REAL manifest — read out of scripts/update-system.mjs with
  * extractArrayFromSource, never a hard-coded copy — against throwaway repos
  * through the same ctx.git seam production uses. Hard-coding the path list
  * here would pin the fixture instead of the shipped behaviour, and the
@@ -30,16 +30,16 @@ import { mkdtempSync, mkdirSync, writeFileSync, appendFileSync, readFileSync } f
 import { tmpdir } from 'os';
 import { join, dirname } from 'path';
 import { pass, fail, rmSync, ROOT } from './helpers.mjs';
-import { gitIn, systemTreeDiffers, extractArrayFromSource } from '../update-system.mjs';
+import { gitIn, systemTreeDiffers, extractArrayFromSource } from '../scripts/update-system.mjs';
 
 const SIGNATURES = 'SIGNATURES.md';
 // A second real system file, used as the control: whatever the manifest says
 // today, an upstream change to THIS one must still report drift.
-const CONTROL = 'MANIFESTO.md';
+const CONTROL = 'docs/projet/MANIFESTO.md';
 const USER_PATH = 'data/applications.md';
 
 const realSystemPaths = extractArrayFromSource(
-  readFileSync(join(ROOT, 'update-system.mjs'), 'utf-8'),
+  readFileSync(join(ROOT, 'scripts/update-system.mjs'), 'utf-8'),
   'SYSTEM_PATHS',
 );
 
@@ -84,10 +84,12 @@ console.log('\n🧪 Testing signature-ledger drift (#4062)...');
 // ── 0. Fixture preconditions ────────────────────────────────────────────────
 // The two tests below are only meaningful if the real manifest is what it
 // claims to be: non-empty, and still shipping the control file.
-if (realSystemPaths.length > 0 && realSystemPaths.includes(CONTROL)) {
-  pass(`real SYSTEM_PATHS read from update-system.mjs (${realSystemPaths.length} entries, includes ${CONTROL})`);
+// The control may be shipped by a directory entry (docs/) rather than by name.
+const shipsControl = realSystemPaths.some((p) => p === CONTROL || (p.endsWith('/') && CONTROL.startsWith(p)));
+if (realSystemPaths.length > 0 && shipsControl) {
+  pass(`real SYSTEM_PATHS read from scripts/update-system.mjs (${realSystemPaths.length} entries, includes ${CONTROL})`);
 } else {
-  fail(`could not read a usable SYSTEM_PATHS from update-system.mjs (${realSystemPaths.length} entries)`);
+  fail(`could not read a usable SYSTEM_PATHS from scripts/update-system.mjs (${realSystemPaths.length} entries)`);
 }
 
 // ── 1. THE REGRESSION ───────────────────────────────────────────────────────

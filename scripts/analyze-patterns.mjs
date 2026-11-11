@@ -1,29 +1,29 @@
 #!/usr/bin/env node
 /**
- * analyze-patterns.mjs — Rejection Pattern Detector for career-ops
+ * scripts/analyze-patterns.mjs — Rejection Pattern Detector for career-ops
  *
  * Parses applications.md + all linked reports, extracts dimensions
  * (archetype, seniority, remote, gaps, scores), classifies outcomes,
  * and outputs structured JSON with actionable patterns.
  *
- * Run: node analyze-patterns.mjs          (JSON to stdout)
- *      node analyze-patterns.mjs --summary (human-readable table)
- *      node analyze-patterns.mjs --min-threshold 3
- *      node analyze-patterns.mjs --min-vendor-n 8   (per-vendor sample floor)
- *      node analyze-patterns.mjs --self-test
+ * Run: node scripts/analyze-patterns.mjs          (JSON to stdout)
+ *      node scripts/analyze-patterns.mjs --summary (human-readable table)
+ *      node scripts/analyze-patterns.mjs --min-threshold 3
+ *      node scripts/analyze-patterns.mjs --min-vendor-n 8   (per-vendor sample floor)
+ *      node scripts/analyze-patterns.mjs --self-test
  */
 
 import { readFileSync, existsSync, realpathSync, writeFileSync, symlinkSync, rmSync } from 'fs';
 import { join, dirname, relative, sep } from 'path';
 import { fileURLToPath } from 'url';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { load as yamlLoad } from 'js-yaml';
 import { resolveColumns, parseTrackerRow, normalizeVia } from './tracker-parse.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { loadCanonicalStates, resolveCanonicalStateId, foldStatusInput } from './tracker-utils.mjs';
 import { atsVendorOf } from './ats-vendor.mjs';
-import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
-import { localToday } from './lib/local-today.mjs';
+import { flagValue, hasFlag, validateFlags } from '../lib/cli-flags.mjs';
+import { localToday } from '../lib/local-today.mjs';
 
 const CAREER_OPS = getCareerOpsRoot();
 const APPS_FILE = existsSync(join(CAREER_OPS, 'data/applications.md'))
@@ -83,12 +83,12 @@ const args = process.argv.slice(2);
 const KNOWN_FLAGS = ['--min-threshold', '--min-vendor-n', '--self-test', '--summary', '--help', '-h'];
 const VALUE_FLAGS = ['--min-threshold', '--min-vendor-n'];
 const USAGE = `Usage:
-  node analyze-patterns.mjs                       # analyze application patterns as JSON
-  node analyze-patterns.mjs --summary             # print a human-readable summary
-  node analyze-patterns.mjs --min-threshold <n>   # minimum submitted applications required (default: 5)
-  node analyze-patterns.mjs --min-vendor-n <n>    # minimum sample per vendor/channel (default: 8)
-  node analyze-patterns.mjs --self-test           # run the built-in consistency checks
-  node analyze-patterns.mjs --help                # show this message`;
+  node scripts/analyze-patterns.mjs                       # analyze application patterns as JSON
+  node scripts/analyze-patterns.mjs --summary             # print a human-readable summary
+  node scripts/analyze-patterns.mjs --min-threshold <n>   # minimum submitted applications required (default: 5)
+  node scripts/analyze-patterns.mjs --min-vendor-n <n>    # minimum sample per vendor/channel (default: 8)
+  node scripts/analyze-patterns.mjs --self-test           # run the built-in consistency checks
+  node scripts/analyze-patterns.mjs --help                # show this message`;
 
 // --- CLI args ---
 const summaryMode = args.includes('--summary');
@@ -103,7 +103,7 @@ let MIN_VENDOR_N = 8;
 // no table here. states.yml ships with the code, so it is read from the
 // script's own directory, never from the (overridable) data root.
 const CANONICAL_STATES = loadCanonicalStates(
-  join(dirname(fileURLToPath(import.meta.url)), 'templates', 'states.yml'));
+  join(dirname(dirname(fileURLToPath(import.meta.url))), 'templates', 'states.yml'));
 
 function normalizeStatus(raw) {
   // An unrecognized status keeps its own folded text, so it still shows up
@@ -122,7 +122,7 @@ export function classifyOutcome(status) {
   if (s === 'applied') return 'awaiting';
   if (s === 'rejected') return 'negative';
   // Withdrawn by the candidate or the posting died: neither a submission the
-  // canonical funnel counts (stats.mjs) nor an employer decision.
+  // canonical funnel counts (scripts/stats.mjs) nor an employer decision.
   if (s === 'discarded') return 'discarded';
   if (s === 'skip') return 'self_filtered';
   return 'pending'; // evaluated
@@ -275,7 +275,7 @@ export function knownAtsVendorOf(rawUrl) {
 // Statuses that count as a submitted application for channel-yield analysis.
 // 'evaluated' was never sent, 'skip' is self-filtered, and 'discarded' (withdrawn
 // or the posting closed) proves neither a submission nor an answer — the same
-// set stats.mjs uses for its canonical funnel. Module-scoped so the self-test
+// set scripts/stats.mjs uses for its canonical funnel. Module-scoped so the self-test
 // can assert membership and the channel-yield pass and self-test share one set.
 const SUBMITTED_STATUSES = new Set(['applied', 'responded', 'assessment', 'interview', 'offer', 'hired', 'rejected']);
 
@@ -323,7 +323,7 @@ export function parseMachineSummary(content) {
 // Pure: group submitted applications by their Via channel (agency/recruiter
 // firm) and compute per-agency advance rates, plus the agency-vs-direct
 // aggregate. Channel identity uses the SAME normalizeVia key as the
-// merge-tracker dedup guard (tracker-parse.mjs): NFKC + Unicode letters/digits,
+// merge-tracker dedup guard (scripts/tracker-parse.mjs): NFKC + Unicode letters/digits,
 // so "Hays" / "HAYS " / full-width "ＨＡＹＳ" land in one bucket while distinct
 // non-Latin agencies (リクルートAgent vs パーソルAgent) stay separate. The
 // first raw spelling seen is kept for display. Rows in `submitted` whose Via
@@ -391,7 +391,7 @@ TECH_CANONICAL.set('vue.js', 'Vue.js').set('vuejs', 'Vue.js');
 // symbol edge, so "C++", "C#" and ".NET" — three of the most common stacks —
 // were silently never extracted, vanishing from the tech-gap rollup and the
 // "filter out roles requiring X" recommendation. Same symbol-edge fix that
-// skill-extract.mjs and upskill.mjs already carry. Ordered longest-first
+// scripts/skill-extract.mjs and scripts/upskill.mjs already carry. Ordered longest-first
 // (React Native before React) so the specific alternative wins at a position.
 const TECH_MENTION_RE = /(?<!\w)(JavaScript|TypeScript|Python|Ruby|Java|Go|Rust|Node\.?js|React Native|React|Angular|Vue\.?js|Django|Flask|Rails|PHP|Laravel|Symfony|Kotlin|Swift|C\+\+|C#|\.NET|MongoDB|MySQL|PostgreSQL|Redis|GraphQL|REST|AWS|GCP|Azure|Docker|Kubernetes|Terraform|Supabase|Inngest)(?!\w)/gi;
 
@@ -869,7 +869,7 @@ function parseTracker() {
 // to the downstream read (which returns null, preserving prior semantics), a
 // missing root means there are simply no reports. Only genuinely unexpected
 // errors rethrow, matching readTextIfExists. Identical to the guard in
-// upskill.mjs so both sites behave the same.
+// scripts/upskill.mjs so both sites behave the same.
 function withinReports(candidate) {
   const repoRelative = relative(CAREER_OPS, candidate).split(sep).join('/');
   if (!repoRelative.startsWith('reports/') || repoRelative.includes('..')) return false;
@@ -1111,7 +1111,7 @@ function classifyRemote(raw) {
 }
 
 // --- Detect ATS vendor from a posting URL ---
-// Host-only match, deliberately looser than liveness-api.mjs's resolveAtsApi()
+// Host-only match, deliberately looser than scripts/liveness-api.mjs's resolveAtsApi()
 // (which needs the full posting path to build an API URL) — a tracker report's
 // URL may point at a board/careers page, not a canonical posting.
 //
@@ -1154,7 +1154,7 @@ function recordedDiscardReasons(entry) {
 
 // The vocabulary ships with the code, not with the user's data, so it resolves
 // from this file's directory rather than CAREER_OPS_ROOT.
-const DISCARD_REASONS_FILE = join(dirname(fileURLToPath(import.meta.url)), 'templates/discard-reasons.yml');
+const DISCARD_REASONS_FILE = join(dirname(dirname(fileURLToPath(import.meta.url))), 'templates/discard-reasons.yml');
 
 /**
  * Canonical discard-reason ids from templates/discard-reasons.yml (#2785).
@@ -1340,7 +1340,7 @@ export function analyze(entries = parseTracker()) {
   const enriched = entries.map(e => {
     const reportMatch = e.report.match(/\]\(([^)]+)\)/);
     // Tracker links are relative to the tracker file's own directory (see
-    // merge-tracker.mjs link normalization); fall back to repo root for
+    // scripts/merge-tracker.mjs link normalization); fall back to repo root for
     // legacy root-relative links. Each candidate is guarded to reports/
     // before the read is attempted; parseReport returns null for a missing
     // file, so no pre-flight existsSync is needed (#2385).

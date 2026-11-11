@@ -1,5 +1,5 @@
 // tests/providers/lever.test.mjs — direct provider-contract tests (#1499).
-// Covers the id/detect/fetch contract scan.mjs calls: hostname-anchored
+// Covers the id/detect/fetch contract scripts/scan.mjs calls: hostname-anchored
 // detection for both jobs.lever.co and jobs.eu.lever.co, normalization from
 // the v0 postings shape (including the free description text for
 // content_filter), and malformed-input tolerance.
@@ -244,7 +244,7 @@ try {
 
   // categories.allLocations — the multi-location fix. Lever puts a single
   // primary city in `location`; reading only that hides every other eligible
-  // location from scan.mjs's location_filter (a Barcelona+Montevideo req looks
+  // location from scripts/scan.mjs's location_filter (a Barcelona+Montevideo req looks
   // Barcelona-only, so a Montevideo-based filter silently drops it).
   if (fetched[3]?.location === 'Barcelona; Madrid; Montevideo (Hybrid)')
     pass('lever.fetch() folds categories.allLocations into location (multi-location postings stay visible to location_filter)');

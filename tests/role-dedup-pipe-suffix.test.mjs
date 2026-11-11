@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeRoleForDedup } from '../scan.mjs';
+import { normalizeRoleForDedup } from '../scripts/scan.mjs';
 
 // Grafana Labs posts one requisition per country and packs the place into the
 // TITLE, not only the location field, so a single role arrives as six titles:

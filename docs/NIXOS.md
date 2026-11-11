@@ -11,7 +11,7 @@ The dev shell replaces those downloads with browsers that nixpkgs builds for Nix
 - [ ] Shell re-entered after every `npm install`
 - [ ] Playwright MCP configured as `mcp-server-playwright`, not `npx @playwright/mcp`
 - [ ] Your AI CLI started from inside the dev shell
-- [ ] `node doctor.mjs` reports `Playwright chromium installed`
+- [ ] `node scripts/doctor.mjs` reports `Playwright chromium installed`
 
 ## 1. Enter the dev shell
 
@@ -73,7 +73,7 @@ Start your AI CLI from inside the dev shell. The CLI resolves `mcp-server-playwr
 
 ## 4. Don't run `npx playwright install`
 
-`npx playwright install chromium` downloads about 600 MB of browsers that can't run on NixOS. If `node doctor.mjs` reports that Chromium is missing, check that you are inside the dev shell and have re-entered it since the last `npm install`.
+`npx playwright install chromium` downloads about 600 MB of browsers that can't run on NixOS. If `node scripts/doctor.mjs` reports that Chromium is missing, check that you are inside the dev shell and have re-entered it since the last `npm install`.
 
 ## 5. Tools the dev shell doesn't include
 
@@ -81,7 +81,7 @@ These features need tools that aren't in the dev shell. To use one, run it with 
 
 | Feature | Needs | Example |
 |---------|-------|---------|
-| Go dashboard (`dashboard/`) | `go` | `nix shell nixpkgs#go -c node build-dashboard.mjs` |
+| Go dashboard (`dashboard/`) | `go` | `nix shell nixpkgs#go -c node scripts/build-dashboard.mjs` |
 | LaTeX CV modes (`latex`, `latex-tex`) | `tectonic` or `pdflatex` | `nix shell nixpkgs#tectonic`, then run the mode |
 
-The HTML-to-PDF CV path (`generate-pdf.mjs`) needs only the dev shell.
+The HTML-to-PDF CV path (`scripts/generate-pdf.mjs`) needs only the dev shell.

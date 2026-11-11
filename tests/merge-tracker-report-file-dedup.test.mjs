@@ -2,7 +2,7 @@
 // on disk is unambiguous proof of identity, even when company/role fuzzy
 // matching (tier 1's #912 guard) would refuse the match on its own.
 //
-// Drives the REAL merge-tracker.mjs CLI end-to-end (same harness as
+// Drives the REAL scripts/merge-tracker.mjs CLI end-to-end (same harness as
 // tests/merge-tracker-url-dedup.test.mjs) — the merge path is where the bug
 // lived, so asserting on the resulting tracker rows is what actually proves
 // the fix.
@@ -15,7 +15,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const MERGE = join(HERE, '..', 'merge-tracker.mjs');
+const MERGE = join(HERE, '..', 'scripts/merge-tracker.mjs');
 const ok = (name, fn) => { try { fn(); pass(name); } catch (e) { fail(`${name} — ${e.message}`); } };
 
 const HEADER = '| # | Date | Company | Role | Score | Status | PDF | Report | Notes |';

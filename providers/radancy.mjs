@@ -327,7 +327,7 @@ export default {
 
     const maxPages = resolveMaxPages(entry);
     const maxJobs = resolveMaxJobs(entry);
-    // ctx.maxPages is set only by verify-portals.mjs's bounded liveness probe
+    // ctx.maxPages is set only by scripts/verify-portals.mjs's bounded liveness probe
     // (never during a real scan). While probing: cap the walk to that budget
     // (SHOULD — reference providers/workday.mjs) so a healthy large board
     // doesn't burn the probe's whole request allotment on one tenant, and

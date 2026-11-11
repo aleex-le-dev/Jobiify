@@ -14,7 +14,7 @@ import {
 import { nextScheduledRun } from "../src/lib/scheduled-cadence.mjs";
 import { isMainModule } from "../../lib/is-main-module.mjs";
 import { scheduledRunnerResourcePath, scheduledStorePath } from "../src/lib/scheduled-runner-path.mjs";
-import { getCareerOpsRoot } from "../../path-resolver.mjs";
+import { getCareerOpsRoot } from "../../scripts/path-resolver.mjs";
 
 const CODE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 export const MAX_RUNS = 100;
@@ -112,7 +112,7 @@ export function buildScanCommand(job) {
   const sinceDays = numericFilter(filters.sinceDays, 7, 1);
   if (job.engine === "portals") {
     return {
-      script: "scan.mjs",
+      script: "scripts/scan.mjs",
       args: ["--since", String(sinceDays), "--quiet"],
     };
   }
@@ -122,7 +122,7 @@ export function buildScanCommand(job) {
     : "greenhouse,lever,ashby,workday";
   const limit = numericFilter(filters.limitPerAts, 150, 50, 500);
   return {
-    script: "scan-ats-full.mjs",
+    script: "scripts/scan-ats-full.mjs",
     args: ["--since", String(sinceDays), "--ats", ats, "--limit", String(limit), "--json"],
   };
 }

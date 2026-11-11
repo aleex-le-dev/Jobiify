@@ -10,7 +10,7 @@ try {
     parseAggregatorDomains,
     checkAggregatorRepost,
     loadAggregatorDomains,
-  } = await import(pathToFileURL(join(ROOT, 'scan.mjs')).href);
+  } = await import(pathToFileURL(join(ROOT, 'scripts/scan.mjs')).href);
 
   // 1. Test parsing function
   const sample = [

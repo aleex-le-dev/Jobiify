@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * normalize-statuses.mjs — Clean non-canonical states in applications.md
+ * scripts/normalize-statuses.mjs — Clean non-canonical states in applications.md
  *
  * Maps all non-canonical statuses to canonical ones per states.yml:
  *   Evaluada, Aplicado, Respondido, Entrevista, Oferta, Rechazado, Descartado, NO APLICAR
@@ -20,15 +20,15 @@ import {
   loadCanonicalStates, resolveCanonicalState,
 } from './tracker-utils.mjs';
 import { resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 // System Layer files (templates/, modes/, scripts) live in the codebase and are
 // resolved from this module's own directory; only User Layer data follows the
 // configurable data root. Binding both to getCareerOpsRoot() made states.yml
 // unreadable under CAREER_OPS_ROOT / .career-ops-data, and the catch below
 // turned that into a silent "everything is unknown" (#3500).
-const CODEBASE_ROOT = dirname(fileURLToPath(import.meta.url));
+const CODEBASE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const CAREER_OPS = getCareerOpsRoot();
 const APPS_FILE = resolveTrackerPath(CAREER_OPS);
 
@@ -122,7 +122,7 @@ function normalizeStatus(raw) {
 export { normalizeStatus };
 
 const KNOWN_FLAGS = ['--help', '-h', '--dry-run'];
-const USAGE = `Usage: node normalize-statuses.mjs [options]
+const USAGE = `Usage: node scripts/normalize-statuses.mjs [options]
 
   Options:
   --dry-run        Report what would change without writing applications.md
@@ -167,7 +167,7 @@ const lines = content.split('\n');
 let changes = 0;
 let unknowns = [];
 
-// Map columns by header name (tracker-parse.mjs, #954/#1596). Fixed indices
+// Map columns by header name (scripts/tracker-parse.mjs, #954/#1596). Fixed indices
 // assumed the original 9-column layout, so a customized tracker — an inserted
 // Location or Via column — shifted every field one to the left: the Score cell
 // was normalized as if it were the status and overwritten, while the real

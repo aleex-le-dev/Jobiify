@@ -18,11 +18,11 @@ const profilePath = join(root, 'data', 'career-profile.yml');
 const STATUS = new Set(['needs_review', 'verified']);
 const HELP = `Master Career Profile
 
-  node career-profile.mjs import [cv.md] [--review]
+  node scripts/career-profile.mjs import [cv.md] [--review]
     Preview candidates by default. --review asks you to approve, edit, or skip
     each item; only approved items are saved to data/career-profile.yml.
 
-  node career-profile.mjs validate [profile.yml]
+  node scripts/career-profile.mjs validate [profile.yml]
     Check the profile structure and source evidence.
 `;
 

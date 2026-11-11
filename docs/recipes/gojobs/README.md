@@ -56,7 +56,7 @@ tracked_companies:
     enabled: true
 ```
 
-Run `node scan.mjs` as usual. The local-parser provider starts the copied script
+Run `node scripts/scan.mjs` as usual. The local-parser provider starts the copied script
 from the career-ops checkout, and the parser resolves capture paths through
 `CAREER_OPS_ROOT`, `CAREER_OPS_DATA_DIR`, or `.career-ops-data` using the same
 precedence as the rest of career-ops. Normal scan filters, deduplication, and
@@ -66,7 +66,7 @@ this is not real-time or unattended scanning.
 ## Manual recipe test
 
 Recipe tests live beside the recipe and are intentionally not discovered by
-`test-all.mjs`, which only runs suites under `tests/`. Run this focused test by
+`scripts/test-all.mjs`, which only runs suites under `tests/`. Run this focused test by
 hand after modifying the parser:
 
 ```bash

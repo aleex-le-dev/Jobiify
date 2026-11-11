@@ -1,7 +1,7 @@
 // tests/failure-excerpt.test.mjs — a failed node:test suite must surface the
 // line that carries the measured value, not just the frames below it (#4017).
 //
-// The defect: test-all.mjs printed a failed node:test child's output as
+// The defect: scripts/test-all.mjs printed a failed node:test child's output as
 // `.split('\n').filter(Boolean).slice(-12)` — the LAST twelve non-empty lines.
 // node's runner prints the AssertionError message near the TOP of a failure
 // block and the stack frames and error properties below it, so the twelve-line
@@ -165,7 +165,7 @@ test('empty and whitespace-only input produce nothing', () => {
 });
 
 // The same one-assertion failure as `node --test` prints it on node 22.22.0
-// with stdout piped, which is how test-all.mjs runs every suite. node 20 and 22
+// with stdout piped, which is how scripts/test-all.mjs runs every suite. node 20 and 22
 // default to the TAP reporter there (node 23 switched to spec), and TAP has no
 // `AssertionError [ERR_ASSERTION]: ...` line: the message is under `error: |-`
 // and the code is a YAML key. Captured verbatim; only the local path of the

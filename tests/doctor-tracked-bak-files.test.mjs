@@ -1,6 +1,6 @@
-// tests/doctor-tracked-bak-files.test.mjs — doctor.mjs's tracked-.bak warning.
+// tests/doctor-tracked-bak-files.test.mjs — scripts/doctor.mjs's tracked-.bak warning.
 //
-// update-system.mjs versions before #2857 could commit cascading .bak backups
+// scripts/update-system.mjs versions before #2857 could commit cascading .bak backups
 // when a checkout write failed. #2857 stops that for NEW installs, but an
 // install that already `git add`ed one is stuck: nothing in the update path
 // untracks a path git already has, so the update looks like it silently did
@@ -14,7 +14,7 @@ import { join } from 'path';
 
 console.log('\ndoctor.mjs — tracked .bak files');
 
-const DOCTOR = join(ROOT, 'doctor.mjs');
+const DOCTOR = join(ROOT, 'scripts/doctor.mjs');
 
 function runDoctor(cwd) {
   try {

@@ -13,7 +13,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT } from './helpers.mjs';
 
-const { extractJdSkills } = await import(pathToFileURL(join(ROOT, 'jd-skill-gap.mjs')).href);
+const { extractJdSkills } = await import(pathToFileURL(join(ROOT, 'scripts/jd-skill-gap.mjs')).href);
 
 const BULLETS = '\n- 熟悉 Python 和 Kubernetes\n- 了解 Terraform\n';
 const EXPECTED = ['Kubernetes', 'Python', 'Terraform'];

@@ -11,7 +11,7 @@ import { pathToFileURL } from 'url';
 
 console.log('\nextractContacts — exclude the candidate\'s own addresses (#3281)');
 try {
-  const { extractContacts, loadSelfIdentities } = await import(pathToFileURL(join(ROOT, 'followup-cadence.mjs')).href);
+  const { extractContacts, loadSelfIdentities } = await import(pathToFileURL(join(ROOT, 'scripts/followup-cadence.mjs')).href);
   const self = new Set(['me@work.example']);
 
   const mine = extractContacts('searched both accounts (personal + me@work.example) for this thread', self);

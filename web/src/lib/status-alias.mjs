@@ -96,7 +96,7 @@ export const STATUS_ALIAS = {
 /**
  * Fold raw status text to a lookup key.
  *
- * Mirrors foldStatusInput() in tracker-utils.mjs (#2705). The `\u0307` strip is
+ * Mirrors foldStatusInput() in scripts/tracker-utils.mjs (#2705). The `\u0307` strip is
  * what makes a capitalised Turkish status resolve: JS lowercases `İ` to `i` +
  * U+0307 COMBINING DOT ABOVE, so "İşe alındı" keys as "i̇şe alındı" and misses
  * the "işe alındı" entry. Real tracker rows are capitalised, so without this

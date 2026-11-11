@@ -1,5 +1,5 @@
 // tests/test-all.test.mjs — pins the comment handling of the two
-// discovered-suite guards in test-all.mjs (PR #4180).
+// discovered-suite guards in scripts/test-all.mjs (PR #4180).
 //
 // THE BUG THIS PINS
 //
@@ -11,7 +11,7 @@
 // a comment can hide a mention, never a call. Code that shares a line with a
 // comment, on either side of it, is still scanned.
 //
-// The test extracts the real stripCommentLines() out of test-all.mjs and runs
+// The test extracts the real stripCommentLines() out of scripts/test-all.mjs and runs
 // it, so the test and the implementation cannot drift apart. The fixtures
 // spell the forbidden calls in pieces: this file is itself a discovered suite
 // and the guards read it.
@@ -21,7 +21,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = readFileSync(join(ROOT, 'test-all.mjs'), 'utf-8').replace(/\r\n/g, '\n');
+const SRC = readFileSync(join(ROOT, 'scripts/test-all.mjs'), 'utf-8').replace(/\r\n/g, '\n');
 
 console.log('\ntest-all.mjs — discovered-suite guards ignore comments (PR #4180)');
 
@@ -41,9 +41,9 @@ const strip = (() => {
 })();
 
 if (typeof strip !== 'function') {
-  fail('could not extract stripCommentLines() from test-all.mjs — this test needs updating');
+  fail('could not extract stripCommentLines() from scripts/test-all.mjs — this test needs updating');
 } else {
-  pass('extracted stripCommentLines() from test-all.mjs');
+  pass('extracted stripCommentLines() from scripts/test-all.mjs');
 
   const guarded = (SRC.match(/\.test\(stripCommentLines\(src\)\)/g) ?? []).length;
   if (guarded >= 2) pass(`both guards grep the stripped source (${guarded} call sites)`);

@@ -13,7 +13,7 @@ import { join } from 'path';
 import { spawnSync } from 'child_process';
 import { pass, fail, rmSync, NODE, ROOT } from './helpers.mjs';
 
-const CLI = join(ROOT, 'reserve-report-num.mjs');
+const CLI = join(ROOT, 'scripts/reserve-report-num.mjs');
 
 function runIn(dir, args) {
   return spawnSync(NODE, [CLI, ...args], {

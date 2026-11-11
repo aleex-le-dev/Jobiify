@@ -20,7 +20,7 @@ function block(key, items) {
 /**
  * Serialize filters into a minimal, valid portals.yml.
  *
- * location tiers mirror scan.mjs precedence block_hard > always_allow > block >
+ * location tiers mirror scripts/scan.mjs precedence block_hard > always_allow > block >
  * allow. The `location_filter:` header is emitted when ANY tier is non-empty —
  * block_hard included, or a config that hard-blocks and nothing else would write
  * no location_filter at all and the scan would honor none of it (#3102).

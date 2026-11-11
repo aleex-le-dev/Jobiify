@@ -1,19 +1,19 @@
 // tests/portal-health-path.test.mjs — appendPortalHealth() must resolve its
 // default path against the CONFIGURED DATA ROOT, and must never write into the
-// checkout that owns scan.mjs.
+// checkout that owns scripts/scan.mjs.
 //
 // The second half is what this test has always been for. It was written when
 // PORTAL_HEALTH_PATH resolved via path.dirname(fileURLToPath(import.meta.url)) --
 // the script's own directory -- so any invocation with a sandboxed cwd (a test
 // run, a temp dir, a CI checkout) wrote fixture rows straight into the real
-// data/portal-health.tsv of whatever checkout happened to own scan.mjs. That
+// data/portal-health.tsv of whatever checkout happened to own scripts/scan.mjs. That
 // guarantee is unchanged and still asserted below.
 //
 // What changed is the mechanism (#3510). Resolving from the cwd fixed the
-// pollution but left scan.mjs with two rules for where user data lives: this
+// pollution but left scripts/scan.mjs with two rules for where user data lives: this
 // path followed the shell, while SCAN_HISTORY_PATH, PIPELINE_PATH and
 // APPLICATIONS_PATH had already followed DATA_ROOT since the data-root feature
-// landed in 02daaf1 -- and stats.mjs:39, the only reader of this file, reads it
+// landed in 02daaf1 -- and scripts/stats.mjs:39, the only reader of this file, reads it
 // at join(DATA_ROOT, 'data', 'portal-health.tsv'). A user with a data root
 // configured got rows written somewhere their own reader never looked.
 //
@@ -21,7 +21,7 @@
 // suite already uses, rather than from the cwd. This spawns a real child with a
 // data root pinned to a temp dir AND a cwd pinned to a second temp dir, so the
 // two are provably distinguishable, then calls appendPortalHealth() with no
-// filePath argument -- the exact call scan.mjs's own production path makes. The
+// filePath argument -- the exact call scripts/scan.mjs's own production path makes. The
 // row must land under the data root, not the cwd, and the script's own directory
 // must be provably untouched.
 import { pass, fail, NODE, ROOT } from './helpers.mjs';
@@ -35,7 +35,7 @@ import { applyScriptDirGuard } from './portal-health-guard.mjs';
 
 console.log('\nscan.mjs — portal-health.tsv resolves against the data root, never the checkout');
 
-const scanUrl = JSON.stringify(pathToFileURL(join(ROOT, 'scan.mjs')).href);
+const scanUrl = JSON.stringify(pathToFileURL(join(ROOT, 'scripts/scan.mjs')).href);
 const sandboxCwd = mkdtempSync(join(tmpdir(), 'career-ops-portal-health-cwd-'));
 const sandboxRoot = mkdtempSync(join(tmpdir(), 'career-ops-portal-health-root-'));
 
@@ -44,7 +44,7 @@ const sandboxRoot = mkdtempSync(join(tmpdir(), 'career-ops-portal-health-root-')
 const scriptDirHealthPath = join(ROOT, 'data', 'portal-health.tsv');
 const scriptDirHealthExisted = existsSync(scriptDirHealthPath);
 const scriptDirHealthBackup = scriptDirHealthExisted ? readFileSync(scriptDirHealthPath, 'utf-8') : null;
-// Keep in sync with PORTAL_HEALTH_HEADER in scan.mjs -- passed to the guard so
+// Keep in sync with PORTAL_HEALTH_HEADER in scripts/scan.mjs -- passed to the guard so
 // a header-only remainder (appendPortalHealth always writes the header before
 // the marker row) still counts as empty and the cleanup fully removes a
 // script-dir file it created rather than leaving a bare header behind.
@@ -83,7 +83,7 @@ try {
     fail(`expected ${rootHealthPath} to contain the fixture row, it does not`);
   }
 
-  // 1b. And NOT under the cwd, which is a different directory here. stats.mjs
+  // 1b. And NOT under the cwd, which is a different directory here. scripts/stats.mjs
   //     reads this file at the data root; a row under the cwd is a row its only
   //     reader will never see.
   const cwdHealthPath = join(sandboxCwd, 'data', 'portal-health.tsv');

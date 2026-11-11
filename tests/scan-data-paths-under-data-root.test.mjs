@@ -1,16 +1,16 @@
 // tests/scan-data-paths-under-data-root.test.mjs — the scanners' User Layer data
 // follows the configured data root, not the shell's working directory (#3510).
 //
-// scan.mjs anchored some of its data paths to DATA_ROOT (SCAN_HISTORY_PATH,
+// scripts/scan.mjs anchored some of its data paths to DATA_ROOT (SCAN_HISTORY_PATH,
 // PIPELINE_PATH, PORTALS_PATH, APPLICATIONS_PATH) and left others as bare
 // relative strings resolved against process.cwd() (blacklist, scan-runs,
 // portal-health), with the sibling scanners carrying their own cwd-relative
-// copies of paths they then WROTE to through scan.mjs's anchored ones. One
+// copies of paths they then WROTE to through scripts/scan.mjs's anchored ones. One
 // command, one dataset, two destinations.
 //
 // Nothing failed loudly, which is what made it worth a test: a wrong-but-writable
 // path is silently accepted. The sharpest case is the blacklist — AGENTS.md
-// documents data/blacklist.md as respected by scan.mjs, and a user with a data
+// documents data/blacklist.md as respected by scripts/scan.mjs, and a user with a data
 // root got an empty list with no indication their do-not-apply companies had
 // been let through.
 //
@@ -43,8 +43,8 @@ function inChild(snippet) {
   }).trim();
 }
 
-const scanUrl = JSON.stringify(pathToFileURL(join(ROOT, 'scan.mjs')).href);
-const atsUrl = JSON.stringify(pathToFileURL(join(ROOT, 'scan-ats-full.mjs')).href);
+const scanUrl = JSON.stringify(pathToFileURL(join(ROOT, 'scripts/scan.mjs')).href);
+const atsUrl = JSON.stringify(pathToFileURL(join(ROOT, 'scripts/scan-ats-full.mjs')).href);
 
 const blacklistRow = (company) =>
   `| Company | Since | Scope | Reason |\n|---|---|---|---|\n| ${company} | 2026-01-01 | company | fixture |\n`;
@@ -61,7 +61,7 @@ try {
     ? pass('loadBlacklist() reads the data root’s blacklist, not the cwd’s')
     : fail(`loadBlacklist() read the wrong file — saw [${seen}], expected [realco] (#3510)`);
 
-  // 2. scan-runs.tsv is written where stats.mjs:36 reads it. A writer and a
+  // 2. scan-runs.tsv is written where scripts/stats.mjs:36 reads it. A writer and a
   //    reader naming different files is not a lost row, it is a wrong number.
   inChild(`
     const m = await import(${scanUrl});
@@ -70,7 +70,7 @@ try {
   const runsAtRoot = join(dataRoot, 'data', 'scan-runs.tsv');
   const runsAtCwd = join(decoyCwd, 'data', 'scan-runs.tsv');
   existsSync(runsAtRoot) && !existsSync(runsAtCwd)
-    ? pass('appendScanRunSummary() writes under the data root, where stats.mjs reads')
+    ? pass('appendScanRunSummary() writes under the data root, where scripts/stats.mjs reads')
     : fail(`scan-runs.tsv landed wrong — root:${existsSync(runsAtRoot)} cwd:${existsSync(runsAtCwd)} (#3510)`);
 
   // 3. The ATS sweep's resume checkpoint. Reading the cwd's copy means a
@@ -88,7 +88,7 @@ try {
     : fail(`loadCheckpoint() read the ${tag} checkpoint — a resume would restart or resume the wrong sweep (#3510)`);
 
   // 4. The sibling scanners must not re-derive paths they write to through
-  //    scan.mjs. Importing one and comparing the resolved constants is the only
+  //    scripts/scan.mjs. Importing one and comparing the resolved constants is the only
   //    check that stays true as the files move around.
   const shared = inChild(`
     const scan = await import(${scanUrl});
@@ -101,13 +101,13 @@ try {
   // itself instead of aborting the checks below.
   typeof paths.pipeline === 'string' && typeof paths.portals === 'string'
     && paths.pipeline.startsWith(dataRoot) && paths.portals.startsWith(dataRoot)
-    ? pass('scan.mjs exports pipeline/portals paths anchored to the data root')
-    : fail(`scan.mjs does not export pipeline/portals paths under the data root: ${shared}`);
+    ? pass('scripts/scan.mjs exports pipeline/portals paths anchored to the data root')
+    : fail(`scripts/scan.mjs does not export pipeline/portals paths under the data root: ${shared}`);
 
   // 6. No scanner may reintroduce a bare-relative user-data path. The behavioral
   //    checks above cover today's constants; this covers the next one added.
   const offenders = [];
-  for (const file of ['scan.mjs', 'scan-ats-full.mjs']) {
+  for (const file of ['scripts/scan.mjs', 'scripts/scan-ats-full.mjs']) {
     const src = readFileSync(join(ROOT, file), 'utf-8');
     for (const m of src.matchAll(/^(?:export )?const\s+(\w+)\s*=\s*'((?:data|output)\/[^']*|portals\.yml)'/gm)) {
       offenders.push(`${file}: ${m[1]} = '${m[2]}'`);

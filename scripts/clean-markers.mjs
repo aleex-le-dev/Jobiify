@@ -1,23 +1,23 @@
 #!/usr/bin/env node
 /**
- * clean-markers.mjs — audit/strip invisible Unicode from generated text outputs.
+ * scripts/clean-markers.mjs — audit/strip invisible Unicode from generated text outputs.
  *
  * Job descriptions, forms, and pasted recruiter messages are untrusted data. They can carry
  * invisible Unicode that gets copied into generated CVs, cover letters, or emails without the
  * user ever seeing it. This audits and optionally removes those hidden characters before output
  * leaves the user's machine.
  *
- *   node clean-markers.mjs audit  <file...>                 # report only, never modifies
- *   node clean-markers.mjs clean  <file...>                 # strip markers, then report
- *   node clean-markers.mjs clean  --ascii cover-letter.md   # also force plain-ASCII punctuation
- *   node clean-markers.mjs --help                           # show this message (-h is an alias)
+ *   node scripts/clean-markers.mjs audit  <file...>                 # report only, never modifies
+ *   node scripts/clean-markers.mjs clean  <file...>                 # strip markers, then report
+ *   node scripts/clean-markers.mjs clean  --ascii cover-letter.md   # also force plain-ASCII punctuation
+ *   node scripts/clean-markers.mjs --help                           # show this message (-h is an alias)
  *
  * Exit code 1 if any file FAILS audit — usable as a pre-send gate. Dependency-free: text only,
  * no package installs, no PDF metadata editing.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { extname } from 'node:path';
-import { validateFlags } from './lib/cli-flags.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
 
 const NAMED = {
   0x200B:'ZERO-WIDTH SPACE', 0x200C:'ZWNJ', 0x200D:'ZWJ', 0x2060:'WORD JOINER',
@@ -44,7 +44,7 @@ function cleanText(t, ascii){
   return out;
 }
 // Never scan or transform inside <style>/<script> — marker removal and --ascii must not touch CSS/JS.
-// Mask both block types before scanning/cleaning, restore them after (same approach as generate-pdf.mjs).
+// Mask both block types before scanning/cleaning, restore them after (same approach as scripts/generate-pdf.mjs).
 const CODE_BLOCK = /<(style|script)\b[^>]*>[\s\S]*?<\/\1>/gi;
 function maskCode(html){
   const masks=[];
@@ -84,11 +84,11 @@ function processFile(file, mode, opts){
 
 const KNOWN_FLAGS = ['--ascii', '--help', '-h'];
 const USAGE = `Usage:
-  node clean-markers.mjs audit <file...>            # report only, never modifies
-  node clean-markers.mjs clean <file...>            # strip markers, then report
-  node clean-markers.mjs clean --ascii <file...>    # also force plain-ASCII punctuation
-  node clean-markers.mjs audit -- -draft.md         # -- ends the flags, for a path starting with a dash
-  node clean-markers.mjs --help                     # print this usage block and exit`;
+  node scripts/clean-markers.mjs audit <file...>            # report only, never modifies
+  node scripts/clean-markers.mjs clean <file...>            # strip markers, then report
+  node scripts/clean-markers.mjs clean --ascii <file...>    # also force plain-ASCII punctuation
+  node scripts/clean-markers.mjs audit -- -draft.md         # -- ends the flags, for a path starting with a dash
+  node scripts/clean-markers.mjs --help                     # print this usage block and exit`;
 
 const argv = process.argv.slice(2);
 // Everything after `--` is a path, so a file named -draft.md is not read as a flag.

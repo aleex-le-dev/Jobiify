@@ -2,11 +2,11 @@
  * title-fit.mjs — banded title-vs-profile-role estimate for discovery cards.
  *
  * Deliberately mirrors the tokenizer style of profile-keywords.mjs /
- * jd-similarity.mjs instead of importing them: the Turbopack root is pinned
+ * scripts/jd-similarity.mjs instead of importing them: the Turbopack root is pinned
  * to web/, which makes repo-root .mjs imports impossible, and this module must
  * stay unit-testable under plain Node (tests/title-fit.test.mjs).
  *
- * CONTRACT (same posture as jd-similarity.mjs): this is deliberately a
+ * CONTRACT (same posture as scripts/jd-similarity.mjs): this is deliberately a
  * RECOMMENDATION layer. It annotates offers with a coarse band so the user can
  * decide what to evaluate first. It NEVER gates, filters, orders, or replaces
  * the holistic evaluation score — the card tooltip says exactly that.
@@ -40,7 +40,7 @@ const TOKEN_RE = /[\p{L}\p{N}+#.]+/gu;
 // Seniority/level words say nothing about WHICH role a title describes: without
 // excluding them, "Senior Platform Engineer" would only ever reach 2/3 against
 // the target "platform engineer" and read as a partial match. Mirrors the
-// spirit of LEVELS / SENIORITY_TOKENS in jd-similarity.mjs.
+// spirit of LEVELS / SENIORITY_TOKENS in scripts/jd-similarity.mjs.
 const SENIORITY = new Set([
   "junior", "jr", "mid", "middle", "senior", "sr", "staff", "principal",
   "lead", "head", "chief", "associate", "assistant", "intern", "internship",

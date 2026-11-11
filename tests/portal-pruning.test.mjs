@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { pass, fail } from './helpers.mjs';
-import { computePortalRecommendations as recommend } from '../stats.mjs';
+import { computePortalRecommendations as recommend } from '../scripts/stats.mjs';
 
 const now = Date.parse('2026-09-22T12:00:00Z');
 const config = `tracked_companies:

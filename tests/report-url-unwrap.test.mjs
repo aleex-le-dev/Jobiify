@@ -5,7 +5,7 @@
  * Strip punctuation before the angle brackets. The other order leaves a
  * trailing `>`, which breaks URL dedup and duplicate-report checks.
  *
- * Run: node test-all.mjs --only report-url-unwrap
+ * Run: node scripts/test-all.mjs --only report-url-unwrap
  */
 
 import { execFileSync } from 'child_process';
@@ -13,8 +13,8 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { pass, fail, ROOT, NODE, rmSync } from './helpers.mjs';
-import { unwrapReportUrlToken } from '../tracker-parse.mjs';
-import { normalizeUrl } from '../url-key.mjs';
+import { unwrapReportUrlToken } from '../scripts/tracker-parse.mjs';
+import { normalizeUrl } from '../scripts/url-key.mjs';
 
 console.log('\nReport URL token unwrap (angle brackets + trailing punctuation)');
 
@@ -58,7 +58,7 @@ for (const [input, expected] of cases) {
       join(work, 'reports/001-acme-2026-10-01.md'),
       '# Acme — Platform Engineer\n\n**Score:** 4.1/5 | **URL:** <https://boards.greenhouse.io/acme/jobs/123>, | **PDF:** -\n',
     );
-    execFileSync(NODE, [join(ROOT, 'merge-tracker.mjs'), '--backfill-urls'], {
+    execFileSync(NODE, [join(ROOT, 'scripts/merge-tracker.mjs'), '--backfill-urls'], {
       cwd: ROOT,
       encoding: 'utf8',
       env: {
@@ -88,7 +88,7 @@ for (const [input, expected] of cases) {
       join(work, 'reports/002-acme-2026-10-02.md'),
       '# Acme — Data Analyst\n\n**Score:** 4.0/5 | **URL:** https://boards.greenhouse.io/acme/jobs/123\n',
     );
-    const mergeOut = execFileSync(NODE, [join(ROOT, 'merge-tracker.mjs')], {
+    const mergeOut = execFileSync(NODE, [join(ROOT, 'scripts/merge-tracker.mjs')], {
       cwd: ROOT,
       encoding: 'utf8',
       env: {
@@ -133,7 +133,7 @@ for (const [input, expected] of cases) {
       join(work, 'reports/002-acme-2026-10-02.md'),
       '# Acme — Engineer\n\n**Score:** 4.0/5 | **URL:** <https://jobs.example.test/acme/role> | **PDF:** -\n',
     );
-    const out = execFileSync(NODE, [join(ROOT, 'verify-pipeline.mjs')], {
+    const out = execFileSync(NODE, [join(ROOT, 'scripts/verify-pipeline.mjs')], {
       cwd: ROOT,
       encoding: 'utf8',
       env: {

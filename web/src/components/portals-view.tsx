@@ -155,7 +155,7 @@ export function PortalsView({
 
         {res && !res.available && !res.error && (
           <p className="mt-4 rounded-xl border border-dashed border-border bg-surface/30 p-4 text-sm text-muted">
-            <code className="text-foreground">verify-portals.mjs</code> introuvable — nécessite l&apos;installation complète de Jobiify.
+            <code className="text-foreground">scripts/verify-portals.mjs</code> introuvable — nécessite l&apos;installation complète de Jobiify.
           </p>
         )}
         {res && !res.available && res.error && (
@@ -164,7 +164,7 @@ export function PortalsView({
               La vérification n&apos;a pas pu aboutir
             </span>{" "}
             — aucun portail n&apos;a pu être vérifié. Réessayez ou lancez{" "}
-            <code className="text-foreground">node verify-portals.mjs</code>.{" "}
+            <code className="text-foreground">node scripts/verify-portals.mjs</code>.{" "}
             <code className="break-all font-mono text-xs text-faint">{res.error}</code>
           </p>
         )}

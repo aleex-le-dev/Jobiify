@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * company-funded.mjs - discover recently funded companies for manual review.
+ * scripts/company-funded.mjs - discover recently funded companies for manual review.
  *
  * V1 is intentionally narrow: it reads structured public feeds/APIs, writes a
  * report/JSON candidate list, and never probes arbitrary company websites or
@@ -13,13 +13,13 @@ import { isIP } from 'net';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
-import { decodeEntities } from './providers/_html-entities.mjs';
-import { safeEncodeURIComponent } from './providers/_safe-url.mjs';
+import { decodeEntities } from '../providers/_html-entities.mjs';
+import { safeEncodeURIComponent } from '../providers/_safe-url.mjs';
 import { BROWSER_LIKE_USER_AGENT } from './user-agent.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const DEFAULT_LIMIT = 20;
 const DEFAULT_MONTHS = 3;
@@ -91,9 +91,9 @@ const GENERIC_NAMES = new Set([
 
 function usage() {
   console.log(`Usage:
-  node company-funded.mjs --dry-run
-  node company-funded.mjs --limit 25 --months 6 --sort date
-  node company-funded.mjs --sources techcrunch,prnewswire,guardian,hn --dry-run
+  node scripts/company-funded.mjs --dry-run
+  node scripts/company-funded.mjs --limit 25 --months 6 --sort date
+  node scripts/company-funded.mjs --sources techcrunch,prnewswire,guardian,hn --dry-run
 
 Options:
   --limit <n>             Max companies in the review list. Default: 20.

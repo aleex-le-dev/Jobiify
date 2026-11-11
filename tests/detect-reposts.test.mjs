@@ -1,5 +1,5 @@
 /**
- * tests/detect-reposts.test.mjs — Systematic test suite for detect-reposts.mjs
+ * tests/detect-reposts.test.mjs — Systematic test suite for scripts/detect-reposts.mjs
  *
  * Tests every exported and internal function across:
  * - Input validation (malformed, missing, boundary values)
@@ -14,13 +14,13 @@
  * - CLI behavior (args, flags, missing file)
  * - Integration (full TSV round-trip, multi-company, mixed statuses)
  *
- * Run: node test-all.mjs --only detect-reposts
+ * Run: node scripts/test-all.mjs --only detect-reposts
  *      Running the file directly prints the same ✅/❌ lines, but a
  *      discovered suite reports through the shared counters and never
  *      exits — so a direct run returns 0 even when assertions fail.
  */
 
-import { detectReposts, parseScanHistory, companyKey, titleIdentityKey } from '../detect-reposts.mjs';
+import { detectReposts, parseScanHistory, companyKey, titleIdentityKey } from '../scripts/detect-reposts.mjs';
 import { readFileSync, writeFileSync, unlinkSync, existsSync, mkdtempSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -515,7 +515,7 @@ eq('same URL seen twice + 1 different URL -> 1 cluster', mixedResult.length, 1);
 eq('deduped to 2 appearances (not 3)', mixedResult[0]?.repostCount, 2);
 
 // Same URL with trailing slash vs without — treated as different URLs
-// (this is correct: URL normalization is scan.mjs's job, not ours)
+// (this is correct: URL normalization is scripts/scan.mjs's job, not ours)
 eq('URL with/without trailing slash treated as different', detectReposts([
   row({ url: 'https://x.com/1', date: d('2026-01-01'), dateStr: '2026-01-01' }),
   row({ url: 'https://x.com/1/', date: d('2026-02-01'), dateStr: '2026-02-01' }),
@@ -853,7 +853,7 @@ eq('SW: distinct roles not grouped', detectReposts([
 console.log('\n--- 10.6 grouping equivalence (#2383) ---');
 
 // A second, independently written implementation of the whole detector. The
-// clusters coming out of detect-reposts.mjs must be byte-identical to what this
+// clusters coming out of scripts/detect-reposts.mjs must be byte-identical to what this
 // one produces, including their order and the order of appearances inside them.
 //
 // Its history: it began as the pre-#2383 file copied verbatim, guarding a pure
@@ -866,7 +866,7 @@ console.log('\n--- 10.6 grouping equivalence (#2383) ---');
 // written in the straightforward nested-loop style rather than mirroring the
 // real file's structure, so a shared bug has to be reasoned into both.
 //
-// If detect-reposts.mjs ever changes what it computes (window rules, span
+// If scripts/detect-reposts.mjs ever changes what it computes (window rules, span
 // rules, cluster shape, dedup policy, title identity) rather than how fast it
 // computes it, this copy must be updated in the same commit. A silent
 // divergence failing here is the intended behaviour, not a nuisance.
@@ -1161,7 +1161,7 @@ ok('500 rows across 50 companies completes without throwing', true);
 // ============================================================================
 console.log('\n--- 12. CLI behavior ---');
 
-const scriptPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'detect-reposts.mjs');
+const scriptPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'scripts/detect-reposts.mjs');
 
 // Test --self-test exit code
 try {

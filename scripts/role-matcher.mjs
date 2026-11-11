@@ -1,7 +1,7 @@
 /**
- * role-matcher.mjs - Shared fuzzy role-title matching for tracker scripts.
+ * scripts/role-matcher.mjs - Shared fuzzy role-title matching for tracker scripts.
  *
- * Both `merge-tracker.mjs` and `dedup-tracker.mjs` decide whether two
+ * Both `scripts/merge-tracker.mjs` and `scripts/dedup-tracker.mjs` decide whether two
  * same-company tracker rows describe the same opening. Keeping this logic in
  * one module prevents the merge path from preserving rows that the later dedup
  * path would silently delete with weaker matching rules.

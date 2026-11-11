@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * validate-portals.mjs — schema/shape validator for portals.yml.
+ * scripts/validate-portals.mjs — schema/shape validator for portals.yml.
  *
  * Usage:
- *   node validate-portals.mjs
- *   node validate-portals.mjs --file templates/portals.example.yml
- *   node validate-portals.mjs --self-test
- *   node validate-portals.mjs --help
+ *   node scripts/validate-portals.mjs
+ *   node scripts/validate-portals.mjs --file templates/portals.example.yml
+ *   node scripts/validate-portals.mjs --self-test
+ *   node scripts/validate-portals.mjs --help
  */
 
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
@@ -15,14 +15,14 @@ import { join, dirname, resolve } from 'path';
 import { tmpdir } from 'os';
 import { fileURLToPath, pathToFileURL } from 'url';
 import * as yaml from 'js-yaml';
-import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
+import { flagValue, hasFlag, validateFlags } from '../lib/cli-flags.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { barePrefixDomainKeywords } from './title-keywords.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const PROVIDERS_DIR = join(ROOT, 'providers');
 // providers/ ships with the checkout, but portals.yml is user data: it lives in
-// the data root, where scan.mjs reads it. A bare 'portals.yml' resolved against
+// the data root, where scripts/scan.mjs reads it. A bare 'portals.yml' resolved against
 // the cwd instead, so `npm run validate:portals` (npm always runs it from the
 // checkout) could not find an external data root's file, and a run from any
 // other directory validated whatever copy sat there.
@@ -147,11 +147,11 @@ async function loadProviderIds() {
     }
   }
 
-  // scan.mjs accepts explicit provider-plugin ids even when a plugin is
+  // scripts/scan.mjs accepts explicit provider-plugin ids even when a plugin is
   // disabled or missing credentials (the runtime installs an actionable
   // inactive-provider stub). Keep validation aligned with that contract.
   try {
-    const { discoverPlugins, pluginRoots, resolveSuccessorIds } = await import('./plugins/_engine.mjs');
+    const { discoverPlugins, pluginRoots, resolveSuccessorIds } = await import('../plugins/_engine.mjs');
     const manifests = discoverPlugins(pluginRoots(ROOT), resolveSuccessorIds(ROOT));
     for (const manifest of manifests) {
       if (manifest.hooks.includes('provider')) ids.add(manifest.id);
@@ -192,7 +192,7 @@ export async function validatePortalsConfig(config, { providerIds = new Set() } 
     }
   }
 
-  // Optional per-scanner override consumed only by scan-ats-full.mjs. Same
+  // Optional per-scanner override consumed only by scripts/scan-ats-full.mjs. Same
   // shape as title_filter, so it gets the same structural checks — an
   // unvalidated key would let a typo ("positve") silently resolve to a
   // profile with no positive keywords, which matches every posting.
@@ -217,7 +217,7 @@ export async function validatePortalsConfig(config, { providerIds = new Set() } 
     }
   }
 
-  // Consumed only by scan-ats-full.mjs's board gate (#3105). A bare list, not
+  // Consumed only by scripts/scan-ats-full.mjs's board gate (#3105). A bare list, not
   // an object like the filters around it: the gate has one dimension. A
   // negative domain term would have to mean "this employer is NOT in my
   // industry because of one posting", which no single posting can establish,
@@ -244,7 +244,7 @@ export async function validatePortalsConfig(config, { providerIds = new Set() } 
     }
   }
 
-  // The languages a posting is wanted in, best first. scan.mjs skips an entry
+  // The languages a posting is wanted in, best first. scripts/scan.mjs skips an entry
   // it cannot read, so a malformed list would quietly fall back to the default
   // version — the typo can only surface here.
   if (config.preferred_languages !== undefined) {
@@ -289,7 +289,7 @@ export async function validatePortalsConfig(config, { providerIds = new Set() } 
         // Stricter than title_filter on purpose: a bare-string list is dropped
         // by buildTitleFilter, and a block with no keyword at all matches every
         // posting. title_filter keeps that leniency for existing configs;
-        // field_filters is new and has none to preserve. scan.mjs applies the
+        // field_filters is new and has none to preserve. scripts/scan.mjs applies the
         // same rules at startup.
         let keywordCount = 0;
         let malformedList = false;
@@ -436,7 +436,7 @@ export async function validatePortalsConfig(config, { providerIds = new Set() } 
         }
       }
 
-      // #3438. Which field this target's whitelist reads. scan.mjs exits on a
+      // #3438. Which field this target's whitelist reads. scripts/scan.mjs exits on a
       // name with no field_filters block; this catches the shape earlier and
       // checks the cross-reference here too, where the whole config is in hand.
       if (entry.filter_on !== undefined) {
@@ -509,10 +509,10 @@ const KNOWN_FLAGS = ['--file', '--self-test', '--help', '-h'];
 const VALUE_FLAGS = ['--file'];
 
 const USAGE = `Usage:
-  node validate-portals.mjs                                    # validate portals.yml in the data root
-  node validate-portals.mjs --file templates/portals.example.yml  # validate a specific portals file
-  node validate-portals.mjs --self-test                        # run the built-in fixture checks
-  node validate-portals.mjs --help                             # print this usage block and exit`;
+  node scripts/validate-portals.mjs                                    # validate portals.yml in the data root
+  node scripts/validate-portals.mjs --file templates/portals.example.yml  # validate a specific portals file
+  node scripts/validate-portals.mjs --self-test                        # run the built-in fixture checks
+  node scripts/validate-portals.mjs --help                             # print this usage block and exit`;
 
 async function main() {
   const args = process.argv.slice(2);
@@ -526,7 +526,7 @@ async function main() {
   // file path (flagValue() returns args[idx + 1] unconditionally, with no check
   // that it is not itself another flag), and a bare trailing --file reaches
   // resolve('') — the current directory. Same shape, same fix as the sibling
-  // verify-portals.mjs (#4250/#4254).
+  // scripts/verify-portals.mjs (#4250/#4254).
   validateFlags(args, KNOWN_FLAGS, USAGE, { valueFlags: VALUE_FLAGS, requireOperand: true });
 
   if (args.includes('--self-test')) {
@@ -540,7 +540,7 @@ async function main() {
   const fileFlag = hasFlag(args, '--file') ? (flagValue(args, '--file') ?? '') : undefined;
   const filePath = fileFlag === undefined ? resolve(DEFAULT_PORTALS_PATH) : (fileFlag ? resolve(fileFlag) : '');
   if (!filePath) {
-    console.error('Usage: node validate-portals.mjs [--file portals.yml] [--self-test]');
+    console.error('Usage: node scripts/validate-portals.mjs [--file portals.yml] [--self-test]');
     process.exit(1);
   }
 

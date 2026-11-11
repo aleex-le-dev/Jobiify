@@ -1,4 +1,4 @@
-// Tests for parseOrphanReport(), which reads the report a `tracker.mjs delete`
+// Tests for parseOrphanReport(), which reads the report a `scripts/tracker.mjs delete`
 // run leaves on disk out of the script's stderr so the confirm dialog can say
 // "its report file is left on disk".
 //
@@ -86,10 +86,10 @@ test("parseOrphanReport: no report line means no report", () => {
   assert.equal(parseOrphanReport("(row removed; index resync skipped: orphaned: handle)"), null);
 });
 
-test("tracker.mjs still writes the two lines this parser reads", () => {
+test("scripts/tracker.mjs still writes the two lines this parser reads", () => {
   // The parser and the script are in different packages, so nothing else ties
   // them together: a reworded message would silently hide the notice again.
-  const script = readFileSync(join(HERE, "..", "..", "..", "tracker.mjs"), "utf-8");
-  assert.ok(script.includes("`(report file would be orphaned: ${report})`"), "dry-run line changed in tracker.mjs");
-  assert.ok(script.includes("`Note: report file may now be orphaned — ${report}`"), "real-delete line changed in tracker.mjs");
+  const script = readFileSync(join(HERE, "..", "..", "..", "scripts/tracker.mjs"), "utf-8");
+  assert.ok(script.includes("`(report file would be orphaned: ${report})`"), "dry-run line changed in scripts/tracker.mjs");
+  assert.ok(script.includes("`Note: report file may now be orphaned — ${report}`"), "real-delete line changed in scripts/tracker.mjs");
 });

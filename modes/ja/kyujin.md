@@ -284,7 +284,7 @@ I am happy to discuss further at your convenience.
 
 Full evaluation を `reports/{###}-{company-slug}-{YYYY-MM-DD}.md` に保存する。
 
-- `{###}` = next sequential number（3 digits, zero-padded）。競合を防ぐため、必ず `node reserve-report-num.mjs` を実行して番号を claim し（stdout returns `{###}`）、report を write してから `node reserve-report-num.mjs --release {###}` を実行して sentinel を release する。
+- `{###}` = next sequential number（3 digits, zero-padded）。競合を防ぐため、必ず `node scripts/reserve-report-num.mjs` を実行して番号を claim し（stdout returns `{###}`）、report を write してから `node scripts/reserve-report-num.mjs --release {###}` を実行して sentinel を release する。
 - `{company-slug}` = company name in lowercase, without spaces（use hyphens）
 - `{YYYY-MM-DD}` = current date
 
@@ -340,7 +340,7 @@ Full evaluation を `reports/{###}-{company-slug}-{YYYY-MM-DD}.md` に保存す�
 
 ### 2. Record in tracker
 
-**ALWAYS** record in the tracker. Write a TSV (rule 9 in `_shared.md`) and merge it with `node merge-tracker.mjs`; never write a row into `data/applications.md` by hand. Fields:
+**ALWAYS** record in the tracker. Write a TSV (rule 9 in `_shared.md`) and merge it with `node scripts/merge-tracker.mjs`; never write a row into `data/applications.md` by hand. Fields:
 - Next sequential number
 - Current date
 - Company
@@ -348,7 +348,7 @@ Full evaluation を `reports/{###}-{company-slug}-{YYYY-MM-DD}.md` に保存す�
 - Score: match average (1-5)
 - Status: `Evaluated`
 - PDF: ❌（または auto-pipeline が PDF を生成した場合は ✅）
-- Report: root-relative link `[001](reports/001-company-2026-01-01.md)`（`merge-tracker.mjs` 経由で merge されると tracker file からの相対 link に normalize される。例：`../reports/...`。#760 参照）
+- Report: root-relative link `[001](reports/001-company-2026-01-01.md)`（`scripts/merge-tracker.mjs` 経由で merge されると tracker file からの相対 link に normalize される。例：`../reports/...`。#760 参照）
 
 **Tracker format:**
 

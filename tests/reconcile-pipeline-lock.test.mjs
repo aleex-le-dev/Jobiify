@@ -1,6 +1,6 @@
-// reconcile-pipeline.mjs must take the pipeline lock around its read → compute
+// scripts/reconcile-pipeline.mjs must take the pipeline lock around its read → compute
 // → write (#4895). It used to read pipeline.md, rebuild it, and write it back
-// with no lock, so an offer scan.mjs appended in between was silently
+// with no lock, so an offer scripts/scan.mjs appended in between was silently
 // overwritten — and the .pre-reconcile.bak, copied before the append, did not
 // have it either.
 //
@@ -15,9 +15,9 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { acquirePipelineLock } from '../pipeline-lock.mjs';
+import { acquirePipelineLock } from '../scripts/pipeline-lock.mjs';
 
-const SCRIPT = join(dirname(dirname(fileURLToPath(import.meta.url))), 'reconcile-pipeline.mjs');
+const SCRIPT = join(dirname(dirname(fileURLToPath(import.meta.url))), 'scripts/reconcile-pipeline.mjs');
 const DONE_URL = 'https://jobs.example.test/4521';
 const SCANNED_URL = 'https://jobs.example.test/9001';
 

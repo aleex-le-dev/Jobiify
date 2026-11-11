@@ -30,7 +30,7 @@ const LABELS_FR: Record<string, string> = {
   "portals.yml": "les entreprises à scanner",
 };
 
-// Detect (via the core's doctor.mjs) whether setup is incomplete, and offer to
+// Detect (via the core's scripts/doctor.mjs) whether setup is incomplete, and offer to
 // finish it CONVERSATIONALLY — the assistant asks in plain language and writes
 // the canonical files (no YAML to edit). This is the #1 adoption barrier.
 export function OnboardingBanner() {

@@ -1,7 +1,7 @@
 // tests/doctor-clean-stderr.test.mjs — `doctor --json` must not leak a
 // subprocess's diagnostics onto stderr.
 //
-// AGENTS.md has every agent run `node doctor.mjs --json` on the FIRST MESSAGE of
+// AGENTS.md has every agent run `node scripts/doctor.mjs --json` on the FIRST MESSAGE of
 // every session, which makes this the hottest path in the repo. checkTrackedBakFiles
 // shells out to `git ls-files`, and execFileSync's default hands the child our own
 // stderr — so outside a git checkout git printed
@@ -29,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 function doctor(cwd, target) {
-  const r = spawnSync(process.execPath, [join(ROOT, 'doctor.mjs'), '--json', '--target', target], {
+  const r = spawnSync(process.execPath, [join(ROOT, 'scripts/doctor.mjs'), '--json', '--target', target], {
     cwd, encoding: 'utf-8', timeout: 60_000,
     env: { ...process.env, CAREER_OPS_ROOT: target, CAREER_OPS_DATA_DIR: '' },
   });

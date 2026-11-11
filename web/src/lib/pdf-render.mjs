@@ -7,7 +7,7 @@
  * or career-ops.ts directly, keeping this module free of TypeScript
  * dependencies and letting tests substitute a fake child process.
  *
- * Runs generate-pdf.mjs and mark-pdf-ready.mjs as plain Node child processes
+ * Runs scripts/generate-pdf.mjs and scripts/mark-pdf-ready.mjs as plain Node child processes
  * — no agent CLI or its sandbox involved — so a browser launch never depends
  * on an interactive sandbox-escalation approval nobody is present to grant in
  * a headless/web-triggered run. The tracker is marked ✅ only after a
@@ -89,7 +89,7 @@ export function writeCvHtml({ pdfPaths, html }) {
 }
 
 /**
- * Spawn generate-pdf.mjs as a plain child process and resolve once it exits.
+ * Spawn scripts/generate-pdf.mjs as a plain child process and resolve once it exits.
  * @param {{spawnFn: Function, execPath: string, root: string, html: string, finalPdf: string, format: "letter"|"a4", reportNum: string}} args
  * @returns {Promise<{ok: boolean, stderr: string}>}
  */
@@ -101,7 +101,7 @@ export function spawnGeneratePdf({ spawnFn, execPath, root, html, finalPdf, form
       // from the template's fixed markup order, so this guard would otherwise
       // hard-fail every web-triggered render — same bypass a human already
       // applies manually via the CLI when this diverges.
-      [path.join(root, "generate-pdf.mjs"), html, finalPdf, `--format=${format}`, `--report=${reportNum}`, "--allow-reorder"],
+      [path.join(root, "scripts/generate-pdf.mjs"), html, finalPdf, `--format=${format}`, `--report=${reportNum}`, "--allow-reorder"],
       { cwd: root },
     );
     let stderr = "";
@@ -112,8 +112,8 @@ export function spawnGeneratePdf({ spawnFn, execPath, root, html, finalPdf, form
 }
 
 /**
- * Spawn mark-pdf-ready.mjs (--json) and resolve once it exits, parsing its
- * JSON stdout when present (mark-pdf-ready.mjs prints a JSON payload even on
+ * Spawn scripts/mark-pdf-ready.mjs (--json) and resolve once it exits, parsing its
+ * JSON stdout when present (scripts/mark-pdf-ready.mjs prints a JSON payload even on
  * a failure exit when --json is passed) so a caller can surface the specific
  * reason (not-found / ambiguous / lock-timeout / ...) rather than raw stderr.
  * @param {{spawnFn: Function, execPath: string, root: string, reportNum: string}} args
@@ -121,7 +121,7 @@ export function spawnGeneratePdf({ spawnFn, execPath, root, html, finalPdf, form
  */
 export function markTrackerReady({ spawnFn, execPath, root, reportNum }) {
   return new Promise((resolve) => {
-    const child = spawnFn(execPath, [path.join(root, "mark-pdf-ready.mjs"), reportNum, "--json"], { cwd: root });
+    const child = spawnFn(execPath, [path.join(root, "scripts/mark-pdf-ready.mjs"), reportNum, "--json"], { cwd: root });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (d) => { stdout += d.toString(); });
@@ -131,14 +131,14 @@ export function markTrackerReady({ spawnFn, execPath, root, reportNum }) {
       try { data = JSON.parse(stdout); } catch { /* not JSON, or exited before printing any */ }
       resolve({ ok: code === 0, data, stderr: stderr.trim() });
     });
-    child.on("error", (e) => resolve({ ok: false, data: null, stderr: `mark-pdf-ready.mjs failed to start: ${e.message}` }));
+    child.on("error", (e) => resolve({ ok: false, data: null, stderr: `scripts/mark-pdf-ready.mjs failed to start: ${e.message}` }));
   });
 }
 
 /**
  * Glob-clean every scratch file for this run rather than the one known filename.
  * The agent is not told these paths, and on Claude Code holds no write tool — but
- * the BACKEND writes here and generate-pdf.mjs may leave its own intermediates, so
+ * the BACKEND writes here and scripts/generate-pdf.mjs may leave its own intermediates, so
  * matching the run's prefix stays the right sweep. Logs rather than silently
  * swallowing failures, so a systemic permissions problem doesn't grow
  * `.career-ops-web/pdf-tmp/` forever with no trace anywhere.
@@ -231,11 +231,11 @@ export async function renderAndMarkPdf({ spawnFn, execPath, root, pdfPaths, form
   // run, not just a server-side log nobody sees.
   const mark = await markTrackerReady({ spawnFn, execPath, root, reportNum });
   if (!mark.ok) {
-    console.error(`mark-pdf-ready.mjs failed for report #${reportNum}: ${mark.data?.error ?? mark.stderr}`);
+    console.error(`scripts/mark-pdf-ready.mjs failed for report #${reportNum}: ${mark.data?.error ?? mark.stderr}`);
     warnings.push(
       mark.data?.error
         ? `PDF rendered, but the tracker wasn't updated: ${mark.data.error}`
-        : `PDF rendered, but the tracker's PDF column wasn't updated automatically — run \`node mark-pdf-ready.mjs ${reportNum}\` manually.`,
+        : `PDF rendered, but the tracker's PDF column wasn't updated automatically — run \`node scripts/mark-pdf-ready.mjs ${reportNum}\` manually.`,
     );
   }
 

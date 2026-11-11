@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * find.mjs — resolve a company/role/number query to its full pipeline identity (#1431).
+ * scripts/find.mjs — resolve a company/role/number query to its full pipeline identity (#1431).
  *
  * "Apply to #13" is ambiguous: report numbers and tracker row numbers diverge,
  * and mapping company ↔ report# ↔ tracker# ↔ PDF used to require opening three
@@ -9,19 +9,19 @@
  * answers it in one lookup.
  *
  * Usage:
- *   node find.mjs <query> [--json]
+ *   node scripts/find.mjs <query> [--json]
  *
  * <query> is a report number, tracker number, or company/role fragment.
  * A numeric query matches BOTH the tracker # column and the report number in
  * the Report link ("012" and "12" are the same number), so a collision between
  * the two numbering schemes surfaces as multiple rows instead of a silent wrong
  * pick. A text query matches company/role by case-insensitive substring, with
- * the shared fuzzy matcher (role-matcher.mjs) as fallback for multi-word
+ * the shared fuzzy matcher (scripts/role-matcher.mjs) as fallback for multi-word
  * phrases.
  *
  * Zero dependencies and strictly read-only: parses data/applications.md via
- * the shared header-aware column mapping (tracker-parse.mjs) and the PDF
- * manifest data/pdf-index.tsv (written by generate-pdf.mjs).
+ * the shared header-aware column mapping (scripts/tracker-parse.mjs) and the PDF
+ * manifest data/pdf-index.tsv (written by scripts/generate-pdf.mjs).
  */
 
 import { readFileSync, existsSync, statSync } from 'fs';
@@ -31,16 +31,16 @@ import { resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
 import { resolvePdfIndexPath, resolveWorkspaceRootFor, pathIsInside, pathIsInsideCanonical } from './tracker-utils.mjs';
 import { roleFuzzyMatch } from './role-matcher.mjs';
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 
 // "008" and "8" are the same report — zero-padded report-link form vs unpadded
-// tracker-# form (same normalization as the manifest writer in generate-pdf.mjs).
+// tracker-# form (same normalization as the manifest writer in scripts/generate-pdf.mjs).
 export const normNum = (s) => String(s ?? '').trim().replace(/^0+(?=\d)/, '');
 
-// Same status hygiene as tracker.mjs: strip markdown bold and stray dates so a
+// Same status hygiene as scripts/tracker.mjs: strip markdown bold and stray dates so a
 // messy cell still prints as its canonical label.
 const cleanStatus = (s) =>
   String(s ?? '').replace(/\*\*/g, '').replace(/\(?\d{4}-\d{2}-\d{2}\)?/g, '').trim();
@@ -107,12 +107,12 @@ export function parsePdfIndex(text) {
  * Keep only the manifest rows whose PDF is still on disk.
  *
  * A row in data/pdf-index.tsv records that a PDF was generated, not that it
- * still exists: generate-pdf.mjs evicts a row only when it regenerates, so
+ * still exists: scripts/generate-pdf.mjs evicts a row only when it regenerates, so
  * deleting output/*.pdf leaves every row standing (#4777). Whatever sets a
  * tracker's PDF cell from the manifest decides presence here, so
- * merge-tracker.mjs and sync-pdf-flags.mjs cannot disagree about it.
+ * scripts/merge-tracker.mjs and scripts/sync-pdf-flags.mjs cannot disagree about it.
  *
- * Paths resolve against the workspace root generate-pdf.mjs wrote them for and
+ * Paths resolve against the workspace root scripts/generate-pdf.mjs wrote them for and
  * must stay inside it. A path that spells its way out is rejected before it is
  * touched; one that only leads out through a symlink is rejected once its
  * target is resolved. A missing file is absent. Any other stat failure (EACCES,
@@ -185,8 +185,8 @@ export function findMatches(rows, query, pdfIndex = new Map()) {
 const KNOWN_FLAGS = ['--json', '--help', '-h'];
 
 const USAGE = `Usage:
-  node find.mjs <report# | tracker# | company/role fragment> [--json]
-  node find.mjs --help                            # print this usage block and exit`;
+  node scripts/find.mjs <report# | tracker# | company/role fragment> [--json]
+  node scripts/find.mjs --help                            # print this usage block and exit`;
 
 function parseArgs(argv) {
   const args = argv.slice(2);

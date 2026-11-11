@@ -4,7 +4,7 @@ Auto-discovered test files for the career-ops suite.
 
 ## Purpose
 
-`test-all.mjs` (repo root) is the suite runner: it executes its inline core
+`scripts/test-all.mjs` (repo root) is the suite runner: it executes its inline core
 checks (syntax, scripts, dashboard, data contract, personal data, paths) and
 then auto-discovers every `*.test.mjs` file under this directory. There is no
 test framework by design — the suite must run on a fresh clone with only
@@ -15,7 +15,7 @@ Node.js (`tests/helpers.mjs`).
 - `helpers.mjs` — shared assertion helpers and counters. Exports `pass`,
   `fail`, `warn`, plus `ROOT` (repo root), `QUICK` (`--quick` flag), and
   `NODE` (current Node binary).
-- `run-discovered-child.mjs` — not a suite. `test-all.mjs` starts it once per
+- `run-discovered-child.mjs` — not a suite. `scripts/test-all.mjs` starts it once per
   discovered suite when suites run in parallel (see "Parallel runs" below).
 - `providers/{name}.test.mjs` — one file per scanner provider (see
   [providers/ADDING_A_PROVIDER.md](../providers/ADDING_A_PROVIDER.md) for the
@@ -26,11 +26,11 @@ Node.js (`tests/helpers.mjs`).
 - Other `*.test.mjs` files at this level (e.g. `stats.test.mjs`) cover root
   scripts. Note: standalone `*.test.mjs` files in the repo root are not
   discovered and will not run — `tests/no-root-suites.test.mjs` fails the
-  build if one shows up (see "Why the flat root" in ARCHITECTURE.md).
+  build if one shows up (see "Why the flat root" in docs/projet/ARCHITECTURE.md).
   A handful of `*-tests.mjs` suites do remain at the root (a flag-driven CI
   harness, a suite that asserts on its own filename, two needing a per-script
   timeout, and one added after the convention was written); those are registered in
-  `test-all.mjs`'s `scripts` list or invoked by a workflow, and
+  `scripts/test-all.mjs`'s `scripts` list or invoked by a workflow, and
   `root-tests-registration.test.mjs` asserts every one of them is reachable.
 
 **Web tests do not live here.** `web/` runs its own `npm test` over
@@ -42,16 +42,16 @@ this suite must run on a bare clone with no framework — "not even `node:test`"
 
 The one exception to the split is a guard *about* web's layout —
 `web-test-layout.test.mjs` lives here on purpose, because `web-ci.yml` is
-informative by design and never blocks a merge, while `test-all.mjs` runs on
+informative by design and never blocks a merge, while `scripts/test-all.mjs` runs on
 every PR as a required check.
 
 ## Running
 
 ```bash
-node test-all.mjs                            # full suite — run before pushing
-node test-all.mjs --quick                    # full suite, skip dashboard build
-node test-all.mjs --only providers/themuse   # only matching tests/ files
-node test-all.mjs --quick --jobs 4           # at most 4 suites at a time
+node scripts/test-all.mjs                            # full suite — run before pushing
+node scripts/test-all.mjs --quick                    # full suite, skip dashboard build
+node scripts/test-all.mjs --only providers/themuse   # only matching tests/ files
+node scripts/test-all.mjs --quick --jobs 4           # at most 4 suites at a time
 ```
 
 Discovery walks `tests/` recursively, sorted lexicographically for a
@@ -59,13 +59,13 @@ deterministic cross-OS order. `--only` filters on the tests-relative path and
 exits 1 when nothing matches (so a typo cannot turn CI green).
 
 **`--only` is a dev convenience, not a PR gate:** it skips every inline core
-section of `test-all.mjs`. A green `--only` run is not a green suite — always
-run the full `node test-all.mjs` before pushing.
+section of `scripts/test-all.mjs`. A green `--only` run is not a green suite — always
+run the full `node scripts/test-all.mjs` before pushing.
 
 ## Parallel runs
 
 The files in this directory are most of a full run, so they run several at a
-time, each in a process of its own. The inline sections of `test-all.mjs` run
+time, each in a process of its own. The inline sections of `scripts/test-all.mjs` run
 at the same time, in one more process, which takes one of the slots until it
 finishes. How many slots, in order of precedence:
 
@@ -83,7 +83,7 @@ integer is a usage error, not a fallback to the default.
 **What does not change.** The output is printed in discovery order whatever
 finished first: each suite's output is held until its turn comes, so two runs
 of the same tree print the same log. The totals and the exit code are the same
-as a serial run's. The inline sections of `test-all.mjs` still run one after
+as a serial run's. The inline sections of `scripts/test-all.mjs` still run one after
 another and still print first: they stream as they run, and no suite's output
 appears until the last of them has finished.
 
@@ -125,14 +125,14 @@ running after 600 others in one:
 disappears there is one of the cases above, in the suite or section that failed
 or in one it used to follow.
 
-A suite that starts a `test-all.mjs` of its own gets a serial one unless it
+A suite that starts a `scripts/test-all.mjs` of its own gets a serial one unless it
 passes `--jobs` itself: the runner sets `CAREER_OPS_TEST_JOBS=1` for everything
 it starts, so N workers do not fan out N more each.
 
 ## Adding a test
 
 Add one `{name}.test.mjs` file here — it is auto-discovered, no registration
-needed. Do not add a section to `test-all.mjs`. Import the helpers with a
+needed. Do not add a section to `scripts/test-all.mjs`. Import the helpers with a
 path relative to the test file's location:
 
 ```js
@@ -140,7 +140,7 @@ import { pass, fail, ROOT } from './helpers.mjs';    // tests/*.test.mjs
 import { pass, fail, ROOT } from '../helpers.mjs';   // tests/providers/*.test.mjs
 ```
 
-See `CONTRIBUTING.md` for the full contribution flow.
+See `docs/projet/CONTRIBUTING.md` for the full contribution flow.
 
 ## The suite's data root
 

@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pass, fail } from './helpers.mjs';
-import { boardKey, loadDeadBoards, recordBoardResult, saveDeadBoards, shouldSkipDeadBoard } from '../dead-boards.mjs';
+import { boardKey, loadDeadBoards, recordBoardResult, saveDeadBoards, shouldSkipDeadBoard } from '../scripts/dead-boards.mjs';
 
 console.log('\nPersistent dead-board memory (#2840)');
 const root = mkdtempSync(join(tmpdir(), 'career-ops-dead-boards-'));

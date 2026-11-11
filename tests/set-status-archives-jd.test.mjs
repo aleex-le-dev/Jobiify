@@ -39,7 +39,7 @@ function sandbox({ status = 'Evaluated', url = 'https://boards.greenhouse.io/acm
 }
 
 function setStatus(dir, args, { codeRoot = ROOT, env = {} } = {}) {
-  const r = spawnSync(process.execPath, [join(codeRoot, 'set-status.mjs'), ...args], {
+  const r = spawnSync(process.execPath, [join(codeRoot, 'scripts/set-status.mjs'), ...args], {
     cwd: ROOT,
     encoding: 'utf-8',
     timeout: 30_000,
@@ -58,13 +58,13 @@ function fakeArchiveCodeRoot() {
   const codeRoot = mkdtempSync(join(ROOT, `${SCRATCH_PREFIX}set-status-archive-`));
   for (const sub of ['lib', 'templates']) mkdirSync(join(codeRoot, sub), { recursive: true });
   for (const file of [
-    'set-status.mjs', 'path-resolver.mjs', 'tracker-utils.mjs', 'pipeline-lock.mjs',
-    'tracker-parse.mjs', 'lib/local-today.mjs', 'role-matcher.mjs',
-    'session-activity.mjs', 'lib/is-main-module.mjs', 'check-jd-archive.mjs',
-    'jd-capture.mjs', 'lib/cli-flags.mjs', 'templates/states.yml',
+    'scripts/set-status.mjs', 'scripts/path-resolver.mjs', 'scripts/tracker-utils.mjs', 'scripts/pipeline-lock.mjs',
+    'scripts/tracker-parse.mjs', 'lib/local-today.mjs', 'scripts/role-matcher.mjs',
+    'scripts/session-activity.mjs', 'lib/is-main-module.mjs', 'scripts/check-jd-archive.mjs',
+    'scripts/jd-capture.mjs', 'lib/cli-flags.mjs', 'templates/states.yml',
     'tracker-aliases.json',
-  ]) copyFileSync(join(ROOT, file), join(codeRoot, file));
-  writeFileSync(join(codeRoot, 'archive-posting.mjs'), [
+  ]) (mkdirSync(join(codeRoot, file, '..'), { recursive: true }), (mkdirSync(join(codeRoot, file, '..'), { recursive: true }), (mkdirSync(join(codeRoot, file, '..'), { recursive: true }), copyFileSync(join(ROOT, file), join(codeRoot, file)))));
+  writeFileSync((mkdirSync(join(codeRoot, 'scripts'), { recursive: true }), join(codeRoot, 'scripts/archive-posting.mjs')), [
     "import { writeFileSync } from 'node:fs';",
     "import { join } from 'node:path';",
     "if (process.env.FAKE_ARCHIVE_HANG === '1') Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 60_000);",

@@ -5,7 +5,7 @@
 // Renovate bump moved the "Node 18" syntax step to 24 (647ab019) and nothing
 // noticed, so `engines` promised compatibility no job checked (#4801). It was
 // also wrong on its own terms: doctor passed 22.5–22.12, where node:sqlite still
-// needs --experimental-sqlite and tracker.mjs's plain import fails.
+// needs --experimental-sqlite and scripts/tracker.mjs's plain import fails.
 //
 // These pin the verdict (whose failing branch can't be reached through doctor on
 // a machine running a current Node) and make each restatement fail loudly if it
@@ -42,7 +42,7 @@ const floor = NODE_MIN.split('.').slice(0, 2).join('.');
     ok(Array.isArray(r.fix) && r.fix.length >= 1, '  and it offers a fix');
   }
 
-  // 22.5–22.12 is the range doctor used to pass while tracker.mjs could not
+  // 22.5–22.12 is the range doctor used to pass while scripts/tracker.mjs could not
   // import node:sqlite there. It must stay a failure, not a warning.
   ok(nodeFloor('22.12.9').warn !== true, '22.12 is a hard failure, not a warning');
 

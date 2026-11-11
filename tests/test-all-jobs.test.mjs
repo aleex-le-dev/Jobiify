@@ -1,4 +1,4 @@
-// tests/test-all-jobs.test.mjs — `test-all.mjs --jobs N` runs discovered suites
+// tests/test-all-jobs.test.mjs — `scripts/test-all.mjs --jobs N` runs discovered suites
 // in parallel without changing what a run reports.
 //
 // The claim worth pinning is equivalence, not speed: a parallel run prints the
@@ -7,7 +7,7 @@
 // nobody can tell a suite that broke from a runner that dropped it.
 //
 // The runner is driven the way a contributor drives it, through its CLI, in a
-// sandbox holding the real test-all.mjs and a small `tests/` of fixture suites
+// sandbox holding the real scripts/test-all.mjs and a small `tests/` of fixture suites
 // (tests/test-all-sandbox.mjs).
 //
 // The fixtures spell three things in pieces: the exit call, the summary call

@@ -3,11 +3,11 @@
 // Pure .mjs so the report view can import it and `node --test` can cover it,
 // matching funnel-tiles.mjs / awaiting.mjs.
 //
-// Nothing here matches keywords — keyword-match.mjs does that, synonyms and all.
+// Nothing here matches keywords — scripts/keyword-match.mjs does that, synonyms and all.
 // What this decides is how its verdict is PRESENTED, and the one decision that
 // carries risk is the tier split.
 //
-// `thin` is documented in keyword-match.mjs as a SUBSET of `present` (keywords
+// `thin` is documented in scripts/keyword-match.mjs as a SUBSET of `present` (keywords
 // mentioned exactly once), and coverage counts thin keywords as present. So a
 // panel that renders `present` and `thin` as two lists shows the thin ones
 // twice, and a reader counting the lists gets a total larger than `total`.
@@ -99,7 +99,7 @@ export function coverageModel(payload) {
 /**
  * A coarse band for colouring, never a pass/fail.
  *
- * Deliberately three wide bands rather than a threshold: keyword-match.mjs is
+ * Deliberately three wide bands rather than a threshold: scripts/keyword-match.mjs is
  * explicitly DIAGNOSTIC, and a red "fail" badge would push the reader toward
  * stuffing the CV with terms — the exact behaviour the project rule
  * ("Keywords get reformulated, never fabricated") exists to prevent.

@@ -1,7 +1,7 @@
 /**
- * liveness-browser.mjs — Playwright-driven liveness check for a single URL.
+ * scripts/liveness-browser.mjs — Playwright-driven liveness check for a single URL.
  *
- * Shared by check-liveness.mjs (CLI tool) and scan.mjs (--verify flag).
+ * Shared by scripts/check-liveness.mjs (CLI tool) and scripts/scan.mjs (--verify flag).
  * Returns the same shape as classifyLiveness: { result, reason }.
  */
 
@@ -169,7 +169,7 @@ function extractMappedIPv4(host) {
 }
 
 // Returns null when the URL is safe to fetch, otherwise a structured guard
-// result with a stable `code` (used for routing in scan.mjs) plus a human
+// result with a stable `code` (used for routing in scripts/scan.mjs) plus a human
 // `reason`. Stable codes — not regex on reason strings — drive downstream
 // dispatch so the wording can change freely without breaking callers.
 //
@@ -284,7 +284,7 @@ const SINKHOLE_ADDRESSES = new Set(['0.0.0.0', '::']);
 // Second layer of the egress guard: `rejectPrivateOrInvalid` only sees the
 // literal host, so a public hostname that *resolves* to private space still
 // gets through it. Resolve and re-check every address before the request is
-// allowed out. Exported so other Playwright callers (archive-posting.mjs) wire
+// allowed out. Exported so other Playwright callers (scripts/archive-posting.mjs) wire
 // up the same two-layer guard instead of growing a second implementation.
 export async function validateUrlSecurity(urlString) {
   const url = new URL(urlString.endsWith('.') ? urlString.slice(0, -1) : urlString);
@@ -465,7 +465,7 @@ export async function checkUrlLiveness(page, url, { extraSettleMs = 0 } = {}) {
 
     // Frame aggregation is an enhancement, never a requirement. Callers may pass
     // a lightweight page object that only implements goto/url/evaluate — the
-    // test doubles in test-all.mjs do — and such a caller must keep getting the
+    // test doubles in scripts/test-all.mjs do — and such a caller must keep getting the
     // top-level verdict rather than a navigation_error.
     const supportsFrames = typeof page?.frames === 'function' && typeof page?.mainFrame === 'function';
 

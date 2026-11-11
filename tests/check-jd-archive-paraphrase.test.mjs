@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { checkJdArchive } from '../check-jd-archive.mjs';
+import { checkJdArchive } from '../scripts/check-jd-archive.mjs';
 
 const PARAPHRASE_REPORT = [
   '# Evaluation: Acme - Director of Marketing',
@@ -80,7 +80,7 @@ test('a PDF pointer with no capture on disk is flagged, and passes once the capt
   }
 });
 
-import { mapTrackerCaptureLinks } from '../check-jd-archive.mjs';
+import { mapTrackerCaptureLinks } from '../scripts/check-jd-archive.mjs';
 
 test('a tracker capture link cannot escape the data root', () => {
   const dir = mkdtempSync(join(tmpdir(), 'jd-traversal-'));

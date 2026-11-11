@@ -2,7 +2,7 @@
 // headless modes. This suite catches missing fields or silent parser drops.
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { parseMachineSummary } from '../analyze-patterns.mjs';
+import { parseMachineSummary } from '../scripts/analyze-patterns.mjs';
 import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\nscore evidence confidence — report and parser contract');

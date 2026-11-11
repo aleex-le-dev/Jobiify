@@ -1,4 +1,4 @@
-// tests/providers/successfactors.test.mjs — moved verbatim from test-all.mjs (#1440).
+// tests/providers/successfactors.test.mjs — moved verbatim from scripts/test-all.mjs (#1440).
 import { pass, fail, ROOT } from '../helpers.mjs';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
@@ -287,7 +287,7 @@ try {
   // RangeError out of the whole parse. The local decodeEntities copy guarded
   // only with Number.isFinite (no `<= 0x10FFFF` / surrogate check), so ONE
   // adversarial/malformed entity (&#99999999;, &#xFFFFFFFF;) crashed the entire
-  // provider parse and scan.mjs's per-company catch dropped EVERY posting for
+  // provider parse and scripts/scan.mjs's per-company catch dropped EVERY posting for
   // that run. parseTiles now routes through the shared guarded decoder, which
   // degrades an out-of-range or lone-surrogate entity to literal text while
   // still decoding valid ones (&amp;).

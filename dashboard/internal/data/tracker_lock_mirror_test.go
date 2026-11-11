@@ -13,23 +13,23 @@ import (
 //
 // trackerLockDirFor's own comment makes the claim:
 //
-//	// trackerLockDirFor mirrors tracker-utils.mjs exactly so Go and Node writers
+//	// trackerLockDirFor mirrors scripts/tracker-utils.mjs exactly so Go and Node writers
 //	// contend on the same lock directory for the same canonical tracker path.
 //
-// and tracker-utils.mjs records what happens when it stops being true:
+// and scripts/tracker-utils.mjs records what happens when it stops being true:
 // "the same directory-lock protocol on purpose, and #2777 showed how the two
 // copies drift".
 //
 // Nothing was checking it. Two implementations of one hash, in two languages,
 // with a documented history of drifting — and the failure is not a wrong
-// number on a screen. If the directories diverge, `set-status.mjs` and the
+// number on a screen. If the directories diverge, `scripts/set-status.mjs` and the
 // dashboard stop excluding each other and can write applications.md at the
 // same time: the user's tracker, with every application in it.
 //
 // They agree today (verified), so this is a ratchet. It spawns node rather than
 // reimplementing the hash a third time, because a third copy is the bug.
 
-// lockMirrorRepoRoot walks up to the checkout that holds tracker-utils.mjs.
+// lockMirrorRepoRoot walks up to the checkout that holds scripts/tracker-utils.mjs.
 //
 // Named for this file rather than something general: internal/data holds
 // several test files and a shared helper name here would collide with one
@@ -41,7 +41,7 @@ func lockMirrorRepoRoot(t *testing.T) string {
 		t.Fatalf("getwd: %v", err)
 	}
 	for i := 0; i < 8; i++ {
-		if _, err := os.Stat(filepath.Join(dir, "tracker-utils.mjs")); err == nil {
+		if _, err := os.Stat(filepath.Join(dir, "scripts/tracker-utils.mjs")); err == nil {
 			return dir
 		}
 		parent := filepath.Dir(dir)
@@ -50,17 +50,17 @@ func lockMirrorRepoRoot(t *testing.T) string {
 		}
 		dir = parent
 	}
-	t.Skip("tracker-utils.mjs not found above the package directory — not a full checkout")
+	t.Skip("scripts/tracker-utils.mjs not found above the package directory — not a full checkout")
 	return ""
 }
 
-// nodeLockDirFor asks tracker-utils.mjs for its answer.
+// nodeLockDirFor asks scripts/tracker-utils.mjs for its answer.
 func nodeLockDirFor(t *testing.T, root, trackerPath, lockOverride string) string {
 	t.Helper()
 	if _, err := exec.LookPath("node"); err != nil {
 		t.Skip("node is not on PATH; the Go/Node mirror cannot be compared")
 	}
-	// tracker-utils.mjs imports js-yaml, so on a checkout that has never had
+	// scripts/tracker-utils.mjs imports js-yaml, so on a checkout that has never had
 	// `npm install` the import fails before the comparison even starts. That is
 	// a missing dev dependency, not a divergence, and reporting it as a failure
 	// gives a contributor running `go test` a red build about something this
@@ -71,7 +71,7 @@ func nodeLockDirFor(t *testing.T, root, trackerPath, lockOverride string) string
 	probe := exec.Command("node", "-e", "import('js-yaml').then(()=>{},()=>process.exit(3))")
 	probe.Dir = root
 	if err := probe.Run(); err != nil {
-		t.Skip("js-yaml is not installed (run npm install); tracker-utils.mjs cannot be imported")
+		t.Skip("js-yaml is not installed (run npm install); scripts/tracker-utils.mjs cannot be imported")
 	}
 
 	// canonicalizeTrackerPath FIRST, because that is what the real Node callers

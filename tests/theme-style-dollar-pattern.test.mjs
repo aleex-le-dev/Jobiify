@@ -12,8 +12,8 @@
 // no error and a valid-looking exit 0. buildThemeStyleBlock drops `; { } < >`
 // but has no reason to drop `$`, which is a legal character in a CSS value.
 import { pass, fail } from './helpers.mjs';
-import { injectThemeStyle, styleTokensFrom } from '../theme-style.mjs';
-import { injectPrintPageCss } from '../generate-pdf.mjs';
+import { injectThemeStyle, styleTokensFrom } from '../scripts/theme-style.mjs';
+import { injectPrintPageCss } from '../scripts/generate-pdf.mjs';
 
 console.log('\ntheme-style / generate-pdf — $-pattern head injection');
 

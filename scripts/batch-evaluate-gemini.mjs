@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * batch-evaluate-gemini.mjs — Robust batch evaluator using Gemini SDK natively.
+ * scripts/batch-evaluate-gemini.mjs — Robust batch evaluator using Gemini SDK natively.
  * 
  * Replaces the fragile bash array + CLI agent approach.
  * Features:
@@ -21,11 +21,11 @@ import { promisify } from 'util';
 import { rejectPrivateOrInvalid, checkUrlLiveness, LIVENESS_CONTEXT_OPTIONS } from './liveness-browser.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { withPipelineLock } from './pipeline-lock.mjs';
-import { localToday } from './lib/local-today.mjs';
+import { localToday } from '../lib/local-today.mjs';
 import { TSV_ADDITION_HEADER } from './tracker-parse.mjs';
 import {
   normalizedTrackerScore, slugifyCompany, tsvSafe,
-} from './lib/tracker-addition.mjs';
+} from '../lib/tracker-addition.mjs';
 const execFileAsync = promisify(execFile);
 try {
   const { config } = await import('dotenv');
@@ -33,16 +33,16 @@ try {
 } catch {}
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 export const PATHS = {
   shared:      join(ROOT, 'modes', '_shared.md'),
   oferta:      join(ROOT, 'modes', 'oferta.md'),
   cv:          join(DATA_ROOT, 'cv.md'),
   // DATA_ROOT, not ROOT. modes/_profile.md is USER LAYER in the Data Contract
-  // — doctor.mjs auto-copies it into the user's root from
+  // — scripts/doctor.mjs auto-copies it into the user's root from
   // modes/_profile.template.md — and it carries the archetypes and North Star
   // every A-F evaluation scores against.
   //
@@ -51,12 +51,12 @@ export const PATHS = {
   // "offers get scored against the template author's targeting rather than
   // yours". Silently, and for every offer in the batch.
   //
-  // gemini-eval.mjs:89 and ollama-eval.mjs:56 both already use DATA_ROOT here.
+  // scripts/gemini-eval.mjs:89 and scripts/ollama-eval.mjs:56 both already use DATA_ROOT here.
   profile:     join(DATA_ROOT, 'modes', '_profile.md'),
   profileYml:  join(DATA_ROOT, 'config', 'profile.yml'),
   reports:     join(DATA_ROOT, 'reports'),
-  // DATA_ROOT, matching gemini-eval.mjs:93. These TSVs are the batch's OUTPUT —
-  // one per evaluated offer, for merge-tracker.mjs to fold into the tracker —
+  // DATA_ROOT, matching scripts/gemini-eval.mjs:93. These TSVs are the batch's OUTPUT —
+  // one per evaluated offer, for scripts/merge-tracker.mjs to fold into the tracker —
   // so they are user data living under a system-layer directory name.
   //
   // Written to the CODE root they land in the checkout while merge-tracker,
@@ -121,7 +121,7 @@ function readFile(path, label) {
 }
 
 async function nextReportNumber() { // outdate-bot
-  const { stdout } = await execFileAsync(process.execPath, [join(ROOT, 'reserve-report-num.mjs')], { encoding: 'utf-8' });
+  const { stdout } = await execFileAsync(process.execPath, [join(ROOT, 'scripts/reserve-report-num.mjs')], { encoding: 'utf-8' });
   return stdout.trim();
 }
 
@@ -366,7 +366,7 @@ ${evaluationText.replace(/---SCORE_SUMMARY---[\s\S]*?---END_SUMMARY---/, '').tri
 }
 
 // Applies the processed results to the CURRENT text of pipeline.md. A run takes
-// minutes and scan.mjs, plugins.mjs or agent-inbox.mjs may append to the file
+// minutes and scripts/scan.mjs, scripts/plugins.mjs or scripts/agent-inbox.mjs may append to the file
 // meanwhile, so each result replaces the first line that still equals the
 // pending line it came from (`originals` is the start-of-run snapshot, indexed
 // like `results`). Every other line is kept as it is; a pending line that was
@@ -386,7 +386,7 @@ export function mergeProcessedLines(currentText, originals, results) {
   return { text: lines.join('\n'), unmatched };
 }
 
-// Reads, merges and writes pipeline.md under pipeline-lock.mjs, the lock every
+// Reads, merges and writes pipeline.md under scripts/pipeline-lock.mjs, the lock every
 // other writer of the file takes. Writing back the start-of-run snapshot erased
 // anything appended during the run, and scan-history.tsv already counted it as seen.
 export async function finishPipelineBatch(pipelinePath, originals, results) {
@@ -441,7 +441,7 @@ async function main() {
 
   console.log(`\n🎉 Batch processing complete! Merging tracker additions...`);
   try {
-    const mergeOutput = execFileSync(process.execPath, [join(ROOT, 'merge-tracker.mjs')], { cwd: ROOT, encoding: 'utf-8' });
+    const mergeOutput = execFileSync(process.execPath, [join(ROOT, 'scripts/merge-tracker.mjs')], { cwd: ROOT, encoding: 'utf-8' });
     console.log(mergeOutput.trim());
   } catch (err) {
     console.error(`⚠️ Failed to merge tracker: ${err.message}`);

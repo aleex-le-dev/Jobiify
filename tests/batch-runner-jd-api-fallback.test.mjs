@@ -5,18 +5,18 @@
 //
 // The curl prefetch correctly discards a JS shell as thin, and the worker then
 // falls back to WebFetch, which hits the same unrendered shell on Ashby and on
-// embedded Greenhouse boards. fetch-jd.mjs reads the JD from the ATS's public
+// embedded Greenhouse boards. scripts/fetch-jd.mjs reads the JD from the ATS's public
 // API instead, but nothing in the batch path called it.
 //
 // The call lives in the runner, not in the worker prompt: an offer URL is
-// untrusted, and the runner hands it to fetch-jd.mjs as a single argv element.
+// untrusted, and the runner hands it to scripts/fetch-jd.mjs as a single argv element.
 // The worker prompt must never interpolate {{URL}} into a shell command.
 //
 // The bash block is extracted from batch-runner.sh and run against a stub
-// fetch-jd.mjs, so the test and the implementation cannot drift apart.
+// scripts/fetch-jd.mjs, so the test and the implementation cannot drift apart.
 import { pass, fail, rmSync, getBash } from './helpers.mjs';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdtempSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -43,11 +43,11 @@ const apiAt = SRC.indexOf('local jd_api_words=0');
 if (curlAt !== -1 && apiAt > curlAt) pass('the API fallback runs after the curl prefetch');
 else fail('the API fallback must come after the curl prefetch block');
 
-// The URL reaches fetch-jd.mjs as one quoted argv element.
-if (apiBlock && /node "\$PROJECT_DIR\/fetch-jd\.mjs" "\$url"/.test(apiBlock)) {
-  pass('the offer URL is passed to fetch-jd.mjs as a quoted argument');
+// The URL reaches scripts/fetch-jd.mjs as one quoted argv element.
+if (apiBlock && /node "\$PROJECT_DIR\/scripts\/fetch-jd\.mjs" "\$url"/.test(apiBlock)) {
+  pass('the offer URL is passed to scripts/fetch-jd.mjs as a quoted argument');
 } else {
-  fail('fetch-jd.mjs must be called as: node "$PROJECT_DIR/fetch-jd.mjs" "$url"');
+  fail('scripts/fetch-jd.mjs must be called as: node "$PROJECT_DIR/scripts/fetch-jd.mjs" "$url"');
 }
 
 // It only fires when the JD file is still empty.
@@ -72,10 +72,10 @@ if (!bash || !apiBlock) {
     const long = Array.from({ length: 120 }, (_, i) => `word${i}`).join(' ');
     const short = 'only a few words here';
 
-    // Stub fetch-jd.mjs: records its argv, then answers according to STUB_MODE.
+    // Stub scripts/fetch-jd.mjs: records its argv, then answers according to STUB_MODE.
     const projectDir = join(work, 'project');
     execFileSync(bash, ['-c', 'mkdir -p "$1"', 'mk', projectDir]);
-    writeFileSync(join(projectDir, 'fetch-jd.mjs'), [
+    writeFileSync((mkdirSync(join(projectDir, 'scripts'), { recursive: true }), join(projectDir, 'scripts/fetch-jd.mjs')), [
       "import { appendFileSync } from 'node:fs';",
       "appendFileSync(process.env.STUB_TRACE, JSON.stringify(process.argv.slice(2)) + '\\n');",
       "const mode = process.env.STUB_MODE;",
@@ -123,12 +123,12 @@ if (!bash || !apiBlock) {
     else fail('API text under the word threshold was written to the JD file');
 
     const kept = run({ mode: 'hit', url: 'https://boards.greenhouse.io/acme/jobs/1', seed: 'the curl prefetch already wrote a real JD' });
-    if (kept.jd === 'the curl prefetch already wrote a real JD' && kept.trace === '') pass('non-empty JD file: fetch-jd.mjs is not called');
+    if (kept.jd === 'the curl prefetch already wrote a real JD' && kept.trace === '') pass('non-empty JD file: scripts/fetch-jd.mjs is not called');
     else fail('non-empty JD file: the fallback ran anyway');
 
     const absent = run({ mode: 'hit', url: 'https://jobs.ashbyhq.com/acme/123', withStub: false });
-    if (absent.jd === '') pass('fetch-jd.mjs absent: the fallback is skipped without error');
-    else fail('fetch-jd.mjs absent: the JD file changed');
+    if (absent.jd === '') pass('scripts/fetch-jd.mjs absent: the fallback is skipped without error');
+    else fail('scripts/fetch-jd.mjs absent: the JD file changed');
 
     // A hostile URL must arrive as data: one argv element, nothing executed.
     const marker = join(work, 'pwned');

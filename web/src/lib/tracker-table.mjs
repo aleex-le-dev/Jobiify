@@ -4,7 +4,7 @@
  *
  * The header-alias table is NOT mirrored here: it is loaded at runtime from
  * `tracker-aliases.json` in the career-ops root — the same single source
- * tracker-parse.mjs exports as HEADER_ALIASES — so the web reader and the Node
+ * scripts/tracker-parse.mjs exports as HEADER_ALIASES — so the web reader and the Node
  * tracker tooling can never drift (PR #1598 review). A build-time import of the
  * core module is impossible: Turbopack's root is pinned to web/ (see
  * next.config.mjs) and refuses modules outside it, so the shared source is a
@@ -111,7 +111,7 @@ function trackerCells(line) {
 
 /**
  * Pre-scan for the header row and build the column map, exactly like
- * detectColumns in tracker-parse.mjs: ANY row whose cells resolve the essential
+ * detectColumns in scripts/tracker-parse.mjs: ANY row whose cells resolve the essential
  * columns counts as the header (so alias headers like "Num" work too, not just
  * "#"). Returns null when no recognizable header exists.
  * @param {string[]} lines
@@ -141,7 +141,7 @@ export function detectColumnMap(lines, aliases) {
  * (# | Date | Company | Role | Score | Status | PDF | Report | Notes)
  * remains the last resort for old trackers without recognizable headers.
  * Rows without a numeric # cell (header, separator, stray pipes) are skipped,
- * mirroring parseTrackerRow in tracker-parse.mjs.
+ * mirroring parseTrackerRow in scripts/tracker-parse.mjs.
  * @param {string} md - content of data/applications.md.
  * @param {string} rootDir - data root, which may also be a full checkout.
  * @param {string} [systemRootDir] - checkout holding system files; used as the

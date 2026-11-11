@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * fix-report-links.mjs — Repair tracker rows whose Report link points at a missing file
+ * scripts/fix-report-links.mjs — Repair tracker rows whose Report link points at a missing file
  *
- * verify-pipeline.mjs (Check 3) reports `Report not found: ...` for every row
+ * scripts/verify-pipeline.mjs (Check 3) reports `Report not found: ...` for every row
  * whose Report cell links to a file that is not on disk, but it is read-only.
  * This script is the explicit, previewed, backed-up repair: it rewrites ONLY
  * that one cell to `—` (the tracker's existing "no report" value). Every other
  * cell, the row order, the cell padding and the file's line endings (LF/CRLF)
  * are left byte-for-byte as they were; nothing is re-sorted or re-formatted.
  *
- * "Broken" is decided by findDeadReportLink() in tracker-utils.mjs, the same
+ * "Broken" is decided by findDeadReportLink() in scripts/tracker-utils.mjs, the same
  * function verify-pipeline and merge-tracker use, so the tools always agree on
  * which rows are broken. It does not guess WHY a report is missing (#4748).
  *
@@ -17,7 +17,7 @@
  * links, link plus text) is never rewritten: it is listed under "skipped,
  * please check by hand" instead.
  *
- * Run: node fix-report-links.mjs [--dry-run]
+ * Run: node scripts/fix-report-links.mjs [--dry-run]
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
@@ -25,8 +25,8 @@ import { dirname } from 'path';
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
 import { openTrackerTransaction, findDeadReportLink } from './tracker-utils.mjs';
 import { resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 const NO_REPORT = '—';
 
@@ -97,7 +97,7 @@ export function fixReportLinks(lines, trackerDir, dataRoot, options = {}) {
 }
 
 const KNOWN_FLAGS = ['--help', '-h', '--dry-run'];
-const USAGE = `Usage: node fix-report-links.mjs [options]
+const USAGE = `Usage: node scripts/fix-report-links.mjs [options]
 
   Rewrites the Report cell of tracker rows whose markdown link points at a
   missing file to "${NO_REPORT}". Nothing else in the file changes.

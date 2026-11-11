@@ -4,7 +4,7 @@
 //
 // ── The rule this module exists to hold ─────────────────────────────────────
 //
-// company-history.mjs distinguishes "the check ran and found nothing" from "the
+// scripts/company-history.mjs distinguishes "the check ran and found nothing" from "the
 // check never ran", and says why in its own comment:
 //
 //     It must still not claim `none-detected` — the check was skipped for it,
@@ -29,7 +29,7 @@
  * `status` and `followupsSent` and has neither. Rendering only the first pair
  * printed silent rows with an empty outcome and no date at all.
  *
- * Every field is optional because the shape is whatever company-history.mjs put
+ * Every field is optional because the shape is whatever scripts/company-history.mjs put
  * there, and the card renders what it finds rather than asserting a contract it
  * does not own.
  * @typedef {{num?: number|string, outcome?: string, date?: string, stale?: boolean, dateBasis?: string,

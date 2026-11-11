@@ -59,7 +59,7 @@ export function readProfileMemory(root) {
       return fs.readFileSync(file, "utf8").trim();
     } catch (err) {
       /* ENOENT alone is "nobody ever wrote one", and it is a real state: with a
-         separate CAREER_OPS_ROOT the data dir has no modes/ until doctor.mjs
+         separate CAREER_OPS_ROOT the data dir has no modes/ until scripts/doctor.mjs
          copies the template in. Every other code means the path is broken or the
          file is unreadable, and returning "" for those is this file's own bug one
          layer down — buildPrompt() omits the notes section for an empty memory,

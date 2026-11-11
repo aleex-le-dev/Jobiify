@@ -20,7 +20,7 @@
 // with no error anywhere.
 //
 // CI runs under C/en, which is exactly why the existing --status assertion in
-// test-all.mjs never saw it.
+// scripts/test-all.mjs never saw it.
 //
 // The fix is `LC_ALL=C` on those awk calls (LC_ALL, not LC_NUMERIC: an LC_ALL
 // already exported in the environment outranks LC_NUMERIC, so the narrower

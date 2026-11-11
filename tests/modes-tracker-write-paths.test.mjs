@@ -5,7 +5,7 @@
 // `Write → applications.md` and `Edit → Update tracker`, eleven lines below the
 // rule that says never to edit applications.md directly. Fourteen localized
 // copies carried the same two rows. A direct Write or Edit skips the lock that
-// merge-tracker.mjs, set-status.mjs, the web and the dashboard share, and a
+// scripts/merge-tracker.mjs, scripts/set-status.mjs, the web and the dashboard share, and a
 // hand-edited status never reaches data/status-log.tsv, so funnel and velocity
 // stats go wrong with no error.
 //
@@ -49,16 +49,16 @@ for (const file of withTable) {
     const row = toolRow(read(file), 'Write');
     assert.ok(row.includes('batch/tracker-additions/'), `Write row: "${row}"`);
   });
-  ok(`${file}: Edit points status changes at set-status.mjs and new rows at merge-tracker.mjs`, () => {
+  ok(`${file}: Edit points status changes at scripts/set-status.mjs and new rows at scripts/merge-tracker.mjs`, () => {
     const row = toolRow(read(file), 'Edit');
-    assert.ok(row.includes('set-status.mjs'), `Edit row: "${row}"`);
-    assert.ok(row.includes('merge-tracker.mjs'), `Edit row: "${row}"`);
+    assert.ok(row.includes('scripts/set-status.mjs'), `Edit row: "${row}"`);
+    assert.ok(row.includes('scripts/merge-tracker.mjs'), `Edit row: "${row}"`);
   });
   // The Write and Edit rows send the agent to two scripts. A Bash row that
-  // lists generate-pdf.mjs alone reads as if those two were not allowed.
-  ok(`${file}: Bash lists the two tracker writers next to generate-pdf.mjs`, () => {
+  // lists scripts/generate-pdf.mjs alone reads as if those two were not allowed.
+  ok(`${file}: Bash lists the two tracker writers next to scripts/generate-pdf.mjs`, () => {
     const row = toolRow(read(file), 'Bash');
-    for (const script of ['generate-pdf.mjs', 'merge-tracker.mjs', 'set-status.mjs']) {
+    for (const script of ['scripts/generate-pdf.mjs', 'scripts/merge-tracker.mjs', 'scripts/set-status.mjs']) {
       assert.ok(row.includes(`node ${script}`), `Bash row: "${row}"`);
     }
   });
@@ -86,7 +86,7 @@ function section(text, heading) {
 
 ok('oferta.md "Record in tracker" goes through the TSV and merge-tracker', () => {
   const step = section(read('modes/oferta.md'), '### 2. Record in tracker');
-  assert.ok(step.includes('node merge-tracker.mjs'), 'does not name merge-tracker.mjs');
+  assert.ok(step.includes('node scripts/merge-tracker.mjs'), 'does not name scripts/merge-tracker.mjs');
   assert.ok(step.includes('TSV Format for Tracker Additions'), 'does not point at the TSV spec');
   assert.ok(!/record in `data\/applications\.md`/i.test(step), 'still says to record in applications.md');
   // A confirmed agency must not be dropped by a tracker with no Via column.
@@ -99,10 +99,10 @@ ok('oferta.md takes the salary line\'s tracker number after the merge', () => {
 });
 
 ok('the other English steps name the writer instead of the tracker file', () => {
-  assert.ok(section(read('modes/auto-pipeline.md'), '## Step 5 — Update Tracker').includes('node merge-tracker.mjs'));
-  assert.ok(section(read('modes/pdf.md'), '## Post-generation').includes('node mark-pdf-ready.mjs'));
+  assert.ok(section(read('modes/auto-pipeline.md'), '## Step 5 — Update Tracker').includes('node scripts/merge-tracker.mjs'));
+  assert.ok(section(read('modes/pdf.md'), '## Post-generation').includes('node scripts/mark-pdf-ready.mjs'));
   const followup = read('modes/followup.md').split('\n').find(l => l.includes('Follow-up {N} sent'));
-  assert.ok(followup && followup.includes('node set-status.mjs'), 'followup.md notes step does not use set-status.mjs');
+  assert.ok(followup && followup.includes('node scripts/set-status.mjs'), 'followup.md notes step does not use scripts/set-status.mjs');
 });
 
 // ── The apply modes' role-change step ────────────────────────────────────────
@@ -139,9 +139,9 @@ ok('the role-change step is found in the English apply mode and its translations
 });
 
 for (const file of applyModes) {
-  ok(`${file}: a changed role title reaches the tracker through merge-tracker.mjs`, () => {
+  ok(`${file}: a changed role title reaches the tracker through scripts/merge-tracker.mjs`, () => {
     const step = roleChangeStep(read(file));
-    assert.ok(step.includes('node merge-tracker.mjs'), `the role-change step names no writer:\n${step}`);
+    assert.ok(step.includes('node scripts/merge-tracker.mjs'), `the role-change step names no writer:\n${step}`);
   });
   ok(`${file}: no note in the step carries a placeholder for page text`, () => {
     // The new title `[Y]` is read off the page. Inside `--note "..."` it would be
@@ -150,9 +150,9 @@ for (const file of applyModes) {
     const notes = [...roleChangeStep(read(file)).matchAll(/--note\s+"([^"]*)"/g)].map(m => m[1]);
     for (const note of notes) assert.ok(!/[[\]{}<>$`]/.test(note), `--note carries a placeholder or shell syntax: "${note}"`);
   });
-  ok(`${file}: Applied is set through set-status.mjs`, () => {
-    const line = read(file).split('\n').find(l => l.includes('set-status.mjs') && l.includes('Applied'));
-    assert.ok(line, 'no line sets Applied with set-status.mjs');
+  ok(`${file}: Applied is set through scripts/set-status.mjs`, () => {
+    const line = read(file).split('\n').find(l => l.includes('scripts/set-status.mjs') && l.includes('Applied'));
+    assert.ok(line, 'no line sets Applied with scripts/set-status.mjs');
   });
 }
 
@@ -160,7 +160,7 @@ ok('apply.md says what each path does to the row', () => {
   const step = roleChangeStep(read('modes/apply.md'));
   assert.ok(!/change role title in applications\.md/i.test(step), 'still says to change the title in applications.md');
   assert.match(step, /status is kept/, 'does not say a re-evaluation keeps the row\'s status');
-  assert.ok(step.includes('node set-status.mjs') && step.includes('--note'), 'the adaptation path does not record the new title as a note');
+  assert.ok(step.includes('node scripts/set-status.mjs') && step.includes('--note'), 'the adaptation path does not record the new title as a note');
 });
 
 // What the step now promises, run against the real merge: a TSV that carries the
@@ -181,7 +181,7 @@ function mergeOnto(status, tsvRow, fn, company = 'Acme') {
     ].join('\n'));
     writeFileSync(join(dir, 'batch', 'tracker-additions', '042-acme.tsv'),
       `num\tdate\tcompany\trole\tstatus\tscore\tpdf\treport\tnotes\n${tsvRow}\n`);
-    const r = spawnSync(NODE, [join(ROOT, 'merge-tracker.mjs')], { encoding: 'utf-8', env: { ...process.env, CAREER_OPS_ROOT: dir } });
+    const r = spawnSync(NODE, [join(ROOT, 'scripts/merge-tracker.mjs')], { encoding: 'utf-8', env: { ...process.env, CAREER_OPS_ROOT: dir } });
     assert.equal(r.status, 0, `merge-tracker exited ${r.status}: ${r.stderr}`);
     const rows = readFileSync(join(dir, 'data', 'applications.md'), 'utf-8').split('\n').filter(l => /^\|\s*\d+\s*\|/.test(l));
     fn(rows.map(row => row.split('|').map(c => c.trim())));
@@ -217,7 +217,7 @@ ok('tracker.md sends every cell through a writer', () => {
   const reveal = text.split('\n').find(l => /^1\.\s/.test(l) && l.includes('`?`'));
   assert.ok(reveal, 'reveal step 1 not found');
   assert.ok(!/edit the row's company cell in place/i.test(reveal), 'still says to edit the Company cell in place');
-  assert.ok(reveal.includes('node merge-tracker.mjs'), `reveal step 1 names no writer: "${reveal}"`);
+  assert.ok(reveal.includes('node scripts/merge-tracker.mjs'), `reveal step 1 names no writer: "${reveal}"`);
 });
 
 ok('a TSV carrying the row\'s report link renames a `?` row and keeps its number and status', () => {

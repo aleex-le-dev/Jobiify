@@ -10,7 +10,7 @@ const previousProfile = process.env.CAREER_OPS_PROFILE;
 process.env.CAREER_OPS_PROFILE = profilePath;
 let cadence;
 try {
-  cadence = await import('../followup-cadence.mjs');
+  cadence = await import('../scripts/followup-cadence.mjs');
 } finally {
   if (previousProfile === undefined) delete process.env.CAREER_OPS_PROFILE;
   else process.env.CAREER_OPS_PROFILE = previousProfile;

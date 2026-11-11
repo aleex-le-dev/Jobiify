@@ -1,8 +1,8 @@
 // tests/dead-boards-later-page-failure.test.mjs — a failure on a later page of a
 // board that had just answered is not a miss.
 //
-// scan-ats-full.mjs retires a board after three 404s in a row and skips it for
-// 30 days (dead-boards.mjs, #2840). The iCIMS provider walks a board page by
+// scripts/scan-ats-full.mjs retires a board after three 404s in a row and skips it for
+// 30 days (scripts/dead-boards.mjs, #2840). The iCIMS provider walks a board page by
 // page and already draws the line itself: only a FIRST-page 404 means "no board
 // here" (providers/icims.mjs, and tests/providers/icims-host-fallback.test.mjs
 // pins that a later-page 404 does not switch hosts). The sweep did not draw it.
@@ -13,7 +13,7 @@
 // the sweep hands the error to recordBoardFailure(), which reads the mark.
 //
 // The provider and the cache below are the real ones; only the HTTP layer is a
-// stub. The last section reads scan-ats-full.mjs's source, because the two
+// stub. The last section reads scripts/scan-ats-full.mjs's source, because the two
 // catch blocks that feed the cache are only reachable through a whole sweep.
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -23,7 +23,7 @@ import { pass, fail, ROOT } from './helpers.mjs';
 console.log('\nDead-board memory — a later-page failure is not a miss');
 
 const load = (file) => import(pathToFileURL(join(ROOT, file)).href);
-const { boardKey, recordBoardFailure, recordBoardResult, shouldSkipDeadBoard, DEAD_BOARD_MISSES } = await load('dead-boards.mjs');
+const { boardKey, recordBoardFailure, recordBoardResult, shouldSkipDeadBoard, DEAD_BOARD_MISSES } = await load('scripts/dead-boards.mjs');
 const icims = (await load('providers/icims.mjs')).default;
 
 const ORIGIN = 'https://careers-acmefreight.icims.com';
@@ -127,12 +127,12 @@ try {
   pass('a failure with no status at all creates no record');
 
   // ── the sweep hands over the error, not a status picked off it ──
-  const sweep = readFileSync(join(ROOT, 'scan-ats-full.mjs'), 'utf-8');
+  const sweep = readFileSync(join(ROOT, 'scripts/scan-ats-full.mjs'), 'utf-8');
   // [^;\n]* rather than [^)]*: one of the two calls has boardKey(entry) inside.
   const byStatus = [...sweep.matchAll(/recordBoardResult\([^;\n]*\berr\??\.status[^;\n]*\)/g)].map((m) => m[0]);
   const byError = [...sweep.matchAll(/recordBoardFailure\(\s*deadBoards\s*,[^;\n]*\berr\s*\)/g)].length;
-  if (byStatus.length === 0 && byError === 2) pass('both catch blocks in scan-ats-full.mjs record the failure through recordBoardFailure()');
-  else fail(`scan-ats-full.mjs: ${byError} recordBoardFailure(…, err) call(s), expected 2; still passing a status: ${JSON.stringify(byStatus)}`);
+  if (byStatus.length === 0 && byError === 2) pass('both catch blocks in scripts/scan-ats-full.mjs record the failure through recordBoardFailure()');
+  else fail(`scripts/scan-ats-full.mjs: ${byError} recordBoardFailure(…, err) call(s), expected 2; still passing a status: ${JSON.stringify(byStatus)}`);
 } catch (err) {
   fail(`later-page failure tests could not run: ${err.message}`);
 }

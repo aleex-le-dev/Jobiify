@@ -10,12 +10,12 @@
 // package.json conflict would have dropped them with CI green.
 //
 // This guard lives in the ROOT suite, not web/tests/, deliberately:
-//   1. .github/workflows/test.yml runs test-all.mjs on every PR with no paths
+//   1. .github/workflows/test.yml runs scripts/test-all.mjs on every PR with no paths
 //      filter and is a required check. web-ci.yml is informative by design —
 //      "a red here never blocks a core merge" — so it cannot be the enforcer.
 //   2. A guard inside web/tests/ would be discovered by the very glob it
 //      validates: if the glob breaks, the guard silently stops running too.
-// Same reach-into-web/ pattern as test-all.mjs's 55.3c/55.3d freezes (#2369).
+// Same reach-into-web/ pattern as scripts/test-all.mjs's 55.3c/55.3d freezes (#2369).
 //
 // ONE responsibility: web/'s suites must be reachable by what `npm test`
 // actually runs. Every assertion below is a facet of that — including the
@@ -46,7 +46,7 @@ const GLOB_FLOOR = [22, 0, 0];
  * Each case gets its own try/catch so a throw in one cannot collapse the rest
  * into a single unexplained failure (PIT — every case stands alone, in any
  * order). A guard that cannot inspect the tree must be loud, never a silent
- * pass — the same stance as test-all.mjs's SYSTEM_PATHS coverage probe.
+ * pass — the same stance as scripts/test-all.mjs's SYSTEM_PATHS coverage probe.
  *
  * @param {string} label - What this scenario checks, used in the error path.
  * @param {() => void} body - The When/Then; calls pass() or fail() itself.
@@ -134,7 +134,7 @@ function floorOf(range) {
   return floor;
 }
 
-// web/ is NOT in update-system.mjs's SYSTEM_PATHS but tests/ is, so this file
+// web/ is NOT in scripts/update-system.mjs's SYSTEM_PATHS but tests/ is, so this file
 // ships to end users whose checkout has no web/ at all. The invariant is
 // conditional ("if web/ exists, its suites are reachable") and vacuously true
 // there — but say so out loud rather than skipping in silence.
@@ -155,7 +155,7 @@ if (!existsSync(WEB_PKG)) {
   // list was also the narrowing hazard — an unlisted generated directory put a
   // built copy of every suite under the contract, and a suite added under a
   // listed one silently left it. node_modules mattered for speed too: a
-  // populated web/node_modules is ~400 MB (see test-all.mjs's copy-exclusion
+  // populated web/node_modules is ~400 MB (see scripts/test-all.mjs's copy-exclusion
   // note), and the index never walks into it at all.
   const found = walkFiles(WEB, TEST_FILE)
     .map((p) => relative(WEB, p).split(sep).join('/'));

@@ -27,7 +27,7 @@ import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { pass, fail, rmSync } from './helpers.mjs';
-import { checkStatus, dismiss, parseDismissMarker, dismissalCovers } from '../update-system.mjs';
+import { checkStatus, dismiss, parseDismissMarker, dismissalCovers } from '../scripts/update-system.mjs';
 
 console.log('\n🧪 Testing update check on the release channel (version-only prompt, per-release dismiss)...');
 

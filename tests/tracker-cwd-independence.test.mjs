@@ -1,7 +1,7 @@
-// tests/tracker-cwd-independence.test.mjs — tracker.mjs must work from any cwd
+// tests/tracker-cwd-independence.test.mjs — scripts/tracker.mjs must work from any cwd
 // (#3508).
 //
-// templates/states.yml ships with the code, but tracker.mjs referenced it as the
+// templates/states.yml ships with the code, but scripts/tracker.mjs referenced it as the
 // bare relative string 'templates/states.yml', which resolves against
 // process.cwd(). Every command — sync, query, history, export, delete, all of
 // which reach loadStates() — therefore failed from anywhere but the repo root,
@@ -49,12 +49,12 @@ delete childEnv.CAREER_OPS_TRACKER_DB;
 delete childEnv.CAREER_OPS_ROOT;
 delete childEnv.CAREER_OPS_DATA_DIR;
 
-/** Run tracker.mjs from `work`, never from the repo root. Returns {ok, out}. */
+/** Run scripts/tracker.mjs from `work`, never from the repo root. Returns {ok, out}. */
 function trackerFromElsewhere(...args) {
   try {
     return {
       ok: true,
-      out: execFileSync(NODE, [join(ROOT, 'tracker.mjs'), ...args], {
+      out: execFileSync(NODE, [join(ROOT, 'scripts/tracker.mjs'), ...args], {
         cwd: work,                       // the point of this suite
         encoding: 'utf-8',
         timeout: 30000,
@@ -69,13 +69,13 @@ function trackerFromElsewhere(...args) {
 try {
   const sync = trackerFromElsewhere('sync');
   sync.ok
-    ? pass('tracker.mjs sync succeeds from a cwd outside the repo root')
-    : fail(`tracker.mjs sync failed from another cwd: ${sync.out.trim().split('\n')[0]}`);
+    ? pass('scripts/tracker.mjs sync succeeds from a cwd outside the repo root')
+    : fail(`scripts/tracker.mjs sync failed from another cwd: ${sync.out.trim().split('\n')[0]}`);
 
   // The old failure was specifically a states.yml miss. Name it, so a future
   // regression is recognizable rather than just "something broke".
   /states\.yml not found/.test(sync.out)
-    ? fail('tracker.mjs still resolves templates/states.yml against the cwd (#3508)')
+    ? fail('scripts/tracker.mjs still resolves templates/states.yml against the cwd (#3508)')
     : pass('templates/states.yml resolves from the codebase, not the cwd');
 
   existsSync(join(work, 'applications.db'))
@@ -86,7 +86,7 @@ try {
   // the row actually round-tripped rather than sync merely exiting 0.
   const query = trackerFromElsewhere('query', '--json');
   if (!query.ok) {
-    fail(`tracker.mjs query failed from another cwd: ${query.out.trim().split('\n')[0]}`);
+    fail(`scripts/tracker.mjs query failed from another cwd: ${query.out.trim().split('\n')[0]}`);
   } else {
     let rows = null;
     try { rows = JSON.parse(query.out); } catch { /* handled below */ }

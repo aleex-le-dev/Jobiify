@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const SCRIPT = fileURLToPath(new URL('../migrate-scan-runs.mjs', import.meta.url));
+const SCRIPT = fileURLToPath(new URL('../scripts/migrate-scan-runs.mjs', import.meta.url));
 const OLD_RUNS = 'timestamp\tstatus\tcompanies\tboards\tfound\tfiltered_title\tfiltered_tier\tfiltered_location\tfiltered_salary\tfiltered_content\tfiltered_cooldown\tdupes\tnew_added\terrors\n' +
   '2026-01-01T00:00:00Z\tcompleted\t1\t1\t2\t0\t0\t0\t0\t0\t0\t0\t2\t0\n';
 

@@ -1,10 +1,10 @@
-// title-keywords.mjs — one definition of how a `title_filter` keyword matches a
+// scripts/title-keywords.mjs — one definition of how a `title_filter` keyword matches a
 // job title, imported by every path that filters titles.
 //
 // It lives in its own module because there are two such paths and they must not
-// drift: scan.mjs (the main pipeline) and openrouter-runner.mjs (the no-Claude
-// path, which deliberately does not import scan.mjs because scan.mjs creates
-// data/ at import time). Same reason user-agent.mjs and profile-language.mjs
+// drift: scripts/scan.mjs (the main pipeline) and scripts/openrouter-runner.mjs (the no-Claude
+// path, which deliberately does not import scripts/scan.mjs because scripts/scan.mjs creates
+// data/ at import time). Same reason scripts/user-agent.mjs and scripts/profile-language.mjs
 // are separate modules rather than exports of a bigger one.
 //
 // The repo has already paid for a mirror once: tests/profile-keywords-parity
@@ -82,7 +82,7 @@ function compilePrefixedKeyword(kw) {
     // A bare `word:` is a config typo. Matching NOTHING is the safe reading: as
     // a positive it simply contributes no match, while the alternative — an
     // empty pattern matching everything — would veto an entire scan from one
-    // stray colon. Same trade as the "C++" note on scan.mjs's AND_SEPARATOR:
+    // stray colon. Same trade as the "C++" note on scripts/scan.mjs's AND_SEPARATOR:
     // prefer a silent drop of one entry over a silent flood.
     if (!bare) return () => false;
     const re = anchoredPattern(escapeForRegExp(bare));
@@ -245,7 +245,7 @@ function normalizeKeywords(arr, compile) {
  *
  * A domain keyword answers a different question from a title keyword — "is this
  * employer in my industry" rather than "is this the right role" — and it is
- * read at a different granularity: the board gate in scan-ats-full.mjs decides
+ * read at a different granularity: the board gate in scripts/scan-ats-full.mjs decides
  * a whole catalogue on one match (#3105). The default differs for that reason.
  *
  * A plain entry here means `word:`. Measured over 546 reverse-sweep postings on
@@ -300,7 +300,7 @@ function compileDomainTerm(term) {
  *
  * Such a term is nonblank, so normalization keeps it, but it compiles to a
  * matcher that never fires: the gate stays ON and drops every complete board.
- * validate-portals.mjs reports these and scan-ats-full.mjs refuses to start on
+ * scripts/validate-portals.mjs reports these and scripts/scan-ats-full.mjs refuses to start on
  * them, so the definition lives here, beside the prefixes it is about.
  *
  * @param {unknown} domainKeywords - the raw `domain_filter` value from portals.yml.
@@ -340,8 +340,8 @@ export function buildDomainFilter(domainKeywords) {
 /**
  * Compile a whole `title_filter` into one predicate.
  *
- * This lives here, rather than in scan.mjs beside its main caller, because
- * openrouter-runner.mjs filters titles too and cannot import scan.mjs. It used
+ * This lives here, rather than in scripts/scan.mjs beside its main caller, because
+ * scripts/openrouter-runner.mjs filters titles too and cannot import scripts/scan.mjs. It used
  * to keep a second implementation, and the two had drifted in three separate
  * ways: an empty positive list meant "accept everything" here and "reject
  * everything" there, AND-groups worked only here, and a non-string YAML entry
@@ -360,8 +360,8 @@ export function buildTitleFilter(titleFilter) {
 
   return (title) => {
     // String(), not `title || ''`: openrouter-runner used String(title ?? '')
-    // before both paths were merged here, and scan.mjs threw on a truthy
-    // non-string. Consolidating on scan.mjs's version would have carried that
+    // before both paths were merged here, and scripts/scan.mjs threw on a truthy
+    // non-string. Consolidating on scripts/scan.mjs's version would have carried that
     // throw onto a path that never had it, where it aborts jobs.filter and
     // drops a whole company's results for one malformed title.
     const lower = foldTitle(title);

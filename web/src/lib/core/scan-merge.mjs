@@ -2,7 +2,7 @@
 // pattern as explore-error.mjs) so tests/lib/scan-merge.test.mjs can import them
 // without a TS runner.
 //
-// WHY PER-SOURCE: scan-ats-full.mjs --json prints its one result object only on
+// WHY PER-SOURCE: scripts/scan-ats-full.mjs --json prints its one result object only on
 // exit. A single child spanning every source therefore lost ALL results when the
 // slowest source hit the route's deadline — in practice Workday, whose enterprise
 // boards page slowly and rate-limit — and the UI reported the kill as "The scanner

@@ -8,7 +8,7 @@
 // two strings concatenated or split across the wrong fields. The answer is a
 // variant with a different DOM, not plainer CSS on the existing ones.
 //
-// A different DOM means different section partials, and build-cv-html.mjs
+// A different DOM means different section partials, and scripts/build-cv-html.mjs
 // resolves partials from the `sections/` co-located with the template file.
 // Co-location is therefore the whole mechanism: a template in its own
 // subdirectory alongside its own `sections/` gets its own DOM without touching
@@ -16,7 +16,7 @@
 // *pack*, and this suite pins what the registry must do with one.
 //
 // Lives in tests/ because only tests/**/*.test.mjs is discovered by
-// test-all.mjs, which is what CI runs. The module's older unit suite sits in
+// scripts/test-all.mjs, which is what CI runs. The module's older unit suite sits in
 // test/ (singular) and is not gated by anything — see the note at the end of
 // this file.
 
@@ -24,7 +24,7 @@ import { mkdtempSync, writeFileSync, mkdirSync, symlinkSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { pass, fail, warn } from './helpers.mjs';
-import { listTemplates, resolveTemplate } from '../cv-templates.mjs';
+import { listTemplates, resolveTemplate } from '../scripts/cv-templates.mjs';
 
 console.log('\nCV template packs — discovery, resolution, and name collisions');
 
@@ -36,7 +36,7 @@ const fixtures = [];
 
 // Registered on exit rather than wrapped in a try/finally around the whole
 // file: this suite is a sequence of top-level blocks, and an exit hook still
-// runs when one of them throws and test-all.mjs contains it — which is exactly
+// runs when one of them throws and scripts/test-all.mjs contains it — which is exactly
 // the run that would otherwise leak every fixture created so far.
 process.on('exit', () => {
   for (const dir of fixtures) {
@@ -249,8 +249,8 @@ function throws(label, fn, ...patterns) {
 // The gap the issue's own proposal understated. Discovery alone would let a
 // pack list and then throw on resolve: resolveTemplate() built dir/<file>
 // directly and never consulted the listing. Every by-name caller lands there
-// (build-cv-latex.mjs, generate-cover-letter.mjs), so the demo path — handing
-// build-cv-html.mjs an explicit path — would keep working while selecting the
+// (scripts/build-cv-latex.mjs, scripts/generate-cover-letter.mjs), so the demo path — handing
+// scripts/build-cv-html.mjs an explicit path — would keep working while selecting the
 // same template by name failed.
 
 {
@@ -376,7 +376,7 @@ function throws(label, fn, ...patterns) {
   }
 }
 
-// NOTE: cv-templates.mjs also has a node:test suite at test/cv-templates.test.mjs
-// (singular). Nothing runs it: test-all.mjs discovers tests/**/*.test.mjs only,
-// CI runs `node test-all.mjs --quick`, and root package.json declares no `test`
+// NOTE: scripts/cv-templates.mjs also has a node:test suite at test/cv-templates.test.mjs
+// (singular). Nothing runs it: scripts/test-all.mjs discovers tests/**/*.test.mjs only,
+// CI runs `node scripts/test-all.mjs --quick`, and root package.json declares no `test`
 // script. Worth its own issue; not fixed here.

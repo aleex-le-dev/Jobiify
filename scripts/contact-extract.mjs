@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * contact-extract.mjs — discover a recruiter/interviewer contact from a pasted
+ * scripts/contact-extract.mjs — discover a recruiter/interviewer contact from a pasted
  * reply, and save it to data/contacts.tsv for a later re-engagement follow-up
  * (#4361).
  *
@@ -12,7 +12,7 @@
  * when a new, different opening appears at the same company later.
  *
  * This is the CORE (local-only, no Gmail dependency) layer of #4361's
- * two-layer design. It reuses the exact input shape paste-reply.mjs already
+ * two-layer design. It reuses the exact input shape scripts/paste-reply.mjs already
  * established (#1802) — paste an email's Subject/From/body, or read it from a
  * file — so anyone who doesn't want to grant any tool mailbox access can
  * still use it. The opt-in Gmail-plugin layer (#1583) is future work and can
@@ -21,11 +21,11 @@
  *
  * What it does, in order:
  *   1. Parse the pasted email into {subject, from, body} (via
- *      paste-reply.mjs's parseFileInput/collectInteractive — no duplicated
+ *      scripts/paste-reply.mjs's parseFileInput/collectInteractive — no duplicated
  *      parsing logic).
  *   2. Parse the From header into {name, email} (parseFromHeader).
- *   3. Match the email to a tracker row using reply-matcher.mjs's own
- *      matchCandidates() — the same matcher reply-watch.mjs already trusts —
+ *   3. Match the email to a tracker row using scripts/reply-matcher.mjs's own
+ *      matchCandidates() — the same matcher scripts/reply-watch.mjs already trusts —
  *      so this never re-implements company/role matching.
  *   4. Classify the reply (classifyReply) and infer a contact `type`
  *      (recruiter / hiring-manager / interviewer) from the email text.
@@ -34,26 +34,26 @@
  *
  * This script NEVER writes to data/applications.md, NEVER sends anything, and
  * NEVER classifies or updates tracker status — same boundary as
- * paste-reply.mjs and reply-watch.mjs. A tracker row is required to attach the
+ * scripts/paste-reply.mjs and scripts/reply-watch.mjs. A tracker row is required to attach the
  * contact to (via auto-match or an explicit --company/--tracker override);
  * without one, nothing is written and the script exits 0 with an explanation.
  *
  * Usage:
- *   node contact-extract.mjs --file email.txt
- *   node contact-extract.mjs --file email.txt --yes
- *   node contact-extract.mjs --file email.txt --company "Acme Inc" --tracker 42
- *   node contact-extract.mjs --file email.txt --type interviewer
- *   node contact-extract.mjs                      # interactive, same prompts as paste-reply.mjs
- *   node contact-extract.mjs --help
+ *   node scripts/contact-extract.mjs --file email.txt
+ *   node scripts/contact-extract.mjs --file email.txt --yes
+ *   node scripts/contact-extract.mjs --file email.txt --company "Acme Inc" --tracker 42
+ *   node scripts/contact-extract.mjs --file email.txt --type interviewer
+ *   node scripts/contact-extract.mjs                      # interactive, same prompts as scripts/paste-reply.mjs
+ *   node scripts/contact-extract.mjs --help
  *
- * --file format is identical to paste-reply.mjs's:
+ * --file format is identical to scripts/paste-reply.mjs's:
  *   Subject: <subject line>
  *   From: <sender name and/or email>
  *
  *   <body text, any number of lines>
  *
  * The contacts path is always data/contacts.tsv under the resolved career-ops
- * data root, matching contacts.mjs.
+ * data root, matching scripts/contacts.mjs.
  */
 
 import fs from 'node:fs';
@@ -61,35 +61,35 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { resolveTrackerPath, writeFileAtomic } from './tracker-utils.mjs';
 import { withPipelineLock } from './pipeline-lock.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { validateFlags, hasFlag, flagValue } from './lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { validateFlags, hasFlag, flagValue } from '../lib/cli-flags.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { parseFileInput, collectInteractive } from './paste-reply.mjs';
 import { matchCandidates, classifyReply } from './reply-matcher.mjs';
 import { resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
 import { parseFollowups } from './followup-cadence.mjs';
-import { escapeFormulaCell, unescapeFormulaCell } from './lib/tsv-formula-escape.mjs';
+import { escapeFormulaCell, unescapeFormulaCell } from '../lib/tsv-formula-escape.mjs';
 
 const DATA_ROOT = getCareerOpsRoot();
 const CONTACTS_PATH = path.join(DATA_ROOT, 'data', 'contacts.tsv');
 const APPS_FILE = resolveTrackerPath(DATA_ROOT);
 const FOLLOWUPS_FILE = path.join(DATA_ROOT, 'data', 'follow-ups.md');
 
-// Kept in sync by hand with contacts.mjs's own VALID_TYPES — both are small,
-// stable enums describing the same TSV column, and contacts.mjs does not
+// Kept in sync by hand with scripts/contacts.mjs's own VALID_TYPES — both are small,
+// stable enums describing the same TSV column, and scripts/contacts.mjs does not
 // export its copy. internal-referral (#4691) added to both at the same time.
 const VALID_TYPES = new Set(['recruiter', 'hiring-manager', 'peer', 'interviewer', 'internal-referral', 'other']);
 
 const KNOWN_FLAGS = ['--file', '--yes', '--company', '--tracker', '--type', '--help', '-h'];
 const USAGE = `Usage:
-  node contact-extract.mjs --file <path>                     read subject/from/body from a file
-  node contact-extract.mjs                                   interactive: prompts for subject, from, body
-  node contact-extract.mjs --file <path> --yes                skip the confirm-before-write prompt
-  node contact-extract.mjs --file <path> --company "Acme Inc" --tracker 42
+  node scripts/contact-extract.mjs --file <path>                     read subject/from/body from a file
+  node scripts/contact-extract.mjs                                   interactive: prompts for subject, from, body
+  node scripts/contact-extract.mjs --file <path> --yes                skip the confirm-before-write prompt
+  node scripts/contact-extract.mjs --file <path> --company "Acme Inc" --tracker 42
                                                                attach to a specific tracker row when
                                                                auto-matching finds none or is ambiguous
-  node contact-extract.mjs --file <path> --type interviewer   override the inferred contact type
-  node contact-extract.mjs --help`;
+  node scripts/contact-extract.mjs --file <path> --type interviewer   override the inferred contact type
+  node scripts/contact-extract.mjs --help`;
 
 /**
  * Parse an email "From:" header into {name, email}. Handles the three shapes
@@ -226,7 +226,7 @@ function askYesNo(query) {
 }
 
 function printHelp() {
-  console.log(`contact-extract.mjs — discover a recruiter/interviewer contact from a pasted reply and save it to data/contacts.tsv (#4361)
+  console.log(`scripts/contact-extract.mjs — discover a recruiter/interviewer contact from a pasted reply and save it to data/contacts.tsv (#4361)
 
 ${USAGE}
 

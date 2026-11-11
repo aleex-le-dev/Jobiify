@@ -18,7 +18,7 @@ import { pass, fail, ROOT } from './helpers.mjs';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import * as yaml from 'js-yaml';
-import { compileKeyword, buildTitleFilter } from '../scan.mjs';
+import { compileKeyword, buildTitleFilter } from '../scripts/scan.mjs';
 
 console.log('\ntitle filter — `stem:` prefix');
 

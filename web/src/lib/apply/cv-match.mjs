@@ -43,7 +43,7 @@ export function matchesTailoredCv(filenameLower, slug) {
 /**
  * Cover letters are matched on a `cover` TOKEN, not a `cover-` prefix: the
  * writers name them by suffix — `{company}-{role}-cover.pdf` is
- * generate-cover-letter.mjs's default output path, and modes/cover.md's
+ * scripts/generate-cover-letter.mjs's default output path, and modes/cover.md's
  * payload is `output/{company-slug}-{role-slug}-cover.pdf`. Nothing in the
  * repo emits `cover-*.pdf`, so a prefix filter matches no real cover at all.
  *

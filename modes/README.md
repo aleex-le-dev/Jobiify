@@ -55,8 +55,8 @@ table in `AGENTS.md` (mirrored in `CLAUDE.md`).
 | `_custom.template.md` | Seed for your `modes/_custom.md` (house rules, procedural preferences) |
 
 Your copies (`_profile.md`, `_custom.md`) are user-layer files: gitignored
-and never touched by `update-system.mjs` (see
-[DATA_CONTRACT.md](../DATA_CONTRACT.md)).
+and never touched by `scripts/update-system.mjs` (see
+[docs/projet/DATA_CONTRACT.md](../docs/projet/DATA_CONTRACT.md)).
 
 ## Subdirectories
 

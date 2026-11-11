@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * negotiation-roi.mjs — ROI-based salary-negotiation talking-point generator
+ * scripts/negotiation-roi.mjs — ROI-based salary-negotiation talking-point generator
  *
- * `salary-gap.mjs` tells a candidate where an offer sits relative to market
+ * `scripts/salary-gap.mjs` tells a candidate where an offer sits relative to market
  * (a comparison). This script gives them something to *say* instead: a draft
  * talking point anchored in a quantified, VERIFIED achievement from
  * `interview-prep/story-bank.md`, translated into an estimated dollar value.
@@ -20,7 +20,7 @@
  *   answer. This is deliberately the narrowest possible check — direct
  *   substring match, no fuzzy scoring, no new infrastructure. A richer
  *   four-tier provenance classifier for story-bank.md claims is in progress
- *   on a separate, unmerged branch (`story-provenance-check.mjs`, PR #2948).
+ *   on a separate, unmerged branch (`scripts/story-provenance-check.mjs`, PR #2948).
  *   Once that lands, this script would be a natural candidate to consume its
  *   `existing` bucket directly instead of doing its own narrower check — but
  *   that is a future upgrade, not a dependency: this file has zero import
@@ -48,11 +48,11 @@
  * anything. Prints a draft for the user to review themselves (AGENTS.md
  * "Ethical Use" — human always reviews before anything goes out).
  *
- * Run: node negotiation-roi.mjs                                  (JSON)
- *      node negotiation-roi.mjs --summary                        (human-readable)
- *      node negotiation-roi.mjs --wage 45 --frequency weekly     (supply missing inputs)
- *      node negotiation-roi.mjs --wage 45 --occurrences 52       (direct annual count)
- *      node negotiation-roi.mjs --self-test
+ * Run: node scripts/negotiation-roi.mjs                                  (JSON)
+ *      node scripts/negotiation-roi.mjs --summary                        (human-readable)
+ *      node scripts/negotiation-roi.mjs --wage 45 --frequency weekly     (supply missing inputs)
+ *      node scripts/negotiation-roi.mjs --wage 45 --occurrences 52       (direct annual count)
+ *      node scripts/negotiation-roi.mjs --self-test
  *
  * Issue #2949 — github.com/career-ops-hq/career-ops
  */
@@ -61,9 +61,9 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
-import { parseStories } from './lib/story-bank.mjs';
-import { flagValue, hasFlag } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { parseStories } from '../lib/story-bank.mjs';
+import { flagValue, hasFlag } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
 const DATA_ROOT = getCareerOpsRoot();
@@ -710,7 +710,7 @@ function main() {
 // Derived from the flags this file actually accepts, so `--help` cannot
 // describe an option that does not exist.
 const USAGE = `Usage:
-  node negotiation-roi.mjs [--summary] [--wage <n>] [--frequency <unit>] [--occurrences <n>] [--self-test]
+  node scripts/negotiation-roi.mjs [--summary] [--wage <n>] [--frequency <unit>] [--occurrences <n>] [--self-test]
 
   --summary             human-readable output instead of JSON
   --wage <n>            wage used for the annualized estimate

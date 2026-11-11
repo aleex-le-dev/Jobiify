@@ -1,9 +1,9 @@
-// tests/upskill-known-skills.test.mjs — unit coverage for upskill.mjs's pure
+// tests/upskill-known-skills.test.mjs — unit coverage for scripts/upskill.mjs's pure
 // helpers, imported directly.
 //
-// This file is the reason upskill.mjs's module tail is guarded by an isMain
+// This file is the reason scripts/upskill.mjs's module tail is guarded by an isMain
 // check. Before that guard the tail was unconditional, so importing the module
-// re-parsed the IMPORTER's argv — and since test-all.mjs imports discovered
+// re-parsed the IMPORTER's argv — and since scripts/test-all.mjs imports discovered
 // suites IN-PROCESS, that argv is test-all's own. Measured by pinning isMain to
 // true: ordinary argv dumped a 68-line JSON gap map into the middle of this
 // suite's output, and an argv containing --self-test ran upskill's self-test and
@@ -12,7 +12,7 @@
 // guard rejects a discovered suite for.
 //
 // So the helpers below, every one documented "exported for unit testing", could
-// only be asserted on from inside `upskill.mjs --self-test` until the guard existed.
+// only be asserted on from inside `scripts/upskill.mjs --self-test` until the guard existed.
 //
 // Keep this suite pure. Everything here is a string in / value out; nothing
 // reads user data, and the one filesystem assertion uses a path that is
@@ -25,7 +25,7 @@ import { load as yamlLoad } from 'js-yaml';
 console.log('\nupskill.mjs known-skills helpers (import-safe module)');
 
 try {
-  const mod = await import(pathToFileURL(join(ROOT, 'upskill.mjs')).href);
+  const mod = await import(pathToFileURL(join(ROOT, 'scripts/upskill.mjs')).href);
   const {
     yamlValueText,
     stripMarkdownComments,
@@ -34,7 +34,7 @@ try {
     aggregateGaps,
     computeTargetedGaps,
     parseReportGaps,
-    // Re-exported from skill-extract.mjs; its own canonicalization fixtures live
+    // Re-exported from scripts/skill-extract.mjs; its own canonicalization fixtures live
     // in skill-extract.test.mjs. Used here only to assert what the CLI ends up
     // treating as KNOWN, which is the behaviour #2609 was about.
     extractSkills,
@@ -49,8 +49,8 @@ try {
     'yamlValueText', 'stripMarkdownComments', 'knownSkillsText', 'readOptionalText',
     'aggregateGaps', 'computeTargetedGaps', 'parseReportGaps',
   ].filter(name => typeof mod[name] !== 'function');
-  if (missing.length === 0) pass('upskill.mjs imports without running its CLI; all 7 pure helpers exported');
-  else fail(`upskill.mjs missing exported helper(s): ${missing.join(', ')}`);
+  if (missing.length === 0) pass('scripts/upskill.mjs imports without running its CLI; all 7 pure helpers exported');
+  else fail(`scripts/upskill.mjs missing exported helper(s): ${missing.join(', ')}`);
 
   // ── yamlValueText ─────────────────────────────────────────────────────────
   // The bug this exists for: a skill named in a YAML COMMENT must not become a

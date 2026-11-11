@@ -1,6 +1,6 @@
 // The "gone quiet" panel reports elapsed time, not misconduct.
 //
-// rejection-latency.mjs measures days since the last interview round and ships
+// scripts/rejection-latency.mjs measures days since the last interview round and ships
 // the sentence that bounds the claim: "Elapsed-time observation only — not legal
 // advice or a claim that the employer did anything wrong." This panel names
 // third-party employers in a tool whose output people paste into messages, so

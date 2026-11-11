@@ -11,8 +11,8 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTitleFilter } from '../title-keywords.mjs';
-import { matchedTitleKeywords } from '../scan.mjs';
+import { buildTitleFilter } from '../scripts/title-keywords.mjs';
+import { matchedTitleKeywords } from '../scripts/scan.mjs';
 
 test('an accented keyword matches an unaccented title', () => {
   const f = buildTitleFilter({ positive: ['Producción'] });

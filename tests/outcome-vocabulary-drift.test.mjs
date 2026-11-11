@@ -1,11 +1,11 @@
 // tests/outcome-vocabulary-drift.test.mjs — one vocabulary, two ends.
 //
-// outcome.mjs accepts an outcome type, normalizes it, and writes it VERBATIM
+// scripts/outcome.mjs accepts an outcome type, normalizes it, and writes it VERBATIM
 // into data/outcomes/{...}/outcome.md as `- **Outcome Type**: {key}`. Anything
 // that later reads that journal must accept every spelling the writer accepts,
 // or a recorded outcome is invisible to it.
 //
-// calibrate.mjs (#3315) shipped with a private 7-entry copy of a 14-entry
+// scripts/calibrate.mjs (#3315) shipped with a private 7-entry copy of a 14-entry
 // vocabulary. Two consequences, and the second is the one that matters:
 //
 //   1. `declined` and `ghosted` resolved to nothing, and their tracker state is
@@ -26,11 +26,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { OUTCOME_MAP, CANONICAL_OUTCOMES, canonicalOutcome } from '../lib/outcome-types.mjs';
-import { parseOutcomeJournal, computeCalibration, JOURNAL_OUTCOMES } from '../calibrate.mjs';
+import { parseOutcomeJournal, computeCalibration, JOURNAL_OUTCOMES } from '../scripts/calibrate.mjs';
 
 const journal = (...types) => types.map((t) => `## Entry: 2026-01-01\n- **Outcome Type**: ${t}\n`).join('');
 
-test('every spelling outcome.mjs accepts carries a meaning calibrate can read', () => {
+test('every spelling scripts/outcome.mjs accepts carries a meaning calibrate can read', () => {
   const orphans = [];
   for (const key of Object.keys(OUTCOME_MAP)) {
     const canonical = canonicalOutcome(key);
@@ -69,7 +69,7 @@ test('the LAST entry wins even when it is an alias', () => {
 });
 
 test('a hand-edited journal spelling still resolves', () => {
-  // outcome.mjs normalizes before writing, but the journal is a markdown file a
+  // scripts/outcome.mjs normalizes before writing, but the journal is a markdown file a
   // user can edit. canonicalOutcome applies the same normalization.
   assert.equal(parseOutcomeJournal(journal('Offer-Declined')).latestType, 'offer_declined');
   assert.equal(parseOutcomeJournal(journal('REJECTED')).latestType, 'rejected');

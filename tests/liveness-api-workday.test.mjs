@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkLivenessViaApi, classifyWorkday403 } from '../liveness-api.mjs';
+import { checkLivenessViaApi, classifyWorkday403 } from '../scripts/liveness-api.mjs';
 
 const posting = 'https://acme.wd3.myworkdayjobs.com/en-US/External/job/Berlin/QA-Engineer_R0419758-1';
 

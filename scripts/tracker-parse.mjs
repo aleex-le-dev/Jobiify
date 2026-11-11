@@ -1,10 +1,10 @@
 /**
- * tracker-parse.mjs — shared header-aware column mapping for `data/applications.md`.
+ * scripts/tracker-parse.mjs — shared header-aware column mapping for `data/applications.md`.
  *
  * The tracker is a markdown table that several scripts read. #946/#954 made the
  * column layout customizable (e.g. an inserted Location column) by mapping
  * columns *by header name* instead of fixed position — but that logic only
- * lived in `merge-tracker.mjs`. This module is the single home for it, so every
+ * lived in `scripts/merge-tracker.mjs`. This module is the single home for it, so every
  * reader (merge-tracker, dedup-tracker, followup-cadence, analyze-patterns)
  * tolerates the same layouts and can't drift apart.
  *
@@ -34,14 +34,14 @@ export const LEGACY_COLMAP = {
  * the file from a user-configured root at request time.)
  */
 export const HEADER_ALIASES = (() => {
-  const src = new URL('./tracker-aliases.json', import.meta.url);
+  const src = new URL('../tracker-aliases.json', import.meta.url);
   try {
     return JSON.parse(readFileSync(src, 'utf-8'));
   } catch (e) {
     throw new Error(
-      `tracker-parse.mjs: cannot load tracker-aliases.json (${e.message}). ` +
-      'The file ships with career-ops next to tracker-parse.mjs — restore it ' +
-      'from the repo or re-run: node update-system.mjs apply',
+      `scripts/tracker-parse.mjs: cannot load tracker-aliases.json (${e.message}). ` +
+      'The file ships with career-ops next to scripts/tracker-parse.mjs — restore it ' +
+      'from the repo or re-run: node scripts/update-system.mjs apply',
     );
   }
 })();
@@ -154,7 +154,7 @@ export function isHeaderRow(line) {
  * This discriminator is INCOMPLETE, and that is why headed additions exist
  * (#3517). The comment here used to claim "statuses never are" recognizable as
  * a score. That is false: `looksLikeScoreCell` accepts `—` and `-` as score
- * sentinels (#1799), and `normalize-statuses.mjs` accepts the same two glyphs
+ * sentinels (#1799), and `scripts/normalize-statuses.mjs` accepts the same two glyphs
  * (plus empty) as a status meaning Discarded. So a discarded, never-scored row
  * carries `—` in BOTH cells and no content rule can order them. That row is
  * refused rather than guessed at — but refusing is still a failure to ingest,
@@ -351,7 +351,7 @@ export function parseTrackerRow(line, colmap = LEGACY_COLMAP, { allowTabs = fals
   if (colmap.location != null) row.location = at('location');
   if (colmap.via != null) row.via = at('via');
   // No `row.url = at('url')` here. `url` is set above, always the HREF, and
-  // scan.mjs's same-title requisition dedup (#4267) reads it off this row:
+  // scripts/scan.mjs's same-title requisition dedup (#4267) reads it off this row:
   // re-assigning the raw cell hands it `[label](href)`, from which no
   // requisition id can be extracted, so two distinct openings read as one.
   return row;
@@ -374,8 +374,8 @@ export const REQ_NUMBER_RE = /\b(?:job\s*id|posting\s*id|requisition|req|jr|job|
  * L&D postings distinguished only by `R_1494379` vs `R_1488728`). This helper
  * pulls out that number so the caller can treat a confirmed mismatch as proof
  * the rows are NOT duplicates, without touching cases where no number is
- * present on either side. Shared by merge-tracker.mjs (tracker merge) and
- * scan.mjs (company+role scan dedupe).
+ * present on either side. Shared by scripts/merge-tracker.mjs (tracker merge) and
+ * scripts/scan.mjs (company+role scan dedupe).
  *
  * @param {string} notes - Raw Notes cell from a tracker row or TSV addition.
  * @returns {string|null} Uppercased req/job number, or null when none is found.
@@ -436,7 +436,7 @@ function markdownLinkDestination(raw) {
  * Shared by the two tracker cells that carry links — `Report`
  * (`[61](../reports/061-….md)`) and `URL` (`[ashby](https://…)`, #3516) — so
  * the strict destination handling above can never be half-applied to one of
- * them. Exported for merge-tracker.mjs, the only writer of the URL cell.
+ * them. Exported for scripts/merge-tracker.mjs, the only writer of the URL cell.
  *
  * @param {string} value - A raw tracker cell.
  * @returns {{label: string, target: string}[]}
@@ -495,7 +495,7 @@ export function parseMarkdownLinks(value) {
  * produce the SAME dedup key, which is why the extraction lives HERE, in the
  * shared row parser, rather than inside merge-tracker alone.
  *
- * THE FAILURE THIS PREVENTS IS SILENT. `normalizeUrl()` (url-key.mjs) starts
+ * THE FAILURE THIS PREVENTS IS SILENT. `normalizeUrl()` (scripts/url-key.mjs) starts
  * with `new URL(s)` and returns '' when that throws, and '' means "this row has
  * no URL" — not "parse error". So handing it a markdown-wrapped cell does not
  * error: the row quietly drops out of merge-tracker's exact-match dedup tier
@@ -538,12 +538,12 @@ function reportNumberFromTarget(rawTarget) {
  * `extractTrackerReportNumbers` below flattens both into one list on purpose —
  * for a membership test ("does this row reference report N?") a mismatched link
  * genuinely references both numbers, and collapsing them would hide the
- * collision that `find.mjs` and `set-status.mjs` exist to surface.
+ * collision that `scripts/find.mjs` and `scripts/set-status.mjs` exist to surface.
  *
  * A caller that needs report *identity* rather than membership needs the
  * opposite: `[5](../reports/006-globex-...md)` names one report, and it is the
  * target, because the target is the file whose contents the row will be joined
- * against. Treating both numbers as linked reports let salary-gap.mjs attach
+ * against. Treating both numbers as linked reports let scripts/salary-gap.mjs attach
  * two different companies' advertised figures to one row (#4368 review).
  *
  * The label is returned alongside so the disagreement can be reported instead
@@ -616,8 +616,8 @@ export function linkedReportNumbers(reportCell, notesCell) {
  * Report links inside a free-form Notes cell.
  *
  * Customized trackers with no dedicated Report column embed the link in Notes
- * prose instead — the layout merge-tracker.mjs learned to read in 8668ac1, via
- * its own `extractReportNum(reportStr, notesStr)`. set-status.mjs read only the
+ * prose instead — the layout scripts/merge-tracker.mjs learned to read in 8668ac1, via
+ * its own `extractReportNum(reportStr, notesStr)`. scripts/set-status.mjs read only the
  * Report cell, so `--report N` could not find a row merge-tracker had linked
  * happily (#3075).
  *
@@ -693,7 +693,7 @@ export function normalizeVia(name) {
  * This is the one key every grouping consumer should share, so company/role
  * identity cannot drift between scripts the way Via identity did.
  *
- * `separator` exists because not every consumer wants a solid key: scan.mjs
+ * `separator` exists because not every consumer wants a solid key: scripts/scan.mjs
  * keys role titles as space-separated words so "engineer (senior)" and
  * "engineer, senior" collapse without "data engineer" and "dataengineer"
  * merging. Passing ' ' keeps that shape while sharing this exact rule, so a
@@ -746,8 +746,8 @@ export function unwrapReportUrlToken(token) {
 /**
  * The posting URL recorded in the first of `reportNumbers` whose report file in
  * `reportsRoot` has a `**URL:**` line that `accept` takes. Lives here, not in
- * history-ats-seeds.mjs, because liveness-core.mjs needs it and the web app
- * loads liveness-core: it must not pull in tracker-utils.mjs and its npm
+ * scripts/history-ats-seeds.mjs, because scripts/liveness-core.mjs needs it and the web app
+ * loads liveness-core: it must not pull in scripts/tracker-utils.mjs and its npm
  * dependencies, which the web install does not have.
  */
 export function reportUrlForNumbers(reportNumbers, reportsRoot, accept) {

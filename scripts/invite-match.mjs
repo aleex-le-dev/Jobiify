@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * invite-match.mjs — Interview-Invite / Rejection → Tracker Matcher for career-ops
+ * scripts/invite-match.mjs — Interview-Invite / Rejection → Tracker Matcher for career-ops
  *
  * Recruiter calendar/ATS invite emails frequently name only the company
  * (generic subject lines like "Schedule Your Phone Screen") with no job
@@ -21,14 +21,14 @@
  *
  * Despite the filename, this now recognizes more than interview invites
  * (#2098). Kept as-is rather than renamed: a rename would break any doc or
- * script that already references `invite-match.mjs` (e.g. #1495's own
+ * script that already references `scripts/invite-match.mjs` (e.g. #1495's own
  * history) — left as a maintainer call, not blocking.
  *
- * Run: node invite-match.mjs < invite.txt          (JSON to stdout)
- *      node invite-match.mjs --file invite.txt
- *      echo "..." | node invite-match.mjs --summary
- *      node invite-match.mjs --apply [--id N]      (rejection-classified matches only; advances status to Rejected)
- *      node invite-match.mjs --self-test
+ * Run: node scripts/invite-match.mjs < invite.txt          (JSON to stdout)
+ *      node scripts/invite-match.mjs --file invite.txt
+ *      echo "..." | node scripts/invite-match.mjs --summary
+ *      node scripts/invite-match.mjs --apply [--id N]      (rejection-classified matches only; advances status to Rejected)
+ *      node scripts/invite-match.mjs --self-test
  *
  * Issue #1495, #2098 — github.com/career-ops-hq/career-ops
  */
@@ -39,8 +39,8 @@ import { fileURLToPath } from 'url';
 import { execFileSync } from 'child_process';
 import { resolveColumns, parseTrackerRow, extractReqNumber } from './tracker-parse.mjs';
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { LEGAL_SUFFIXES, GENERIC_DESCRIPTORS } from './tracker-utils.mjs';
 
 const CAREER_OPS = getCareerOpsRoot();
@@ -48,8 +48,8 @@ const CAREER_OPS = getCareerOpsRoot();
 // different directory from CAREER_OPS whenever the data root is external
 // (CAREER_OPS_ROOT / a .career-ops-data marker). Resolving them off the data
 // root made --apply die with `Cannot find module <data-root>/set-status.mjs`.
-// Same split, and the same constant name, as merge-tracker.mjs (#3761).
-const CAREER_OPS_CODE_ROOT = dirname(fileURLToPath(import.meta.url));
+// Same split, and the same constant name, as scripts/merge-tracker.mjs (#3761).
+const CAREER_OPS_CODE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const APPS_FILE = resolveTrackerPath(CAREER_OPS);
 
 // --- CLI args ---
@@ -57,26 +57,26 @@ const args = process.argv.slice(2);
 
 // #2854: --help was never checked and an unrecognized/mistyped flag (e.g.
 // `--sumary`) silently fell through instead of failing fast — same shape as
-// scan-ats-full.mjs (#1633/#1635), reply-watch.mjs (#2743/#2745) and
-// dedup-tracker.mjs (#2744/#2746), shared via lib/cli-flags.mjs's
+// scripts/scan-ats-full.mjs (#1633/#1635), scripts/reply-watch.mjs (#2743/#2745) and
+// scripts/dedup-tracker.mjs (#2744/#2746), shared via lib/cli-flags.mjs's
 // validateFlags() (#2775). Order matters: the unrecognized-flag check runs
 // BEFORE the --help check, so `--help --bogus` still errors instead of
 // printing usage and exiting 0.
 const KNOWN_FLAGS = ['--summary', '--self-test', '--file', '--apply', '--id', '--help', '-h'];
 const USAGE = `Usage:
-  node invite-match.mjs < invite.txt          # JSON to stdout
-  node invite-match.mjs --file invite.txt     # read invite text from a file
-  node invite-match.mjs --summary             # human-readable summary instead of JSON
-  node invite-match.mjs --apply [--id N]      # rejection-classified matches only; advances status to Rejected
-  node invite-match.mjs --self-test           # run the built-in self-test suite
-  node invite-match.mjs --help                # print this usage block and exit
-  node invite-match.mjs -h                    # same as --help`;
+  node scripts/invite-match.mjs < invite.txt          # JSON to stdout
+  node scripts/invite-match.mjs --file invite.txt     # read invite text from a file
+  node scripts/invite-match.mjs --summary             # human-readable summary instead of JSON
+  node scripts/invite-match.mjs --apply [--id N]      # rejection-classified matches only; advances status to Rejected
+  node scripts/invite-match.mjs --self-test           # run the built-in self-test suite
+  node scripts/invite-match.mjs --help                # print this usage block and exit
+  node scripts/invite-match.mjs -h                    # same as --help`;
 
-// Only when invoked as a CLI, not when another script (scan.mjs,
-// detect-reposts.mjs) imports a helper like normalizeCompanyName — otherwise
+// Only when invoked as a CLI, not when another script (scripts/scan.mjs,
+// scripts/detect-reposts.mjs) imports a helper like normalizeCompanyName — otherwise
 // invite-match's flag vocabulary would be validated against the IMPORTING
 // script's own process.argv and reject its perfectly valid flags (e.g.
-// detect-reposts.mjs --window). Same condition as the "Run" guard at the
+// scripts/detect-reposts.mjs --window). Same condition as the "Run" guard at the
 // bottom of this file.
 //
 // --file/--id are NOT listed as valueFlags: both are read below via the
@@ -145,7 +145,7 @@ function normalizeStatusKey(status) {
 }
 
 // Legal-entity suffixes and generic business descriptors live in
-// tracker-utils.mjs next to companiesMatchIgnoringCorporateForm(), which shares
+// scripts/tracker-utils.mjs next to companiesMatchIgnoringCorporateForm(), which shares
 // the vocabulary. Re-exported here so `import { LEGAL_SUFFIXES } from
 // './invite-match.mjs'` keeps working for existing callers while there is a
 // single definition. normalizeCompanyName() below chain-strips LEGAL_SUFFIXES.
@@ -156,7 +156,7 @@ export { LEGAL_SUFFIXES, GENERIC_DESCRIPTORS };
  * parentheticals, collapse whitespace, chain-strip trailing legal-entity
  * suffixes (so "Acme Technologies Inc." reduces to "acme technologies"),
  * then strip at most one trailing generic descriptor word. Deliberately
- * stricter than dedup-tracker.mjs's normalizeCompany (which only lowercases
+ * stricter than scripts/dedup-tracker.mjs's normalizeCompany (which only lowercases
  * and strips punctuation): invite emails quote company names more loosely
  * than tracker rows quote each other, so matching across the two sources
  * needs the extra suffix-stripping that same-source dedup does not.
@@ -447,7 +447,7 @@ const PHONE_PATTERN = /(?:\+?\d{1,3}[\s.-])?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/
  * none is present, falls back to a phone-number pattern. Returns null when
  * nothing plausible is found — never guessed, consistent with this
  * project's "silence stays silence" convention (see extractDate/extractReqId
- * above and the title/location filters in scan.mjs).
+ * above and the title/location filters in scripts/scan.mjs).
  *
  * @param {string} text - Raw pasted invite/scheduling text.
  * @returns {'Zoom'|'Microsoft Teams'|'Google Meet'|'Alex'|'HireVue'|'Phone'|null}
@@ -761,10 +761,10 @@ export function analyzeInvite(text, trackerRows = null) {
 }
 
 /**
- * Advance a single tracker row's status to Rejected, reusing set-status.mjs
+ * Advance a single tracker row's status to Rejected, reusing scripts/set-status.mjs
  * as a subprocess — the canonical, locked, atomic write path (#2098) — rather
- * than duplicating its row-rewrite/locking logic here. set-status.mjs already
- * imports its atomic-write and locking primitives from tracker-utils.mjs.
+ * than duplicating its row-rewrite/locking logic here. scripts/set-status.mjs already
+ * imports its atomic-write and locking primitives from scripts/tracker-utils.mjs.
  *
  * Never call this on an ambiguous match — the CLI layer below is responsible
  * for confirming a single confident candidate (or an explicit --id) before
@@ -772,16 +772,16 @@ export function analyzeInvite(text, trackerRows = null) {
  *
  * @param {number} appNumber - Tracker # to update (must be unambiguous).
  * @param {{appsFile?: string}} [options] - appsFile overrides CAREER_OPS_TRACKER for the child process (tests only).
- * @returns {object} set-status.mjs's own --json result (or its structured error).
+ * @returns {object} scripts/set-status.mjs's own --json result (or its structured error).
  */
 export function applyRejectionStatus(appNumber, options = {}) {
-  const scriptPath = join(CAREER_OPS_CODE_ROOT, 'set-status.mjs');
+  const scriptPath = join(CAREER_OPS_CODE_ROOT, 'scripts/set-status.mjs');
   const env = options.appsFile ? { ...process.env, CAREER_OPS_TRACKER: options.appsFile } : process.env;
   try {
     const out = execFileSync(process.execPath, [scriptPath, String(appNumber), 'Rejected', '--json'], {
       encoding: 'utf-8', env,
       // Capture the child's stderr instead of letting execFileSync's default
-      // inherit it. set-status.mjs's failWith writes the machine payload to
+      // inherit it. scripts/set-status.mjs's failWith writes the machine payload to
       // stdout AND an `❌ {message}` line to stderr; inherited, that line
       // printed straight through this function — which by contract returns a
       // structured result and never speaks for itself — into whatever was
@@ -793,7 +793,7 @@ export function applyRejectionStatus(appNumber, options = {}) {
     });
     return JSON.parse(out);
   } catch (err) {
-    // set-status.mjs writes JSON to stdout even on failure when --json is
+    // scripts/set-status.mjs writes JSON to stdout even on failure when --json is
     // passed (its failWith/failUsage contract) — prefer that structured
     // payload over a raw exception when it is present and parseable.
     if (err.stdout) {

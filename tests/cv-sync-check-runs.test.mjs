@@ -1,7 +1,7 @@
-// tests/cv-sync-check-runs.test.mjs — regression coverage for cv-sync-check.mjs starting up.
+// tests/cv-sync-check-runs.test.mjs — regression coverage for scripts/cv-sync-check.mjs starting up.
 //
-// Why this exists: cv-sync-check.mjs referenced an undefined `projectRoot`, so it
-// crashed with a ReferenceError before running a single check. test-all.mjs asserts
+// Why this exists: scripts/cv-sync-check.mjs referenced an undefined `projectRoot`, so it
+// crashed with a ReferenceError before running a single check. scripts/test-all.mjs asserts
 // `expectExit: 1` for this script ("fails without cv.md (normal in repo)"), and an
 // uncaught ReferenceError ALSO exits 1 — so the crash was indistinguishable from the
 // expected missing-cv.md failure and CI stayed green. Exit code alone cannot cover
@@ -19,7 +19,7 @@ const work = mkdtempSync(join(tmpdir(), 'cops-cvsync-'));
 try {
   // Empty data root: no cv.md, no config/profile.yml. The script is EXPECTED to
   // exit 1 here — that is a clean, reported failure, not a crash.
-  const res = spawnSync(NODE, [join(ROOT, 'cv-sync-check.mjs')], {
+  const res = spawnSync(NODE, [join(ROOT, 'scripts/cv-sync-check.mjs')], {
     encoding: 'utf-8',
     timeout: 30000,
     env: { ...process.env, CAREER_OPS_ROOT: work },
@@ -29,7 +29,7 @@ try {
   const stderr = res.stderr || '';
 
   if (/ReferenceError/.test(stderr)) {
-    fail(`cv-sync-check.mjs crashed with a ReferenceError: ${stderr.split('\n').find(l => l.includes('ReferenceError'))}`);
+    fail(`scripts/cv-sync-check.mjs crashed with a ReferenceError: ${stderr.split('\n').find(l => l.includes('ReferenceError'))}`);
   } else {
     pass('no ReferenceError on startup');
   }

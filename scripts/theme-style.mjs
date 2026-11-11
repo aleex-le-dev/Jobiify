@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * theme-style.mjs — presentation settings read from config/profile.yml for the
+ * scripts/theme-style.mjs — presentation settings read from config/profile.yml for the
  * PDF pipeline: dynamic CV/cover-letter theming (#1837) and CV section order
  * (#2533).
  *
@@ -24,7 +24,7 @@
  *
  * `cv.sections` declares the order the CV's sections render in. Both live here
  * for the same reason: config/profile.yml is a user-layer file, so a setting
- * that lives in it survives `update-system.mjs apply`, while the same
+ * that lives in it survives `scripts/update-system.mjs apply`, while the same
  * customization made in templates/cv-template.html (a SYSTEM_PATHS file) is
  * reverted by every release.
  *
@@ -125,7 +125,7 @@ export function readCvSectionOrder(profilePath = 'config/profile.yml') {
 /**
  * Map a parsed `cv:` block to a list of section names. Only the syntax is
  * checked here — whether a name is a real section, and whether this CV even has
- * it, is decided at render time by generate-pdf.mjs, which owns the section
+ * it, is decided at render time by scripts/generate-pdf.mjs, which owns the section
  * vocabulary. Exported for tests.
  * @param {unknown} cv
  * @returns {string[]}

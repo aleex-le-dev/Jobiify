@@ -1,5 +1,5 @@
-// Shared optional-section stripping for the CV builders (build-cv-html.mjs,
-// build-cv-latex.mjs).
+// Shared optional-section stripping for the CV builders (scripts/build-cv-html.mjs,
+// scripts/build-cv-latex.mjs).
 //
 // Core competencies, work experience, projects, education, certifications,
 // awards, interests, and skills are the genuinely optional CV sections: a
@@ -20,7 +20,7 @@
 // new graduates, career changers, and anyone leading with projects or
 // education — not because the section is unimportant. Note that the payload
 // key being optional says nothing about the template placeholder:
-// cv-templates.mjs still requires `{{EXPERIENCE}}` to be present in any custom
+// scripts/cv-templates.mjs still requires `{{EXPERIENCE}}` to be present in any custom
 // template, exactly as before. What changed is that an empty `experience` no
 // longer leaves the wrapper behind.
 //
@@ -71,7 +71,7 @@
 //      the original cosmetic bug, and it is the deliberate choice: a bare
 //      header beats a truncated CV by a wide margin, and the person it lands
 //      on (a third-party template pack with no sentinel and no skills listed)
-//      did nothing wrong. cv-templates.mjs validates custom templates against
+//      did nothing wrong. scripts/cv-templates.mjs validates custom templates against
 //      `required: ['NAME', 'EXPERIENCE', 'EDUCATION']` and does not — and
 //      need not — require the sentinel, precisely because its absence is
 //      survivable. Never "fix" this by giving the Skills patterns an `|$`
@@ -201,7 +201,7 @@ export function stripEmptySections(template, payload, format) {
 // A section's own title is present whether or not the section has content, so
 // it must not count as content. This matches the shipped templates'
 // `<div class="section-title">`, or a plain heading tag for a custom template
-// that uses one. Either quote style, matching generate-pdf.mjs's own
+// that uses one. Either quote style, matching scripts/generate-pdf.mjs's own
 // SECTION_TITLE_RE: a hand-written or third-party template may use single
 // quotes, and reading its title as content would keep every empty section.
 // Applied once — a later heading inside a populated body

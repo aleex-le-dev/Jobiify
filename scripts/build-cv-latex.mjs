@@ -5,17 +5,17 @@ import { existsSync } from 'fs';
 import { resolve, dirname, basename, join } from 'path';
 import { fileURLToPath } from 'url';
 import { tmpdir } from 'os';
-import { escapeLatex, sanitizeUrl } from './lib/latex-escape.mjs';
+import { escapeLatex, sanitizeUrl } from '../lib/latex-escape.mjs';
 import { resolveTemplate } from './cv-templates.mjs';
 import { stripEmptySections } from './cv-sections-core.mjs';
-import { hasRequiredFields, hasText, validatePayload } from './lib/cv-payload-schema.mjs';
+import { hasRequiredFields, hasText, validatePayload } from '../lib/cv-payload-schema.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(dirname(fileURLToPath(import.meta.url)));
 const TEMPLATE_PATH = resolve(__dirname, 'templates', 'cv-template.tex');
 const PLACEHOLDER_RE = /\{\{[A-Z_]+\}\}/g;
 
 // Markdown bold inside bullets — the LaTeX half of #1728, which taught the HTML
-// path to render `**text**` as <strong> (normalizeTextForATS in generate-pdf.mjs).
+// path to render `**text**` as <strong> (normalizeTextForATS in scripts/generate-pdf.mjs).
 // escapeLatex() leaves `*` alone because it is not a LaTeX special character, so
 // the markers reached the .tex verbatim and printed as literal asterisks (#3351).
 //
@@ -148,8 +148,8 @@ async function main() {
 
   if (args.length === 0 || args.includes('--help')) {
     console.error('Usage:');
-    console.error('  node build-cv-latex.mjs <input.json> <output.tex>');
-    console.error('  node build-cv-latex.mjs --test');
+    console.error('  node scripts/build-cv-latex.mjs <input.json> <output.tex>');
+    console.error('  node scripts/build-cv-latex.mjs --test');
     process.exit(1);
   }
 
@@ -161,7 +161,7 @@ async function main() {
   const [inputPath, outputPath] = args;
 
   if (!inputPath || !outputPath) {
-    console.error('Usage: node build-cv-latex.mjs <input.json> <output.tex>');
+    console.error('Usage: node scripts/build-cv-latex.mjs <input.json> <output.tex>');
     process.exit(1);
   }
 
@@ -210,7 +210,7 @@ async function main() {
   let template = await readFile(TEMPLATE_PATH_RESOLVED, 'utf-8');
 
   // Drop the optional sections (projects, education) that have no entries, so
-  // an absent one leaves no bare header behind. See cv-sections-core.mjs.
+  // an absent one leaves no bare header behind. See scripts/cv-sections-core.mjs.
   template = stripEmptySections(template, payload, 'tex');
 
   const emailUrl = sanitizeUrl(payload.email?.url || '');

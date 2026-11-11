@@ -34,39 +34,41 @@ mkdirSync(outputRoot, { recursive: true });
 // realpathSync, not the raw mkdtemp path: Node resolves both `import.meta.url`
 // and a module's node_modules walk from a file's REALPATH, while
 // `process.argv[1]` keeps whatever spelling the caller used. On a checkout with
-// a symlinked output/ the two disagree, so generate-pdf.mjs's `isMain` guard is
+// a symlinked output/ the two disagree, so scripts/generate-pdf.mjs's `isMain` guard is
 // false and the spawned script exits 0 having done nothing at all -- assertions
 // then fail against empty output rather than against behaviour (#3165).
 const sandbox = realpathSync(mkdtempSync(join(outputRoot, 'batch-test-')));
-const script = join(sandbox, 'generate-pdf.mjs');
+const script = join(sandbox, 'scripts/generate-pdf.mjs');
+mkdirSync(join(sandbox, 'scripts'), { recursive: true });
 const launchesFile = join(sandbox, '.launches');
 const pageClosesFile = join(sandbox, '.pagecloses');
 const contextClosesFile = join(sandbox, '.contextcloses');
 mkdirSync(join(sandbox, 'data'), { recursive: true });
 writeFileSync(join(sandbox, 'data', 'pdf-index.tsv'), '', 'utf-8');
 
-copyFileSync(join(ROOT, 'generate-pdf.mjs'), script);
-copyFileSync(join(ROOT, 'theme-style.mjs'), join(sandbox, 'theme-style.mjs'));
-copyFileSync(join(ROOT, 'cv-experience-order.mjs'), join(sandbox, 'cv-experience-order.mjs'));
-copyFileSync(join(ROOT, 'tracker-utils.mjs'), join(sandbox, 'tracker-utils.mjs'));
-copyFileSync(join(ROOT, 'tracker-parse.mjs'), join(sandbox, 'tracker-parse.mjs'));
+mkdirSync(join(script, '..'), { recursive: true });
+copyFileSync(join(ROOT, 'scripts/generate-pdf.mjs'), script);
+copyFileSync(join(ROOT, 'scripts/theme-style.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/theme-style.mjs')));
+copyFileSync(join(ROOT, 'scripts/cv-experience-order.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/cv-experience-order.mjs')));
+copyFileSync(join(ROOT, 'scripts/tracker-utils.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/tracker-utils.mjs')));
+copyFileSync(join(ROOT, 'scripts/tracker-parse.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/tracker-parse.mjs')));
 copyFileSync(join(ROOT, 'tracker-aliases.json'), join(sandbox, 'tracker-aliases.json'));
-copyFileSync(join(ROOT, 'pipeline-lock.mjs'), join(sandbox, 'pipeline-lock.mjs'));
+copyFileSync(join(ROOT, 'scripts/pipeline-lock.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/pipeline-lock.mjs')));
 // ...and it strips the optional sections that rendered as a bare header via
 // ./cv-sections-core.mjs (#3986), another local sibling this sandbox needs.
-copyFileSync(join(ROOT, 'cv-sections-core.mjs'), join(sandbox, 'cv-sections-core.mjs'));
-// generate-pdf.mjs resolves user-layer paths via path-resolver.mjs
+copyFileSync(join(ROOT, 'scripts/cv-sections-core.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/cv-sections-core.mjs')));
+// scripts/generate-pdf.mjs resolves user-layer paths via scripts/path-resolver.mjs
 // (CAREER_OPS_ROOT), so the fixture carries that too.
-copyFileSync(join(ROOT, 'path-resolver.mjs'), join(sandbox, 'path-resolver.mjs'));
-// generate-pdf.mjs's main-guard lives in lib/is-main-module.mjs (#3170). Without
+copyFileSync(join(ROOT, 'scripts/path-resolver.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/path-resolver.mjs')));
+// scripts/generate-pdf.mjs's main-guard lives in lib/is-main-module.mjs (#3170). Without
 // it the copy dies with ERR_MODULE_NOT_FOUND before parsing an argument.
 mkdirSync(join(sandbox, 'lib'), { recursive: true });
 copyFileSync(join(ROOT, 'lib', 'is-main-module.mjs'), join(sandbox, 'lib', 'is-main-module.mjs'));
-// lib/page-format.mjs owns the paper size generate-pdf.mjs imports at module
+// lib/page-format.mjs owns the paper size scripts/generate-pdf.mjs imports at module
 // scope, so the copy needs it for the same reason.
 copyFileSync(join(ROOT, 'lib', 'page-format.mjs'), join(sandbox, 'lib', 'page-format.mjs'));
 
-// theme-style.mjs and tracker-utils.mjs both `import * as yaml from 'js-yaml'`,
+// scripts/theme-style.mjs and scripts/tracker-utils.mjs both `import * as yaml from 'js-yaml'`,
 // which resolves by walking up into the repo's node_modules -- from the
 // sandbox's REALPATH, so a checkout with a symlinked output/ never reaches it
 // and every spawned generate-pdf dies before parsing argv (#3165). Link the
@@ -275,7 +277,7 @@ try {
   // An explicit token map still wins, and {} deliberately disables the theme.
   const directRunner = join(sandbox, 'render-themed.mjs');
   writeFileSync(directRunner, `
-import { renderHtmlToPdf } from './generate-pdf.mjs';
+import { renderHtmlToPdf } from './scripts/generate-pdf.mjs';
 const [outputPath, root, tokens] = process.argv.slice(2);
 await renderHtmlToPdf(${JSON.stringify(htmlDoc('Solo CV'))}, outputPath, {
   workspaceRoot: root,

@@ -1,7 +1,7 @@
 /**
- * tests/discover-new-companies.test.mjs — suite for discover-new-companies.mjs
+ * tests/discover-new-companies.test.mjs — suite for scripts/discover-new-companies.mjs
  *
- * discover-new-companies.mjs is a CLI script (no exported functions), so it is
+ * scripts/discover-new-companies.mjs is a CLI script (no exported functions), so it is
  * driven end-to-end via execFileSync against scratch fixtures — no live
  * network, no LLM. Both inputs are redirected with env overrides
  * (CAREER_OPS_SCAN_HISTORY, CAREER_OPS_PORTALS) so the real data/ directory is
@@ -16,7 +16,7 @@
  * - ranking: 'added'-producing companies rank first
  * - default YAML output is the `companies: [{name}]` shape discover-ats consumes
  *
- * Run: node test-all.mjs --only discover-new-companies
+ * Run: node scripts/test-all.mjs --only discover-new-companies
  *      A discovered suite reports through the shared counters; running the file
  *      directly returns 0 even when assertions fail.
  *
@@ -44,7 +44,7 @@ function eq(label, actual, expected) {
 
 console.log('\ndiscover-new-companies.mjs — scan-history → discover-ats bridge');
 
-const scriptPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'discover-new-companies.mjs');
+const scriptPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'scripts/discover-new-companies.mjs');
 const HEADER = 'url\tfirst_seen\tportal\ttitle\tcompany\tstatus\tlocation\n';
 const today = new Date().toISOString().slice(0, 10);
 const old = '2000-01-01';
@@ -80,7 +80,7 @@ function run(historyRows, portalsObj, args, { parse = 'json', blacklist = null }
 console.log('\n--- 1. CLI guards ---');
 
 const help = execFileSync('node', [scriptPath, '--help'], { encoding: 'utf-8', timeout: 15000 });
-ok('--help prints usage and exits 0', /Usage: node discover-new-companies\.mjs/.test(help));
+ok('--help prints usage and exits 0', /Usage: node scripts\/discover-new-companies\.mjs/.test(help));
 
 let missingExit = 0;
 try {
@@ -293,7 +293,7 @@ console.log('\n--- 5. Output shape ---');
 
 // ── 6. Headerless legacy history ──────────────────────────────────────────────
 // Legacy scan-history.tsv files predate the header row and are never rewritten
-// (appendToScanHistory in scan.mjs). An unconditional skip of line 0 would drop
+// (appendToScanHistory in scripts/scan.mjs). An unconditional skip of line 0 would drop
 // the first company; the header must be detected, not assumed.
 console.log('\n--- 6. Headerless legacy history ---');
 

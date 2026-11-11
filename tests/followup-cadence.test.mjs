@@ -4,7 +4,7 @@
  * Focuses on the `responded` branch, where the first follow-up after a recruiter
  * reply must be scheduled with `responded_initial`, not `responded_subsequent`.
  *
- * Run: node test-all.mjs --only followup-cadence
+ * Run: node scripts/test-all.mjs --only followup-cadence
  *      Running the file directly prints the same ✅/❌ lines, but a
  *      discovered suite reports through the shared counters and never
  *      exits — so a direct run returns 0 even when assertions fail.
@@ -20,7 +20,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_CADENCE_PROFILE = join(ROOT, 'tests', 'fixtures', 'profile-default-cadence.yml');
 const CUSTOM_CADENCE_PROFILE = join(ROOT, 'tests', 'fixtures', 'profile-custom-cadence.yml');
 
-// Pin the cadence source BEFORE followup-cadence.mjs is evaluated. Its
+// Pin the cadence source BEFORE scripts/followup-cadence.mjs is evaluated. Its
 // module-level `CADENCE = resolveCadenceConfig()` reads CAREER_OPS_PROFILE at
 // import time and otherwise falls back to the USER's config/profile.yml — so
 // on a machine where the user customized followup_cadence, assertions written
@@ -48,7 +48,7 @@ process.env.CAREER_OPS_PROFILE = DEFAULT_CADENCE_PROFILE;
 
 let cadence;
 try {
-  cadence = await import('../followup-cadence.mjs');
+  cadence = await import('../scripts/followup-cadence.mjs');
 } finally {
   if (PRIOR_PROFILE_ENV === undefined) delete process.env.CAREER_OPS_PROFILE;
   else process.env.CAREER_OPS_PROFILE = PRIOR_PROFILE_ENV;
@@ -179,7 +179,7 @@ eq(
   [],
 );
 
-// analyzeFromContent (#2123): the content-based core exported so stats.mjs
+// analyzeFromContent (#2123): the content-based core exported so scripts/stats.mjs
 // can reuse the exact same cadence math for its own cold-classification
 // wiring, instead of re-deriving applied_max_followups/cadence rules there.
 const trackerMd = [
@@ -287,7 +287,7 @@ eq(
 // `isCrossReferencedMention` skips an apply-date that is cited ABOUT ANOTHER
 // ROW (`see #12, applied 2026-09-01`). A `#` preceded by a requisition label
 // is the row's own req number, not a row reference, and REQ_LABELLED_HASH_RE
-// shares tracker-parse.mjs's label vocabulary so the two never disagree. The
+// shares scripts/tracker-parse.mjs's label vocabulary so the two never disagree. The
 // `r_` label was missing from that list (PR #4267 review), so
 // `R_#1311 Applied 2026-09-01` lost its own applied date while the equivalent
 // `req #1311` kept it.

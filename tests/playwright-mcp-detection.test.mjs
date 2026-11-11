@@ -1,5 +1,5 @@
 // tests/playwright-mcp-detection.test.mjs — CLI-aware Playwright MCP detection
-// coverage in `doctor.mjs`. CLI resolution precedence lives in
+// coverage in `scripts/doctor.mjs`. CLI resolution precedence lives in
 // tests/doctor-cli-resolution.test.mjs; this file owns the resolution × MCP
 // coupling. See plan/opencode-json-ignore.md for context.
 // Each scenario uses a fresh --target dir so no MCP config leaks across cases.
@@ -11,13 +11,13 @@ import { join } from 'path';
 
 console.log('\ndoctor.mjs — CLI-aware Playwright MCP detection');
 
-const DOCTOR = join(ROOT, 'doctor.mjs');
+const DOCTOR = join(ROOT, 'scripts/doctor.mjs');
 
 // Claude Code can supply an MCP server from an installed plugin, which lives
 // under the user's config dir rather than the project root (#2752). Every
 // scenario therefore pins CLAUDE_CONFIG_DIR at an EMPTY dir by default, so a
 // developer's real machine can never decide the result - the same isolation
-// reasoning as the GIT_CONFIG_* pinning in test-all.mjs section 12c (#2569).
+// reasoning as the GIT_CONFIG_* pinning in scripts/test-all.mjs section 12c (#2569).
 // Scenarios that exercise the plugin path pass their own CLAUDE_CONFIG_DIR.
 const EMPTY_CONFIG_DIR = mkdtempSync(join(tmpdir(), 'co-mcp-emptycfg-'));
 // OpenCode resolves its global config from homedir() (USERPROFILE/HOME), so
@@ -100,7 +100,7 @@ function expectWarn(state, msg) {
 const PLAYWRIGHT_RE = /playwright mcp/i;
 
 try {
-  // Split checkout: MCP config lives beside doctor.mjs, while --target points
+  // Split checkout: MCP config lives beside scripts/doctor.mjs, while --target points
   // at the user-data root. The CLI never reads a decoy config in that data root.
   {
     const dataRoot = mkdtempSync(join(tmpdir(), 'co-mcp-split-data-'));

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * story-provenance-check.mjs — Zero-LLM story-bank provenance checker.
+ * scripts/story-provenance-check.mjs — Zero-LLM story-bank provenance checker.
  *
- * Companion to jd-skill-gap.mjs (read that file first — this one deliberately
+ * Companion to scripts/jd-skill-gap.mjs (read that file first — this one deliberately
  * follows its shape: regex-based extraction, no LLM call, classify-and-report
- * only, never auto-edits the user's data files). Where jd-skill-gap.mjs
+ * only, never auto-edits the user's data files). Where scripts/jd-skill-gap.mjs
  * classifies JD *skills* against cv.md in three buckets (existing /
  * supportedByResume / gap), this script classifies *numeric claims found in
  * interview-prep/story-bank.md* against cv.md in FOUR buckets — the extra
@@ -29,11 +29,11 @@
  * See AGENTS.md's "Source-of-Truth Boundary" section for the tiered file
  * list this script's classification exists to enforce.
  *
- * ── Why four buckets, not jd-skill-gap.mjs's three ────────────────────
+ * ── Why four buckets, not scripts/jd-skill-gap.mjs's three ────────────────────
  *
- * jd-skill-gap.mjs only ever asks "does cv.md have a trace of this or not" —
+ * scripts/jd-skill-gap.mjs only ever asks "does cv.md have a trace of this or not" —
  * a binary trace/no-trace question is enough there because nothing is ever
- * auto-added to cv.md either way. This problem needs a state jd-skill-gap.mjs
+ * auto-added to cv.md either way. This problem needs a state scripts/jd-skill-gap.mjs
  * has no equivalent for: not "no trace found (yet)" but "asked, and the user
  * genuinely could not confirm it". A binary verified/unverified flag can't
  * represent that — a scale figure from a job years ago may simply be
@@ -71,7 +71,7 @@
  *
  * ── Provenance field convention (story-bank.md) ───────────────────────
  *
- * match-star.mjs's parser already reads story-bank.md as `### [Theme] Title`
+ * scripts/match-star.mjs's parser already reads story-bank.md as `### [Theme] Title`
  * blocks of `**Label:** value` lines (Situation / Task / Action / Result /
  * Reflection / Source / Best for questions about). A `**Source:**` field
  * already exists there for a different purpose (where the story itself came
@@ -123,7 +123,7 @@
  *
  * ── Pattern coverage (what IS and ISN'T scanned) ──────────────────────
  *
- * Deliberately not exhaustive — matches jd-skill-gap.mjs's design stance
+ * Deliberately not exhaustive — matches scripts/jd-skill-gap.mjs's design stance
  * that under-extraction is recoverable (the user can still read the story)
  * while over-extraction would misreport narrative prose as a "claim". Five
  * patterns, each documented at its declaration below:
@@ -135,30 +135,30 @@
  *   scale-noun    \d+ (students|employees|...)        "50 students"
  *
  * Known gaps (not covered, intentionally, to keep the pattern set legible
- * and low-noise — same tradeoff jd-skill-gap.mjs's SKILL_TOKEN_RE makes):
+ * and low-noise — same tradeoff scripts/jd-skill-gap.mjs's SKILL_TOKEN_RE makes):
  *   - spelled-out numbers ("fifty students")
- *   - currency figures ("$40K budget") — verify-cv-facts.mjs already owns
+ *   - currency figures ("$40K budget") — scripts/verify-cv-facts.mjs already owns
  *     currency/metric-noun extraction for generated documents; this script
  *     stays scoped to story-bank.md's narrative shapes instead of
  *     duplicating that gate
- *   - non-ASCII digit scripts (verify-cv-facts.mjs's foldDigits() solves
+ *   - non-ASCII digit scripts (scripts/verify-cv-facts.mjs's foldDigits() solves
  *     this for generated CVs; story-bank.md is authored in the profile's
  *     language, so this is a smaller gap here, but still a gap)
  *   - a bare number with no adjacent noun/unit ("trained 40 in Q1")
  *
  * Usage:
- *   node story-provenance-check.mjs
- *   node story-provenance-check.mjs --summary
- *   node story-provenance-check.mjs --story-bank path/to/file.md --cv path/to/cv.md
- *   node story-provenance-check.mjs --self-test
+ *   node scripts/story-provenance-check.mjs
+ *   node scripts/story-provenance-check.mjs --summary
+ *   node scripts/story-provenance-check.mjs --story-bank path/to/file.md --cv path/to/cv.md
+ *   node scripts/story-provenance-check.mjs --self-test
  */
 
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { flagValue } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { flagValue } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { splitStoryBlocks, isValidStory, getField, STORY_FIELDS } from './lib/story-bank.mjs';
+import { splitStoryBlocks, isValidStory, getField, STORY_FIELDS } from '../lib/story-bank.mjs';
 
 // ── Config ──────────────────────────────────────────────────────────
 
@@ -226,7 +226,7 @@ const STOPWORDS = new Set([
 
 // ── Story-bank parsing ──────────────────────────────────────────────
 // Splitting and validity come from lib/story-bank.mjs, the same definition
-// match-star.mjs and negotiation-roi.mjs use (#4514). What this checker adds
+// scripts/match-star.mjs and scripts/negotiation-roi.mjs use (#4514). What this checker adds
 // is coverage: it keeps EVERY block and every table row outside a block, not
 // only the valid stories, because a figure in a malformed entry is still a
 // figure in story-bank.md. Hiding it from the checker would hide exactly the
@@ -407,11 +407,11 @@ function buildCvNumberContexts(cvText) {
  * hands over a list where every entry is noise, which is how a user learns to
  * confirm without reading.
  *
- * `\p{L}\p{M}\p{N}` is the alphabet tracker-parse.mjs's normalizeTextKey
+ * `\p{L}\p{M}\p{N}` is the alphabet scripts/tracker-parse.mjs's normalizeTextKey
  * settled on for exactly this class of bug (#2393/#2429/#2569/#2666), down to
  * keeping \p{M} so Indic matras survive. It is mirrored rather than imported:
  * normalizeTextKey builds a solid identity KEY and this needs word boundaries
- * preserved, and importing tracker-parse.mjs would make a story-bank check
+ * preserved, and importing scripts/tracker-parse.mjs would make a story-bank check
  * fail hard on a missing tracker-aliases.json it has no other use for.
  *
  * @param {string} body
@@ -472,7 +472,7 @@ function contextWords(body, matchIndex, matchLength, windowChars = 90) {
  * in cv.md, so `supportedByResume` stayed unreachable for a non-Latin CV and
  * every claim still fell to `derived-unverified`.
  *
- * Mirrors the `bounded()` helper scan.mjs already uses for company names, down
+ * Mirrors the `bounded()` helper scripts/scan.mjs already uses for company names, down
  * to its escape set — `\-` is an invalid identity escape under `u`. Both
  * operands here are folded output (letters, marks, digits and spaces only), so
  * the escape is defensive rather than load-bearing.
@@ -584,7 +584,7 @@ function classifyStoryBank(storyBankText, cvText) {
 
 /**
  * Explain a low-confidence run so an empty/near-empty result isn't misread
- * as "scanned and clean" — same purpose as jd-skill-gap.mjs's
+ * as "scanned and clean" — same purpose as scripts/jd-skill-gap.mjs's
  * diagnoseExtraction().
  * @param {boolean} storyBankExists
  * @param {boolean} cvExists
@@ -613,7 +613,7 @@ function diagnose(storyBankExists, cvExists, storyCount, claimCount, storyBankPa
   return null;
 }
 
-// ── Exports (for test-all.mjs and other consumers) ───────────────────
+// ── Exports (for scripts/test-all.mjs and other consumers) ───────────────────
 export { parseStoryBlocks, malformedEntries, extractClaims, extractNumbers, classifyStoryBank, diagnose };
 
 // ── CLI ──────────────────────────────────────────────────────────────
@@ -860,7 +860,7 @@ Brings 15 years of unrelated professional background in adult education prior to
 // Derived from the flags this file actually accepts, so `--help` cannot
 // describe an option that does not exist.
 const USAGE = `Usage:
-  node story-provenance-check.mjs [--summary] [--story-bank <path>] [--cv <path>] [--self-test]
+  node scripts/story-provenance-check.mjs [--summary] [--story-bank <path>] [--cv <path>] [--self-test]
 
   --summary            human-readable table instead of JSON
   --story-bank <path>  override the story-bank path

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * rank-pipeline.mjs — opt-in LLM relevance re-ranker for `data/pipeline.md` (#1144)
+ * scripts/rank-pipeline.mjs — opt-in LLM relevance re-ranker for `data/pipeline.md` (#1144)
  *
- * The core scan stays 100% zero-token: `scan.mjs` is not touched, and nothing here
+ * The core scan stays 100% zero-token: `scripts/scan.mjs` is not touched, and nothing here
  * runs unless you invoke this script yourself.
  *
  * It ANNOTATES pending pipeline rows with a labeled `rank: {score}/5 — {reason}`
@@ -21,25 +21,25 @@
  * new network endpoint.
  *
  * Usage:
- *   node rank-pipeline.mjs                     # rank up to --limit pending entries
- *   node rank-pipeline.mjs --limit 10
- *   node rank-pipeline.mjs --cli codex         # override CLI auto-detection
- *   node rank-pipeline.mjs --model <name>      # passed through when the CLI takes one
- *   node rank-pipeline.mjs --dry-run           # print what would be written
- *   node rank-pipeline.mjs --self-test         # in-memory suite; spawns no subprocess
+ *   node scripts/rank-pipeline.mjs                     # rank up to --limit pending entries
+ *   node scripts/rank-pipeline.mjs --limit 10
+ *   node scripts/rank-pipeline.mjs --cli codex         # override CLI auto-detection
+ *   node scripts/rank-pipeline.mjs --model <name>      # passed through when the CLI takes one
+ *   node scripts/rank-pipeline.mjs --dry-run           # print what would be written
+ *   node scripts/rank-pipeline.mjs --self-test         # in-memory suite; spawns no subprocess
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { execFileSync } from 'child_process';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { flagValue, hasFlag, safeIntFlag, validateFlags } from './lib/cli-flags.mjs';
+import { flagValue, hasFlag, safeIntFlag, validateFlags } from '../lib/cli-flags.mjs';
 import { sanitizeMarkdownField } from './scan.mjs';
 import { withPipelineLock } from './pipeline-lock.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
-const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
+const CAREER_OPS = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const PIPELINE_PATH = join(DATA_ROOT, 'data', 'pipeline.md');
 const CV_PATH = join(DATA_ROOT, 'cv.md');
@@ -67,9 +67,9 @@ export const CLI_CANDIDATES = [
 ];
 
 const USAGE = `
-  rank-pipeline.mjs — opt-in LLM relevance re-ranker (annotates, never filters)
+  scripts/rank-pipeline.mjs — opt-in LLM relevance re-ranker (annotates, never filters)
 
-  node rank-pipeline.mjs [--limit N] [--cli <name>] [--model <name>] [--dry-run]
+  node scripts/rank-pipeline.mjs [--limit N] [--cli <name>] [--model <name>] [--dry-run]
 
     --limit N     max entries to rank this run (default ${DEFAULT_LIMIT}, ceiling ${LIMIT_CEILING})
     --cli <name>  force a CLI instead of $CAREER_OPS_CLI or auto-detection
@@ -136,7 +136,7 @@ export function appendRankAnnotation(rawLine, score, reason) {
   if (typeof rawLine !== 'string' || rawLine.includes(RANK_LABEL)) return rawLine;
   const segment = formatRankSegment(score, reason);
   if (!segment) return rawLine;
-  // Rides last, after posted:/trust:/note:, keeping scan.mjs's stable order.
+  // Rides last, after posted:/trust:/note:, keeping scripts/scan.mjs's stable order.
   return `${rawLine} | ${segment}`;
 }
 
@@ -391,7 +391,7 @@ async function main(args) {
 
   let written = 0;
   if (annotations.length) {
-    // Re-read inside the lock: scan.mjs, scan-ats-full.mjs and a concurrent run of
+    // Re-read inside the lock: scripts/scan.mjs, scripts/scan-ats-full.mjs and a concurrent run of
     // this script all write data/pipeline.md, so the file may have moved since the
     // read above. Match original row occurrences; skip ambiguous duplicate groups.
     await withPipelineLock(PIPELINE_PATH, () => {

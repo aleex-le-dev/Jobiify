@@ -27,7 +27,7 @@ data/parser-output/**
 !data/parser-output/**/.gitkeep
 reports/*.md
 # Single-level glob above misses subdirectories (e.g. reports/superseded/).
-# Kept alongside it rather than replacing it, so update-system.mjs does not
+# Kept alongside it rather than replacing it, so scripts/update-system.mjs does not
 # re-append the original pattern as "missing".
 reports/**/*.md
 !reports/.gitkeep
@@ -105,8 +105,8 @@ config/profile.yml
 config/cv-facts.json
 config/benchmarks.yml
 # Fork-local path declarations — this checkout's own files, read by
-# update-system.mjs. Gitignored on purpose: it describes THIS clone, not the
-# project, and must survive the sync that overwrites update-system.mjs (#2421).
+# scripts/update-system.mjs. Gitignored on purpose: it describes THIS clone, not the
+# project, and must survive the sync that overwrites scripts/update-system.mjs (#2421).
 config/local-paths.txt
 portals.yml
 modes/_profile.md
@@ -134,24 +134,24 @@ plugins.lock
 .resolved-prompt-*
 node_modules
 bun.lock
-# Working copy the test suite makes under the repo root (test-all.mjs
+# Working copy the test suite makes under the repo root (scripts/test-all.mjs
 # `mkdtempSync(join(ROOT, '.tmp-script-test-'))`). A clean run deletes it; a
 # run interrupted mid-way leaves ~650MB of duplicated repo behind, which a
 # reflexive `git add .` would then stage as ~1000 new files.
 .tmp-script-test-*/
 
-# Report-number reservation sentinels (ephemeral, created by reserve-report-num.mjs)
+# Report-number reservation sentinels (ephemeral, created by scripts/reserve-report-num.mjs)
 reports/*-RESERVED.md
 
-# Backup files. Two shapes exist: `{file}.bak` (normalize-statuses.mjs,
-# dedup-tracker.mjs, tracker.mjs) and `{file}.bak-{ISO timestamp}`
+# Backup files. Two shapes exist: `{file}.bak` (scripts/normalize-statuses.mjs,
+# scripts/dedup-tracker.mjs, scripts/tracker.mjs) and `{file}.bak-{ISO timestamp}`
 # (web/src/lib/core/safe-write.ts). A plain `*.bak` glob misses the timestamped
 # form, which for cv.md or portals.yml leaves a file holding the same PII as the
 # original sitting untracked in the repo root. Trailing `*` covers both.
 *.bak*
 
 # Atomic-write temp files, the sibling of the backups above and from the same
-# two writers: `.{name}.{pid}.{ts}.{uuid}.tmp` (tracker-utils.mjs
+# two writers: `.{name}.{pid}.{ts}.{uuid}.tmp` (scripts/tracker-utils.mjs
 # writeFileAtomic, web/src/lib/core/safe-write.ts atomicWrite). They exist only
 # between the write and the rename — but a rename that throws (Windows
 # destination-handle contention, ENOSPC, a read-only mount) leaves one behind
@@ -179,12 +179,12 @@ reports/*-RESERVED.md
 applications.md
 follow-ups.md
 
-# The tracker's derived SQLite index (tracker.mjs, #918). It sits beside the
+# The tracker's derived SQLite index (scripts/tracker.mjs, #918). It sits beside the
 # tracker markdown, so on the standard layout it lands in data/ and is already
 # covered by the rules above — but resolveTrackerPath() falls back to
 # `<root>/applications.md` when data/applications.md is absent, and the index
 # follows it there. That is the legacy install layout, and it is also every
-# fresh clone: `node test-all.mjs` leaves a 36KB applications.db in the repo
+# fresh clone: `node scripts/test-all.mjs` leaves a 36KB applications.db in the repo
 # root, which `git add .` then stages.
 #
 # Its content is the whole tracker — company, role, score, status, notes — so it
@@ -267,7 +267,7 @@ data/output/
 data/documents/
 data/interview-prep/
 
-# Repo-local LaTeX engine placed by install-latex-engine.mjs (.part is its staging copy)
+# Repo-local LaTeX engine placed by scripts/install-latex-engine.mjs (.part is its staging copy)
 /tectonic
 /tectonic.exe
 /tectonic.part

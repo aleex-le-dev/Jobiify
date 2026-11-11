@@ -49,7 +49,7 @@ test("parseCvEnvelope: normalizes format case", () => {
   // Given an envelope shouting the format
   const result = parseCvEnvelope(envelope(DOC, "A4"));
 
-  // Then it is lowercased to what generate-pdf.mjs expects
+  // Then it is lowercased to what scripts/generate-pdf.mjs expects
   assert.equal(result.ok, true);
   assert.equal(result.format, "a4");
   assert.deepEqual(result.warnings, []);
@@ -69,7 +69,7 @@ test("parseCvEnvelope: missing format falls back to letter with a warning", () =
 });
 
 test("parseCvEnvelope: unrecognized format falls back to letter with a warning", () => {
-  // Given an envelope naming a page size generate-pdf.mjs does not support
+  // Given an envelope naming a page size scripts/generate-pdf.mjs does not support
   const result = parseCvEnvelope(envelope(DOC, "legal"));
 
   // Then it degrades to the documented default rather than passing junk on

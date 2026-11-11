@@ -22,7 +22,7 @@ import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync, mkdirSync
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { execFileSync } from 'child_process';
-import { collectSeenUrls, collectSeenCompanyRoles, unrecordedOffers, shouldDedupScanHistoryRow } from '../scan.mjs';
+import { collectSeenUrls, collectSeenCompanyRoles, unrecordedOffers, shouldDedupScanHistoryRow } from '../scripts/scan.mjs';
 
 console.log('\nscan.mjs — location- and age-filtered offers are recorded in scan-history.tsv');
 
@@ -70,7 +70,7 @@ function makeLane() {
 function runScan(dir, portals, args = []) {
   const childEnv = { ...process.env };
   for (const name of SCANNER_PATH_VARS) delete childEnv[name];
-  return execFileSync(NODE, [join(ROOT, 'scan.mjs'), ...args], {
+  return execFileSync(NODE, [join(ROOT, 'scripts/scan.mjs'), ...args], {
     cwd: dir,
     env: { ...childEnv, CAREER_OPS_ROOT: dir, CAREER_OPS_PORTALS: portals },
     encoding: 'utf-8',

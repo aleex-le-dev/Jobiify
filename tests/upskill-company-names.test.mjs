@@ -18,7 +18,7 @@
 //
 // The exclusion is deliberately narrow: a token only drops out if it matches a
 // company in the user's own tracker. And it is REPORTED, never silent. The
-// module's own hard-won lesson (see upskill.mjs's known-skills header) is that
+// module's own hard-won lesson (see scripts/upskill.mjs's known-skills header) is that
 // "suppressed because known" being indistinguishable from "never appeared" is
 // what made the original suppression bug expensive. An engineer who genuinely
 // needs Snowflake-the-tool and once applied to Snowflake-the-company sees it
@@ -31,7 +31,7 @@ console.log('\nupskill.mjs company-name exclusion (a tracked employer is not a s
 
 try {
   const { aggregateGaps, extractSkills, knownSkillsText } =
-    await import(pathToFileURL(join(ROOT, 'upskill.mjs')).href);
+    await import(pathToFileURL(join(ROOT, 'scripts/upskill.mjs')).href);
 
   // ── the reported bug, reproduced in the shape reports actually write ──────
   {

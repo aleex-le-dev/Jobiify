@@ -7,13 +7,13 @@ import {
   computeListingFingerprint,
   validateListingFingerprint,
   listingKey,
-} from '../listing-fingerprint.mjs';
+} from '../scripts/listing-fingerprint.mjs';
 
 const STRONG = { ats_provider: 'greenhouse', board_slug: 'example', posting_id: '12345' };
 // Pinned contract fixture: consumers must derive this key without URL context.
 const KEY = 'listing_v1_a8b20889013d5069bc5173d8f948309aef3a2bf1946e7190f628ea053271ecc6';
 const POSTING_URL = 'https://boards.greenhouse.io/example/jobs/12345';
-const cliPath = fileURLToPath(new URL('../listing-fingerprint.mjs', import.meta.url));
+const cliPath = fileURLToPath(new URL('../scripts/listing-fingerprint.mjs', import.meta.url));
 const runCli = (...args) => spawnSync(process.execPath, [cliPath, ...args], {
   encoding: 'utf8',
   timeout: 10000,

@@ -9,7 +9,7 @@ import { useI18n } from "@/components/i18n-provider";
 
 // Follow-up cadence knobs → config/profile.yml (followup_cadence). Server-
 // persisted (unlike the localStorage engine prefs above) because the core
-// followup-cadence.mjs reads the same keys — the CLI and the web must agree.
+// scripts/followup-cadence.mjs reads the same keys — the CLI and the web must agree.
 
 const FIELDS: {
   key: ProfileCadenceKey;

@@ -70,7 +70,7 @@ export function parseInbox(md) {
       role: positional[1] ?? "",
       location: positional[2] || undefined, // optional 4th column (#1015)
       compensation: positional[3] || undefined, // optional 5th column (#1017); 6th+ ignored
-      // the row's own posting date (scan.mjs `posted:` label) — a more direct
+      // the row's own posting date (scripts/scan.mjs `posted:` label) — a more direct
       // freshness signal than the scan-history join, which stays as fallback
       postedAt: posted && /^\d{4}-\d{2}-\d{2}/.test(posted) ? posted : undefined,
     });

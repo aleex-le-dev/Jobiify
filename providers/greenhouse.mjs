@@ -4,7 +4,7 @@
 // Greenhouse provider — hits the public boards-api JSON endpoint.
 // Handles both explicit `api:` URLs and auto-detection from `careers_url`.
 // Requests the board with `content=true` (#3175) so each posting carries its
-// full body as plain-text `description`; scan.mjs's content_filter,
+// full body as plain-text `description`; scripts/scan.mjs's content_filter,
 // country_eligibility filter and visa_filter all read that field, and without
 // it every Greenhouse board passed those filters blind.
 
@@ -84,7 +84,7 @@ function toEpochMs(value) {
 // Some Greenhouse boards put the *work model* ("Hybrid", "In-Office",
 // "Distributed") in location.name and keep the actual city in the separate
 // offices[] array — which the /jobs list endpoint does not return. For those
-// boards scan.mjs's location_filter never sees a city, so every role is
+// boards scripts/scan.mjs's location_filter never sees a city, so every role is
 // evaluated against the string "Hybrid" and silently dropped. Same bug class
 // as #1073 (Ashby dropping secondaryLocations), different provider.
 //
@@ -182,7 +182,7 @@ export default {
 
   // Titles, URLs and dates only: the same list without content=true, and no
   // /offices lookup. A fraction of fetch()'s bytes (5 live boards sampled
-  // 2026-10-07: 99 KB against 1.67 MB). scan-ats-full.mjs uses it to rule a
+  // 2026-10-07: 99 KB against 1.67 MB). scripts/scan-ats-full.mjs uses it to rule a
   // board out before paying for fetch(); nothing here is filtered on.
   async fetchListing(entry, ctx) {
     const apiUrl = resolveApiUrl(entry);
@@ -250,7 +250,7 @@ export default {
         // the office tree, so the order is Greenhouse's, and it is not promised
         // to be stable between responses. Unsorted, a board that re-orders its
         // offices rewrites this string, which changes the posting's location
-        // dedupe key (scan.mjs `normalizeLocationForDedup`) and the row already
+        // dedupe key (scripts/scan.mjs `normalizeLocationForDedup`) and the row already
         // written to scan-history.tsv — so a posting nothing changed about
         // reads as new. Sorting costs nothing and removes the dependency.
         if (offices && offices.size > 0) location = [location, ...[...offices].sort()].join(' · ');

@@ -75,22 +75,22 @@ title_filter:
   positive: ["AI Engineer"]
 `);
 
-  if (run(NODE, ['validate-portals.mjs', '--file', scalar]) === null) pass('validate-portals rejects a scalar domain_filter');
+  if (run(NODE, ['scripts/validate-portals.mjs', '--file', scalar]) === null) pass('validate-portals rejects a scalar domain_filter');
   else fail('validate-portals should reject a scalar domain_filter');
 
-  if (run(NODE, ['validate-portals.mjs', '--file', badEntry]) === null) pass('validate-portals rejects a non-string / empty domain_filter entry');
+  if (run(NODE, ['scripts/validate-portals.mjs', '--file', badEntry]) === null) pass('validate-portals rejects a non-string / empty domain_filter entry');
   else fail('validate-portals should reject a non-string / empty domain_filter entry');
 
   for (const [i, file] of barePrefixes.entries()) {
-    if (run(NODE, ['validate-portals.mjs', '--file', file]) === null) pass(`validate-portals rejects a word:/stem: prefix with no term (case ${i})`);
+    if (run(NODE, ['scripts/validate-portals.mjs', '--file', file]) === null) pass(`validate-portals rejects a word:/stem: prefix with no term (case ${i})`);
     else fail(`validate-portals should reject a word:/stem: prefix with no term (case ${i})`);
   }
 
-  const validOut = run(NODE, ['validate-portals.mjs', '--file', valid]);
+  const validOut = run(NODE, ['scripts/validate-portals.mjs', '--file', valid]);
   if (validOut !== null && validOut.includes('0 errors')) pass('validate-portals accepts a prefixed domain_filter list');
   else fail('validate-portals should accept a prefixed domain_filter list');
 
-  const absentOut = run(NODE, ['validate-portals.mjs', '--file', absent]);
+  const absentOut = run(NODE, ['scripts/validate-portals.mjs', '--file', absent]);
   if (absentOut !== null && absentOut.includes('0 errors')) pass('an absent domain_filter stays valid — the gate is opt-in');
   else fail('an absent domain_filter must stay valid');
 } finally {

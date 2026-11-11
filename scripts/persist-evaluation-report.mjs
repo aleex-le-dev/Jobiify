@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * persist-evaluation-report.mjs
+ * scripts/persist-evaluation-report.mjs
  *
  * Write one evaluation report and one headed tracker-addition TSV.
  * Stdin is one JSON object:
@@ -15,8 +15,8 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { isMainModule } from "./lib/is-main-module.mjs";
-import { isPostingUrl, trackerTsvLine } from "./lib/tracker-addition.mjs";
+import { isMainModule } from "../lib/is-main-module.mjs";
+import { isPostingUrl, trackerTsvLine } from "../lib/tracker-addition.mjs";
 
 const ISO_DATE_RE = /^20\d{2}-\d{2}-\d{2}$/;
 const NUM_RE = /^\d{3,}$/;
@@ -133,7 +133,7 @@ function readStdin() {
 }
 
 const USAGE_LINES = [
-  "Usage: node persist-evaluation-report.mjs < payload.json",
+  "Usage: node scripts/persist-evaluation-report.mjs < payload.json",
   "",
   "Read one JSON object on stdin and write the evaluation report plus a",
   "headed tracker-addition TSV under the process cwd (the data root).",

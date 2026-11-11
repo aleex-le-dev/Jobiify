@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * reconcile-pipeline.mjs — Sync pipeline.md "Pendientes" with batch-state.tsv
+ * scripts/reconcile-pipeline.mjs — Sync pipeline.md "Pendientes" with batch-state.tsv
  *
  * THE PROBLEM
  * batch-runner.sh records every evaluated offer in batch/batch-state.tsv, but
@@ -18,7 +18,7 @@
  * an entry already present in Procesadas is dropped from Pendientes without a
  * second copy. Safe to run after every batch.
  *
- * Run: node reconcile-pipeline.mjs [--dry-run] [--state <path>] [--pipeline <path>]
+ * Run: node scripts/reconcile-pipeline.mjs [--dry-run] [--state <path>] [--pipeline <path>]
  */
 
 import { readFileSync, existsSync, readdirSync, copyFileSync, realpathSync, statSync } from 'fs';
@@ -26,16 +26,16 @@ import { join, dirname, resolve, relative, isAbsolute } from 'path';
 import { fileURLToPath } from 'url';
 import { normalizeReportLink } from './tracker-links.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { flagValue, validateFlags } from './lib/cli-flags.mjs';
+import { flagValue, validateFlags } from '../lib/cli-flags.mjs';
 import { withPipelineLock, LockTimeoutError } from './pipeline-lock.mjs';
 import { writeFileAtomic } from './tracker-utils.mjs';
 
 const CAREER_OPS = getCareerOpsRoot();
-const CODEBASE_ROOT = dirname(fileURLToPath(import.meta.url));
+const CODEBASE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const KNOWN_FLAGS = ['--dry-run', '--pipeline', '--state', '--help', '-h'];
 const VALUE_FLAGS = ['--pipeline', '--state'];
-const USAGE = `Usage: node reconcile-pipeline.mjs [--dry-run] [--state <path>] [--pipeline <path>]
+const USAGE = `Usage: node scripts/reconcile-pipeline.mjs [--dry-run] [--state <path>] [--pipeline <path>]
   Moves batch-processed offers out of pipeline.md "Pendientes" into "Procesadas".`;
 
 // An unrecognized flag (typo'd --dry-run, say) used to be silently ignored
@@ -184,7 +184,7 @@ function lineUrl(body) {
 }
 
 // The whole read → compute → write runs under the pipeline lock (#4895).
-// scan.mjs and every other pipeline writer append under withPipelineLock; a
+// scripts/scan.mjs and every other pipeline writer append under withPipelineLock; a
 // bare read here followed by a bare write later silently dropped any offers
 // appended in between — and the .pre-reconcile.bak, copied before they
 // landed, did not have them either.

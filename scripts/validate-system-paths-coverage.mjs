@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * validate-system-paths-coverage.mjs — structural coverage check for the
+ * scripts/validate-system-paths-coverage.mjs — structural coverage check for the
  * auto-updater layer split.
  *
  * Every tracked file in the repo must be covered by either SYSTEM_PATHS
- * (system layer, fetched on `update-system.mjs apply`) or USER_PATHS
+ * (system layer, fetched on `scripts/update-system.mjs apply`) or USER_PATHS
  * (user-owned, except for exact system-owned `.gitkeep` scaffolds explicitly
  * listed in SYSTEM_PATHS). Anything else is a coverage gap: it
  * lives in the repo but the auto-updater won't propagate it to
  * clients on `apply`. That breaks them on the next test run.
  *
- * Run: node validate-system-paths-coverage.mjs
+ * Run: node scripts/validate-system-paths-coverage.mjs
  * Exit 0 = clean. Exit 1 = orphan files listed.
  */
 
@@ -21,11 +21,11 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { extractArrayFromSource, localUserPaths, LOCAL_PATHS_FILE } from './update-system.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
-const sourcePath = join(ROOT, 'update-system.mjs');
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+const sourcePath = join(ROOT, 'scripts/update-system.mjs');
 
 if (!existsSync(sourcePath)) {
-  console.error('FAIL: update-system.mjs not found');
+  console.error('FAIL: scripts/update-system.mjs not found');
   process.exit(1);
 }
 
@@ -35,13 +35,13 @@ const SYSTEM_PATHS = extractArrayFromSource(source, 'SYSTEM_PATHS');
 const USER_PATHS = extractArrayFromSource(source, 'USER_PATHS');
 
 if (SYSTEM_PATHS.length === 0 || USER_PATHS.length === 0) {
-  console.error('FAIL: SYSTEM_PATHS or USER_PATHS not found in update-system.mjs');
+  console.error('FAIL: SYSTEM_PATHS or USER_PATHS not found in scripts/update-system.mjs');
   process.exit(1);
 }
 // Paths a fork declared as its own in the gitignored local file (#2421).
 // Without these, a tracked fork-local file (a nightly runner, an .mcp.json)
 // is an orphan here and fails the whole suite, and the only fix is to edit
-// USER_PATHS inside update-system.mjs — the file `apply` overwrites and git
+// USER_PATHS inside scripts/update-system.mjs — the file `apply` overwrites and git
 // re-merges on every sync. A malformed declaration fails loudly: this guard
 // exists to be trustworthy, so it must never fall back to a partial view.
 let LOCAL_PATHS;
@@ -73,7 +73,7 @@ const EXCLUDES = [
   // the suite is red on a machine the author cannot inspect. Committing it made
   // it its own orphan, and it cannot declare itself (localUserPaths refuses,
   // correctly: its reason is that nothing updates a gitignored file). That loop
-  // sent forks back to editing USER_PATHS in update-system.mjs, which is exactly
+  // sent forks back to editing USER_PATHS in scripts/update-system.mjs, which is exactly
   // the permanent conflict #2421 removed. Excluded rather than declared, because
   // like the entries above it never reaches an install: what ships is
   // config/local-paths.example.txt.
@@ -84,7 +84,7 @@ const EXCLUDES = [
 // difference is the whole of #2756. It cannot join SYSTEM_PATHS: it is the one
 // system file users also write to, so the raw `git checkout` that ships every
 // other path would delete their own rules. It reaches installs by a different
-// route instead — update-system.mjs's reconcileGitignore(), which appends the
+// route instead — scripts/update-system.mjs's reconcileGitignore(), which appends the
 // system-owned rules an install is missing and touches nothing else.
 //
 // Kept in its own group rather than folded in above, because the entries above
@@ -96,7 +96,7 @@ const RECONCILED_NOT_CHECKED_OUT = ['.gitignore'];
 // Repo-only files: tracked here, deliberately never shipped to an install.
 //
 // SIGNATURES.md is the append-only ledger of who signed the manifesto. It is
-// read by nobody on an install — manifesto.mjs parses MANIFESTO.md and never
+// read by nobody on an install — scripts/manifesto.mjs parses docs/projet/MANIFESTO.md and never
 // touches it — and it changes far more often than the code does, so while it
 // sat in SYSTEM_PATHS every new signature made check()'s content diff report
 // `system-files-changed` on every install in the world, with no `apply` able
@@ -106,7 +106,7 @@ const REPO_ONLY = ['SIGNATURES.md'];
 
 // Trees that live in the repo but deliberately OUTSIDE the updater's world:
 // web/ is the experimental web UI — its own release-please component, never
-// shipped by update-system.mjs, never in the npm package. Excluding it here is
+// shipped by scripts/update-system.mjs, never in the npm package. Excluding it here is
 // part of that isolation contract, not a coverage gap.
 const EXCLUDE_PREFIXES = ['web/'];
 
@@ -137,7 +137,7 @@ function hasExplicitPlaceholderPolicy(file) {
 }
 
 if (process.argv.includes('--self-test')) {
-  console.log('Running validate-system-paths-coverage.mjs self-tests...');
+  console.log('Running scripts/validate-system-paths-coverage.mjs self-tests...');
   
   const assert = (condition, message) => {
     if (!condition) {
@@ -249,7 +249,7 @@ if (orphans.length > 0) {
   console.error('Coverage gap — tracked files not in SYSTEM_PATHS or USER_PATHS:');
   for (const orphan of orphans) console.error(`  ${orphan}`);
   console.error('');
-  console.error('Add each path to update-system.mjs SYSTEM_PATHS (if system layer)');
+  console.error('Add each path to scripts/update-system.mjs SYSTEM_PATHS (if system layer)');
   console.error('or USER_PATHS (if user-owned), then re-run this check.');
   process.exit(1);
 }

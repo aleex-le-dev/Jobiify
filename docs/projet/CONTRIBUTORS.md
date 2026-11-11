@@ -41,7 +41,7 @@ Members helping newcomers in Discord day-to-day.
 Everyone below has had work merged into career-ops. This list is **not a ranking
 and not a hierarchy** — it is alphabetical, and the icons say what kind of work
 someone did, not how much. Roles with actual repository access live in
-[MAINTAINERS.md](MAINTAINERS.md).
+[docs/projet/MAINTAINERS.md](MAINTAINERS.md).
 
 Key: 💻 code · 📖 docs · 🌍 translation · ⚠️ tests · 🔌 scanner provider · 🚇 infrastructure ·
 🐛 bug report · 🤔 ideas · 👀 review
@@ -326,4 +326,4 @@ open a PR. You can also ask on your own behalf — that is not rude here.
 
 ## How to become a contributor
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Contributor Ladder](GOVERNANCE.md#contributor-ladder) in GOVERNANCE.md. Open an issue first for a new feature, a new mode or command, or an architecture change. Bug fixes, zero-auth scanner providers, docs and translations can go straight to a PR. We merge fast when scope is clear.
+See [docs/projet/CONTRIBUTING.md](CONTRIBUTING.md) and the [Contributor Ladder](GOVERNANCE.md#contributor-ladder) in docs/projet/GOVERNANCE.md. Open an issue first for a new feature, a new mode or command, or an architecture change. Bug fixes, zero-auth scanner providers, docs and translations can go straight to a PR. We merge fast when scope is clear.

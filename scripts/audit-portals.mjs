@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * audit-portals.mjs — content audit for portals.yml.
+ * scripts/audit-portals.mjs — content audit for portals.yml.
  *
- * WHY THIS IS NOT verify-portals.mjs. That script asks "does this endpoint
+ * WHY THIS IS NOT scripts/verify-portals.mjs. That script asks "does this endpoint
  * answer with postings?" and is the right gate for a broken slug. It cannot ask
  * the question that actually costs coverage: *whose* postings are these?
  *
@@ -14,7 +14,7 @@
  *     passed. Booking.com's own board (145 product/engineering roles, a
  *     different ATS entirely) was never scanned at all.
  *   - Twelve entries carried `enabled: true` with a `careers_url` no provider
- *     claims. `scan.mjs` skips those silently on every run, so they read as
+ *     claims. `scripts/scan.mjs` skips those silently on every run, so they read as
  *     coverage while contributing nothing. Talkdesk was one: its real board is
  *     Greenhouse `talkdesk2`, 48 roles, one character off the slug nobody had.
  *
@@ -27,7 +27,7 @@
  *               a quiet board and a wrong board look identical from here, which
  *               is exactly why the samples are printed.
  *   empty       answers with zero postings
- *   no-provider entry is enabled but no provider claims it — scan.mjs skips it
+ *   no-provider entry is enabled but no provider claims it — scripts/scan.mjs skips it
  *   error       the fetch itself failed
  *
  * HONEST LIMIT: no heuristic reliably detects "right company, wrong entity".
@@ -38,16 +38,16 @@
  * as verdicts.
  *
  * Usage:
- *   node audit-portals.mjs                       # audit every enabled company
- *   node audit-portals.mjs --summary             # one line per company
- *   node audit-portals.mjs --json                # machine-readable, for --baseline
- *   node audit-portals.mjs --company Adyen       # audit a single company
- *   node audit-portals.mjs --file <path>         # use a specific portals file
- *   node audit-portals.mjs --baseline prev.json  # flag boards that lost postings
- *   node audit-portals.mjs --small-threshold 10  # what counts as a small board
- *   node audit-portals.mjs --strict              # exit 1 on any non-ok verdict
- *   node audit-portals.mjs --queries             # offline search-query drift advice
- *   node audit-portals.mjs --help
+ *   node scripts/audit-portals.mjs                       # audit every enabled company
+ *   node scripts/audit-portals.mjs --summary             # one line per company
+ *   node scripts/audit-portals.mjs --json                # machine-readable, for --baseline
+ *   node scripts/audit-portals.mjs --company Adyen       # audit a single company
+ *   node scripts/audit-portals.mjs --file <path>         # use a specific portals file
+ *   node scripts/audit-portals.mjs --baseline prev.json  # flag boards that lost postings
+ *   node scripts/audit-portals.mjs --small-threshold 10  # what counts as a small board
+ *   node scripts/audit-portals.mjs --strict              # exit 1 on any non-ok verdict
+ *   node scripts/audit-portals.mjs --queries             # offline search-query drift advice
+ *   node scripts/audit-portals.mjs --help
  *
  * Network: only main() and auditCompanies() hit the network, and every call
  * goes through the injected provider layer, so the classification logic is
@@ -59,12 +59,12 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 
-import { makeHttpCtx } from './providers/_http.mjs';
-import { loadProviders, resolveProvider } from './providers/_registry.mjs';
-import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
+import { makeHttpCtx } from '../providers/_http.mjs';
+import { loadProviders, resolveProvider } from '../providers/_registry.mjs';
+import { flagValue, hasFlag, validateFlags } from '../lib/cli-flags.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { DEFAULT_SMALL_THRESHOLD, isSmallBoard, smallBoardDetail } from './lib/small-board.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { DEFAULT_SMALL_THRESHOLD, isSmallBoard, smallBoardDetail } from '../lib/small-board.mjs';
 
 // Anchored, not cwd-relative. Both paths below used to be bare relative
 // strings, which silently audited nothing the moment the script was invoked
@@ -79,13 +79,13 @@ import { DEFAULT_SMALL_THRESHOLD, isSmallBoard, smallBoardDetail } from './lib/s
 // travels to a user's data root. Anchoring it to the data root reproduced the
 // exact failure the paragraph above describes — loadProviders() reads a
 // directory that does not exist, returns an empty registry, and the audit
-// reports `0 audited` and exits 0. scan.mjs already splits the two this way.
+// reports `0 audited` and exits 0. scripts/scan.mjs already splits the two this way.
 const ROOT = getCareerOpsRoot();
-const CODE_ROOT = dirname(fileURLToPath(import.meta.url));
+const CODE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DEFAULT_PORTALS_PATH = process.env.CAREER_OPS_PORTALS || join(ROOT, 'portals.yml');
 export const PROVIDERS_DIR = join(CODE_ROOT, 'providers');
 
-// Shared with discover-ats.mjs so the two tools agree on what a small board is.
+// Shared with scripts/discover-ats.mjs so the two tools agree on what a small board is.
 export { DEFAULT_SMALL_THRESHOLD };
 
 /**
@@ -127,14 +127,14 @@ export function classifyBoard(result, { smallThreshold = DEFAULT_SMALL_THRESHOLD
       verdict: 'no-provider',
       count: null,
       // Two different defects wear this verdict, and the distinction decides how
-      // urgent it is. Without a scan_method the entry vanishes into scan.mjs's
+      // urgent it is. Without a scan_method the entry vanishes into scripts/scan.mjs's
       // "N skipped — no provider matched" counter and nothing names it. With
       // `scan_method: websearch` it is at least announced in the agent-handoff
       // list — deliberate, but it costs agent tokens and returns nothing
       // zero-token, so it is still worth a board if one exists.
       detail: result.scanMethod
-        ? `no provider claims this entry — scan.mjs hands it to the agent (scan_method: ${result.scanMethod})`
-        : 'no provider claims this entry and it declares no scan_method — scan.mjs drops it into an unnamed skip count',
+        ? `no provider claims this entry — scripts/scan.mjs hands it to the agent (scan_method: ${result.scanMethod})`
+        : 'no provider claims this entry and it declares no scan_method — scripts/scan.mjs drops it into an unnamed skip count',
     };
   }
   if (result.error) {
@@ -265,7 +265,7 @@ export async function auditCompanies(companies, {
  *
  * Split out from auditCompanies() because it needs no network at all — provider
  * resolution is pure config matching — which is what makes it safe to run inside
- * verify-pipeline.mjs's health check, where 170 live board fetches would not be.
+ * scripts/verify-pipeline.mjs's health check, where 170 live board fetches would not be.
  * It is also the higher-yield half: a board that answers with the wrong
  * company's jobs still needs a human to notice, but an entry nothing claims is
  * unambiguously dead config, provable without leaving the machine.
@@ -273,13 +273,13 @@ export async function auditCompanies(companies, {
  * Three buckets, because they are three different bugs with three different
  * fixes:
  *
- *   silent          no provider, no scan_method. The real defect — scan.mjs
+ *   silent          no provider, no scan_method. The real defect — scripts/scan.mjs
  *                   folds it into "N skipped" and never names it.
- *   handoff         declares `scan_method`, so scan.mjs prints it in the
+ *   handoff         declares `scan_method`, so scripts/scan.mjs prints it in the
  *                   agent-handoff list. Deliberate, but it costs agent tokens
  *                   and yields nothing zero-token, so it is still worth a board.
  *   unknownProvider `provider:` names an id no module exports — almost always a
- *                   typo. scan.mjs does report this one loudly, but it is dead
+ *                   typo. scripts/scan.mjs does report this one loudly, but it is dead
  *                   config until someone fixes the string.
  *
  * @param {Array<object>} entries - tracked_companies and/or boards entries.
@@ -294,10 +294,10 @@ export function findUnclaimedEntries(entries, providers) {
     if (!entry || typeof entry !== 'object' || entry.enabled === false) continue;
     if (typeof entry.name !== 'string' || !entry.name.trim()) continue;
     // No skipIds here, unlike auditCompanies(): that one refuses to RUN a
-    // configured local-parser command, but scan.mjs does claim those entries, so
+    // configured local-parser command, but scripts/scan.mjs does claim those entries, so
     // excluding them would report a working parser as dead config. The question
-    // this function answers is "would scan.mjs claim it?", so it resolves
-    // exactly the way scan.mjs does.
+    // this function answers is "would scripts/scan.mjs claim it?", so it resolves
+    // exactly the way scripts/scan.mjs does.
     const resolved = providers && providers.size > 0 ? resolveProvider(entry, providers) : null;
     if (resolved?.provider) continue;
     const row = {
@@ -335,7 +335,7 @@ export function findStaleScanQueries(companies, positiveKeywords) {
   const findings = [];
   for (const company of Array.isArray(companies) ? companies : []) {
     if (!company || company.enabled === false || company.scan_method !== 'websearch') continue;
-    // Follow scan.mjs's handoff precedence, but a careers URL alone isn't a query.
+    // Follow scripts/scan.mjs's handoff precedence, but a careers URL alone isn't a query.
     const query = company.scan_query || company.search_query;
     if (typeof query !== 'string' || !query.trim()) continue;
     const terms = query
@@ -364,16 +364,16 @@ const KNOWN_FLAGS = [
 const VALUE_FLAGS = ['--company', '--file', '--baseline', '--small-threshold'];
 
 const USAGE = `Usage:
-  node audit-portals.mjs                       # audit every enabled company
-  node audit-portals.mjs --summary             # one line per company
-  node audit-portals.mjs --json                # machine-readable, for --baseline
-  node audit-portals.mjs --company Adyen       # audit a single company
-  node audit-portals.mjs --file <path>         # use a specific portals file
-  node audit-portals.mjs --baseline prev.json  # flag boards that lost postings
-  node audit-portals.mjs --small-threshold 10  # what counts as a small board
-  node audit-portals.mjs --strict              # exit 1 on any non-ok verdict
-  node audit-portals.mjs --queries             # offline advisory; never rewrites queries
-  node audit-portals.mjs --help                # print this usage block and exit`;
+  node scripts/audit-portals.mjs                       # audit every enabled company
+  node scripts/audit-portals.mjs --summary             # one line per company
+  node scripts/audit-portals.mjs --json                # machine-readable, for --baseline
+  node scripts/audit-portals.mjs --company Adyen       # audit a single company
+  node scripts/audit-portals.mjs --file <path>         # use a specific portals file
+  node scripts/audit-portals.mjs --baseline prev.json  # flag boards that lost postings
+  node scripts/audit-portals.mjs --small-threshold 10  # what counts as a small board
+  node scripts/audit-portals.mjs --strict              # exit 1 on any non-ok verdict
+  node scripts/audit-portals.mjs --queries             # offline advisory; never rewrites queries
+  node scripts/audit-portals.mjs --help                # print this usage block and exit`;
 
 async function main() {
   const args = process.argv.slice(2);

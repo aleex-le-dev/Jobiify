@@ -2,7 +2,7 @@
 
 /**
  * Verify a tailored CV JSON payload preserves cv.md's structure — a
- * different class of bug than verify-cv-facts.mjs catches. That gate blocks
+ * different class of bug than scripts/verify-cv-facts.mjs catches. That gate blocks
  * FABRICATION (a claim absent from the source); this one warns about silent
  * LOSS or REORDERING of what the source already has, which fabrication
  * checking has no way to see: an omitted company descriptor, a dropped
@@ -21,7 +21,7 @@
  * companies all silently dropped a company descriptor (a "· Series B
  * fintech"-style suffix), one also dropped the Languages skill category
  * and every education description, and all three swapped two experience
- * entries out of chronological order — none of which verify-cv-facts.mjs
+ * entries out of chronological order — none of which scripts/verify-cv-facts.mjs
  * is designed to catch, so all three PDFs passed that gate anyway.
  *
  * Understands the Experience section names in lib/cv-markdown.mjs
@@ -37,19 +37,19 @@
  * silently no-opping or blocking every user whose cv.md looks different.
  *
  * Usage:
- *   node verify-cv-structure.mjs <payload.json> [--source cv.md]
- *   node verify-cv-structure.mjs --self-test
+ *   node scripts/verify-cv-structure.mjs <payload.json> [--source cv.md]
+ *   node scripts/verify-cv-structure.mjs --self-test
  */
 
 import { existsSync, readFileSync, realpathSync, mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'fs';
 import { isAbsolute, join, resolve, relative, sep, dirname, basename } from 'path';
 import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { findExperienceSections, parseCompanyHeading, EXPERIENCE_HEADING_NAMES } from './lib/cv-markdown.mjs';
+import { findExperienceSections, parseCompanyHeading, EXPERIENCE_HEADING_NAMES } from '../lib/cv-markdown.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DEFAULT_SOURCE = 'cv.md';
 
 /**
@@ -203,7 +203,7 @@ export function checkLocationDescriptors(payloadExperience, cvMdExperience) {
  * user who doesn't write cv.md exactly this way), but the CLI output cannot
  * be mistaken for a real check having run.
  *
- * @param {object} payload the parsed JSON payload build-cv-html.mjs consumes
+ * @param {object} payload the parsed JSON payload scripts/build-cv-html.mjs consumes
  * @param {string} cvMdText raw cv.md content
  * @returns {{ verdict: 'pass'|'warn'|'unverified', orderViolations: string[], descriptorViolations: string[] }}
  */
@@ -272,10 +272,10 @@ function resolveSourcePath(path) {
 }
 
 function usage() {
-  return `Usage: node verify-cv-structure.mjs <payload.json> [--source cv.md]
-       node verify-cv-structure.mjs --self-test
+  return `Usage: node scripts/verify-cv-structure.mjs <payload.json> [--source cv.md]
+       node scripts/verify-cv-structure.mjs --self-test
 
-Checks a tailored CV JSON payload (the input to build-cv-html.mjs) against cv.md
+Checks a tailored CV JSON payload (the input to scripts/build-cv-html.mjs) against cv.md
 for two structural regressions fabrication-checking cannot see: experience
 entries rendered out of cv.md's chronological order, and a company descriptor
 ("· Series B healthcare automation") silently dropped from an entry's location.

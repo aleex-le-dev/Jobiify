@@ -1,10 +1,10 @@
-// tests/ats-payload.test.mjs — the CLI contract of ats-payload.mjs (#3251).
+// tests/ats-payload.test.mjs — the CLI contract of scripts/ats-payload.mjs (#3251).
 //
 // The unit-level behaviour (the fold, its idempotency, the three lints) is
-// pinned by `node ats-payload.mjs --self-test`, registered in test-all.mjs's
+// pinned by `node scripts/ats-payload.mjs --self-test`, registered in scripts/test-all.mjs's
 // script list. What CANNOT be pinned from inside the module is the property the
 // whole design rests on: stdout carries the payload and ONLY the payload, so
-// `node ats-payload.mjs cv.json > cv-ats.json` yields a file build-cv-html.mjs
+// `node scripts/ats-payload.mjs cv.json > cv-ats.json` yields a file scripts/build-cv-html.mjs
 // can read, while every human-facing word goes to stderr. A findings line that
 // leaked into stdout would corrupt the artifact and nothing inside the module
 // would notice.
@@ -20,7 +20,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const SCRIPT = join(ROOT, 'ats-payload.mjs');
+const SCRIPT = join(ROOT, 'scripts/ats-payload.mjs');
 
 function run(args, { input } = {}) {
   const r = spawnSync(process.execPath, [SCRIPT, ...args], {
@@ -29,8 +29,8 @@ function run(args, { input } = {}) {
     input,
     timeout: 30_000,
   });
-  assert.equal(r.error, undefined, `ats-payload.mjs failed to spawn: ${r.error?.message}`);
-  assert.equal(r.signal, null, `ats-payload.mjs was killed by ${r.signal} (timeout?)`);
+  assert.equal(r.error, undefined, `scripts/ats-payload.mjs failed to spawn: ${r.error?.message}`);
+  assert.equal(r.signal, null, `scripts/ats-payload.mjs was killed by ${r.signal} (timeout?)`);
   return r;
 }
 
@@ -134,7 +134,7 @@ test('running the transform twice produces a byte-identical payload', () => {
   });
 });
 
-// ── The reason the transform exists: what build-cv-html.mjs then renders ─────
+// ── The reason the transform exists: what scripts/build-cv-html.mjs then renders ─────
 
 test('the folded payload renders comma-delimited under Skills, with no CSS-only tag spans', () => {
   withFixture(DIRTY_PAYLOAD, (file, dir) => {
@@ -142,10 +142,10 @@ test('the folded payload renders comma-delimited under Skills, with no CSS-only 
     writeFileSync(foldedFile, run([file]).stdout);
     const htmlFile = join(dir, 'cv.html');
 
-    const build = spawnSync(process.execPath, [join(ROOT, 'build-cv-html.mjs'), foldedFile, htmlFile], {
+    const build = spawnSync(process.execPath, [join(ROOT, 'scripts/build-cv-html.mjs'), foldedFile, htmlFile], {
       cwd: ROOT, encoding: 'utf-8', timeout: 30_000,
     });
-    assert.equal(build.status, 0, `build-cv-html.mjs failed: ${build.stderr}`);
+    assert.equal(build.status, 0, `scripts/build-cv-html.mjs failed: ${build.stderr}`);
 
     const html = readFileSync(htmlFile, 'utf-8');
     // The defect: competency tags separated by `gap: 8px` and nothing else, so
@@ -268,7 +268,7 @@ test('a mixed-type competencies array is refused rather than silently thinned', 
 
 test('a numeric competency is accepted, not refused', () => {
   // The guard is drawn at what is LOST, not at what is non-string: String()
-  // carries a numeric scalar through, and build-cv-html.mjs renders it
+  // carries a numeric scalar through, and scripts/build-cv-html.mjs renders it
   // (tests/cv-numeric-scalars.test.mjs). Rejecting it would make this script
   // stricter than the builder it feeds.
   const r = run(['-'], { input: JSON.stringify({ competencies: ['AWS', 2024] }) });

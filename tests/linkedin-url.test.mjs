@@ -1,7 +1,7 @@
 // tests/linkedin-url.test.mjs — the shared LinkedIn job-URL parser.
 //
 // lib/linkedin-url.mjs is the one body that reads a LinkedIn posting URL. The
-// `linkedin` rung of liveness-api.mjs and aggregatorPostingId in url-key.mjs
+// `linkedin` rung of scripts/liveness-api.mjs and aggregatorPostingId in scripts/url-key.mjs
 // resolve through it, and any other
 // consumer is meant to import it (or test parity against it) instead of copying
 // the regexes. So the shapes are pinned here on the module itself, and the later
@@ -11,8 +11,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { pass, fail, ROOT } from './helpers.mjs';
 import { linkedInJobId, linkedInPathJobId, linkedInGuestUrl } from '../lib/linkedin-url.mjs';
-import { resolveAtsApi } from '../liveness-api.mjs';
-import { aggregatorPostingId } from '../url-key.mjs';
+import { resolveAtsApi } from '../scripts/liveness-api.mjs';
+import { aggregatorPostingId } from '../scripts/url-key.mjs';
 
 console.log('\nlib/linkedin-url.mjs — LinkedIn job-URL parser');
 
@@ -87,7 +87,7 @@ for (const [desc, url] of [...ACCEPTS, ...REJECTS]) {
   check(`liveness rung agrees: ${desc}`, agrees, `${url} -> ${JSON.stringify(rung)}`);
 }
 
-// -- 5. url-key.mjs reads the same id --------------------------------------
+// -- 5. scripts/url-key.mjs reads the same id --------------------------------------
 // aggregatorPostingId matches the host its own way (it folds trailing dots), then
 // reads the path through linkedInPathJobId: same answer on every URL above.
 for (const [desc, url] of [...ACCEPTS, ...REJECTS]) {
@@ -109,7 +109,7 @@ check('linkedInPathJobId reads the path without the host',
 const src = readFileSync(join(ROOT, 'lib', 'linkedin-url.mjs'), 'utf-8');
 check('the module has no imports', !/^\s*import\b|\bimport\s*\(|\brequire\s*\(/m.test(src));
 
-// liveness-api.mjs is a SYSTEM_PATHS file: an upgraded install whose updater
+// scripts/liveness-api.mjs is a SYSTEM_PATHS file: an upgraded install whose updater
 // had no entry for this module would check out a liveness-api that cannot load.
-const updaterSrc = readFileSync(join(ROOT, 'update-system.mjs'), 'utf-8');
-check('update-system.mjs ships lib/linkedin-url.mjs', updaterSrc.includes("'lib/linkedin-url.mjs'"));
+const updaterSrc = readFileSync(join(ROOT, 'scripts/update-system.mjs'), 'utf-8');
+check('scripts/update-system.mjs ships lib/linkedin-url.mjs', updaterSrc.includes("'lib/linkedin-url.mjs'"));

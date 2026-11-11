@@ -3,10 +3,10 @@
 /**
  * Versioned local listing identity (#1030). Only a resolved ATS-native triple
  * authorizes a match. URL context never does; JD similarity remains owned by
- * fingerprint-core.mjs. See docs/listing-fingerprint.md for the v1 contract.
+ * scripts/fingerprint-core.mjs. See docs/listing-fingerprint.md for the v1 contract.
  */
 import { createHash } from 'node:crypto';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 export const LISTING_FINGERPRINT_VERSION = 1;
 const TRIPLE_FIELDS = ['ats_provider', 'board_slug', 'posting_id'];
@@ -159,7 +159,7 @@ export function listingKey(record) {
 if (isMainModule(import.meta.url)) {
   const args = process.argv.slice(2);
   if (args.length === 1 && ['--help', '-h'].includes(args[0])) {
-    console.log('Usage: node listing-fingerprint.mjs [--validate] \'<JSON>\'\n'
+    console.log('Usage: node scripts/listing-fingerprint.mjs [--validate] \'<JSON>\'\n'
       + 'Compute a local record from {url?, strong?}, or validate a stored record. No files are written.');
   } else {
     const validate = args[0] === '--validate';

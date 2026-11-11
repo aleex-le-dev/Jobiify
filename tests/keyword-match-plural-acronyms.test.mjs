@@ -1,4 +1,4 @@
-// tests/keyword-match-plural-acronyms.test.mjs — keyword-match.mjs has to treat
+// tests/keyword-match-plural-acronyms.test.mjs — scripts/keyword-match.mjs has to treat
 // a keyword and its plural as one keyword, acronyms included.
 //
 // Two gaps, both in the acronyms a CV pluralizes most. variantForms() gave a
@@ -11,7 +11,7 @@
 // The guards below are the other half: they pass before and after the fix, and
 // fail if the plural rule is widened to two-letter tokens or to stripping.
 import assert from 'node:assert/strict';
-import { analyzeCoverage, expandTerms, variantForms } from '../keyword-match.mjs';
+import { analyzeCoverage, expandTerms, variantForms } from '../scripts/keyword-match.mjs';
 import { pass, fail } from './helpers.mjs';
 
 console.log('\nkeyword-match: plural acronyms and synonym groups');

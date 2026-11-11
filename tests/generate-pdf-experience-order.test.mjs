@@ -12,8 +12,8 @@
 
 import { existsSync, readFileSync } from 'fs';
 import { dirname, join, relative } from 'path';
-import { validateCvExperienceOrder } from '../cv-experience-order.mjs';
-import { listTemplates } from '../cv-templates.mjs';
+import { validateCvExperienceOrder } from '../scripts/cv-experience-order.mjs';
+import { listTemplates } from '../scripts/cv-templates.mjs';
 import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\n📄 generate-pdf: experience ordering guard');
@@ -273,7 +273,7 @@ function fromPartial(path, periods) {
   return `<html><body><h2>Work Experience</h2>${jobs.join('\n')}</body></html>`;
 }
 
-// The sections/experience.html beside each CV template, where build-cv-html.mjs
+// The sections/experience.html beside each CV template, where scripts/build-cv-html.mjs
 // looks for it.
 let partials = [];
 try {

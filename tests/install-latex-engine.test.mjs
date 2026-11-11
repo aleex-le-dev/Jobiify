@@ -1,10 +1,10 @@
 // tests/install-latex-engine.test.mjs -- the opt-in local LaTeX engine
-// installer (#5132) and the hint generate-latex.mjs gives when no engine is
+// installer (#5132) and the hint scripts/generate-latex.mjs gives when no engine is
 // found.
 //
 // No test here touches the network: fetch and engine detection are injected,
 // and the CLI cases exit in validateFlags before any download could start. The
-// real download is exercised by hand (`node install-latex-engine.mjs`), not in CI.
+// real download is exercised by hand (`node scripts/install-latex-engine.mjs`), not in CI.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -15,11 +15,11 @@ import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   TECTONIC_VERSION, TECTONIC_ASSETS, tectonicAsset, verifySha256, installTectonic,
-} from '../install-latex-engine.mjs';
-import { localTectonicPath } from '../generate-latex.mjs';
+} from '../scripts/install-latex-engine.mjs';
+import { localTectonicPath } from '../scripts/generate-latex.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const SCRIPT = join(ROOT, 'install-latex-engine.mjs');
+const SCRIPT = join(ROOT, 'scripts/install-latex-engine.mjs');
 
 function run(script, args, env = process.env) {
   const result = spawnSync(process.execPath, [script, ...args], {
@@ -151,7 +151,7 @@ test('tectonic that is already available short-circuits without downloading', as
   assert.equal(calls.length, 0);
 });
 
-// generate-latex.mjs sends pdflatex-only users with CJK content here; stopping
+// scripts/generate-latex.mjs sends pdflatex-only users with CJK content here; stopping
 // at "already available" would leave them unable to build the CJK template.
 test('a host with only pdflatex still gets tectonic', async () => {
   const { impl, calls } = fakeFetch('x');
@@ -261,7 +261,7 @@ test('install-latex-engine --help prints usage and exits 0', () => {
     const result = run(SCRIPT, [flag]);
     assert.equal(result.status, 0, `${flag} exited ${result.status}`);
     assert.match(result.stdout, /Usage:/);
-    assert.match(result.stdout, /node install-latex-engine\.mjs/);
+    assert.match(result.stdout, /node scripts\/install-latex-engine\.mjs/);
     assert.doesNotMatch(result.all, /Downloading/, `${flag} started a download`);
   }
 });
@@ -281,12 +281,12 @@ test('generate-latex reports installHint when no LaTeX engine is found', { skip:
     const tex = join(dir, 'cv.tex');
     writeFileSync(tex, '\\documentclass{article}\n\\begin{document}\nHello\n\\end{document}\n');
     const env = { ...process.env, PATH: dirname(process.execPath), Path: dirname(process.execPath) };
-    const result = run(join(ROOT, 'generate-latex.mjs'), [tex, '--compile-only'], env);
+    const result = run(join(ROOT, 'scripts/generate-latex.mjs'), [tex, '--compile-only'], env);
     const report = JSON.parse(result.stdout);
     if (report.engine) return; // a tectonic/pdflatex lives beside node; nothing to assert
     assert.equal(report.compiled, false);
-    assert.equal(report.installHint, 'node install-latex-engine.mjs');
-    assert.match(report.compileError, /node install-latex-engine.mjs/);
+    assert.equal(report.installHint, 'node scripts/install-latex-engine.mjs');
+    assert.match(report.compileError, /node scripts\/install-latex-engine\.mjs/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

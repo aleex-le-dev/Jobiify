@@ -2,18 +2,18 @@
 // alias the rest of the engine already accepts.
 //
 // states.yml calls itself "Source of truth for career-ops (writer) and dashboard
-// (reader). Both systems MUST use these exact states." But normalize-statuses.mjs
+// (reader). Both systems MUST use these exact states." But scripts/normalize-statuses.mjs
 // carried alias mappings states.yml had never heard of (condicional, hold,
 // evaluar, verificar -> Evaluated; geo blocker -> SKIP), and the two lists drifted
 // silently because nothing compared them.
 //
-// The drift is not cosmetic. set-status.mjs writes the row's PREVIOUS status text
-// into data/status-log.tsv as the transition's `from` cell, and funnel-velocity.mjs
+// The drift is not cosmetic. scripts/set-status.mjs writes the row's PREVIOUS status text
+// into data/status-log.tsv as the transition's `from` cell, and scripts/funnel-velocity.mjs
 // validates that cell against states.yml. A row sitting on an accepted-but-unlisted
 // status produced a log line funnel-velocity discarded as unparseable, so the row's
 // first tracked transition vanished from velocity and coverage math.
 //
-// The vocabulary is read out of normalize-statuses.mjs rather than hardcoded, so
+// The vocabulary is read out of scripts/normalize-statuses.mjs rather than hardcoded, so
 // adding an alias there without adding it to states.yml fails here.
 import { pass, fail, ROOT } from './helpers.mjs';
 import { readFileSync } from 'fs';
@@ -24,11 +24,11 @@ console.log('\nstates.yml alias coverage — the engine and the source of truth 
 
 try {
   const { loadCanonicalStates, resolveCanonicalState, resolveCanonicalStateId } = await import(
-    pathToFileURL(join(ROOT, 'tracker-utils.mjs')).href
+    pathToFileURL(join(ROOT, 'scripts/tracker-utils.mjs')).href
   );
   const states = loadCanonicalStates(join(ROOT, 'templates', 'states.yml'));
 
-  const src = readFileSync(join(ROOT, 'normalize-statuses.mjs'), 'utf-8');
+  const src = readFileSync(join(ROOT, 'scripts/normalize-statuses.mjs'), 'utf-8');
 
   // Rules of the shape:  if (/^<pattern>$/i.test(s)) return { status: 'Canonical' };
   // <pattern> may be a bare literal or a (a|b|c) alternation. Alternatives that
@@ -45,7 +45,7 @@ try {
     }
   }
 
-  // normalize-statuses.mjs used to carry a SECOND rule shape — plain
+  // scripts/normalize-statuses.mjs used to carry a SECOND rule shape — plain
   // `['evaluada'].includes(lower)` alias lists — and this file extracted those
   // too. Those lists are gone (#2704): the function now resolves the remaining
   // aliases through states.yml itself, so there is no second vocabulary left to
@@ -54,12 +54,12 @@ try {
 
   // Each extractor is asserted separately on purpose. A combined
   // `extracted.length > 0` passes on the regex arm alone, so if
-  // normalize-statuses.mjs reshapes its list rules and LIST_RULE_RE stops
+  // scripts/normalize-statuses.mjs reshapes its list rules and LIST_RULE_RE stops
   // matching, that arm silently checks nothing while the test stays green —
   // exactly the kind of quiet drift this file exists to catch.
   extracted.length > 0
-    ? pass(`extracted ${extracted.length} anchored alias rule(s) from normalize-statuses.mjs`)
-    : fail("extracted no anchored alias rules — RULE_RE no longer matches normalize-statuses.mjs and is checking nothing");
+    ? pass(`extracted ${extracted.length} anchored alias rule(s) from scripts/normalize-statuses.mjs`)
+    : fail("extracted no anchored alias rules — RULE_RE no longer matches scripts/normalize-statuses.mjs and is checking nothing");
 
   // Derivation guard, replacing the extractor that has nothing left to extract.
   // Two halves, because either alone can go quietly wrong: the derivation must
@@ -69,7 +69,7 @@ try {
   derives && !hasListRule
     ? pass('normalize-statuses derives its remaining aliases from states.yml rather than listing them (#2704)')
     : fail(derives
-      ? 'a hardcoded alias list reappeared in normalize-statuses.mjs — resolve through states.yml instead (#2704)'
+      ? 'a hardcoded alias list reappeared in scripts/normalize-statuses.mjs — resolve through states.yml instead (#2704)'
       : 'normalize-statuses no longer calls resolveCanonicalState — the states.yml derivation was removed (#2704)');
 
   const orphans = extracted.filter(({ alias, expected }) => {
@@ -105,7 +105,7 @@ try {
 
   // ---------------------------------------------------------------------------
   // The reverse direction: every alias states.yml PROMISES must actually be
-  // accepted by normalize-statuses.mjs.
+  // accepted by scripts/normalize-statuses.mjs.
   //
   // Everything above reads states.yml through tracker-utils, so it only ever
   // proves "the normalizer's vocabulary is listed in states.yml". It cannot see
@@ -118,7 +118,7 @@ try {
   // it cannot be fooled by a rule shape the extractors above do not parse — which
   // is exactly how the rechazado rule escaped: its `?` is not in RULE_RE's class.
   const { normalizeStatus } = await import(
-    pathToFileURL(join(ROOT, 'normalize-statuses.mjs')).href
+    pathToFileURL(join(ROOT, 'scripts/normalize-statuses.mjs')).href
   );
 
   const unaccepted = [];
@@ -154,7 +154,7 @@ try {
   // states.yml id and every alias reaches its rank through the shared resolver.
   // An alias copied into the table could carry a different rank from its
   // canonical state, and then a duplicate keeps the less advanced row.
-  const dedupSrc = readFileSync(join(ROOT, 'dedup-tracker.mjs'), 'utf-8');
+  const dedupSrc = readFileSync(join(ROOT, 'scripts/dedup-tracker.mjs'), 'utf-8');
   const rankBody = dedupSrc.match(/const STATUS_RANK = \{([\s\S]*?)\n\};/)?.[1] ?? '';
   const ranks = new Map([...rankBody.matchAll(/'([^']+)'\s*:\s*(\d+)/g)].map((m) => [m[1], Number(m[2])]));
   const stateIds = states.map((s) => s.id.toLowerCase());
@@ -166,7 +166,7 @@ try {
   ranks.size > 0 && notIds.length === 0 && unranked.length === 0
     ? pass(`dedup ranks exactly the ${stateIds.length} states.yml ids, with no spelling of its own`)
     : fail(ranks.size === 0
-      ? 'STATUS_RANK was not found in dedup-tracker.mjs — this check is reading nothing'
+      ? 'STATUS_RANK was not found in scripts/dedup-tracker.mjs — this check is reading nothing'
       : `dedup STATUS_RANK is out of step with states.yml: ${[
         notIds.length ? `not a state id: ${notIds.join(', ')} (resolve aliases through states.yml instead)` : '',
         unranked.length ? `state with no rank: ${unranked.join(', ')}` : '',

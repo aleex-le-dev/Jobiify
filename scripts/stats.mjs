@@ -1,21 +1,21 @@
 #!/usr/bin/env node
-import { validateFlags } from './lib/cli-flags.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
 /**
- * stats.mjs — Lifetime pipeline stats aggregator (zero-token). #1604
+ * scripts/stats.mjs — Lifetime pipeline stats aggregator (zero-token). #1604
  *
  * One JSON contract for "how is my pipeline doing, lifetime": tracker roll-up,
  * cumulative funnel, lifetime scanner totals from scan-history.tsv, portal
  * coverage from portals.yml, and follow-up compliance. Reads durable data
  * files only — no LLM cost anywhere.
  *
- * Run: node stats.mjs             (JSON to stdout)
- *      node stats.mjs --summary   (human-readable table)
+ * Run: node scripts/stats.mjs             (JSON to stdout)
+ *      node scripts/stats.mjs --summary   (human-readable table)
  *
  * Sections degrade to null when their source file is missing, and
  * `metadata.sources` says which files were found — a fresh clone with zero
  * user data emits the full contract shape with null sections.
  *
- * `runs` aggregates data/scan-runs.tsv (per-run counters written by scan.mjs,
+ * `runs` aggregates data/scan-runs.tsv (per-run counters written by scripts/scan.mjs,
  * #1604 PR-2) — null until the first non-dry scan creates the file.
  */
 
@@ -23,16 +23,16 @@ import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
-import { localToday } from './lib/local-today.mjs';
+import { localToday } from '../lib/local-today.mjs';
 import { resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
 import { normalizeStatus, analyzeFromContent } from './followup-cadence.mjs';
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { parseStatusLogStages, recoverFunnelStages } from './funnel-stages.mjs';
 export { parseStatusLogStages } from './funnel-stages.mjs';
-import { parseScanHistoryLine } from './lib/scan-history-columns.mjs';
+import { parseScanHistoryLine } from '../lib/scan-history-columns.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const APPS_FILE = resolveTrackerPath(DATA_ROOT);
 const SCAN_HISTORY_FILE = join(DATA_ROOT, 'data', 'scan-history.tsv');
@@ -69,7 +69,7 @@ function canonicalStatus(raw) {
 
 /**
  * Roll up applications.md: counts per canonical status, score stats, pdf and
- * report coverage, in-flight count. Header-aware via tracker-parse.mjs; CRLF
+ * report coverage, in-flight count. Header-aware via scripts/tracker-parse.mjs; CRLF
  * input is normalized first (Windows checkouts).
  *
  * @param {string} content - Raw applications.md text.
@@ -122,10 +122,10 @@ export function trackerStatusByNum(content) {
 }
 
 /**
- * Tracker numbers that followup-cadence.mjs's own cadence math already
+ * Tracker numbers that scripts/followup-cadence.mjs's own cadence math already
  * classifies 'cold' (Applied, zero response after applied_max_followups
  * follow-ups). Reuses `analyzeFromContent` — the same function
- * followup-cadence.mjs's CLI runs — instead of re-deriving the
+ * scripts/followup-cadence.mjs's CLI runs — instead of re-deriving the
  * applied_max_followups/cadence rule here (#2123). A row can only be
  * classified cold when its status is 'applied', so every number returned
  * here is already a subset of ACTIVE_STATUSES.
@@ -335,7 +335,7 @@ export function computePortalStats(portalsYmlContent, scanStats, producingCompan
     const lastProbed = new Map();
     let newestProbe = 0;
     for (const r of healthRecords) {
-      // Mirrors scan.mjs computeConsecutiveFailures: healthy statuses reset,
+      // Mirrors scripts/scan.mjs computeConsecutiveFailures: healthy statuses reset,
       // every other status (slug_gone/network/auth/server/unknown) counts.
       if (r.status === 'reachable' || r.status === 'empty') {
         streaks.set(r.company, 0);
@@ -349,7 +349,7 @@ export function computePortalStats(portalsYmlContent, scanStats, producingCompan
     }
     // A failure streak is evidence of a dead portal only while the entry is
     // still being PROBED. An entry that stops resolving to a provider writes
-    // no further health rows — scan.mjs skips it at resolveEntries(), before
+    // no further health rows — scripts/scan.mjs skips it at resolveEntries(), before
     // the fetch loop that records health — so its final streak would stand as
     // a permanent 🚨 that no fix can clear. That is how switching a broken
     // board to scan_method: websearch (the documented remedy) leaves the
@@ -481,14 +481,14 @@ export function computeFollowupStats(followupsContent, trackerByNum) {
  * Schema check for follow-ups.md, so a malformed table is distinguishable from
  * an empty one (#2971).
  *
- * computeFollowupStats() above and followup-cadence.mjs's parseTrackerContent()
+ * computeFollowupStats() above and scripts/followup-cadence.mjs's parseTrackerContent()
  * both read this table POSITIONALLY, in the shape modes/followup.md documents:
  * `| num | appNum | date | company | role | channel | contact | notes |`. Both
  * skip any row where parts[1] or parts[2] fails parseInt. A table written with a
  * different column order is therefore dropped row by row and reports as ZERO
  * follow-ups in both tools — indistinguishable from a file where nothing has
  * been logged yet, with no error and no warning. This returns the counts needed
- * to tell those two cases apart; verify-pipeline.mjs turns them into output.
+ * to tell those two cases apart; scripts/verify-pipeline.mjs turns them into output.
  *
  * Reports rather than throws: it is a diagnostic, and the consumers must keep
  * degrading gracefully on a bad file rather than crashing a stats run.
@@ -512,7 +512,7 @@ export function checkFollowupsSchema(followupsContent) {
   const unparsedLines = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (!line.startsWith('|')) continue; // followup-seed.mjs's "- next #N" pins live outside the table
+    if (!line.startsWith('|')) continue; // scripts/followup-seed.mjs's "- next #N" pins live outside the table
     pipeLines++;
     if (SEPARATOR_RE.test(line)) { sawSeparator = true; continue; }
     if (!sawSeparator) continue; // header row, or a table missing its delimiter entirely
@@ -532,7 +532,7 @@ export function checkFollowupsSchema(followupsContent) {
 // ── Scan-run trends ─────────────────────────────────────────────────
 
 /**
- * Aggregate data/scan-runs.tsv (written by scan.mjs, one row per non-dry run).
+ * Aggregate data/scan-runs.tsv (written by scripts/scan.mjs, one row per non-dry run).
  *
  * Header-name parsing, NEVER positional: columns may be appended in later
  * schema versions and a positional slice would silently miscount from then on.
@@ -582,11 +582,11 @@ export function computeRunStats(content) {
       : null;
   }
   // Inclusion by 'completed', not exclusion by known failure names: any
-  // status a future scan.mjs writes is excluded from trend averages until
+  // status a future scripts/scan.mjs writes is excluded from trend averages until
   // this aggregator learns what it means. Rows from pre-status files default
   // to 'completed' above, so old data keeps counting.
   //
-  // No-op on today's data: scan.mjs only ever writes 'completed' or 'failed',
+  // No-op on today's data: scripts/scan.mjs only ever writes 'completed' or 'failed',
   // and both predicates ('!== failed' vs '=== completed') agree on those two.
   // The switch is a guard for a future third status (e.g. 'aborted'), not a
   // behavior change now. One edge is reachable only by hand-editing the TSV:
@@ -634,7 +634,7 @@ export function computeAllStats({
 
   // Cold-classification wiring (#2123): activeApps is purely status-based and
   // stays untouched for backward compatibility. activeAppsLive subtracts rows
-  // followup-cadence.mjs's own cadence math independently classifies 'cold'
+  // scripts/followup-cadence.mjs's own cadence math independently classifies 'cold'
   // (Applied, zero response after applied_max_followups follow-ups) — the more
   // honest "still worth expecting a reply from" figure. No follow-up data
   // (`fups` null) means no cold rows can be identified, so activeAppsLive
@@ -721,7 +721,7 @@ function printSummary(stats) {
   }
   const p = stats.portals;
   if (p) {
-    const deadPart = p.persistentlyDead > 0 ? ` | 🚨 ${p.persistentlyDead} persistently dead (run verify-portals.mjs)` : '';
+    const deadPart = p.persistentlyDead > 0 ? ` | 🚨 ${p.persistentlyDead} persistently dead (run scripts/verify-portals.mjs)` : '';
     console.log(`Portals:    ${p.configuredCompanies} companies + ${p.configuredBoards} boards configured | ${p.producingCompanies} have produced a match (${p.producingPct}%)${deadPart} — low ≠ broken, may just be no openings`);
   } else {
     console.log('Portals:    — no data (portals.yml missing)');
@@ -767,10 +767,10 @@ function printSummary(stats) {
 const KNOWN_FLAGS = ['--summary', '--prune', '--help', '-h'];
 
 const USAGE = `Usage:
-  node stats.mjs             # full JSON stats to stdout
-  node stats.mjs --summary   # human-readable table
-  node stats.mjs --prune     # include read-only portal recommendations (also with --summary)
-  node stats.mjs --help|-h   # print this usage block and exit`;
+  node scripts/stats.mjs             # full JSON stats to stdout
+  node scripts/stats.mjs --summary   # human-readable table
+  node scripts/stats.mjs --prune     # include read-only portal recommendations (also with --summary)
+  node scripts/stats.mjs --help|-h   # print this usage block and exit`;
 
 if (isMainModule(import.meta.url)) {
   const args = process.argv.slice(2);

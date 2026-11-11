@@ -1,5 +1,5 @@
 // tests/scan-history-doc-parity.test.mjs — modes/scan.md must document the
-// scan-history.tsv layout scan.mjs actually writes.
+// scan-history.tsv layout scripts/scan.mjs actually writes.
 //
 // modes/scan.md documents the scan-history.tsv column layout an agent-driven
 // scan has to reproduce by hand. It drifted once already: the doc said "nine

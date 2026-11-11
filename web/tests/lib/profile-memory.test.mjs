@@ -53,7 +53,7 @@ test.after(() => {
 
 test("a profile with no managed block still reaches the prompt", () => {
   // Given: the DEFAULT state of an install. modes/_profile.template.md ships
-  // with no co-web-notes markers, doctor.mjs auto-copies it, and rememberFact()
+  // with no co-web-notes markers, scripts/doctor.mjs auto-copies it, and rememberFact()
   // is the only thing that ever creates the block, so until the web assistant
   // happens to remember something, every personalized profile looks like this.
   const root = makeRoot({ profile: HANDWRITTEN });
@@ -92,7 +92,7 @@ test("the legacy .career-ops-web/memory.md is still read when there is no profil
 });
 
 test("an empty profile falls through to the legacy store rather than shadowing it", () => {
-  // Given: doctor.mjs created modes/_profile.md but nothing has been written to
+  // Given: scripts/doctor.mjs created modes/_profile.md but nothing has been written to
   // it. An existing file must not win over a legacy store that has content.
   const root = makeRoot({ profile: "\n\n  \n", legacy: "- Wants roles in the EU only.\n" });
 

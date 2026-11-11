@@ -66,7 +66,7 @@ export const CV_ENVELOPE_INSTRUCTION =
  * @typedef {Object} CvEnvelope
  * @property {true} ok
  * @property {string} html - The tailored CV HTML, byte-exact as emitted.
- * @property {"a4"|"letter"} format - Page format for generate-pdf.mjs.
+ * @property {"a4"|"letter"} format - Page format for scripts/generate-pdf.mjs.
  * @property {string[]} warnings - Non-fatal issues to surface in the run log.
  */
 

@@ -1,5 +1,5 @@
 // tests/generate-latex-cli-flags.test.mjs -- CLI flag validation for
-// generate-latex.mjs.
+// scripts/generate-latex.mjs.
 //
 // main() consumed every argv token that was not --compile-only as a PATH, so an
 // unrecognized flag never fell through to a default: it became a filename.
@@ -16,7 +16,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const SCRIPT = join(ROOT, 'generate-latex.mjs');
+const SCRIPT = join(ROOT, 'scripts/generate-latex.mjs');
 const VALID_FLAGS = ['--compile-only', '--help', '-h'];
 
 function runLatex(...args) {
@@ -25,8 +25,8 @@ function runLatex(...args) {
     encoding: 'utf-8',
     timeout: 30_000,
   });
-  assert.equal(result.error, undefined, `generate-latex.mjs failed to spawn: ${result.error?.message}`);
-  assert.equal(result.signal, null, `generate-latex.mjs was killed by ${result.signal} (timeout?)`);
+  assert.equal(result.error, undefined, `scripts/generate-latex.mjs failed to spawn: ${result.error?.message}`);
+  assert.equal(result.signal, null, `scripts/generate-latex.mjs was killed by ${result.signal} (timeout?)`);
   return { ...result, all: `${result.stdout ?? ''}${result.stderr ?? ''}` };
 }
 
@@ -36,7 +36,7 @@ test('generate-latex help prints usage instead of reading a file named --help', 
 
     assert.equal(result.status, 0, `${flag} exited ${result.status}, want 0`);
     assert.match(result.stdout, /Usage:/i, `${flag} printed no usage block`);
-    assert.match(result.stdout, /node generate-latex\.mjs/, `${flag} did not identify the command`);
+    assert.match(result.stdout, /node scripts\/generate-latex\.mjs/, `${flag} did not identify the command`);
     assert.doesNotMatch(result.all, /Error reading/i, `${flag} was still treated as an input path`);
     assert.doesNotMatch(result.all, /ENOENT/i, `${flag} was still resolved as a filename`);
   }

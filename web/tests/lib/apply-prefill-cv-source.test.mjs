@@ -69,10 +69,10 @@ const PDF_REL = "output/cv-acme-corp-2026-01-10.pdf";
 const HTML_REL = "output/cv-acme-corp-2026-01-10.html";
 const COVER_PDF_REL = "output/acme-corp-staff-engineer-cover.pdf";
 const COVER_HTML_REL = "output/acme-corp-staff-engineer-cover.html";
-const MANIFEST_HEADER = "# report\tpdf\thtml\tformat\tdate — written by generate-pdf.mjs, do not edit\n";
+const MANIFEST_HEADER = "# report\tpdf\thtml\tformat\tdate — written by scripts/generate-pdf.mjs, do not edit\n";
 
 /** A throwaway workspace holding one tailored CV and the manifest row that
- *  generate-pdf.mjs writes for it, redirected through CAREER_OPS_ROOT. */
+ *  scripts/generate-pdf.mjs writes for it, redirected through CAREER_OPS_ROOT. */
 async function withWorkspace(fn, { html = true, manifest = true, outsideHtml = false, coverRow = false } = {}) {
   const root = mkdtempSync(join(tmpdir(), "prefill-cv-"));
   mkdirSync(join(root, "output"), { recursive: true });

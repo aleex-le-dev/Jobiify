@@ -1,21 +1,21 @@
 #!/usr/bin/env node
 /**
- * hired-wall-build.mjs — the Hired Wall's single builder.
+ * scripts/hired-wall-build.mjs — the Hired Wall's single builder.
  *
- * HIRED.md is the ledger. Each entry is one machine-readable comment line
+ * docs/projet/HIRED.md is the ledger. Each entry is one machine-readable comment line
  * (the source of truth) followed by its rendered card; this script APPENDS
  * new entries, regenerates every rendered card from the comments, bumps
  * docs/hired-count.json (what the README badge reads) and regenerates
  * docs/hired-wall.svg (the three most recent card-level stories shown under
  * the hero). One writer for all four surfaces so they cannot drift apart.
  *
- *   node hired-wall-build.mjs --rebuild
- *   node hired-wall-build.mjs --add --handle santifer --level handle \
+ *   node scripts/hired-wall-build.mjs --rebuild
+ *   node scripts/hired-wall-build.mjs --add --handle santifer --level handle \
  *        --role "Head of Applied AI" --geo "Spain" --weeks 8 \
  *        --story "..." --link "https://github.com/.../issues/N"
  *
  * Invariants the design promises publicly:
- *   - count == number of ledger lines in HIRED.md == the badge. Auditable.
+ *   - count == number of ledger lines in docs/projet/HIRED.md == the badge. Auditable.
  *   - numbers are permanent: a withdrawn story keeps its number as
  *     "counted, story withdrawn"; the count never shrinks silently.
  *   - `count`-level entries hold a number and no card (privacy level 3).
@@ -29,26 +29,26 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { flagValue, hasFlag, validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
-const HERE = dirname(fileURLToPath(import.meta.url));
+const HERE = dirname(dirname(fileURLToPath(import.meta.url)));
 const LEVELS = ['handle', 'role', 'count'];
 
 const KNOWN_FLAGS = ['--add', '--rebuild', '--root', '--handle', '--level', '--role', '--sector', '--geo', '--weeks', '--story', '--link', '--fetch-avatars', '--avatar-fixture', '--help', '-h'];
 const VALUE_FLAGS = ['--root', '--handle', '--level', '--role', '--sector', '--geo', '--weeks', '--story', '--link', '--avatar-fixture'];
 
 const USAGE = `Usage:
-  node hired-wall-build.mjs --rebuild [--fetch-avatars | --avatar-fixture f.png]
-  node hired-wall-build.mjs --add --level handle|role|count [--handle X]
+  node scripts/hired-wall-build.mjs --rebuild [--fetch-avatars | --avatar-fixture f.png]
+  node scripts/hired-wall-build.mjs --add --level handle|role|count [--handle X]
        --role "..." [--geo "..."] [--weeks N] [--story "..."] --link URL
 
-Appends an entry to HIRED.md and/or regenerates the wall's derived surfaces
+Appends an entry to docs/projet/HIRED.md and/or regenerates the wall's derived surfaces
 (cards, docs/hired-count.json, docs/hired-wall.svg) from the ledger comments.`;
 
 const LEDGER_RE = /^<!-- hire n=(\d+) level=(handle|role|count)(?: handle=([^\s]+))? role="([^"]*)"(?: sector="([^"]*)")?(?: geo="([^"]*)")?(?: weeks=(\d+))? link="([^"]*)"(?: withdrawn)? -->$/;
 
-/** Parse every ledger comment of HIRED.md, in file order. */
+/** Parse every ledger comment of docs/projet/HIRED.md, in file order. */
 export function parseLedger(text) {
   const out = [];
   for (const line of text.split('\n')) {
@@ -97,7 +97,7 @@ export function renderCard(e) {
 }
 
 /**
- * Rebuild HIRED.md's entries section from its own ledger lines. Everything
+ * Rebuild docs/projet/HIRED.md's entries section from its own ledger lines. Everything
  * between the ENTRIES markers is generated; prose outside them is
  * hand-written and never touched. Stories live IN the ledger section as a
  * quoted line right under each comment (kept verbatim on rebuild).
@@ -105,7 +105,7 @@ export function renderCard(e) {
 export function rebuildWall(text) {
   const start = text.indexOf('<!-- ENTRIES -->');
   const end = text.indexOf('<!-- /ENTRIES -->');
-  if (start === -1 || end === -1 || end < start) throw new Error('HIRED.md is missing its <!-- ENTRIES --> markers');
+  if (start === -1 || end === -1 || end < start) throw new Error('docs/projet/HIRED.md is missing its <!-- ENTRIES --> markers');
   const section = text.slice(start, end);
   const entries = [];
   const lines = section.split('\n');
@@ -219,7 +219,7 @@ async function main() {
   }
 
   const root = flagValue(args, '--root') || HERE;
-  const wallPath = join(root, 'HIRED.md');
+  const wallPath = join(root, 'docs/projet/HIRED.md');
   let text = readFileSync(wallPath, 'utf8');
 
   if (hasFlag(args, '--add')) {

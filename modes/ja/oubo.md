@@ -38,7 +38,7 @@ Application answers を生成する前に、form が意図した active job を�
 
 この preflight が解決するまで Step 6 に進まない。
 
-**Applying to several roles in one sitting?** この preflight は目の前の単一 form を確認する。Multi-role session の前、特に scanner entries が `**Verification:** unconfirmed (batch mode)` と marked されている場合は、`pipeline` mode の **Liveness sweep** を先に実行する（`node check-liveness.mjs --file <urls>`）。これにより `data/pipeline.md` から dead postings がまとめて落ち、expired role の tab を開かずに済む。
+**Applying to several roles in one sitting?** この preflight は目の前の単一 form を確認する。Multi-role session の前、特に scanner entries が `**Verification:** unconfirmed (batch mode)` と marked されている場合は、`pipeline` mode の **Liveness sweep** を先に実行する（`node scripts/check-liveness.mjs --file <urls>`）。これにより `data/pipeline.md` から dead postings がまとめて落ち、expired role の tab を開かずに済む。
 
 ## Step 1 -- Detect the job
 
@@ -64,8 +64,8 @@ Application answers を生成する前に、form が意図した active job を�
 - **If adapt:** Candidate が mismatch を明示的に accept した後に限り、re-evaluate せず新しい role に responses を adjust
 - **If re-evaluate:** Full A-F evaluation を実行し、report を update し、Section G を regenerate
 - **Update tracker:** `data/applications.md` は直接編集しない。
-  - **Re-evaluate した場合:** 新しい role title を入れた TSV を書き（`_shared.md` の rule 9）、`node merge-tracker.mjs` でマージする。Report は同じファイルを update するので番号は変わらず、merge はその番号で TSV を既存の行に対応づける：title は置き換わり、status は維持される。
-  - **Adapt した場合:** title は変更しない。Report が evaluate した role を示すものだから。変更があったことは note として記録する：`node set-status.mjs --report <report#> <現在の status> --note "Posting retitled at apply time, row keeps the evaluated title"`。行の現在の status を渡せば status は変わらず、note だけが追記される。Note はこのような固定の文言にし、`[Y]` は入れない。新しい title はページ由来のテキストであり、ページ由来のテキストは command line に渡さない。
+  - **Re-evaluate した場合:** 新しい role title を入れた TSV を書き（`_shared.md` の rule 9）、`node scripts/merge-tracker.mjs` でマージする。Report は同じファイルを update するので番号は変わらず、merge はその番号で TSV を既存の行に対応づける：title は置き換わり、status は維持される。
+  - **Adapt した場合:** title は変更しない。Report が evaluate した role を示すものだから。変更があったことは note として記録する：`node scripts/set-status.mjs --report <report#> <現在の status> --note "Posting retitled at apply time, row keeps the evaluated title"`。行の現在の status を渡せば status は変わらず、note だけが追記される。Note はこのような固定の文言にし、`[Y]` は入れない。新しい title はページ由来のテキストであり、ページ由来のテキストは command line に渡さない。
 
 ## Step 6 -- Analyze form questions
 
@@ -136,7 +136,7 @@ Notes:
 ## Step 8 -- Post-apply (optional)
 
 候補者が application を submitted したと確認した場合：
-1. 正規 CLI で status を "Applied" に update: `node set-status.mjs --report <report#> Applied`（`applications.md` のテーブルを手動編集しない）
+1. 正規 CLI で status を "Applied" に update: `node scripts/set-status.mjs --report <report#> Applied`（`applications.md` のテーブルを手動編集しない）
 2. Report の Section G を final responses で update
 3. Next step として LinkedIn outreach 用の `/career-ops contacto` を提案
 

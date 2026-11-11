@@ -24,7 +24,7 @@ import {
   loadCanonicalStates,
   foldStatusInput,
   resolveCanonicalState,
-} from '../tracker-utils.mjs';
+} from '../scripts/tracker-utils.mjs';
 
 test('rebuildRow preserves the final cell with or without a trailing pipe', () => {
   assert.equal(rebuildRow(['', '7', 'Acme', 'great note']), '| 7 | Acme | great note |');

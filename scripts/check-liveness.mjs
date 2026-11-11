@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 
 /**
- * check-liveness.mjs — Playwright job link liveness checker
+ * scripts/check-liveness.mjs — Playwright job link liveness checker
  *
  * Tests whether job posting URLs are still active or have expired.
  * Uses the same detection logic as scan.md step 7.5.
  * Zero Claude API tokens. Two rungs: a free public-API check first
- * (liveness-api.mjs, no browser), then Playwright for everything else.
+ * (scripts/liveness-api.mjs, no browser), then Playwright for everything else.
  *
  * An `expired` verdict is recorded back into data/scan-history.tsv as a
  * `skipped_expired` row, so a posting confirmed dead once stops resurfacing
  * (#3891). See recordExpiredVerdicts below for why that is default-on.
  *
  * Usage:
- *   node check-liveness.mjs <url1> [url2] ...
- *   node check-liveness.mjs --file urls.txt
+ *   node scripts/check-liveness.mjs <url1> [url2] ...
+ *   node scripts/check-liveness.mjs --file urls.txt
  *
  * Exit code: 0 if all active, 1 if any expired or uncertain
  */
@@ -32,8 +32,8 @@ import { checkLivenessViaApi } from './liveness-api.mjs';
 import { planExpiredHistoryRows, trackerLivenessTargets, DEFAULT_TRACKER_STATUSES, planExpiredDiscards, postingClosedNote, DEFAULT_DISCARD_STATUSES } from './liveness-core.mjs';
 import { appendToScanHistory, normalizeUrlForDedup, SCAN_HISTORY_PATH } from './scan.mjs';
 import { withPipelineLock } from './pipeline-lock.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { localToday } from './lib/local-today.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { localToday } from '../lib/local-today.mjs';
 import { existsSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -42,13 +42,13 @@ import { createHash } from 'crypto';
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
 
 const USAGE = `Usage:
-  node check-liveness.mjs [--no-fallback] [--throttle[=ms]] [--no-record] <url1> [url2] ...
-  node check-liveness.mjs [--no-fallback] [--throttle[=ms]] [--no-record] --file urls.txt
-  node check-liveness.mjs --tracker [--status=Evaluated,Applied]   # postings of tracker rows in these statuses
-  node check-liveness.mjs --tracker --discard-expired [--apply]    # dry-run move expired Evaluated rows to Discarded; --apply writes
-  node check-liveness.mjs --no-record             # check only; write nothing to scan-history
-  node check-liveness.mjs --help                  # print this usage block and exit
-  node check-liveness.mjs -h                      # alias for --help`;
+  node scripts/check-liveness.mjs [--no-fallback] [--throttle[=ms]] [--no-record] <url1> [url2] ...
+  node scripts/check-liveness.mjs [--no-fallback] [--throttle[=ms]] [--no-record] --file urls.txt
+  node scripts/check-liveness.mjs --tracker [--status=Evaluated,Applied]   # postings of tracker rows in these statuses
+  node scripts/check-liveness.mjs --tracker --discard-expired [--apply]    # dry-run move expired Evaluated rows to Discarded; --apply writes
+  node scripts/check-liveness.mjs --no-record             # check only; write nothing to scan-history
+  node scripts/check-liveness.mjs --help                  # print this usage block and exit
+  node scripts/check-liveness.mjs -h                      # alias for --help`;
 
 /**
  * Is this run allowed to record its verdicts?
@@ -109,11 +109,11 @@ export async function recordExpiredVerdicts(verdicts) {
   });
 }
 
-const CODE_ROOT = dirname(fileURLToPath(import.meta.url));
+const CODE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 function runSetStatus(args, trackerPath) {
   try {
-    return JSON.parse(execFileSync(process.execPath, [join(CODE_ROOT, 'set-status.mjs'), ...args], {
+    return JSON.parse(execFileSync(process.execPath, [join(CODE_ROOT, 'scripts/set-status.mjs'), ...args], {
       encoding: 'utf-8',
       env: { ...process.env, CAREER_OPS_TRACKER: trackerPath },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -128,7 +128,7 @@ function runSetStatus(args, trackerPath) {
 }
 
 /**
- * Move planned rows to Discarded through set-status.mjs (locked atomic write).
+ * Move planned rows to Discarded through scripts/set-status.mjs (locked atomic write).
  * Dry-run when apply is false: resolve only, write nothing.
  *
  * The liveness sweep can take minutes, so each row is planned again against
@@ -337,7 +337,7 @@ async function main() {
   if (expired > 0 || uncertain > 0) process.exitCode = 1;
 }
 
-// Only run main() when invoked directly (`node check-liveness.mjs`), not when
+// Only run main() when invoked directly (`node scripts/check-liveness.mjs`), not when
 // imported — the arg parsing above would otherwise read an importing test's argv.
 if (isMainModule(import.meta.url)) {
   main().catch(err => {

@@ -5,7 +5,7 @@
 //
 // #1879 fixed this for projects; education is the same bug (not every
 // candidate has a degree). Certifications was fixed once directly in
-// build-cv-html.mjs, then lost when that logic was generalized into this
+// scripts/build-cv-html.mjs, then lost when that logic was generalized into this
 // shared module (only projects/education made the cut) — the v1.22.0
 // auto-update shipped that regression. Awards (#2220) is optional by
 // construction: most candidates have none, so it ships hidden-when-empty from
@@ -20,7 +20,7 @@
 // projects or education instead and would otherwise ship a CV with an empty
 // "Work Experience" title on it. All seven are delimited by marker matching
 // rather than parsed, so the boundary pattern is the whole correctness story
-// — see the header comment in cv-sections-core.mjs for the failure modes
+// — see the header comment in scripts/cv-sections-core.mjs for the failure modes
 // exercised here.
 //
 // Skills carries one extra burden the other six do not. It is the LAST
@@ -36,7 +36,7 @@
 //     survives ("keeps the closing document skeleton" checks);
 //   - without the sentinel: the strip is a NO-OP and the template comes out
 //     byte-identical ("fail-safe" checks). A third-party template pack is
-//     valid without the sentinel — cv-templates.mjs requires only
+//     valid without the sentinel — scripts/cv-templates.mjs requires only
 //     NAME/EXPERIENCE/EDUCATION — so this case must degrade to the cosmetic
 //     bare-header bug, never to a truncated CV.
 //
@@ -49,7 +49,7 @@
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { pass, fail, ROOT } from './helpers.mjs';
-import { stripEmptySections, isEmptySection, isEmptyRenderedSection, stripEmptyRenderedSections } from '../cv-sections-core.mjs';
+import { stripEmptySections, isEmptySection, isEmptyRenderedSection, stripEmptyRenderedSections } from '../scripts/cv-sections-core.mjs';
 
 console.log('\ncv-sections-core.mjs — optional sections leave no bare header');
 
@@ -102,7 +102,7 @@ const TEMPLATES = [
 //
 // So the list of templates is declared, and membership is checked against
 // disk. A CV template is identified by the `{{EXPERIENCE}}` placeholder that
-// cv-templates.mjs requires of every one (see `required` there), which is why
+// scripts/cv-templates.mjs requires of every one (see `required` there), which is why
 // cover-letter-template.html is correctly not swept up. Adding a template
 // without adding it here fails loudly, right here, naming the file.
 const shippedCvTemplates = readdirSync(join(ROOT, 'templates'))
@@ -156,7 +156,7 @@ for (const { file, format, after, hasCertifications, hasCompetencies, hasInteres
   check(`${name}: the trailing sentinel survives`, stripped.includes(after), true);
   check(`${name}: the closing document skeleton survives`, stripped.trimEnd().endsWith(closingSkeleton), true);
   // Removing the block takes its placeholder with it. Note this is about the
-  // *payload* key being empty, not about the template: cv-templates.mjs still
+  // *payload* key being empty, not about the template: scripts/cv-templates.mjs still
   // requires `{{EXPERIENCE}}` to exist in any custom template.
   check(`${name}: empty payload removes {{EXPERIENCE}} with its block`, stripped.includes('{{EXPERIENCE}}'), false);
   const summaryMarker = '<!-- PROFESSIONAL SUMMARY -->'; // html-only; the LaTeX templates have no summary section
@@ -363,7 +363,7 @@ for (const { file, format, after, hasCertifications, hasCompetencies, hasInteres
     omittedSkills.trimEnd().endsWith(closingSkeleton), true);
 
   // FAIL-SAFE: a template pack whose Skills section carries no sentinel is
-  // valid (cv-templates.mjs requires only NAME/EXPERIENCE/EDUCATION). Strip
+  // valid (scripts/cv-templates.mjs requires only NAME/EXPERIENCE/EDUCATION). Strip
   // the sentinel from a real shipped template and the empty-skills strip must
   // become a NO-OP — bare header, intact document — never a truncated tail.
   // `after` IS the sentinel literal — reuse it rather than restating it here,
@@ -433,7 +433,7 @@ check('html: with no sentinel, the closing skeleton survives', withoutSentinel.i
 // following banner the engine backtracks the opening banner's own greedy
 // trailing `%{4,}`. It can only give back enough `%` to fake a boundary when the
 // banner is wider than 8, so a narrow fixture passes while the real template
-// gets a stray `%%%%` left behind. See TEX_END_SENTINEL in cv-sections-core.mjs.
+// gets a stray `%%%%` left behind. See TEX_END_SENTINEL in scripts/cv-sections-core.mjs.
 const TEX_BANNER = '%'.repeat(28);
 const TEX_WITH_SENTINEL = `${TEX_BANNER}  Technical Skills  ${TEX_BANNER}\nskills\n${TEX_BANNER}  END  ${TEX_BANNER}\n\\end{document}`;
 const TEX_NO_SENTINEL = `${TEX_BANNER}  Technical Skills  ${TEX_BANNER}\nskills\n\\end{document}`;

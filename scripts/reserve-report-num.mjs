@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * reserve-report-num.mjs - shared atomic report-number allocator.
+ * scripts/reserve-report-num.mjs - shared atomic report-number allocator.
  *
  * The CLI and every evaluator use the exported API below. Reservations account
  * for report files, reservation sentinels, tracker row IDs, and report links in
@@ -9,11 +9,11 @@
  * as tracker writers, while O_CREAT|O_EXCL keeps claims atomic across processes.
  *
  * Usage:
- *   node reserve-report-num.mjs
- *   node reserve-report-num.mjs --count 8
- *   node reserve-report-num.mjs --release 035
- *   node reserve-report-num.mjs --release 042-049
- *   node reserve-report-num.mjs --gc
+ *   node scripts/reserve-report-num.mjs
+ *   node scripts/reserve-report-num.mjs --count 8
+ *   node scripts/reserve-report-num.mjs --release 035
+ *   node scripts/reserve-report-num.mjs --release 042-049
+ *   node scripts/reserve-report-num.mjs --gc
  *
  * Unrecognized arguments are rejected (exit 1, nothing reserved).
  */
@@ -32,7 +32,7 @@ import {
 import {
   acquireTrackerLock, canonicalizeTrackerPath, resolveTrackerPath, trackerLockDirFor,
 } from './tracker-utils.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 const ROOT = getCareerOpsRoot();
 const MAX_SENTINEL_AGE_MS = 4 * 60 * 60 * 1000;
@@ -40,7 +40,7 @@ const MAX_RETRIES = 50;
 const MAX_COUNT = 50;
 const RESERVATION_TOKEN = Symbol('career-ops-report-reservation-token');
 const USAGE_LINES = [
-  'Usage: node reserve-report-num.mjs [--count <1-N>] [--release <NNN>[-<MMM>]] [--gc]',
+  'Usage: node scripts/reserve-report-num.mjs [--count <1-N>] [--release <NNN>[-<MMM>]] [--gc]',
   '',
   '  (no flags)                Reserve 1 report number (default)',
   `  --count <1-${MAX_COUNT}>            Reserve N report numbers, printed as a range`,
@@ -75,10 +75,10 @@ function batchStateFileFor(options = {}) {
     || join(options.rootDir || ROOT, 'batch/batch-state.tsv'));
 }
 
-// Mirrors merge-tracker.mjs's loadFailedReportNumbers: a report number the
+// Mirrors scripts/merge-tracker.mjs's loadFailedReportNumbers: a report number the
 // batch runner itself recorded as "failed" must not be handed out again, or
 // the two scripts disagree by construction — this script re-issues the
-// number, then merge-tracker.mjs refuses to merge a tracker line for it.
+// number, then scripts/merge-tracker.mjs refuses to merge a tracker line for it.
 function occupiedFromFailedBatchState(batchStateFile) {
   const failed = new Set();
   if (!existsSync(batchStateFile)) return failed;
@@ -99,7 +99,7 @@ function occupiedFromFailedBatchState(batchStateFile) {
   return failed;
 }
 
-// A bare date file is not a report. `scan-ats-full.mjs --md-out reports/` writes
+// A bare date file is not a report. `scripts/scan-ats-full.mjs --md-out reports/` writes
 // its digest as `reports/YYYY-MM-DD.md`, which matches `/^(\d+)-/` and is read
 // as report #2026 — pushing every later reservation to 2027+, silently and
 // permanently.
@@ -364,7 +364,7 @@ async function runCli() {
   if (cmd === '--release') {
     const match = (arg || '').match(/^(\d+)(?:-(\d+))?$/);
     if (!match) {
-      process.stderr.write('Usage: node reserve-report-num.mjs --release <NNN>[-<MMM>]\n');
+      process.stderr.write('Usage: node scripts/reserve-report-num.mjs --release <NNN>[-<MMM>]\n');
       return 1;
     }
     const start = parseInt(match[1], 10);
@@ -390,12 +390,12 @@ async function runCli() {
   let count = 1;
   if (cmd === '--count') {
     if (!/^\d+$/.test(arg || '')) {
-      process.stderr.write(`Usage: node reserve-report-num.mjs --count <1-${MAX_COUNT}>\n`);
+      process.stderr.write(`Usage: node scripts/reserve-report-num.mjs --count <1-${MAX_COUNT}>\n`);
       return 1;
     }
     count = parseInt(arg, 10);
     if (count < 1 || count > MAX_COUNT) {
-      process.stderr.write(`Usage: node reserve-report-num.mjs --count <1-${MAX_COUNT}>\n`);
+      process.stderr.write(`Usage: node scripts/reserve-report-num.mjs --count <1-${MAX_COUNT}>\n`);
       return 1;
     }
   }

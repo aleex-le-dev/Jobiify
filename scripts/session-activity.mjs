@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 /**
- * session-activity.mjs - advisory "another session may already be on this"
+ * scripts/session-activity.mjs - advisory "another session may already be on this"
  * signal for concurrent career-ops sessions (#4532).
  *
- * reserve-report-num.mjs already makes report-number allocation collision-SAFE
+ * scripts/reserve-report-num.mjs already makes report-number allocation collision-SAFE
  * (two sessions can never claim the same number) via O_CREAT|O_EXCL sentinel
  * files. But nothing makes a session collision-AWARE: two sessions can each
  * independently pick up the same tracker row / report / URL and do fully
  * redundant (or conflicting) work, with the collision only surfacing after
- * the fact when merge-tracker.mjs or a status write has to reconcile it.
+ * the fact when scripts/merge-tracker.mjs or a status write has to reconcile it.
  * #4506/#4507 was exactly this: two sessions evaluated the same report and
  * each wrote a batch/tracker-additions/*.tsv for it under a differently
  * spelled company name, so the report-number match (which requires the
@@ -17,7 +17,7 @@
  *
  * This module is deliberately advisory, not a hard lock: it never blocks or
  * refuses an operation, and it never replaces the correctness-critical locks
- * (acquireTrackerLock, reserve-report-num.mjs's atomic slot claims). Its only
+ * (acquireTrackerLock, scripts/reserve-report-num.mjs's atomic slot claims). Its only
  * job is to let a caller ask "is anyone already active on this key?" before
  * starting work, and to answer honestly, so a session can choose to warn the
  * user instead of silently duplicating work another session already started.
@@ -32,10 +32,10 @@
  * original key for a human-readable message.
  *
  * Usage:
- *   node session-activity.mjs claim <key> [--label text] [--ttl-ms N]
- *   node session-activity.mjs check <key>
- *   node session-activity.mjs release <key> --token <token>
- *   node session-activity.mjs gc
+ *   node scripts/session-activity.mjs claim <key> [--label text] [--ttl-ms N]
+ *   node scripts/session-activity.mjs check <key>
+ *   node scripts/session-activity.mjs release <key> --token <token>
+ *   node scripts/session-activity.mjs gc
  */
 
 import {
@@ -45,7 +45,7 @@ import {
 import { createHash, randomUUID } from 'crypto';
 import { join, resolve } from 'path';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 const ROOT = getCareerOpsRoot();
 const DEFAULT_TTL_MS = 30 * 60 * 1000;
@@ -214,7 +214,7 @@ function runCli() {
 
   if (cmd === '--help' || cmd === '-h' || !cmd) {
     process.stdout.write([
-      'Usage: node session-activity.mjs <claim|check|release|gc> [key] [options]',
+      'Usage: node scripts/session-activity.mjs <claim|check|release|gc> [key] [options]',
       '',
       '  claim <key> [--label text] [--ttl-ms N]   Claim key as active (never blocks)',
       '  check <key>                                Report whether key is currently claimed',
@@ -226,21 +226,21 @@ function runCli() {
   }
 
   if (cmd === 'claim') {
-    if (!arg) { process.stderr.write('Usage: node session-activity.mjs claim <key>\n'); return 1; }
+    if (!arg) { process.stderr.write('Usage: node scripts/session-activity.mjs claim <key>\n'); return 1; }
     const result = claimActivity(arg, { label, ttlMs });
     process.stdout.write(`${JSON.stringify(result)}\n`);
     return 0;
   }
 
   if (cmd === 'check') {
-    if (!arg) { process.stderr.write('Usage: node session-activity.mjs check <key>\n'); return 1; }
+    if (!arg) { process.stderr.write('Usage: node scripts/session-activity.mjs check <key>\n'); return 1; }
     const result = checkActivity(arg, { ttlMs });
     process.stdout.write(`${JSON.stringify(result)}\n`);
     return 0;
   }
 
   if (cmd === 'release') {
-    if (!arg) { process.stderr.write('Usage: node session-activity.mjs release <key> --token <token>\n'); return 1; }
+    if (!arg) { process.stderr.write('Usage: node scripts/session-activity.mjs release <key> --token <token>\n'); return 1; }
     const released = releaseActivity(arg, { token });
     process.stdout.write(`${JSON.stringify({ released })}\n`);
     return 0;

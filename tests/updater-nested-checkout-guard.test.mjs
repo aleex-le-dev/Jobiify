@@ -3,15 +3,15 @@
  *
  * A career-ops install with no `.git` of its own that sits inside another
  * repository (a ZIP unpacked into an existing project) used to make every git
- * call in update-system.mjs resolve to that OUTER repo: check() reported a
+ * call in scripts/update-system.mjs resolve to that OUTER repo: check() reported a
  * phantom system-files-changed against a stranger's history, and apply()
  * created its backup branch and fetched upstream into a repository that has
  * nothing to do with career-ops, then failed on pathspecs prefixed by the
- * install's subpath — `git checkout FETCH_HEAD -- update-system.mjs` is the
+ * install's subpath — `git checkout FETCH_HEAD -- scripts/update-system.mjs` is the
  * failing path from the original report.
  *
  * The behavioral sections spawn the real CLI inside a throwaway outer repo.
- * That is possible without staging the whole tree because update-system.mjs is
+ * That is possible without staging the whole tree because scripts/update-system.mjs is
  * self-loading by contract (#1706): copying just it and VERSION is a faithful
  * model of the ZIP install that triggers the bug.
  */
@@ -21,7 +21,7 @@ import { spawnSync } from 'child_process';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { pass, fail, NODE, ROOT, rmSync, hermeticGitEnv } from './helpers.mjs';
-import { gitIn, gitToplevelMismatch } from '../update-system.mjs';
+import { gitIn, gitToplevelMismatch } from '../scripts/update-system.mjs';
 
 console.log('\n🧪 Testing updater nested-checkout guard (#3334)...');
 
@@ -44,7 +44,7 @@ function makeNestedFixture() {
   g('config', 'core.autocrlf', 'false');
   const nested = join(dir, 'tools', 'career-ops');
   mkdirSync(nested, { recursive: true });
-  copyFileSync(join(ROOT, 'update-system.mjs'), join(nested, 'update-system.mjs'));
+  copyFileSync(join(ROOT, 'scripts/update-system.mjs'), (mkdirSync(join(nested, 'scripts'), { recursive: true }), join(nested, 'scripts/update-system.mjs')));
   copyFileSync(join(ROOT, 'VERSION'), join(nested, 'VERSION'));
   g('add', '-A');
   g('commit', '-qm', 'vendored');
@@ -52,7 +52,7 @@ function makeNestedFixture() {
 }
 
 function runUpdater(fixture, cmd) {
-  return spawnSync(NODE, ['update-system.mjs', cmd], {
+  return spawnSync(NODE, ['scripts/update-system.mjs', cmd], {
     cwd: fixture.nested,
     encoding: 'utf-8',
     timeout: 60000,

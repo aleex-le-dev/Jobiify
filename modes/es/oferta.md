@@ -10,7 +10,7 @@ Cuando el candidato pegue una **URL** (no texto de la JD), confirmar que la ofer
 
 **LinkedIn:** aplicar primero AGENTS.md → **LinkedIn JD loading guard (#4121)**, antes de navegar o usar fallbacks. Reutilizar el contenido y el intento de modos anteriores. Un skeleton de carga o una JD inaccesible queda sin confirmar, no cerrada; detenerse antes del Bloque A hasta obtener texto real, sin volver a navegar.
 
-1. Obtener el contenido de la página: si se llegó aquí desde `auto-pipeline` (su Paso 0.5 ya navegó y validó el enlace), reutilizar esa captura — no navegar de nuevo. En un envío directo de URL, navegar con Playwright (`browser_navigate` + `browser_snapshot`). **Opt-in:** si `scan.extractor: cli` está configurado en `config/profile.yml`, ejecutar `node browser-extract.mjs <url>` (por defecto `--mode jd`), **retrocediendo silenciosamente** a `browser_navigate` + `browser_snapshot` si falla.
+1. Obtener el contenido de la página: si se llegó aquí desde `auto-pipeline` (su Paso 0.5 ya navegó y validó el enlace), reutilizar esa captura — no navegar de nuevo. En un envío directo de URL, navegar con Playwright (`browser_navigate` + `browser_snapshot`). **Opt-in:** si `scan.extractor: cli` está configurado en `config/profile.yml`, ejecutar `node scripts/browser-extract.mjs <url>` (por defecto `--mode jd`), **retrocediendo silenciosamente** a `browser_navigate` + `browser_snapshot` si falla.
 2. Clasificar la publicación:
    - **Evidencia de oferta activa:** título/rol + descripción real o ruta de candidatura/apply
    - **Evidencia de oferta cerrada:** expirada/cerrada/"ya no acepta candidaturas", JD ausente con solo nav/footer tras descartar contenido aún cargando o inaccesible, redirección a página genérica, o 404/410
@@ -291,7 +291,7 @@ Analizar la oferta en busca de señales que indiquen si se trata de una vacante 
 
 ### Prior-contact FYI (no afecta al score)
 
-Ejecutar `node company-history.mjs --company <empresa>` pasando el nombre como argumento único entrecomillado. Ramificar según `responsiveness.label`: `silent-on-you` → informar historial de silencio; `mixed` → informar historial mixto; `responded-before` o `no-history` → no decir nada. NO alterar score ni Assessment.
+Ejecutar `node scripts/company-history.mjs --company <empresa>` pasando el nombre como argumento único entrecomillado. Ramificar según `responsiveness.label`: `silent-on-you` → informar historial de silencio; `mixed` → informar historial mixto; `responded-before` o `no-history` → no decir nada. NO alterar score ni Assessment.
 
 ### Gestión de casos extremos:
 - **Gobierno/academia:** plazos más largos estándar (60-90 días normal).
@@ -368,7 +368,7 @@ Formato a anexar: aviso de borrador generado; gaps flagged; `Opening`; `Profile 
 
 Guardar la evaluación completa en `reports/{###}-{company-slug}-{YYYY-MM-DD}.md`.
 
-- `{###}` = siguiente número secuencial (3 dígitos, zero-padded). Ejecutar `node reserve-report-num.mjs` para reservar, luego `node reserve-report-num.mjs --release {###}` para liberar.
+- `{###}` = siguiente número secuencial (3 dígitos, zero-padded). Ejecutar `node scripts/reserve-report-num.mjs` para reservar, luego `node scripts/reserve-report-num.mjs --release {###}` para liberar.
 - `{company-slug}` = nombre de empresa en minúsculas, sin espacios (usar guiones)
 - `{YYYY-MM-DD}` = fecha de hoy
 - **Oferta mediada por agencia (#1596):** slug `confidential-{agency-slug}`. El archivo NUNCA se renombra después de revelar al empleador.
@@ -432,7 +432,7 @@ Guardar la evaluación completa en `reports/{###}-{company-slug}-{YYYY-MM-DD}.md
 
 ### 2. Registrar en el tracker
 
-**SIEMPRE** registrar en el tracker. Escribir un TSV (regla 9 de `_shared.md`) y fusionarlo con `node merge-tracker.mjs`; nunca escribir una fila directamente en `data/applications.md`. Campos:
+**SIEMPRE** registrar en el tracker. Escribir un TSV (regla 9 de `_shared.md`) y fusionarlo con `node scripts/merge-tracker.mjs`; nunca escribir una fila directamente en `data/applications.md`. Campos:
 - Siguiente número secuencial, fecha, empresa (empleador FINAL; si mediada por agencia usar `?` como Empresa con descriptor en Notas), Via (firma de agencia/recruiter o `—`; en TSV: `via={Agencia}`), rol, score (1-5), estado `Evaluated`, PDF ❌/✅, report `[001](reports/001-company-2026-01-01.md)`, notas (trasladar `| posted: {YYYY-MM-DD}` textualmente si presente).
 
 **Formato del tracker:**

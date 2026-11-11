@@ -8,7 +8,7 @@ console.log('\nProvider — workday facet-split');
 
 // Expected jobs.workdayTruncated values, spelled out locally rather than
 // imported from providers/workday.mjs: these strings are the module's public
-// contract with scan-ats-full.mjs, and a test importing the same constant the
+// contract with scripts/scan-ats-full.mjs, and a test importing the same constant the
 // source uses can no longer catch that constant's value drifting by accident.
 const TRANSIENT = 'transient';
 const STRUCTURAL = 'structural';

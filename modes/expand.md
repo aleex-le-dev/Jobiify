@@ -1,6 +1,6 @@
 # Mode: expand — Auto-discover and add missing competencies
 
-Fetch public sources linked in the user's `config/profile.yml` (e.g., GitHub username, portfolio URL) to discover competencies, projects, and work history. Merge missing items into their `cv.md` / `article-digest.md` using the existing `add-entry.mjs` engine. 
+Fetch public sources linked in the user's `config/profile.yml` (e.g., GitHub username, portfolio URL) to discover competencies, projects, and work history. Merge missing items into their `cv.md` / `article-digest.md` using the existing `scripts/add-entry.mjs` engine. 
 
 > **Non-negotiables (from the project's source-of-truth rules in `_shared.md`):**
 > - **Confirm before write.** Present all deduped additions to the user and halt until explicit approval is given.
@@ -14,7 +14,7 @@ Fetch public sources linked in the user's `config/profile.yml` (e.g., GitHub use
 `$mode` after `expand` should be empty. Do not parse raw URLs or usernames from the prompt.
 1. Read `config/profile.yml` to locate the user's GitHub profile (`candidate.github`) or portfolio URL (`candidate.portfolio_url`).
 2. If neither is present, prompt the user to add them to their profile config first.
-3. **Normalize `candidate.github` to a bare username** before using it anywhere. The field is a profile link, not a username: `config/profile.example.yml` ships `github.com/janesmith`, and `generate-cover-letter.mjs` renders it as a link. Strip, in order: surrounding whitespace, a leading `https://` or `http://`, a leading `www.`, a leading `github.com/` (case-insensitive), any trailing `/`, and a leading `@`. So `https://github.com/janesmith/`, `github.com/janesmith`, `@janesmith` and `janesmith` all become `janesmith`. Every `<username>` below means this normalized value.
+3. **Normalize `candidate.github` to a bare username** before using it anywhere. The field is a profile link, not a username: `config/profile.example.yml` ships `github.com/janesmith`, and `scripts/generate-cover-letter.mjs` renders it as a link. Strip, in order: surrounding whitespace, a leading `https://` or `http://`, a leading `www.`, a leading `github.com/` (case-insensitive), any trailing `/`, and a leading `@`. So `https://github.com/janesmith/`, `github.com/janesmith`, `@janesmith` and `janesmith` all become `janesmith`. Every `<username>` below means this normalized value.
 4. If the result is not a valid GitHub username (1–39 characters, only letters, digits and hyphens, not starting with a hyphen), stop and ask the user to fix `candidate.github`. A repo link such as `github.com/janesmith/tool` fails this check because of the `/`. Never guess a username from what is left.
 
 ## Pipeline
@@ -42,13 +42,13 @@ Fetch public sources linked in the user's `config/profile.yml` (e.g., GitHub use
    EOF_EXPAND_PAYLOAD
    )
 
-   printf '%s' "$PAYLOAD" | node add-entry.mjs --stdin --dry-run
+   printf '%s' "$PAYLOAD" | node scripts/add-entry.mjs --stdin --dry-run
    ```
    Filter out any items that return `"status": "duplicate"`.
 5. **Preview & Confirm Gate.** Show the user the newly discovered, non-duplicate entries. You MUST output your final proposal as a Markdown table containing exactly three columns: | skill | evidence | section |. You **must halt** and ask the user to approve, edit, or cancel. Do **not** proceed without an explicit yes.
 6. **Write via the helper.** For each approved entry, pass the exactly identical stored payload to the final write, avoiding re-derivation:
    ```bash
-   printf '%s' "$PAYLOAD" | node add-entry.mjs --stdin
+   printf '%s' "$PAYLOAD" | node scripts/add-entry.mjs --stdin
    ```
 
 ## Section inference
@@ -60,7 +60,7 @@ Fetch public sources linked in the user's `config/profile.yml` (e.g., GitHub use
 | an internship / job / role | `Work Experience` |
 | a talk / course / certification | `Education` (or ask if unclear) |
 
-## Payload schema (input to `add-entry.mjs`)
+## Payload schema (input to `scripts/add-entry.mjs`)
 
 Both keys optional; provide at least one. `articleDigest` is for projects only.
 

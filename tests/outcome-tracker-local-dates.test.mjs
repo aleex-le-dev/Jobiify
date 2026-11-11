@@ -3,13 +3,13 @@
 // (#3070).
 //
 // tests/local-today-gates.test.mjs scoped itself to places that "GATE a
-// decision rather than stamping a filename", and included assessment-log.mjs
+// decision rather than stamping a filename", and included scripts/assessment-log.mjs
 // for "the date written into a user's assessments.tsv row". These two write
 // exactly that kind of date and were both on `new Date().toISOString()`:
 //
-//   outcome.mjs:62    the `## Entry:` header and `**Date**:` in data/outcomes/,
-//                     which calibrate.mjs and funnel-velocity.mjs then read
-//   tracker.mjs:552   the date on a row in the SQLite status_events table
+//   scripts/outcome.mjs:62    the `## Entry:` header and `**Date**:` in data/outcomes/,
+//                     which scripts/calibrate.mjs and scripts/funnel-velocity.mjs then read
+//   scripts/tracker.mjs:552   the date on a row in the SQLite status_events table
 //
 // The tracker one sticks: the index is derived and rebuildable, but its own
 // comment says events "persist across rebuilds, keyed by id", so a wrong day is
@@ -96,13 +96,13 @@ test('the premise: at this instant the UTC day and the New York day differ', () 
   assert.notEqual(UTC_DAY, NY_DAY);
 });
 
-test('outcome.mjs journals the local day', () => {
+test('scripts/outcome.mjs journals the local day', () => {
   const dir = sandbox();
   try {
-    const r = runFrozen(dir, 'outcome.mjs', ['1', 'rejected'], dir);
+    const r = runFrozen(dir, 'scripts/outcome.mjs', ['1', 'rejected'], dir);
     const outcomesDir = join(dir, 'data', 'outcomes');
     assert.ok(existsSync(outcomesDir), `no outcome journal was written:\n${r.all.slice(0, 500)}`);
-    // outcome.mjs writes data/outcomes/<slug>/outcome.md — a directory per
+    // scripts/outcome.mjs writes data/outcomes/<slug>/outcome.md — a directory per
     // outcome, not loose files — so collect one level down.
     const journals = readdirSync(outcomesDir, { withFileTypes: true })
       .filter((e) => e.isDirectory())
@@ -124,7 +124,7 @@ test('outcome.mjs journals the local day', () => {
   }
 });
 
-test('tracker.mjs dates its status events with the local day', async () => {
+test('scripts/tracker.mjs dates its status events with the local day', async () => {
   // node:sqlite needs Node >= 22.13 (no flag); skip rather than fail on an older runtime,
   // the way test-all does for the tracker index suites. Probed in-process, so
   // this file contains no process.exit literal — tests/main-guard-convention
@@ -143,9 +143,9 @@ test('tracker.mjs dates its status events with the local day', async () => {
     // (`DATE_RE.test(a.date) ? a.date : today`), so a single sync never touches
     // the clock and a test built on one measures nothing. That is exactly how
     // the first draft of this passed with the fix reverted.
-    runFrozen(dir, 'tracker.mjs', ['sync'], dir);
+    runFrozen(dir, 'scripts/tracker.mjs', ['sync'], dir);
     writeFileSync(join(dir, 'data', 'applications.md'), TRACKER.replace('| Applied |', '| Interview |'));
-    const r = runFrozen(dir, 'tracker.mjs', ['sync'], dir);
+    const r = runFrozen(dir, 'scripts/tracker.mjs', ['sync'], dir);
     const dbPath = join(dir, 'data', 'applications.db');
     assert.ok(existsSync(dbPath), `no index was built:\n${r.all.slice(0, 500)}`);
 

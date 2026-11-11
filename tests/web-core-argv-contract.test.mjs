@@ -1,7 +1,7 @@
 // tests/web-core-argv-contract.test.mjs — the web app spawns core scripts with
 // a fixed argv, and the core validates its own flags. Nothing linked the two.
 //
-// followup-cadence.mjs gained validateFlags() without `--json` on its
+// scripts/followup-cadence.mjs gained validateFlags() without `--json` on its
 // KNOWN_FLAGS list, while both web follow-up routes had been spawning
 // `[script, '--json']` all along. The script started exiting 1 with
 // "unrecognized flag(s): --json"; both routes discard the error and resolve to
@@ -29,7 +29,7 @@ console.log('\nweb → core argv contract');
 //                  accepted. Same verdict on the flags, no network.
 //   'json-any-exit' — spawn the exact argv and require stdout to parse as JSON,
 //                  WHATEVER the exit status. For scripts whose contract is "you
-//                  always get a payload": analyze-patterns.mjs exits 1 when it
+//                  always get a payload": scripts/analyze-patterns.mjs exits 1 when it
 //                  is under its minimum sample while still printing the object
 //                  that explains why, and /api/patterns renders that object. A
 //                  'run' probe would read the by-design exit 1 as a break; not
@@ -41,25 +41,25 @@ console.log('\nweb → core argv contract');
 const CALL_SITES = [
   {
     source: 'web/src/app/api/followups/route.ts',
-    script: 'followup-cadence.mjs',
+    script: 'scripts/followup-cadence.mjs',
     args: ['--json'],
     probe: 'run',
   },
   {
     source: 'web/src/app/api/followups/cadence/route.ts',
-    script: 'followup-cadence.mjs',
+    script: 'scripts/followup-cadence.mjs',
     args: ['--json'],
     probe: 'run',
   },
   {
     source: 'web/src/app/api/doctor/route.ts',
-    script: 'doctor.mjs',
+    script: 'scripts/doctor.mjs',
     args: ['--json'],
     probe: 'run',
   },
   {
     source: 'web/src/app/api/status/route.ts',
-    script: 'set-status.mjs',
+    script: 'scripts/set-status.mjs',
     // The route builds ['--row', row, canon, '--source', 'web', '--json'];
     // row 1 and Responded are the fixture tracker's row and a canonical state.
     args: ['--row', '1', 'Responded', '--source', 'web', '--json'],
@@ -67,13 +67,13 @@ const CALL_SITES = [
   },
   {
     source: 'web/src/app/api/portals/verify/route.ts',
-    script: 'verify-portals.mjs',
+    script: 'scripts/verify-portals.mjs',
     args: [],
     probe: 'run',
   },
   {
     source: 'web/src/app/api/tracker/delete/route.ts',
-    script: 'tracker.mjs',
+    script: 'scripts/tracker.mjs',
     // --dry-run is conditional in the route (added when the caller asks for a
     // preview); passing it keeps the probe off the fixture tracker.
     args: ['delete', '--num', '1', '--dry-run'],
@@ -81,17 +81,17 @@ const CALL_SITES = [
   },
   {
     source: 'web/src/lib/core/scan.ts',
-    script: 'scan-ats-full.mjs',
+    script: 'scripts/scan-ats-full.mjs',
     // The values are the route's own defaults; only the flag names matter here.
     args: ['--dry-run', '--since', '7', '--ats', 'greenhouse', '--limit', '150', '--json'],
     probe: 'flags-only',
   },
   {
     source: 'web/src/app/api/quiet-companies/route.ts',
-    script: 'rejection-latency.mjs',
+    script: 'scripts/rejection-latency.mjs',
     // The route parses stdout, so the payload is the contract, not just exit 0.
     expectJson: true,
-    // No flags: it prints JSON by default, like stats.mjs and upskill.mjs. With
+    // No flags: it prints JSON by default, like scripts/stats.mjs and scripts/upskill.mjs. With
     // no data/active-interviews.md in the fixture it reports zero rows checked
     // and still exits 0, which is the shape the route reads.
     args: [],
@@ -99,7 +99,7 @@ const CALL_SITES = [
   },
   {
     source: 'web/src/app/api/keyword-match/route.ts',
-    script: 'keyword-match.mjs',
+    script: 'scripts/keyword-match.mjs',
     // {{report}} is replaced with the fixture report below. This script takes a
     // FILE as its first argument, so unlike every other site here the argv is
     // only meaningful against a real report — and `--help` exits 1, so
@@ -109,16 +109,16 @@ const CALL_SITES = [
   },
   {
     source: 'web/src/app/api/upskill/route.ts',
-    script: 'upskill.mjs',
-    // No flags: upskill.mjs prints JSON by default and rejects a --json flag,
-    // the same convention stats.mjs and company-history.mjs follow while the
+    script: 'scripts/upskill.mjs',
+    // No flags: scripts/upskill.mjs prints JSON by default and rejects a --json flag,
+    // the same convention scripts/stats.mjs and scripts/company-history.mjs follow while the
     // follow-up routes pass one. The empty argv is the assertion.
     args: [],
     probe: 'run',
   },
   {
     source: 'web/src/app/api/company-history/route.ts',
-    script: 'company-history.mjs',
+    script: 'scripts/company-history.mjs',
     // The fixture tracker's own company, so the probe exercises a real lookup
     // rather than the not-found fallback.
     args: ['--company', 'Northwind Robotics'],
@@ -145,8 +145,8 @@ const CALL_SITES = [
  */
 export function verifyWebStaticSources({ root = ROOT, reportPass = pass, reportFail = fail } = {}) {
   // web/ ships as its own release-please component and is excluded from
-  // SYSTEM_PATHS wholesale (validate-system-paths-coverage.mjs,
-  // EXCLUDE_PREFIXES = ['web/']), so `update-system.mjs apply` never installs
+  // SYSTEM_PATHS wholesale (scripts/validate-system-paths-coverage.mjs,
+  // EXCLUDE_PREFIXES = ['web/']), so `scripts/update-system.mjs apply` never installs
   // it. An install created that way has no web/ at all, and the two checks
   // below read the web sources unconditionally: readFileSync threw ENOENT and
   // took the whole suite with it, so the argv probes above — which need only
@@ -217,7 +217,7 @@ export function runWebCoreArgvContract() {
     );
 
     // The report the fixture tracker already links to, which until now was not
-    // written. keyword-match.mjs reads a report's `## Keywords extracted` block,
+    // written. scripts/keyword-match.mjs reads a report's `## Keywords extracted` block,
     // so a probe of its argv needs one to exist.
     const reportFile = join(sandbox, 'reports', '001-northwind-robotics-2026-01-05.md');
     mkdirSync(join(sandbox, 'reports'), { recursive: true });
@@ -229,7 +229,7 @@ export function runWebCoreArgvContract() {
       'utf-8',
     );
 
-    // keyword-match.mjs compares the report against the CV at the data root and
+    // scripts/keyword-match.mjs compares the report against the CV at the data root and
     // exits 1 when there is none, so the fixture needs both halves of the
     // comparison. Two of the three keywords above appear here on purpose: the
     // probe asserts the argv and the JSON shape, and a run with no overlap at
@@ -244,11 +244,11 @@ export function runWebCoreArgvContract() {
       ...process.env,
       CAREER_OPS_ROOT: sandbox,
       CAREER_OPS_DATA_DIR: '',
-      // set-status.mjs resolves its root from the codebase, not from
+      // scripts/set-status.mjs resolves its root from the codebase, not from
       // CAREER_OPS_ROOT, so without this the probe would read and write the
       // developer's own tracker.
       CAREER_OPS_TRACKER: tracker,
-      // verify-portals.mjs reads portals.yml relative to the codebase root, and
+      // scripts/verify-portals.mjs reads portals.yml relative to the codebase root, and
       // a real one would put this probe on the network. Point it at a path that
       // does not exist: the script's documented no-op for a fresh setup.
       CAREER_OPS_PORTALS: join(sandbox, 'no-portals.yml'),

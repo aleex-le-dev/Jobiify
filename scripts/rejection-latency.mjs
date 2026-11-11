@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * rejection-latency.mjs — Post-Interview Response-Latency Signal for career-ops
+ * scripts/rejection-latency.mjs — Post-Interview Response-Latency Signal for career-ops
  *
  * Cross-references data/active-interviews.md (interview round dates) with
  * data/applications.md (tracker status) and flags companies whose
@@ -11,7 +11,7 @@
  *   1. Its latest interview date in data/active-interviews.md is more than
  *      the threshold days ago, and
  *   2. A tracker row for the same company AND role (exact normalized match
- *      or role-matcher.mjs fuzzy match; company-only fallback when the
+ *      or scripts/role-matcher.mjs fuzzy match; company-only fallback when the
  *      interview row has no role) is still in the `Interview` state — i.e.
  *      no `Responded`/`Offer`/`Rejected` transition has been recorded since.
  *      (The tracker holds the current state, so "still Interview" is the
@@ -34,13 +34,13 @@
  * data/active-interviews.md — it reads and reports, the user acts (#1742
  * opt-in guarantee).
  *
- * Run: node rejection-latency.mjs             (JSON to stdout)
- *      node rejection-latency.mjs --summary   (human-readable table)
- *      node rejection-latency.mjs --courtesy-days 21
- *      node rejection-latency.mjs --today 2026-07-17         (deterministic runs/tests)
- *      node rejection-latency.mjs --file path/to/active-interviews.md
- *      node rejection-latency.mjs --tracker path/to/applications.md
- *      node rejection-latency.mjs --self-test
+ * Run: node scripts/rejection-latency.mjs             (JSON to stdout)
+ *      node scripts/rejection-latency.mjs --summary   (human-readable table)
+ *      node scripts/rejection-latency.mjs --courtesy-days 21
+ *      node scripts/rejection-latency.mjs --today 2026-07-17         (deterministic runs/tests)
+ *      node scripts/rejection-latency.mjs --file path/to/active-interviews.md
+ *      node scripts/rejection-latency.mjs --tracker path/to/applications.md
+ *      node scripts/rejection-latency.mjs --self-test
  *
  * Issue #2013 — github.com/career-ops-hq/career-ops
  */
@@ -52,15 +52,15 @@ import * as yaml from 'js-yaml';
 
 import { parseActiveInterviews, findColumn } from './process-quality.mjs';
 import { resolveColumns, parseTrackerRow, normalizeTextKey } from './tracker-parse.mjs';
-import { isPlaceholderCompany } from './lib/placeholder-cell.mjs';
+import { isPlaceholderCompany } from '../lib/placeholder-cell.mjs';
 import { roleFuzzyMatch } from './role-matcher.mjs';
-import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
-import { localToday } from './lib/local-today.mjs';
-import { parseDate } from './lib/parse-date.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { flagValue, hasFlag, validateFlags } from '../lib/cli-flags.mjs';
+import { localToday } from '../lib/local-today.mjs';
+import { parseDate } from '../lib/parse-date.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
 
-const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
+const CAREER_OPS = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const DEFAULT_ACTIVE_INTERVIEWS_PATH = existsSync(join(DATA_ROOT, 'data/active-interviews.md'))
   ? join(DATA_ROOT, 'data/active-interviews.md')
@@ -84,14 +84,14 @@ const KNOWN_FLAGS = [
 const VALUE_FLAGS = ['--file', '--tracker', '--courtesy-days', '--today'];
 
 const USAGE = `Usage:
-  node rejection-latency.mjs                        # JSON report
-  node rejection-latency.mjs --summary              # human-readable table
-  node rejection-latency.mjs --file <path>          # a different active-interviews.md
-  node rejection-latency.mjs --tracker <path>       # a different applications.md
-  node rejection-latency.mjs --courtesy-days <N>    # override the courtesy threshold (default ${DEFAULT_COURTESY_DAYS})
-  node rejection-latency.mjs --today <YYYY-MM-DD>   # evaluate as of a fixed date
-  node rejection-latency.mjs --self-test            # run the built-in fixtures
-  node rejection-latency.mjs --help                 # show this message
+  node scripts/rejection-latency.mjs                        # JSON report
+  node scripts/rejection-latency.mjs --summary              # human-readable table
+  node scripts/rejection-latency.mjs --file <path>          # a different active-interviews.md
+  node scripts/rejection-latency.mjs --tracker <path>       # a different applications.md
+  node scripts/rejection-latency.mjs --courtesy-days <N>    # override the courtesy threshold (default ${DEFAULT_COURTESY_DAYS})
+  node scripts/rejection-latency.mjs --today <YYYY-MM-DD>   # evaluate as of a fixed date
+  node scripts/rejection-latency.mjs --self-test            # run the built-in fixtures
+  node scripts/rejection-latency.mjs --help                 # show this message
 
 Suggestion-only: nothing is ever written to data/blacklist.md for you.
 ${DISCLAIMER}`;
@@ -99,7 +99,7 @@ ${DISCLAIMER}`;
 // A mistyped flag used to be ignored, so --traker fell back to
 // DEFAULT_TRACKER_PATH and the tool reported "no post-interview silence
 // exceeded the configured thresholds" at exit 0 — a false all-clear computed
-// from a tracker the caller never named (#2919). Same shape as doctor.mjs's
+// from a tracker the caller never named (#2919). Same shape as scripts/doctor.mjs's
 // --targe (#2874). Runs before --help so `--help --bogus` still errors.
 validateFlags(args, KNOWN_FLAGS, USAGE, { valueFlags: VALUE_FLAGS });
 
@@ -130,7 +130,7 @@ const TRACKER_PATH = argValue('--tracker') || DEFAULT_TRACKER_PATH;
 const cliCourtesyDays = argValue('--courtesy-days');
 const cliToday = argValue('--today');
 
-// --- Date helpers (same conventions as detect-reposts.mjs) ---
+// --- Date helpers (same conventions as scripts/detect-reposts.mjs) ---
 // Extract a YYYY-MM-DD date from a free-form Date/Time cell
 // (e.g. "2026-06-01 14:00 EST" → 2026-06-01). Returns null when the cell
 // contains no valid date.
@@ -157,7 +157,7 @@ function isoDay(date) {
 // active-interviews.md matches "Acme Corp" in the tracker without depending on
 // the candidate's punctuation habits.
 //
-// Delegates to tracker-parse.mjs's normalizeTextKey rather than keeping a local
+// Delegates to scripts/tracker-parse.mjs's normalizeTextKey rather than keeping a local
 // regex. The local one was `[^\p{L}\p{N}]` — no \p{M} — which strips COMBINING
 // MARKS. Latin survives that because NFKC precomposes its accents, which is why
 // it read as correct; scripts whose vowel signs have no precomposed form do not:
@@ -181,7 +181,7 @@ export function companyKey(name) {
 /**
  * The identity a row groups under, once a placeholder employer is accounted for.
  *
- * Mirrors process-quality.mjs:190-205, which solved this first and for the same
+ * Mirrors scripts/process-quality.mjs:190-205, which solved this first and for the same
  * data. A `?` employer names nothing, but a `?` row that names its CHANNEL does
  * identify something the user can act on: every round brokered by one agency is
  * one relationship, and that is the thing going quiet. So the channel becomes
@@ -220,7 +220,7 @@ export function loadProfile(profilePath = PROFILE_FILE) {
 
 // --- Tracker parsing ---
 // Reads data/applications.md via the shared header-aware column mapper
-// (tracker-parse.mjs) and returns rows whose current status is `Interview`
+// (scripts/tracker-parse.mjs) and returns rows whose current status is `Interview`
 // (case-insensitive, markdown bold stripped) grouped by company key.
 export function parseTrackerInterviewRows(content) {
   if (typeof content !== 'string' || !content.trim()) return new Map();
@@ -331,7 +331,7 @@ export function computeRejectionLatency(interviewRows, trackerByCompany, opts = 
   // meant two spelling variants of the same role at the same tracker
   // application ("Senior Data Engineer" vs "Sr Data Engineer") built two
   // separate aggregates instead of one, because their normalized text
-  // differed even though role-matcher.mjs's fuzzy match resolves both to
+  // differed even though scripts/role-matcher.mjs's fuzzy match resolves both to
   // the identical tracker row. Keying by `r.num` instead means any set of
   // interview rows that resolve to the same tracker application always
   // collapses into a single flag, regardless of how the role was spelled
@@ -606,7 +606,7 @@ function runSelfTest() {
   check(result.warnings.some(w => w.includes('Wayne Corp') && w.includes('Analyst')),
     'role mismatch at Wayne Corp (107 days, past threshold) produces an explicit warning');
 
-  // Role-aware join: fuzzy title variants still match (role-matcher.mjs).
+  // Role-aware join: fuzzy title variants still match (scripts/role-matcher.mjs).
   const initrode = result.flags.find(f => f.company === 'Initrode');
   check(initrode && initrode.tier === 'courtesy' && initrode.trackerNums.includes(9),
     'Initrode matches "Senior Data Engineer" ↔ "Sr Data Engineer" via roleFuzzyMatch');

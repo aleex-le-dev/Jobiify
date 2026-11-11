@@ -2,20 +2,20 @@
 
 A provider is a module `providers/{name}.mjs` that maps one public, no-auth
 job source (an ATS API, an RSS/JSON feed, or a server-rendered HTML page) to
-the scanner's normalized `Job` shape. `scan.mjs` and `verify-portals.mjs`
+the scanner's normalized `Job` shape. `scripts/scan.mjs` and `scripts/verify-portals.mjs`
 load every such module through `providers/_registry.mjs` — no manual
 registration, dropping the file in `providers/` is enough.
 
 This file is the checklist and the set of requirements. The authoritative
 type catalog is [`_types.js`](_types.js); the architectural role of the layer
-is in [`../ARCHITECTURE.md`](../ARCHITECTURE.md) ("Discovery — `scan.mjs` +
+is in [`../docs/projet/ARCHITECTURE.md`](../docs/projet/ARCHITECTURE.md) ("Discovery — `scripts/scan.mjs` +
 `providers/`"). Mirror an existing module of the same shape — see the table
 in section 4.
 
 ## Before the code: is the source eligible?
 
 A working provider is not enough — the source it reads has to clear the
-[Source Indexing Policy](../CONTRIBUTING.md#source-indexing-policy) first, and
+[Source Indexing Policy](../docs/projet/CONTRIBUTING.md#source-indexing-policy) first, and
 that gate is decided on the source's data, not on how the client is written.
 
 **A single-company ATS adapter** (a new Greenhouse/Workday/Ashby-class
@@ -164,18 +164,18 @@ file's header comment must name the target list — reference
 An optional `async enrichDate(job, ctx)` fetches one posting's detail page
 to fill `postedAt` (and opportunistically `location`) for a source whose
 list page carries no date (`icims`). It is **not** in the core contract,
-and `_registry.mjs` never calls it. Its only caller is `scan-ats-full.mjs`,
+and `_registry.mjs` never calls it. Its only caller is `scripts/scan-ats-full.mjs`,
 the reverse-ATS sweep, and only for a job that passed the title/location
 filters but came back undated — so the undated-drop policy has a date to
 judge.
 
-`scan-ats-full.mjs` imports a **fixed** set of modules (`greenhouse`,
+`scripts/scan-ats-full.mjs` imports a **fixed** set of modules (`greenhouse`,
 `lever`, `ashby`, `workday`, `icims`) with no registry lookup — a provider
 it does not import can define `enrichDate` and nothing will ever call it.
 The hook also overlaps the `fetchDetails` opt-in above, which already
-fetches the detail page on the normal `scan.mjs` path. Pick one:
+fetches the detail page on the normal `scripts/scan.mjs` path. Pick one:
 `fetchDetails` for a provider reached through `portals.yml`; `enrichDate`
-only when the provider is (or is being) wired into `scan-ats-full.mjs`.
+only when the provider is (or is being) wired into `scripts/scan-ats-full.mjs`.
 Don't ship both. If you add it, test it and say in the header comment that
 it is inert until the provider is added there.
 
@@ -301,7 +301,7 @@ surface instead of reading as `0` jobs forever. Three outcomes:
 
   Name the keys (or the type) you did get. Returning `[]` here instead is a
   defensible "a partial/empty board beats a run error" call — but make it
-  deliberately, not through an enumeration gap. `scan.mjs` separately throws
+  deliberately, not through an enumeration gap. `scripts/scan.mjs` separately throws
   on a non-array *return value* out of `fetch()`; `verify-portals` catches
   that.
 - **`continue` / `.filter` — one row is malformed.** Never an exception out
@@ -372,7 +372,7 @@ const url = `https://example.com/jobs/${seg}`;
 
 `encodeURIComponent` throws `URIError` on a lone UTF-16 surrogate, and a
 `"\uD800"` escape survives `JSON.parse` — the throw leaves the loop and
-`scan.mjs`'s per-company `catch` then loses every posting already parsed on
+`scripts/scan.mjs`'s per-company `catch` then loses every posting already parsed on
 that page. The helper returns `null` instead, so you drop exactly the one bad
 posting — the same as a posting with no `id`. It returns `null` rather than a
 `U+FFFD` substitute on purpose: a degraded value flows on into
@@ -601,7 +601,7 @@ ends the walk, stop reason `complete`) and don't let `max_pages` /
 
 ### Health-check coverage (`verify-portals`)
 
-`npm run verify:portals` and `node validate-portals.mjs` (and `doctor.mjs
+`npm run verify:portals` and `node scripts/validate-portals.mjs` (and `scripts/doctor.mjs
 --strict`, which delegates to the former) sweep **both** `tracked_companies`
 and `job_boards` — the two lists share one entry schema and one enabled-name
 namespace (a board and a company with the same name is flagged).
@@ -609,7 +609,7 @@ namespace (a board and a company with the same name is flagged).
 
 1. **tier 1** — a direct Greenhouse/Ashby/Lever slug probe, when a
    `tracked_companies` `careers_url` / `api` carries a recognizable ATS slug.
-   Only these three ATS get a `suggested` fix, so `fix-slugs.mjs` rewrites
+   Only these three ATS get a `suggested` fix, so `scripts/fix-slugs.mjs` rewrites
    slugs only for them — a `job_boards` aggregator is a provider-layer entry
    and never carries a `suggested` alternate.
 2. **tier 2** — every other entry (Workday, SmartRecruiters, branded careers
@@ -636,7 +636,7 @@ constant.
 
 A provider reads only open APIs/feeds with no login. Sending the user's data
 (CV, pipeline) to an external service is out of core (see
-[`../CONTRIBUTING.md`](../CONTRIBUTING.md), "What we do NOT accept").
+[`../docs/projet/CONTRIBUTING.md`](../docs/projet/CONTRIBUTING.md), "What we do NOT accept").
 
 ### Browser-based scanners (standalone scripts only)
 
@@ -651,7 +651,7 @@ A browser scanner is slower and more fragile than a provider (markup changes bre
 ## 3. Tests
 
 One file: `tests/providers/{name}.test.mjs`. Auto-discovered
-(`tests/**/*.test.mjs`) — nothing to register in `test-all.mjs`. RSS/HTML
+(`tests/**/*.test.mjs`) — nothing to register in `scripts/test-all.mjs`. RSS/HTML
 providers should export their pure parser function for direct unit testing.
 
 Don't re-prove the shared helpers (`_safe-url`, `_html-entities`) — their own
@@ -725,8 +725,8 @@ are fictional (`Acme`, `ExampleCo`, `BigCo`) — never real companies. A
 comment citing real observed data (e.g. why a page-limit constant was
 chosen) is welcome — it documents that the number is not arbitrary.
 
-Dev loop: `node test-all.mjs --only providers/{name}`. Before a PR: the full
-`node test-all.mjs` (`--only` is not a merge gate).
+Dev loop: `node scripts/test-all.mjs --only providers/{name}`. Before a PR: the full
+`node scripts/test-all.mjs` (`--only` is not a merge gate).
 
 ## 4. Reference modules
 
@@ -752,7 +752,7 @@ provider whose tuning needs differ from the shared default
 ## 5. Pre-PR checklist
 
 - [ ] **Board / aggregator / talent network only:** the source clears the
-      [Source Indexing Policy](../CONTRIBUTING.md#source-indexing-policy) —
+      [Source Indexing Policy](../docs/projet/CONTRIBUTING.md#source-indexing-policy) —
       real employer-attributed listings, free for the candidate, one source
       per provider (not a meta-aggregator of other boards); operator-run or
       borderline → a [source proposal](../.github/ISSUE_TEMPLATE/source-proposal.yml)
@@ -801,9 +801,9 @@ provider whose tuning needs differ from the shared default
 - [ ] A `fetchDetails` detail-fetch loop is paced and retry-wrapped the
       same way, even when the provider does not paginate.
 - [ ] No `enrichDate` unless the provider is (being) wired into
-      `scan-ats-full.mjs`; not shipped alongside the `fetchDetails` opt-in.
+      `scripts/scan-ats-full.mjs`; not shipped alongside the `fetchDetails` opt-in.
 - [ ] `tests/providers/{name}.test.mjs` covers everything in section 3.
-- [ ] `node test-all.mjs` — the full suite is green (not just `--only`).
+- [ ] `node scripts/test-all.mjs` — the full suite is green (not just `--only`).
 - [ ] A row is added to
       [`../docs/SUPPORTED_JOB_BOARDS.md`](../docs/SUPPORTED_JOB_BOARDS.md), in
       case-insensitive alphabetical position by board name (the table is

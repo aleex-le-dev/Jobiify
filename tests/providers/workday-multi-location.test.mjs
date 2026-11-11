@@ -13,7 +13,7 @@ import { pass, fail, ROOT, captureConsoleErrors } from '../helpers.mjs';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
 import { spawnSync } from 'child_process';
-import { buildPostingAgeFilter, buildPostedDateFilter } from '../../scan.mjs';
+import { buildPostingAgeFilter, buildPostedDateFilter } from '../../scripts/scan.mjs';
 
 console.log('\nProvider — workday multi-location placeholders');
 
@@ -523,7 +523,7 @@ for (const [label, detailImpl] of [
 // Background: parsePostedOn returns `undefined` for "Posted 30+ Days Ago" (the
 // label is unbounded, so no usable date can be derived from it). Without
 // enrichment the posting carries no `postedAt` and passes any age-based filter
-// in scan.mjs — the "don't penalize missing data" rule is a fallback for
+// in scripts/scan.mjs — the "don't penalize missing data" rule is a fallback for
 // IGNORANCE, not a policy of inclusion. Once startDate is fetched from the
 // detail document, the real date is available and filters apply correctly.
 //
@@ -613,7 +613,7 @@ for (const [label, detailImpl] of [
   }
 
   // (d) Pin the downstream consequence explicitly so the tradeoff is recorded
-  // rather than implied. The real filters from scan.mjs are used here, not stubs.
+  // rather than implied. The real filters from scripts/scan.mjs are used here, not stubs.
   //
   // The "undated passes" rule is a fallback for ignorance: a posting with no
   // postedAt is not penalized because the scanner does not know its date. Once
@@ -639,7 +639,7 @@ for (const [label, detailImpl] of [
     } else {
       fail('buildPostingAgeFilter(30) rejected an undated posting — that breaks the "undated passes" contract');
     }
-    // Confirm via buildPostedDateFilter too, since scan.mjs can use either.
+    // Confirm via buildPostedDateFilter too, since scripts/scan.mjs can use either.
     const cutoffDate = new Date(NOW_MS - 30 * 86_400_000).toISOString().split('T')[0];
     const dateFilter = buildPostedDateFilter(cutoffDate, null);
     if (!dateFilter(OLD_DATE_MS)) {

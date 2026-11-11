@@ -12,8 +12,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readReplyProposals } from '../lib/reply-proposals.mjs';
-import { resolveColumns, parseTrackerRow } from '../tracker-parse.mjs';
-import { loadCanonicalStates } from '../tracker-utils.mjs';
+import { resolveColumns, parseTrackerRow } from '../scripts/tracker-parse.mjs';
+import { loadCanonicalStates } from '../scripts/tracker-utils.mjs';
 import { linkNodeModules } from './helpers.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -46,7 +46,7 @@ function importClosure(entries) {
   return [...seen];
 }
 
-const ASSETS = [...importClosure(['reply-watch.mjs', 'set-status.mjs']), 'tracker-aliases.json', 'templates/states.yml'];
+const ASSETS = [...importClosure(['scripts/reply-watch.mjs', 'scripts/set-status.mjs']), 'tracker-aliases.json', 'templates/states.yml'];
 
 function fixture(t) {
   const dir = realpathSync(mkdtempSync(join(tmpdir(), 'career-ops-proposals-')));
@@ -69,7 +69,7 @@ function prepareCode(f) {
   if (f.codeReady) return;
   for (const file of ASSETS) {
     mkdirSync(dirname(join(f.code, file)), { recursive: true });
-    copyFileSync(join(ROOT, file), join(f.code, file));
+    (mkdirSync(join(f.code, file, '..'), { recursive: true }), (mkdirSync(join(f.code, file, '..'), { recursive: true }), copyFileSync(join(ROOT, file), join(f.code, file))));
   }
   const depsReason = linkNodeModules(f.code, ROOT);
   if (depsReason) throw new Error(`reply-proposals fixture dependencies unavailable: ${depsReason}`);
@@ -115,7 +115,7 @@ function envFor(f, env = {}) {
 
 function run(f, input = '', env = {}) {
   prepareCode(f);
-  const result = spawnSync(process.execPath, [join(f.code, 'reply-watch.mjs')], {
+  const result = spawnSync(process.execPath, [join(f.code, 'scripts/reply-watch.mjs')], {
     cwd: f.cwd, input, encoding: 'utf8', timeout: 30_000, env: envFor(f, env),
   });
   assert.equal(result.error, undefined, result.error?.message);
@@ -136,7 +136,7 @@ function unchanged(f, expected = tracker()) {
 function duringReview(t, f, mutate) {
   prepareCode(f);
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [join(f.code, 'reply-watch.mjs')], {
+    const child = spawn(process.execPath, [join(f.code, 'scripts/reply-watch.mjs')], {
       cwd: f.cwd, env: envFor(f), stdio: ['pipe', 'pipe', 'pipe'],
     });
     let stdout = '';

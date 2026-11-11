@@ -23,8 +23,8 @@ import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\nscan-ats-full — domain_filter board gate');
 
-const { barePrefixDomainKeywords, buildDomainFilter, buildTitleFilter } = await import(pathToFileURL(join(ROOT, 'title-keywords.mjs')).href);
-const { boardInDomain, boardGateDecision, retryGateDecision } = await import(pathToFileURL(join(ROOT, 'scan-ats-full.mjs')).href);
+const { barePrefixDomainKeywords, buildDomainFilter, buildTitleFilter } = await import(pathToFileURL(join(ROOT, 'scripts/title-keywords.mjs')).href);
+const { boardInDomain, boardGateDecision, retryGateDecision } = await import(pathToFileURL(join(ROOT, 'scripts/scan-ats-full.mjs')).href);
 const { WORKDAY_TRUNCATED_REASON } = await import(pathToFileURL(join(ROOT, 'providers', 'workday.mjs')).href);
 
 const check = (cond, msg) => (cond ? pass(msg) : fail(msg));
@@ -240,7 +240,7 @@ check(!buildDomainFilter(['word:rwa'])('Software RWAs Team'), 'an explicit `word
 // three orderings the feature's claims rest on, not the code that implements
 // them.
 {
-  const src = readFileSync(join(ROOT, 'scan-ats-full.mjs'), 'utf8');
+  const src = readFileSync(join(ROOT, 'scripts/scan-ats-full.mjs'), 'utf8');
   const sweep = src.slice(src.indexOf('const truncated = []'), src.indexOf('Second chance for boards'));
   const at = needle => sweep.indexOf(needle);
 
@@ -285,7 +285,7 @@ check(!buildDomainFilter(['word:rwa'])('Software RWAs Team'), 'an explicit `word
 
 // ── Bare word:/stem: prefixes ───────────────────────────────────────
 // Nonblank, so normalization keeps them, but they compile to a gate that
-// matches nothing and drops every complete board. validate-portals.mjs is not
+// matches nothing and drops every complete board. scripts/validate-portals.mjs is not
 // on a direct run's path, so the scanner refuses them itself.
 {
   const hits = barePrefixDomainKeywords(['defi', 'word:', 'stem:  ', 'solana + word:', 'word:rwa', 'stem:token', null]);
@@ -295,7 +295,7 @@ check(!buildDomainFilter(['word:rwa'])('Software RWAs Team'), 'an explicit `word
   const dir = mkdtempSync(join(tmpdir(), 'domain-bare-'));
   try {
     writeFileSync(join(dir, 'portals.yml'), 'title_filter:\n  positive: [engineer]\ndomain_filter:\n  - defi\n  - "solana + word:"\n');
-    const r = spawnSync(process.execPath, ['scan-ats-full.mjs', '--dry-run'], {
+    const r = spawnSync(process.execPath, ['scripts/scan-ats-full.mjs', '--dry-run'], {
       cwd: ROOT, encoding: 'utf-8', timeout: 30_000,
       env: { ...process.env, CAREER_OPS_ROOT: dir, CAREER_OPS_DATA_DIR: '' },
     });
@@ -308,7 +308,7 @@ check(!buildDomainFilter(['word:rwa'])('Software RWAs Team'), 'an explicit `word
 
 // ── The SIGTERM partial result reports the gate too ─────────────────
 {
-  const src = readFileSync(join(ROOT, 'scan-ats-full.mjs'), 'utf-8');
+  const src = readFileSync(join(ROOT, 'scripts/scan-ats-full.mjs'), 'utf-8');
   const partial = src.slice(src.indexOf("process.on('SIGTERM'"), src.indexOf('const snapshotCounters'));
   check(['domainFilterActive: Boolean(domainFilter)', 'domainGatedBoards,', 'domainGatedPostings,'].every((f) => partial.includes(f)),
     'the stoppedEarly JSON carries domainFilterActive and both gate counters');

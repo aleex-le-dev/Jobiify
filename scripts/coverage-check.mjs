@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// coverage-check.mjs — when the user brings in a posting the scanners did not
+// scripts/coverage-check.mjs — when the user brings in a posting the scanners did not
 // surface, say WHY, and propose the one change that would have caught it.
 // Zero-network: it reads portals.yml, data/scan-history.tsv, data/pipeline.md
 // and the reverse-sweep company lists cached under data/cache/ats-companies/,
@@ -16,14 +16,14 @@ import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 import { buildLocationFilter, normalizeUrlForDedup, PORTALS_PATH, SCAN_HISTORY_PATH, PIPELINE_PATH } from './scan.mjs';
 import { buildTitleFilter } from './title-keywords.mjs';
-import { loadProviders, resolveProvider } from './providers/_registry.mjs';
+import { loadProviders, resolveProvider } from '../providers/_registry.mjs';
 import { normalizeCompany } from './tracker-utils.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { localToday } from './lib/local-today.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { flagValue, validateFlags } from './lib/cli-flags.mjs';
+import { localToday } from '../lib/local-today.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { flagValue, validateFlags } from '../lib/cli-flags.mjs';
 
-const CODE_ROOT = path.dirname(fileURLToPath(import.meta.url));
+const CODE_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const DATASET_DIR = path.join(DATA_ROOT, 'data/cache/ats-companies');
 export const MISSES_PATH = path.join(DATA_ROOT, 'data/coverage-misses.tsv');
@@ -32,10 +32,10 @@ const MISSES_HEADER = 'date\turl\tcompany\ttitle\tgap\tfix\tnote';
 const KNOWN_FLAGS = ['--company', '--title', '--location', '--note', '--log', '--json', '--help', '-h'];
 const VALUE_FLAGS = ['--company', '--title', '--location', '--note'];
 const USAGE = `Usage:
-  node coverage-check.mjs <url> --company <name> --title <title> [--location <loc>]
-  node coverage-check.mjs <url> ... --log [--note <text>]   # also append to data/coverage-misses.tsv
-  node coverage-check.mjs <url> ... --json                  # machine-readable verdict
-  node coverage-check.mjs --help                            # show this message`;
+  node scripts/coverage-check.mjs <url> --company <name> --title <title> [--location <loc>]
+  node scripts/coverage-check.mjs <url> ... --log [--note <text>]   # also append to data/coverage-misses.tsv
+  node scripts/coverage-check.mjs <url> ... --json                  # machine-readable verdict
+  node scripts/coverage-check.mjs --help                            # show this message`;
 
 export const GAPS = {
   'surfaced': 'a scanner already surfaced it',
@@ -49,7 +49,7 @@ export const GAPS = {
   'untracked-unsupported-ats': 'company not in portals.yml, and no provider reads its job site',
 };
 
-// The job sites the reverse sweep (scan-ats-full.mjs) and the company-board
+// The job sites the reverse sweep (scripts/scan-ats-full.mjs) and the company-board
 // providers understand, keyed the way data/cache/ats-companies/*.json lists them.
 export function atsFromUrl(url) {
   let u;

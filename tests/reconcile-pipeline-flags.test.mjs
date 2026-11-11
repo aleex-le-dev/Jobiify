@@ -1,4 +1,4 @@
-// reconcile-pipeline.mjs must reject a mistyped flag before it can fall
+// scripts/reconcile-pipeline.mjs must reject a mistyped flag before it can fall
 // through to a LIVE run. Before this fix, a typo'd --dry-run (e.g. --dryrun)
 // was silently ignored and the script proceeded to overwrite pipeline.md for
 // real — the caller believed they were in dry-run mode and were not.
@@ -14,7 +14,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const SCRIPT = join(ROOT, 'reconcile-pipeline.mjs');
+const SCRIPT = join(ROOT, 'scripts/reconcile-pipeline.mjs');
 
 function runReconcile(...args) {
   const result = spawnSync(process.execPath, [SCRIPT, ...args], {
@@ -22,8 +22,8 @@ function runReconcile(...args) {
     encoding: 'utf-8',
     timeout: 30_000,
   });
-  assert.equal(result.error, undefined, `reconcile-pipeline.mjs failed to spawn: ${result.error?.message}`);
-  assert.equal(result.signal, null, `reconcile-pipeline.mjs was killed by ${result.signal} (timeout?)`);
+  assert.equal(result.error, undefined, `scripts/reconcile-pipeline.mjs failed to spawn: ${result.error?.message}`);
+  assert.equal(result.signal, null, `scripts/reconcile-pipeline.mjs was killed by ${result.signal} (timeout?)`);
   return { ...result, all: `${result.stdout ?? ''}${result.stderr ?? ''}` };
 }
 
@@ -31,7 +31,7 @@ test('--help prints usage and exits 0', () => {
   const result = runReconcile('--help');
   assert.equal(result.status, 0, `expected exit 0, got ${result.status}: ${result.all}`);
   assert.match(result.stdout, /Usage:/);
-  assert.match(result.stdout, /node reconcile-pipeline\.mjs/);
+  assert.match(result.stdout, /node scripts\/reconcile-pipeline\.mjs/);
 });
 
 test('-h prints usage and exits 0', () => {

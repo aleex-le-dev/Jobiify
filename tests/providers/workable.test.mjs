@@ -1,4 +1,4 @@
-// tests/providers/workable.test.mjs — moved verbatim from test-all.mjs (#1440).
+// tests/providers/workable.test.mjs — moved verbatim from scripts/test-all.mjs (#1440).
 import { pass, fail, ROOT } from '../helpers.mjs';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
@@ -229,7 +229,7 @@ try {
 
   // The point of the fix: ask the real consumer, not a reimplementation of it.
   // This is the config shape that parked the posting — UK blocked, EU allowed.
-  const { buildLocationFilter } = await import(pathToFileURL(join(ROOT, 'scan.mjs')).href);
+  const { buildLocationFilter } = await import(pathToFileURL(join(ROOT, 'scripts/scan.mjs')).href);
   const euFilter = buildLocationFilter({
     always_allow: ['Romania', 'Poland', 'Croatia'],
     allow: ['Remote', 'Europe'],

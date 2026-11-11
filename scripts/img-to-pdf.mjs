@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 /**
- * img-to-pdf.mjs — Screenshot/image -> single-page PDF via Playwright
+ * scripts/img-to-pdf.mjs — Screenshot/image -> single-page PDF via Playwright
  *
  * Some ATS upload fields demand a PDF specifically and reject images
  * (screenshots of an offer, a portal error, a badge, etc). This wraps
  * the image in a minimal HTML page and renders it with the same
- * Playwright/Chromium engine generate-pdf.mjs already uses for CVs —
+ * Playwright/Chromium engine scripts/generate-pdf.mjs already uses for CVs —
  * zero new npm dependencies.
  *
- * Deliberately standalone: it does NOT go through generate-pdf.mjs, so
+ * Deliberately standalone: it does NOT go through scripts/generate-pdf.mjs, so
  * it is never subject to that script's cv.md section-order validation
  * (which only makes sense for the CV HTML template).
  *
@@ -17,8 +17,8 @@
  * explicit non-goal for v1 (see issue #1730).
  *
  * Usage:
- *   node img-to-pdf.mjs <image-path> <output-path> [--force]
- *   node img-to-pdf.mjs --self-test
+ *   node scripts/img-to-pdf.mjs <image-path> <output-path> [--force]
+ *   node scripts/img-to-pdf.mjs --self-test
  *
  * --force is required to overwrite an existing output file; without it
  * the script errors out rather than silently clobbering a PDF.
@@ -28,7 +28,7 @@ import { chromium } from 'playwright';
 import { resolve, dirname, extname } from 'path';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 const MIME_TYPES = {
   '.png': 'image/png',
@@ -81,11 +81,11 @@ export function parseArgs(args) {
 }
 
 function usage() {
-  console.log('Usage: node img-to-pdf.mjs <image-path> <output-path> [--force]');
+  console.log('Usage: node scripts/img-to-pdf.mjs <image-path> <output-path> [--force]');
   console.log('');
   console.log('Converts a single screenshot/image into a single-page PDF (Playwright/Chromium),');
   console.log('for ATS upload fields that require a PDF specifically. Zero new dependencies —');
-  console.log('reuses the playwright dependency already used by generate-pdf.mjs.');
+  console.log('reuses the playwright dependency already used by scripts/generate-pdf.mjs.');
   console.log('');
   console.log('  --force   overwrite <output-path> if it already exists');
   console.log('');

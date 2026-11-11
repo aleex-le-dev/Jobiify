@@ -9,9 +9,9 @@ import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\nscan — declared-field whitelists (filter_on / field_filters)');
 
-const scan = await import(pathToFileURL(join(ROOT, 'scan.mjs')).href);
+const scan = await import(pathToFileURL(join(ROOT, 'scripts/scan.mjs')).href);
 const { normalizeFilterOn, buildTitleFilter } = scan;
-const titleKeywords = await import(pathToFileURL(join(ROOT, 'title-keywords.mjs')).href);
+const titleKeywords = await import(pathToFileURL(join(ROOT, 'scripts/title-keywords.mjs')).href);
 
 // ── normalizeFilterOn ──────────────────────────────────────────────
 // The default is the whole backward-compatibility guarantee: every existing
@@ -61,7 +61,7 @@ const titleKeywords = await import(pathToFileURL(join(ROOT, 'title-keywords.mjs'
       && buildTitleFilter === titleKeywords.buildTitleFilter) {
     pass('field blocks compile with the same buildTitleFilter as title_filter');
   } else {
-    fail('scan.mjs re-exports a different compiler than title-keywords.mjs');
+    fail('scripts/scan.mjs re-exports a different compiler than scripts/title-keywords.mjs');
   }
 
   const f = buildTitleFilter({ positive: ['stem:22'], negative: ['22222'] });

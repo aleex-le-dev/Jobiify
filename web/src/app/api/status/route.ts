@@ -14,11 +14,11 @@ export const runtime = "nodejs"; // delegates to the core CLI via child_process
 // This route used to read data/applications.md, rewrite the Status cell in
 // memory and atomically write the file back. It was the only tracker writer
 // that took no lock: atomicWrite is atomic about the *file*, not about the
-// read-modify-write around it, so a change committed by merge-tracker.mjs or
-// set-status.mjs between the read and the write was silently overwritten by a
+// read-modify-write around it, so a change committed by scripts/merge-tracker.mjs or
+// scripts/set-status.mjs between the read and the write was silently overwritten by a
 // copy of the tracker that predated it (#2900).
 //
-// So it delegates. set-status.mjs is the path every other writer already uses:
+// So it delegates. scripts/set-status.mjs is the path every other writer already uses:
 // it holds the shared tracker lock across the whole read-modify-write,
 // validates the state against templates/states.yml, and appends the transition
 // ledger. Routing through it closes the race, drops this file's duplicate
@@ -51,7 +51,7 @@ function boundedLockWait(): Record<string, string> {
   return { CAREER_OPS_TRACKER_LOCK_TIMEOUT_MS: String(Math.min(requested, LOCK_WAIT_CEILING_MS)) };
 }
 
-// set-status.mjs exit codes (CLI_EXIT in tracker-utils.mjs) → HTTP.
+// scripts/set-status.mjs exit codes (CLI_EXIT in scripts/tracker-utils.mjs) → HTTP.
 // 4 means another writer holds the tracker lock: transient, so the caller should
 // retry rather than treat the change as rejected.
 const EXIT_TO_HTTP: Record<number, number> = { 2: 404, 3: 409, 4: 503 };
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
   }
   // Resolving aliases here lets the response echo the canonical label without
   // waiting on the CLI, and costs no process spawn for an unknown state.
-  // set-status.mjs validates again against states.yml — this is a fast path,
+  // scripts/set-status.mjs validates again against states.yml — this is a fast path,
   // not the authority.
   const canon = canonicalizeStatus(status);
   if (!canon) {
@@ -167,7 +167,7 @@ export async function POST(req: Request) {
   if (spawnFailed) {
     // Child stderr is a Node stack trace carrying absolute server paths. It
     // belongs in the server log, never in the response body.
-    console.error(`/api/status: set-status.mjs failed to run: ${stderr.trim()}`);
+    console.error(`/api/status: scripts/set-status.mjs failed to run: ${stderr.trim()}`);
     return NextResponse.json({ error: "status update failed to run" }, { status: 500 });
   }
 
@@ -192,7 +192,7 @@ export async function POST(req: Request) {
     // Node stack trace carrying absolute server paths, the same content the
     // spawn-failure branch above already keeps out of the response body.
     if (!parsed && stderr.trim()) {
-      console.error(`/api/status: set-status.mjs exited ${code} without JSON: ${stderr.trim()}`);
+      console.error(`/api/status: scripts/set-status.mjs exited ${code} without JSON: ${stderr.trim()}`);
     }
     const error = clientErrorMessage(parsed, stderr);
     return NextResponse.json(

@@ -12,7 +12,7 @@
 // from its stderr.
 //
 // Lives in tests/lib/ rather than mirroring server.mjs's position at the web
-// root because test-all.mjs's web-suite parity check fails any web suite outside
+// root because scripts/test-all.mjs's web-suite parity check fails any web suite outside
 // tests/lib.
 //
 // Run:  node --test tests/lib/server-launcher.test.mjs

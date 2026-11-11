@@ -4,8 +4,8 @@ import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSyn
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { listTemplates } from '../../cv-templates.mjs';
-import { injectPrintPageCss } from '../../generate-pdf.mjs';
+import { listTemplates } from '../../scripts/cv-templates.mjs';
+import { injectPrintPageCss } from '../../scripts/generate-pdf.mjs';
 import { fixtures } from './fixtures.mjs';
 import { collectDomLayout, parsePdfLayout, inspectPdfLayout, missingAtsWords } from './layout.mjs';
 
@@ -42,7 +42,7 @@ for (const template of templates) {
         const input = join(temp, 'payload.json');
         const html = join(temp, 'cv.html');
         writeFileSync(input, JSON.stringify(fixture.payload));
-        execFileSync(process.execPath, ['build-cv-html.mjs', input, html, template.path], {
+        execFileSync(process.execPath, ['scripts/build-cv-html.mjs', input, html, template.path], {
           cwd: ROOT,
           // Isolate even the fallback configuration lookup from real user data.
           env: { ...process.env, CAREER_OPS_ROOT: temp, CAREER_OPS_DATA_DIR: temp },

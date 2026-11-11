@@ -1,6 +1,6 @@
 // Tests for the Apply session SSRF guard. POST /api/apply/session used to
 // Playwright-open whatever http(s) URL the client sent; this pins the shared
-// liveness-browser.mjs guard (rejectPrivateOrInvalid + validateUrlSecurity)
+// scripts/liveness-browser.mjs guard (rejectPrivateOrInvalid + validateUrlSecurity)
 // in front of that, including redirect hops. No real browser, no network.
 //
 // Run:  node --test tests/lib/apply-url-guard.test.mjs
@@ -20,7 +20,7 @@ import {
 } from "../../src/lib/apply/url-guard.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const { setHostResolver } = await import(pathToFileURL(join(ROOT, "liveness-browser.mjs")).href);
+const { setHostResolver } = await import(pathToFileURL(join(ROOT, "scripts/liveness-browser.mjs")).href);
 
 const PUBLIC_JOB = "https://boards.greenhouse.io/example/jobs/123";
 

@@ -51,7 +51,7 @@ test('unreadable content cannot become closure, hidden-employer evidence, or an 
   assert.match(guard, /Explicit closure evidence still takes precedence/);
   assert.match(guard, /If a real JD is readable, reuse it and proceed/);
   assert.match(guard, /For an unavailable JD without closure evidence/);
-  assert.match(guard, /employer careers page \/ ATS permitted by CONTRIBUTING.md/);
+  assert.match(guard, /employer careers page \/ ATS permitted by docs\/projet\/CONTRIBUTING\.md/);
   assert.match(guard, /Do not retry LinkedIn through WebFetch, guest endpoints, alternate accounts, or anti-bot\/login workarounds/);
   assert.match(guard, /If no browser tool is available, go directly to this fallback/);
 });
@@ -70,7 +70,7 @@ test('missing JD holds the original input before writes and pasted recovery does
 test('default entrypoints load the guard before their generic navigation or fallback chain', () => {
   const sweep = section(pipeline, '## Liveness sweep', '## Pre-screen gate');
   const exclusion = sweep.indexOf('excluding LinkedIn URLs');
-  assert.ok(exclusion >= 0 && exclusion < sweep.indexOf('node check-liveness.mjs'));
+  assert.ok(exclusion >= 0 && exclusion < sweep.indexOf('node scripts/check-liveness.mjs'));
   for (const [text, start, end, navigation] of [
     [auto, '## Step 0 — Extract JD', '## Step 0.5', '**Priority order:**'],
     [oferta, '## Liveness gate', '## Blacklist gate', '1. Get the page content:'],

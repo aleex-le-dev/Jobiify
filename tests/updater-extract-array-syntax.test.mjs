@@ -22,7 +22,7 @@
  */
 
 import { pass, fail } from './helpers.mjs';
-import { extractArrayFromSource } from '../update-system.mjs';
+import { extractArrayFromSource } from '../scripts/update-system.mjs';
 
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 

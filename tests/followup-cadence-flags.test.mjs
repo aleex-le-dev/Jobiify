@@ -1,9 +1,9 @@
-// followup-cadence.mjs must handle help and reject unknown flags before it
+// scripts/followup-cadence.mjs must handle help and reject unknown flags before it
 // reads report inputs. A typo (or a `--applied-days=N` the old indexOf lookup
 // couldn't see) must never fall through to a plausible JSON report at exit 0.
 //
-// followup-cadence.mjs's tracker/follow-ups paths are fixed to CAREER_OPS's
-// own data/ dir (unlike funnel-velocity.mjs, there is no env override), so
+// scripts/followup-cadence.mjs's tracker/follow-ups paths are fixed to CAREER_OPS's
+// own data/ dir (unlike scripts/funnel-velocity.mjs, there is no env override), so
 // these tests only assert on flag validation itself — everything checked here
 // happens before analyze() ever touches disk, except the one test that
 // deliberately stops short of asserting on the (machine-dependent) analysis
@@ -15,7 +15,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const SCRIPT = join(ROOT, 'followup-cadence.mjs');
+const SCRIPT = join(ROOT, 'scripts/followup-cadence.mjs');
 
 function runCadence(...args) {
   const result = spawnSync(process.execPath, [SCRIPT, ...args], {
@@ -23,8 +23,8 @@ function runCadence(...args) {
     encoding: 'utf-8',
     timeout: 30_000,
   });
-  assert.equal(result.error, undefined, `followup-cadence.mjs failed to spawn: ${result.error?.message}`);
-  assert.equal(result.signal, null, `followup-cadence.mjs was killed by ${result.signal} (timeout?)`);
+  assert.equal(result.error, undefined, `scripts/followup-cadence.mjs failed to spawn: ${result.error?.message}`);
+  assert.equal(result.signal, null, `scripts/followup-cadence.mjs was killed by ${result.signal} (timeout?)`);
   return { ...result, all: `${result.stdout ?? ''}${result.stderr ?? ''}` };
 }
 
@@ -32,7 +32,7 @@ test('--help prints usage and exits 0', () => {
   const result = runCadence('--help');
   assert.equal(result.status, 0, `expected exit 0, got ${result.status}: ${result.all}`);
   assert.match(result.stdout, /Usage:/);
-  assert.match(result.stdout, /node followup-cadence\.mjs/);
+  assert.match(result.stdout, /node scripts\/followup-cadence\.mjs/);
   assert.match(result.stdout, /--applied-days 10/);
 });
 

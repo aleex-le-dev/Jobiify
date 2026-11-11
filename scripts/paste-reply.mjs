@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * paste-reply.mjs — manual, no-Gmail input path into the reply-watch.mjs
+ * scripts/paste-reply.mjs — manual, no-Gmail input path into the scripts/reply-watch.mjs
  * classification pipeline (#1802).
  *
- * reply-watch.mjs already classifies employer replies (Interview / Responded /
+ * scripts/reply-watch.mjs already classifies employer replies (Interview / Responded /
  * Need Action / Rejected / Offer / Auto-confirmation / Noise / Unknown), matches
  * them to tracker rows, and prompts before touching data/applications.md — but
  * its only input is data/reply-candidates.json, and the only planned way to
@@ -14,18 +14,18 @@
  * text themselves.
  *
  * This script does ONE job: normalize raw pasted (or file-provided) email text
- * into the exact candidate object shape reply-watch.mjs expects, and append it
+ * into the exact candidate object shape scripts/reply-watch.mjs expects, and append it
  * to data/reply-candidates.json. It does NOT classify the reply — classification
- * stays reply-watch.mjs's job. reply-matcher.mjs's classifyReply() derives its
+ * stays scripts/reply-watch.mjs's job. scripts/reply-matcher.mjs's classifyReply() derives its
  * verdict from `subject` + `body_snippet` text directly; `signal` is only ever
  * used as a supplementary confidence boost (`cand.signal || ''`), never a hard
  * dependency — so leaving `signal: null` here is safe. This script never runs
- * reply-watch.mjs itself and never touches data/applications.md.
+ * scripts/reply-watch.mjs itself and never touches data/applications.md.
  *
  * Usage:
- *   node paste-reply.mjs                  # interactive: prompts for subject, from, body
- *   node paste-reply.mjs --file email.txt # read subject/from/body from a file
- *   node paste-reply.mjs --help
+ *   node scripts/paste-reply.mjs                  # interactive: prompts for subject, from, body
+ *   node scripts/paste-reply.mjs --file email.txt # read subject/from/body from a file
+ *   node scripts/paste-reply.mjs --help
  *
  * --file format (header lines optional, blank line separates headers from body):
  *   Subject: <subject line>
@@ -39,7 +39,7 @@
  * Env:
  *   CAREER_OPS_REPLY_CANDIDATES  override the output JSON path (used by tests;
  *                                 defaults to data/reply-candidates.json under
- *                                 the data root, matching reply-watch.mjs's default)
+ *                                 the data root, matching scripts/reply-watch.mjs's default)
  */
 
 import fs from 'node:fs';
@@ -49,7 +49,7 @@ import { pathToFileURL } from 'node:url';
 import { writeFileAtomic } from './tracker-utils.mjs';
 import { withPipelineLock } from './pipeline-lock.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 const DATA_ROOT = getCareerOpsRoot();
 export const CANDIDATES_PATH = process.env.CAREER_OPS_REPLY_CANDIDATES
@@ -95,7 +95,7 @@ function nextMessageId() {
 
 /**
  * Normalize raw {subject, from, body} into the exact candidate shape
- * reply-watch.mjs expects. Exported for direct unit testing.
+ * scripts/reply-watch.mjs expects. Exported for direct unit testing.
  */
 export function normalizeCandidate({ subject, from, body }) {
   return {
@@ -103,7 +103,7 @@ export function normalizeCandidate({ subject, from, body }) {
     from: from || '',
     subject: subject || '',
     body_snippet: body || '',
-    // Classification is reply-watch.mjs's job, not this script's — leaving
+    // Classification is scripts/reply-watch.mjs's job, not this script's — leaving
     // signal unset is safe (see file header comment for why).
     signal: null,
   };
@@ -122,7 +122,7 @@ export async function appendCandidate(candidate, candidatesPath = CANDIDATES_PAT
   // The read is INSIDE the lock for that reason: a snapshot taken before it
   // is exactly the stale view that loses an entry.
   //
-  // timeoutMs matches agent-inbox.mjs's add(), for the reason spelled out
+  // timeoutMs matches scripts/agent-inbox.mjs's add(), for the reason spelled out
   // there (#2825): bursty writers on a retry-lottery lock need more than the
   // shared 8s default, or the loss comes back as a LockTimeoutError.
   return withPipelineLock(candidatesPath, () => {
@@ -192,12 +192,12 @@ export function collectInteractive() {
 }
 
 function printHelp() {
-  console.log(`paste-reply.mjs — manual/no-Gmail input into the reply-watch.mjs pipeline (#1802)
+  console.log(`scripts/paste-reply.mjs — manual/no-Gmail input into the scripts/reply-watch.mjs pipeline (#1802)
 
 Usage:
-  node paste-reply.mjs                  interactive: prompts for subject, from, body
-  node paste-reply.mjs --file <path>    read subject/from/body from a file
-  node paste-reply.mjs --help
+  node scripts/paste-reply.mjs                  interactive: prompts for subject, from, body
+  node scripts/paste-reply.mjs --file <path>    read subject/from/body from a file
+  node scripts/paste-reply.mjs --help
 
 --file format:
   Subject: <subject line>
@@ -209,8 +209,8 @@ If no Subject:/From: header lines are found, the whole file is treated as the bo
 
 Appends one normalized candidate to data/reply-candidates.json (creates it if
 missing; never overwrites or removes existing entries). Run
-\`node reply-watch.mjs\` afterward to classify it and review tracker updates —
-this script never runs reply-watch.mjs or touches data/applications.md itself.`);
+\`node scripts/reply-watch.mjs\` afterward to classify it and review tracker updates —
+this script never runs scripts/reply-watch.mjs or touches data/applications.md itself.`);
 }
 
 async function main() {
@@ -257,10 +257,10 @@ async function main() {
   console.log(`  subject:      ${candidate.subject || '(none)'}`);
   console.log(`  body_snippet: ${preview || '(none)'}`);
   console.log(`\ndata/reply-candidates.json now has ${total} candidate(s).`);
-  console.log('Next: run `node reply-watch.mjs` to classify and review this reply.');
+  console.log('Next: run `node scripts/reply-watch.mjs` to classify and review this reply.');
 }
 
-// Only run when executed directly (`node paste-reply.mjs`), not when imported
+// Only run when executed directly (`node scripts/paste-reply.mjs`), not when imported
 // for unit testing (e.g. `import(pathToFileURL(SCRIPT).href)` in tests).
 if (isMainModule(import.meta.url)) {
   main().catch((err) => {

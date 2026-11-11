@@ -35,8 +35,8 @@ function fixture(t) {
   }
   // Copy the actual dependency closure, without personal files or node_modules.
   mkdirSync(join(f.code.root, 'lib'));
-  for (const file of ['story-provenance-check.mjs', 'path-resolver.mjs', 'lib/cli-flags.mjs', 'lib/is-main-module.mjs', 'lib/story-bank.mjs']) {
-    copyFileSync(join(ROOT, file), join(f.code.root, file));
+  for (const file of ['scripts/story-provenance-check.mjs', 'scripts/path-resolver.mjs', 'lib/cli-flags.mjs', 'lib/is-main-module.mjs', 'lib/story-bank.mjs']) {
+    (mkdirSync(join(f.code.root, file, '..'), { recursive: true }), (mkdirSync(join(f.code.root, file, '..'), { recursive: true }), (mkdirSync(join(f.code.root, file, '..'), { recursive: true }), copyFileSync(join(ROOT, file), join(f.code.root, file)))));
   }
   return f;
 }
@@ -59,7 +59,7 @@ function snapshot(root) {
 
 function run(f, args, env) {
   const before = snapshot(f.dir);
-  const result = spawnSync(process.execPath, [join(f.code.root, 'story-provenance-check.mjs'), ...args], {
+  const result = spawnSync(process.execPath, [join(f.code.root, 'scripts/story-provenance-check.mjs'), ...args], {
     cwd: f.cwd.root,
     env: { ...process.env, CAREER_OPS_ROOT: '', CAREER_OPS_DATA_DIR: '', ...env },
     encoding: 'utf8',

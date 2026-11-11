@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 /**
- * fix-slugs.mjs — write verify-portals.mjs's suggested ATS slug fixes back
+ * scripts/fix-slugs.mjs — write scripts/verify-portals.mjs's suggested ATS slug fixes back
  * into portals.yml.
  *
- * verify-portals.mjs already probes every tracked company's ATS slug. Its
+ * scripts/verify-portals.mjs already probes every tracked company's ATS slug. Its
  * "tier 1" fast path is hardcoded to the three ATSes whose board URL carries a
  * parseable slug — Greenhouse, Ashby, Lever — and for a failing entry it
  * cross-probes slug variants across those three, attaching
  * `suggested: { ats, slug }` when one resolves (see discoverAlternates() in
- * verify-portals.mjs). Any other host is a provider-plugin (tier 2) entry and
+ * scripts/verify-portals.mjs). Any other host is a provider-plugin (tier 2) entry and
  * never gets a `suggested`, so this script only ever rewrites Greenhouse / Ashby
  * / Lever slugs. That tool is read-only — this is the write side: it reuses the
  * SAME probe/suggestion logic (no re-implementation, no HTML scraping, no
@@ -26,23 +26,23 @@
  * round-trip would silently discard.
  *
  * Usage:
- *   node fix-slugs.mjs               # dry run (default, safe) — prints the diff, writes nothing
- *   node fix-slugs.mjs --dry-run     # same as above, explicit
- *   node fix-slugs.mjs --fix         # write the resolved slugs back to portals.yml
- *   node fix-slugs.mjs --apply       # alias for --fix
- *   node fix-slugs.mjs --file <path> # use a specific portals file
- *   node fix-slugs.mjs --help        # show this message (-h is an alias)
+ *   node scripts/fix-slugs.mjs               # dry run (default, safe) — prints the diff, writes nothing
+ *   node scripts/fix-slugs.mjs --dry-run     # same as above, explicit
+ *   node scripts/fix-slugs.mjs --fix         # write the resolved slugs back to portals.yml
+ *   node scripts/fix-slugs.mjs --apply       # alias for --fix
+ *   node scripts/fix-slugs.mjs --file <path> # use a specific portals file
+ *   node scripts/fix-slugs.mjs --help        # show this message (-h is an alias)
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
 
 import { verifyPortalsFile } from './verify-portals.mjs';
-import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { flagValue, hasFlag, validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
-// The data root's portals.yml, the same default verify-portals.mjs sweeps
+// The data root's portals.yml, the same default scripts/verify-portals.mjs sweeps
 // (#4254). A bare 'portals.yml' resolved against the cwd, so under an external
 // data root (CAREER_OPS_ROOT / CAREER_OPS_DATA_DIR / .career-ops-data) this
 // reported "nothing to fix" for the file verify-portals had just flagged, or
@@ -53,12 +53,12 @@ const KNOWN_FLAGS = ['--apply', '--dry-run', '--file', '--fix', '--help', '-h'];
 const VALUE_FLAGS = ['--file'];
 
 const USAGE = `Usage:
-  node fix-slugs.mjs               # dry run (default, safe) — prints the diff, writes nothing
-  node fix-slugs.mjs --dry-run     # same as above, explicit
-  node fix-slugs.mjs --fix         # write the resolved slugs back to portals.yml
-  node fix-slugs.mjs --apply       # alias for --fix
-  node fix-slugs.mjs --file <path> # use a specific portals file
-  node fix-slugs.mjs --help        # show this message (-h is an alias)`;
+  node scripts/fix-slugs.mjs               # dry run (default, safe) — prints the diff, writes nothing
+  node scripts/fix-slugs.mjs --dry-run     # same as above, explicit
+  node scripts/fix-slugs.mjs --fix         # write the resolved slugs back to portals.yml
+  node scripts/fix-slugs.mjs --apply       # alias for --fix
+  node scripts/fix-slugs.mjs --file <path> # use a specific portals file
+  node scripts/fix-slugs.mjs --help        # show this message (-h is an alias)`;
 
 /** Matches a `tracked_companies` list-item start line: `  - name: Foo`. */
 const NAME_LINE_RE = /^([ \t]*)-\s*name:\s*(.+?)\s*$/;

@@ -1,7 +1,7 @@
 /**
  * scratch-dirs.test.mjs — a killed test run must not turn the next one red.
  *
- * `test-all.mjs` copies the checkout into a `.tmp-script-test-*` directory and
+ * `scripts/test-all.mjs` copies the checkout into a `.tmp-script-test-*` directory and
  * removes it in a `finally` that an interrupted run never reaches. The leftover
  * is gitignored and carries no `.git`, so neither `git status` nor
  * `isNestedCheckout()` sees it, and every walker reads a second copy of the
@@ -160,7 +160,7 @@ const age = (dir, ms = MIN_SCRATCH_AGE_MS * 2) => {
 
 // ── 6. A live run's scratch survives another run's startup sweep ──────
 {
-  // The sweep runs at the top of every `test-all.mjs`, and a second run in the
+  // The sweep runs at the top of every `scripts/test-all.mjs`, and a second run in the
   // same checkout has a scratch of its own that is minutes old. Deleting it
   // crashes a run that was doing nothing wrong — trading #3940's false red for
   // a real one. The age gate is what keeps this sweep off it.
@@ -389,7 +389,7 @@ const age = (dir, ms = MIN_SCRATCH_AGE_MS * 2) => {
 
 // ── 13. Test code keeps its repository-root fixtures under the prefix ─
 //
-// The inline sections of test-all.mjs and the discovered suites run at the
+// The inline sections of scripts/test-all.mjs and the discovered suites run at the
 // same time (#5146). A fixture directory either of them creates in the
 // repository root is in every walk the other makes while it exists, unless it
 // carries the scratch prefix: section 1 has read a suite's copied scripts as
@@ -403,7 +403,7 @@ const age = (dir, ms = MIN_SCRATCH_AGE_MS * 2) => {
 {
   // Not this file, which spells the call out to describe it.
   const self = fileURLToPath(import.meta.url);
-  const sources = [join(ROOT, 'test-all.mjs'), ...collectMjsFiles(join(ROOT, 'tests')).filter((f) => f !== self)];
+  const sources = [join(ROOT, 'scripts/test-all.mjs'), ...collectMjsFiles(join(ROOT, 'tests')).filter((f) => f !== self)];
   const CALL = /mkdtempSync\(\s*join\(\s*(?:REPO_)?ROOT\s*,\s*([^,()]+?)\s*\)\s*\)/g;
   const underPrefix = (arg) => arg === 'SCRATCH_PREFIX'
     || arg.startsWith('`${SCRATCH_PREFIX}')
@@ -418,7 +418,7 @@ const age = (dir, ms = MIN_SCRATCH_AGE_MS * 2) => {
     }
   }
   if (calls === 0) {
-    fail('found no mkdtempSync(join(ROOT, …)) call in test-all.mjs or tests/ — this check has lost its subject');
+    fail('found no mkdtempSync(join(ROOT, …)) call in scripts/test-all.mjs or tests/ — this check has lost its subject');
   } else if (outside.length === 0) {
     pass(`every temp directory test code creates in the repository root carries the scratch prefix (${calls} calls)`);
   } else {

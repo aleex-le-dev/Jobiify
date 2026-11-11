@@ -21,7 +21,7 @@ export function followupsLogPath(): string {
 // so a promise queue serializes them.
 //
 // WHAT THIS DOES **NOT** PROTECT: this queue only sees THIS process. It cannot
-// see the user's CLI or the core's cadence seeder (followup-seed.mjs), which
+// see the user's CLI or the core's cadence seeder (scripts/followup-seed.mjs), which
 // read-modify-write the SAME data/follow-ups.md. Its old comment claimed "no
 // cross-process lock needed", and that false comfort is exactly why the gap
 // survived — a reader who sees a guard stops looking for the one that is

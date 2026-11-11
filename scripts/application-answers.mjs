@@ -2,8 +2,8 @@
 
 import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { localToday } from './lib/local-today.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { localToday } from '../lib/local-today.mjs';
 
 export const APPLICATION_ANSWERS_HEADING = '## Application Answers';
 
@@ -67,7 +67,7 @@ function normalizeDate(date) {
   // The LOCAL calendar day when the caller supplies none. This date is written
   // into the report's Application Answers section as the day the user answered
   // the form, and it sits beside tracker rows dated with localToday() by
-  // set-status.mjs -- a UTC day put an evening answer a day ahead of the
+  // scripts/set-status.mjs -- a UTC day put an evening answer a day ahead of the
   // application it belongs to.
   return inline(date || localToday());
 }
@@ -169,8 +169,8 @@ export function formatApplicationAnswersSection(snapshot = {}) {
 // Reader. The formatter above has been write-only since it shipped: nothing in
 // the tree could read a rendered section back, so `modes/apply.md` recovers
 // previous answers by grepping reports for a company name. This closes that
-// asymmetry so answers become addressable data, the way `contacts.mjs` and
-// `assessment-log.mjs` already own both directions of their own formats.
+// asymmetry so answers become addressable data, the way `scripts/contacts.mjs` and
+// `scripts/assessment-log.mjs` already own both directions of their own formats.
 //
 // One property is deliberately NOT claimed: byte-equality with the input
 // snapshot. The formatter is lossy by design -- `inline()` collapses
@@ -521,9 +521,9 @@ function parseArgs(argv) {
 
 function usage() {
   return [
-    'Usage: node application-answers.mjs --report <report.md> --input <answers.json> [--state filled|submitted] [--date YYYY-MM-DD]',
-    '       node application-answers.mjs --report <report.md> --read [--strict]',
-    '       node application-answers.mjs --report <report.md> --read-draft',
+    'Usage: node scripts/application-answers.mjs --report <report.md> --input <answers.json> [--state filled|submitted] [--date YYYY-MM-DD]',
+    '       node scripts/application-answers.mjs --report <report.md> --read [--strict]',
+    '       node scripts/application-answers.mjs --report <report.md> --read-draft',
     '',
     'The input JSON may contain: freeText, selections, fieldValues, files, date, state.',
     '--read prints the parsed ## Application Answers snapshot as JSON (null when the section is absent).',

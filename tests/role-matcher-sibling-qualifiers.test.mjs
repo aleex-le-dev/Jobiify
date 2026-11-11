@@ -28,7 +28,7 @@ import { pathToFileURL } from 'url';
 console.log('\nrole-matcher.mjs — a unique content word on each side keeps siblings apart');
 
 try {
-  const { roleFuzzyMatch } = await import(pathToFileURL(join(ROOT, 'role-matcher.mjs')).href);
+  const { roleFuzzyMatch } = await import(pathToFileURL(join(ROOT, 'scripts/role-matcher.mjs')).href);
 
   const same = (label, a, b) => {
     if (roleFuzzyMatch(a, b) && roleFuzzyMatch(b, a)) pass(label);
@@ -101,7 +101,7 @@ try {
       '',
     ].join('\n'));
 
-    execFileSync(process.execPath, [join(ROOT, 'merge-tracker.mjs')], {
+    execFileSync(process.execPath, [join(ROOT, 'scripts/merge-tracker.mjs')], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {

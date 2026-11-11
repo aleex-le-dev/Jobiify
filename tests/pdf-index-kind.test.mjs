@@ -16,12 +16,12 @@ import {
   resolveArtifactKind,
   renderHtmlToPdf,
   ARTIFACT_KINDS,
-} from '../generate-pdf.mjs';
-import { parsePdfIndex } from '../find.mjs';
+} from '../scripts/generate-pdf.mjs';
+import { parsePdfIndex } from '../scripts/find.mjs';
 
 console.log('\nPDF manifest keys on report number and artifact kind (#3887)');
 
-const HEADER = '# report\tpdf\thtml\tformat\tdate\tkind — written by generate-pdf.mjs, do not edit';
+const HEADER = '# report\tpdf\thtml\tformat\tdate\tkind — written by scripts/generate-pdf.mjs, do not edit';
 const cvRow = '7\toutput/cv-acme-2026-09-05.pdf\t\tletter\t2026-09-05\tcv';
 const coverRow = '7\toutput/cover-acme-2026-09-05.pdf\t\tletter\t2026-09-05\tcover';
 
@@ -100,7 +100,7 @@ const kinds = (lines) => lines.map((l) => l.split('\t')[5]);
 }
 
 // The column is appended last so the five existing columns keep their index:
-// find.mjs, outcome.mjs and the web reader all parse this file positionally.
+// scripts/find.mjs, scripts/outcome.mjs and the web reader all parse this file positionally.
 {
   const out = applyManifestRow([HEADER], row({ pdf: 'output/cover-acme-2026-09-06.pdf', kind: 'cover' }));
   const f = out[0].split('\t');
@@ -217,8 +217,8 @@ for (const [explicit, path, wantKind, wantSource, label] of kindCases) {
 // parsePdfIndex returns one path per report, assigned inside the loop, so it is
 // last-row-wins. Once a report legitimately carries two rows, a cover letter
 // generated after its CV takes the slot. The map is not local to one caller:
-// find.mjs prints it as the row's PDF, merge-tracker.mjs sets the tracker's PDF
-// flag from it, and outcome.mjs archives from it — so the cover-letter-as-CV
+// scripts/find.mjs prints it as the row's PDF, scripts/merge-tracker.mjs sets the tracker's PDF
+// flag from it, and scripts/outcome.mjs archives from it — so the cover-letter-as-CV
 // upload this file exists to prevent comes back through the reader.
 {
   const kindIndex = parsePdfIndex(

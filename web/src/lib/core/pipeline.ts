@@ -8,7 +8,7 @@ import type { DiscoveredOffer } from "./scan";
 /**
  * "Add to pipeline" — appends user-selected discovered offers to data/pipeline.md
  * AND records them in data/scan-history.tsv (so future scans dedup them). We reuse
- * the CANONICAL writers exported by the core's scan.mjs (`appendToPipeline`,
+ * the CANONICAL writers exported by the core's scripts/scan.mjs (`appendToPipeline`,
  * `appendToScanHistory`) instead of re-implementing the line format / section
  * markers — single source of truth, per the web↔core contract. We invoke them in
  * a short-lived node process (cwd = the user's career-ops root) so the core's own
@@ -36,10 +36,10 @@ export function addOffersToPipeline(offers: DiscoveredOffer[]): Promise<AddResul
     });
   if (clean.length === 0) return Promise.resolve({ added: 0 });
 
-  // Data-only / pre-scan-ats checkout has no scan.mjs writers → fail with an
+  // Data-only / pre-scan-ats checkout has no scripts/scan.mjs writers → fail with an
   // actionable message instead of a silent added:0.
   if (!fs.existsSync(rootScript("scan"))) {
-    return Promise.resolve({ added: 0, error: "This checkout is data-only — the pipeline writer (scan.mjs) isn't available." });
+    return Promise.resolve({ added: 0, error: "This checkout is data-only — the pipeline writer (scripts/scan.mjs) isn't available." });
   }
 
   const scanUrl = pathToFileURL(rootScript("scan")).href;
@@ -98,7 +98,7 @@ export async function removeOffersFromPipeline(urls: string[]): Promise<RemoveRe
   const pipelinePath = path.join(careerOpsRoot(), "data", "pipeline.md");
   if (!fs.existsSync(pipelinePath)) return { removed: 0 };
 
-  const lockModule = path.join(careerOpsRoot(), "pipeline-lock.mjs");
+  const lockModule = path.join(careerOpsRoot(), "scripts/pipeline-lock.mjs");
 
   const run = () => {
     let md = fs.readFileSync(pipelinePath, "utf8");

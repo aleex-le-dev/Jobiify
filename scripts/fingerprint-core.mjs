@@ -1,5 +1,5 @@
 /**
- * fingerprint-core.mjs — zero-dependency JD-content fingerprinting (#1597).
+ * scripts/fingerprint-core.mjs — zero-dependency JD-content fingerprinting (#1597).
  *
  * The same job can enter the pipeline twice before any tracker row exists:
  * once as a direct company listing and once as an agency re-post with the
@@ -29,7 +29,7 @@ export const FINGERPRINT_MIN_TEXT = 200;
  * 0.92 ≈ at most 5 of 64 SimHash bits differ — near-verbatim bodies. */
 export const CROSSLIST_THRESHOLD = 0.92;
 
-/** Only compare against history this recent (mirrors detect-reposts.mjs). */
+/** Only compare against history this recent (mirrors scripts/detect-reposts.mjs). */
 export const CROSSLIST_WINDOW_DAYS = 90;
 
 /**
@@ -188,7 +188,7 @@ function companyKey(name) {
 /**
  * Find possible cross-listings: new offers whose fingerprint is near-identical
  * to a recent history row from a DIFFERENT company. Same-company matches are
- * re-posts (detect-reposts.mjs territory), not cross-listings — skipped here.
+ * re-posts (scripts/detect-reposts.mjs territory), not cross-listings — skipped here.
  *
  * Pure function: pass the offers and pre-parsed history rows in.
  *

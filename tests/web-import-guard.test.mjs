@@ -1,7 +1,7 @@
 // tests/web-import-guard.test.mjs — a module under tests/ that loads code from
 // web/ checks that web/ exists before it does.
 //
-// update-system.mjs ships tests/ but never web/ (#3269), so everything here
+// scripts/update-system.mjs ships tests/ but never web/ (#3269), so everything here
 // also runs on installs with no web/. CI cannot see the difference: it runs on
 // a full checkout, where every import from web/ resolves. So each unguarded
 // import was found on a user's install, one suite at a time: tracker-columns
@@ -112,7 +112,7 @@ const SHAPES = [
     'const ok = true;',
   ].join('\n')],
   ['a core module', false, false,
-    "const { scan } = await import(pathToFileURL(join(ROOT, 'scan.mjs')).href);"],
+    "const { scan } = await import(pathToFileURL(join(ROOT, 'scripts/scan.mjs')).href);"],
 ];
 const misread = SHAPES.filter(([, loads, flagged, src]) => {
   const got = inspectWebImports(src);

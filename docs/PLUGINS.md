@@ -11,16 +11,16 @@ core runs exactly as it always has.
 ## Using plugins
 
 ```bash
-node plugins.mjs list          # what's installed + its trust badge
-node plugins.mjs available     # bundled + community plugins we've approved
-node plugins.mjs add <name>    # install an approved community plugin
-node plugins.mjs enable <id>   # show the capability card (then add --confirm)
-node plugins.mjs skill <id>    # print a plugin's how-to (if it ships one)
+node scripts/plugins.mjs list          # what's installed + its trust badge
+node scripts/plugins.mjs available     # bundled + community plugins we've approved
+node scripts/plugins.mjs add <name>    # install an approved community plugin
+node scripts/plugins.mjs enable <id>   # show the capability card (then add --confirm)
+node scripts/plugins.mjs skill <id>    # print a plugin's how-to (if it ships one)
 ```
 
 Two gates must both be satisfied for a plugin to run: it must be **enabled**
-(`node plugins.mjs enable <id> --confirm`, which records your consent) **and** its
-keys must be in your `.env`. `node doctor.mjs` shows what's missing.
+(`node scripts/plugins.mjs enable <id> --confirm`, which records your consent) **and** its
+keys must be in your `.env`. `node scripts/doctor.mjs` shows what's missing.
 
 ### Trust badges
 
@@ -32,7 +32,7 @@ keys must be in your `.env`. `node doctor.mjs` shows what's missing.
 | `⚠️ off-registry` | Installed commit differs from the approved one. |
 
 If a plugin's files change without a version bump, career-ops **blocks it** and
-asks you to review + `node plugins.mjs trust <id>` to re-pin (tamper detection).
+asks you to review + `node scripts/plugins.mjs trust <id>` to re-pin (tamper detection).
 The warning counts the modified, removed and added files. It names changed files
 at the plugin root and groups the rest by top-level directory, naming the file
 when a directory has only one. You can tell an edit to your code from new files
@@ -47,7 +47,7 @@ example `git worktree add ../my-plugin-worktrees/fix-1`.
 ## Writing a plugin
 
 ```bash
-node plugins.mjs new my-plugin     # scaffolds plugins.local/my-plugin/
+node scripts/plugins.mjs new my-plugin     # scaffolds plugins.local/my-plugin/
 ```
 
 A plugin is a directory with a `manifest.json` (validated before any code is
@@ -74,7 +74,7 @@ ESM has no hard sandbox — bundled plugins are code-reviewed; your own are your
 trust).
 
 For human-confirmed tracker transitions, #3333 proposes a separate local
-drop-file bridge read by `reply-watch.mjs`: see the draft
+drop-file bridge read by `scripts/reply-watch.mjs`: see the draft
 [reply proposal contract](REPLY_PROPOSALS.md). It adds no hook kind and grants
 no tracker-write permission to plugins. The directory and row format are
 accepted as a v1 draft: they may change until a real producer writes to the
@@ -93,7 +93,7 @@ directory.
    adds your `plugins-registry/<id>.json` file, pinned to an exact commit. CI
    (`plugin-registry-validate`) checks the naming, manifest, min-files, license,
    egress, and a static audit before a maintainer reviews. Once merged, users can
-   `node plugins.mjs add <name>` and your plugin ships to them via the normal
+   `node scripts/plugins.mjs add <name>` and your plugin ships to them via the normal
    update.
 4. **Updates** = one more registry PR bumping your entry's `sha` + `version`
    (your release workflow opens it from your own fork). Users only ever get the
@@ -112,9 +112,9 @@ We **don't take feature PRs against bundled plugins.** If you want to extend one
 1. Publish `career-ops-plugin-<id>` with the **same `id`** as the bundled plugin
    (start from the bundled plugin's code — it's MIT and credits its origins).
 2. In your registry PR, set **`"supersedesBundled": true`** on your entry.
-3. Once approved + pinned, anyone who runs `node plugins.mjs add career-ops-plugin-<id>`
+3. Once approved + pinned, anyone who runs `node scripts/plugins.mjs add career-ops-plugin-<id>`
    installs your version, and the engine gives **your maintained successor
-   precedence over the bundled reference** of the same id. `node plugins.mjs available`
+   precedence over the bundled reference** of the same id. `node scripts/plugins.mjs available`
    surfaces the link: *"gmail — 🔁 maintained version: career-ops-plugin-gmail"*.
 
 This keeps the core lean and **puts the integration in your hands, with your name

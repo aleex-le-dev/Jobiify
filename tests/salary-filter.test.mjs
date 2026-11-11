@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * tests/salary-filter.test.mjs — Comprehensive test suite for salary filter and Ashby compensation parsing.
- * Run: node test-all.mjs --only salary-filter
+ * Run: node scripts/test-all.mjs --only salary-filter
  *      Running the file directly prints the same ✅/❌ lines, but a
  *      discovered suite reports through the shared counters and never
  *      exits — so a direct run returns 0 even when assertions fail.
@@ -12,7 +12,7 @@
  */
 
 import { parseCompensation } from '../providers/ashby.mjs';
-import { buildSalaryFilter } from '../scan.mjs';
+import { buildSalaryFilter } from '../scripts/scan.mjs';
 import { pass, fail } from './helpers.mjs';
 
 console.log('\nsalary filter + Ashby compensation parsing');
@@ -277,7 +277,7 @@ section('parseCompensation — zero values');
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// PART 2: buildSalaryFilter (scan.mjs)
+// PART 2: buildSalaryFilter (scripts/scan.mjs)
 // ══════════════════════════════════════════════════════════════════════
 
 section('buildSalaryFilter — disabled / no-op cases');

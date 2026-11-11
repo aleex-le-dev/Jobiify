@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * merge-tracker.mjs — Merge batch tracker additions into applications.md
+ * scripts/merge-tracker.mjs — Merge batch tracker additions into applications.md
  *
  * Handles multiple TSV formats:
  * - Headed (preferred): a first row of column LABELS, then one data row. Column
@@ -14,7 +14,7 @@
  * If duplicate with higher score → update in-place, update report link
  * Validates status against states.yml (rejects non-canonical, logs warning)
  *
- * Run: node merge-tracker.mjs [--dry-run] [--verify]
+ * Run: node scripts/merge-tracker.mjs [--dry-run] [--verify]
  *
  * Migrations (one-off, idempotent, all support --dry-run):
  *   --migrate        report links → relative to the tracker file (#760)
@@ -32,19 +32,19 @@ import { getCareerOpsRoot } from './path-resolver.mjs';
 import { roleFuzzyMatch } from './role-matcher.mjs';
 import { parsePdfIndex, livePdfIndex, normNum } from './find.mjs';
 import { LEGACY_COLMAP, TSV_REQUIRED_FIELDS, detectColumns, isHeaderRow, resolveScoreStatus, looksLikeTsvHeaderRow, resolveTsvColumns, looksLikeScoreCell, parseScore, normalizeVia, normalizeTextKey, SEPARATOR_ROW_RE, extractReqNumber, extractCellUrl, parseMarkdownLinks, unwrapReportUrlToken } from './tracker-parse.mjs';
-// The ATS vendor table shared with analyze-patterns.mjs and the scanners, so
+// The ATS vendor table shared with scripts/analyze-patterns.mjs and the scanners, so
 // the URL cell's label and the per-vendor analysis name a board identically.
 import { atsVendorOf } from './ats-vendor.mjs';
 import { resolveTrackerPath, resolveWorkspaceRoot, resolvePdfIndexPath, trackerLockDirFor, acquireTrackerLock, writeFileAtomic, normalizeCompany, companiesMatchIgnoringCorporateForm, cell, loadCanonicalStates, findDeadReportLink, rebuildRow } from './tracker-utils.mjs';
 // Canonical posting-URL key and URL comparison, shared with the other tracker
-// scripts and scan.mjs so the definitions cannot drift apart.
+// scripts and scripts/scan.mjs so the definitions cannot drift apart.
 import { normalizeUrl, isAggregatorUrl, aggregatorPostingId, postingUrlRelation } from './url-key.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { syncTrackerPdfFlags } from './sync-pdf-flags.mjs';
 import { withPipelineLock } from './pipeline-lock.mjs';
 
-const MERGE_TRACKER_USAGE = `Usage: node merge-tracker.mjs [options]
+const MERGE_TRACKER_USAGE = `Usage: node scripts/merge-tracker.mjs [options]
 
 Options:
   --dry-run        Preview the merge without writing files
@@ -58,7 +58,7 @@ const MERGE_TRACKER_KNOWN_FLAGS = ['--dry-run', '--verify', '--migrate', '--migr
 
 // Executable hooks live beside this script even when user data is redirected
 // through CAREER_OPS_ROOT / CAREER_OPS_DATA_DIR / .career-ops-data.
-const CAREER_OPS_CODE_ROOT = dirname(fileURLToPath(import.meta.url));
+const CAREER_OPS_CODE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 // Cross-check against batch-state.tsv (found 2026-07-30): a worker can write
 // a well-formed tracker TSV even when its own JSON result said "failed" --
@@ -98,7 +98,7 @@ function loadFailedReportNumbers(path) {
  * Used by the regression test hook (`CAREER_OPS_MERGE_HOLD_MS`), which
  * deliberately holds the first merge after it reads `applications.md` so a
  * second merge can try to enter the same critical section. (The lock retry
- * loop's own sleep lives in tracker-utils.mjs with the lock.)
+ * loop's own sleep lives in scripts/tracker-utils.mjs with the lock.)
  *
  * @param {number} ms - Milliseconds to wait before resolving.
  * @returns {Promise<void>} Resolves after the requested delay.
@@ -116,7 +116,7 @@ function sleep(ms) {
  * The display label for a posting URL: the ATS vendor when the host is a
  * multi-tenant board, otherwise the hostname minus `www.`.
  *
- * Delegates to ats-vendor.mjs, the vendor table analyze-patterns.mjs and the
+ * Delegates to scripts/ats-vendor.mjs, the vendor table scripts/analyze-patterns.mjs and the
  * scanners already share, so a board carries the same name in the tracker as
  * in the per-vendor advance-rate analysis. On a vendor board the host carries
  * no employer information (every posting lives under `jobs.ashbyhq.com`), so
@@ -158,7 +158,7 @@ function isLinkedUrlCell(value) {
  * query but NOT in the path, and `%28`/`%29` never normalize to `(`/`)` at all,
  * so encoding any of those would silently re-key the row. Backslash-escaping
  * them is not taken either: escapes make the stored bytes differ from the
- * href, so every reader — tracker-parse.mjs, the Go dashboard's port of it,
+ * href, so every reader — scripts/tracker-parse.mjs, the Go dashboard's port of it,
  * and any markdown tool a user points at the file — must undo them
  * identically to recover the key. A bare cell needs no undoing.
  * A href carrying those characters is written BARE instead — see
@@ -216,7 +216,7 @@ function isLinkableDestination(href) {
  * A URL containing a literal `|` is written BARE, through the same cell()
  * sanitization every other column uses, and is not linked. A pipe cannot live
  * in this table under any spelling — readers split rows on it, and `\|` splits
- * too (see tracker-utils.mjs cell()) — so cell() rewrites it to ` / ` and the
+ * too (see scripts/tracker-utils.mjs cell()) — so cell() rewrites it to ` / ` and the
  * key is lost either way. That loss predates this change and is not made worse
  * here; putting the rewritten value in a link destination WOULD make it worse,
  * because the reader then truncates at the injected space and produces a
@@ -294,7 +294,7 @@ function formatUrlCell(raw, previousCell = '') {
  * is the right shape for one CLI invocation and the wrong one for anything that
  * imports the module: Node caches an ES module after its first import, so a
  * second caller in the same process silently got the first caller's paths
- * (#3506 is that bug in tracker.mjs). It also meant the only way to exercise a
+ * (#3506 is that bug in scripts/tracker.mjs). It also meant the only way to exercise a
  * merge was a fresh node process per case, which is most of what made
  * tracker-columns-tests 75 cold starts (#4758). The CLI branch at the bottom of
  * this file is now the one place that reads the environment; it resolves these
@@ -354,7 +354,7 @@ export async function mergeTracker(options = {}) {
 
   // The reports/ dir sits at the repo root, which is the tracker's parent in the
   // data/ layout (data/applications.md) and the tracker's own dir at root layout.
-  // Shared with sync-pdf-flags.mjs so the two agree on where a workspace's
+  // Shared with scripts/sync-pdf-flags.mjs so the two agree on where a workspace's
   // siblings live — they disagreed before #2471.
   const REPORTS_ROOT = resolveWorkspaceRoot(APPS_FILE);
   const PDF_INDEX_FILE = options.pdfIndexFile ?? join(REPORTS_ROOT, 'data', 'pdf-index.tsv');
@@ -379,7 +379,7 @@ export async function mergeTracker(options = {}) {
   mkdirSync(ADDITIONS_DIR, { recursive: true });
   // Canonical states — loaded from templates/states.yml, the single source of truth.
   // Adding a state or alias there is all that is needed; no code change required here.
-  const _CODE_ROOT = dirname(fileURLToPath(import.meta.url));
+  const _CODE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
   const _STATES_FILE = existsSync(join(_CODE_ROOT, 'templates/states.yml'))
     ? join(_CODE_ROOT, 'templates/states.yml')
     : join(_CODE_ROOT, 'states.yml');
@@ -390,7 +390,7 @@ export async function mergeTracker(options = {}) {
   try {
     _canonicalStates = loadCanonicalStates(_STATES_FILE);
   } catch (err) {
-    console.warn(`⚠️  Cannot read canonical states (${err.message}): statuses are merged as written. Restore templates/states.yml, then run node normalize-statuses.mjs`);
+    console.warn(`⚠️  Cannot read canonical states (${err.message}): statuses are merged as written. Restore templates/states.yml, then run node scripts/normalize-statuses.mjs`);
   }
   const _aliasMap = Object.fromEntries(
     _canonicalStates.flatMap(s => s.aliases.map(a => [a.toLowerCase(), s.label]))
@@ -431,9 +431,9 @@ export async function mergeTracker(options = {}) {
   }
 
   // normalizeVia (Unicode-aware Via/agency key, #1596/#1603) lives in
-  // tracker-parse.mjs so merge-tracker and analyze-patterns share ONE normalizer
+  // scripts/tracker-parse.mjs so merge-tracker and analyze-patterns share ONE normalizer
   // and agency identity can't drift between scripts. (normalizeCompany lives in
-  // tracker-utils.mjs since #1460 so every tracker writer shares one company key.)
+  // scripts/tracker-utils.mjs since #1460 so every tracker writer shares one company key.)
 
   /**
    * Extract the bracketed report number from a Markdown report link.
@@ -556,7 +556,7 @@ export async function mergeTracker(options = {}) {
    * The update path used to overwrite Notes with
    * `Re-eval {date} ({old}→{new}). {new notes}`, discarding the existing cell
    * outright (#2392 gap 2). The Notes column is not decoration: it carries the
-   * `Applied YYYY-MM-DD` marker that followup-cadence.mjs prefers over the Date
+   * `Applied YYYY-MM-DD` marker that scripts/followup-cadence.mjs prefers over the Date
    * column (dropping it silently resets the follow-up clock to the evaluation
    * date), the req/job number that this script's OWN sibling-req guard reads back
    * via extractReqNumber(), contact addresses, and whatever the user wrote with
@@ -630,7 +630,7 @@ export async function mergeTracker(options = {}) {
   /**
    * Load the optional generated-PDF manifest.
    *
-   * data/pdf-index.tsv is gitignored and only exists after generate-pdf.mjs has
+   * data/pdf-index.tsv is gitignored and only exists after scripts/generate-pdf.mjs has
    * written at least one PDF. Missing manifest = nothing to sync.
    *
    * Only rows whose PDF is still on disk come back (#4777): every reader of this
@@ -647,7 +647,7 @@ export async function mergeTracker(options = {}) {
     );
   }
 
-  // generate-pdf.mjs owns the manifest row rules (applyManifestRow) and the lock
+  // scripts/generate-pdf.mjs owns the manifest row rules (applyManifestRow) and the lock
   // around its read-modify-write. It is imported here, on the rare re-key path
   // only, because it loads Playwright.
   async function rekeyLivePdf(pdfIndex, oldReportNum, newReportNum) {
@@ -722,7 +722,7 @@ export async function mergeTracker(options = {}) {
   // Location where it expects Score. Falls back to the legacy layout when no
   // recognizable header row is found.
   // LEGACY_COLMAP, HEADER_ALIASES and detectColumns are the shared header-name
-  // mapping, now sourced from tracker-parse.mjs so every tracker reader stays in
+  // mapping, now sourced from scripts/tracker-parse.mjs so every tracker reader stays in
   // lockstep (see imports above). COLMAP stays mutable here — it is reassigned to
   // the detected layout once the table is read (below).
   let COLMAP = LEGACY_COLMAP;
@@ -814,7 +814,7 @@ export async function mergeTracker(options = {}) {
   // report, notes, [url]) after the optional Via/Location columns. That silently
   // produced a row NARROWER than the header on any tracker with extra columns —
   // e.g. a 10-column `… | Materials | Apply Link | Follow-up | Notes` layout got
-  // 9-cell rows. Such rows are unparseable by set-status.mjs (its column map is
+  // 9-cell rows. Such rows are unparseable by scripts/set-status.mjs (its column map is
   // header-derived), so those applications became unaddressable: the status could
   // no longer be changed through the supported path.
   function buildRow(o) {
@@ -1007,7 +1007,7 @@ export async function mergeTracker(options = {}) {
    * see it — by then the damage is a perfectly valid-looking number.
    *
    * Leading zeros are DELIBERATELY allowed, and this is the reason the obvious
-   * `/^[1-9]\d*$/` would be wrong here: `reserve-report-num.mjs` returns a
+   * `/^[1-9]\d*$/` would be wrong here: `scripts/reserve-report-num.mjs` returns a
    * zero-padded 3-digit string (`padStart(3, '0')`), and both the batch prompt
    * and `web/src/lib/run-prompts.mjs` hand that value straight to the `num` cell.
    * So `035` is the canonical shape of every report under 100, not a malformed
@@ -1319,7 +1319,7 @@ export async function mergeTracker(options = {}) {
     }
 
     // One-time migration: rewrite existing report links so they resolve relative
-    // to the tracker file's directory (see #760). Run with: node merge-tracker.mjs --migrate
+    // to the tracker file's directory (see #760). Run with: node scripts/merge-tracker.mjs --migrate
     if (MIGRATE) {
       const migrated = appContent
         .split('\n')
@@ -1340,7 +1340,7 @@ export async function mergeTracker(options = {}) {
     // Company. Header-aware readers auto-detect both layouts, so this is optional —
     // it exists for users who want the column added to an existing tracker.
     // Idempotent: a tracker that already has a Via column is left untouched.
-    // Run with: node merge-tracker.mjs --migrate-via [--dry-run]
+    // Run with: node scripts/merge-tracker.mjs --migrate-via [--dry-run]
     if (MIGRATE_VIA) {
       const lines = appContent.split('\n');
       const colmap = detectColumns(lines) || LEGACY_COLMAP;
@@ -1380,7 +1380,7 @@ export async function mergeTracker(options = {}) {
     // update. Idempotent: an already-linked cell is returned verbatim by
     // formatUrlCell, so re-running changes nothing and a hand-written label is
     // never overwritten.
-    // Run with: node merge-tracker.mjs --migrate-urls [--dry-run]
+    // Run with: node scripts/merge-tracker.mjs --migrate-urls [--dry-run]
     if (MIGRATE_URLS) {
       const lines = appContent.split('\n');
       const colmap = detectColumns(lines) || LEGACY_COLMAP;
@@ -1556,7 +1556,7 @@ export async function mergeTracker(options = {}) {
     // rows from each row's linked report (`**URL:**` header). This is the EXPAND
     // phase — the key must exist before the merge relies on it. Idempotent: only
     // fills rows whose URL cell is empty, so re-running is safe.
-    // Run with: node merge-tracker.mjs --backfill-urls [--dry-run]
+    // Run with: node scripts/merge-tracker.mjs --backfill-urls [--dry-run]
     if (BACKFILL_URLS) {
       if (COLMAP.url == null) {
         console.error('❌ --backfill-urls: could not detect a URL column after migration.');
@@ -1587,8 +1587,8 @@ export async function mergeTracker(options = {}) {
         // parseTrackerRow must reject: "a row must span the full header width,
         // otherwise a missing interior cell would silently shift every later column
         // one position left". That guard is correct; this writer was producing rows
-        // it correctly refuses. Every reader built on tracker-parse.mjs then skips
-        // the row for good — set-status.mjs reports "No tracker row with #N".
+        // it correctly refuses. Every reader built on scripts/tracker-parse.mjs then skips
+        // the row for good — scripts/set-status.mjs reports "No tracker row with #N".
         //
         // parseAppLine's guard is `parts.length <= maxIdx`, one cell looser than
         // parseTrackerRow's `parts.length < width`, which is why the backfill can
@@ -1728,7 +1728,7 @@ export async function mergeTracker(options = {}) {
       // make the cross-channel duplicate guard see a channel mismatch and add a
       // second ? row instead of updating the same-agency re-blast.
       if (addition.via && COLMAP.via == null) {
-        console.warn(`⚠️  ${file}: carries via=${addition.via} but the tracker has no Via column — value dropped. Add it with: node merge-tracker.mjs --migrate-via`);
+        console.warn(`⚠️  ${file}: carries via=${addition.via} but the tracker has no Via column — value dropped. Add it with: node scripts/merge-tracker.mjs --migrate-via`);
         addition.via = '';
       }
 
@@ -1778,8 +1778,8 @@ export async function mergeTracker(options = {}) {
       // exactly one verify-pipeline would flag later. resolveReportPath() is NOT
       // used: it strips leading `../` and so can accept a link verify-pipeline
       // rejects (e.g. `../../stray.md`).
-      // The rule itself lives in tracker-utils.mjs (findDeadReportLink), shared with
-      // verify-pipeline's Check 3 and fix-report-links.mjs: a directory (e.g. a link
+      // The rule itself lives in scripts/tracker-utils.mjs (findDeadReportLink), shared with
+      // verify-pipeline's Check 3 and scripts/fix-report-links.mjs: a directory (e.g. a link
       // to `reports/`) is not a report, so a regular file is required.
       const deadLink = findDeadReportLink(addition.report, TRACKER_DIR, DATA_ROOT);
       if (deadLink !== null) {
@@ -1849,7 +1849,7 @@ export async function mergeTracker(options = {}) {
       // proof of two postings: the bare URL and one that asks for a language are
       // the same page, and the bare URL does not say which language it serves.
       // Two known, different languages are two language versions, which stay
-      // two rows (postingUrlRelation in url-key.mjs).
+      // two rows (postingUrlRelation in scripts/url-key.mjs).
       const urlDiffers = (cand) => {
         const candUrl = normalizeUrl(cand.url);
         if (!candUrl || !addUrl) return false;   // unknown → not evidence
@@ -2080,7 +2080,7 @@ export async function mergeTracker(options = {}) {
         // the notes and report link are still fresher than what the row holds.
         //
         // Because the fuzzy matcher can mis-pair genuinely different roles (see
-        // role-matcher.mjs — "Senior" is a stopword and short tokens are dropped), a
+        // scripts/role-matcher.mjs — "Senior" is a stopword and short tokens are dropped), a
         // downgrade records the superseded report number so a bad match stays
         // recoverable from the tracker alone. mergeNotes() keeps the existing cell
         // verbatim and first, so a second downgrade preserves the earlier marker
@@ -2285,7 +2285,7 @@ export async function mergeTracker(options = {}) {
     trackerLock.release();
 
     // Sync PDF flags (idempotent; takes the tracker lock again in its own
-    // transaction). In-process since #4758: it used to be a sync-pdf-flags.mjs
+    // transaction). In-process since #4758: it used to be a scripts/sync-pdf-flags.mjs
     // child, one more node cold start per merge, resolving its tracker from the
     // env rather than being handed the one just merged.
     if (!DRY_RUN) {
@@ -2308,7 +2308,7 @@ export async function mergeTracker(options = {}) {
     if (VERIFY && !DRY_RUN) {
       console.log('\n--- Running verification ---');
       try {
-        execFileSync(process.execPath, [join(CAREER_OPS_CODE_ROOT, 'verify-pipeline.mjs')], { stdio: 'inherit', env: CHILD_ENV });
+        execFileSync(process.execPath, [join(CAREER_OPS_CODE_ROOT, 'scripts/verify-pipeline.mjs')], { stdio: 'inherit', env: CHILD_ENV });
       } catch (e) {
         return 1;
       }
@@ -2345,7 +2345,7 @@ if (isMainModule(import.meta.url)) {
   const DATA_ROOT = getCareerOpsRoot();
   // Support both layouts: data/applications.md (boilerplate) and applications.md
   // (original). CAREER_OPS_TRACKER overrides the path (used by tests and
-  // non-standard layouts). Resolution lives in tracker-utils.mjs so every tracker
+  // non-standard layouts). Resolution lives in scripts/tracker-utils.mjs so every tracker
   // writer agrees on the same canonical path (and therefore the same lock).
   const appsFile = resolveTrackerPath(DATA_ROOT);
   const code = await mergeTracker({

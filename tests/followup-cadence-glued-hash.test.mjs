@@ -7,7 +7,7 @@
  * "gh#12" are namespaced ids from elsewhere, and reading them as row pointers
  * dropped the row's own date.
  *
- * Run: node test-all.mjs --only followup-cadence-glued-hash
+ * Run: node scripts/test-all.mjs --only followup-cadence-glued-hash
  */
 
 import { dirname, join } from 'path';
@@ -26,7 +26,7 @@ process.env.CAREER_OPS_PROFILE = join(ROOT, 'tests', 'fixtures', 'profile-defaul
 
 let cadence;
 try {
-  cadence = await import('../followup-cadence.mjs');
+  cadence = await import('../scripts/followup-cadence.mjs');
 } finally {
   if (PRIOR_PROFILE_ENV === undefined) delete process.env.CAREER_OPS_PROFILE;
   else process.env.CAREER_OPS_PROFILE = PRIOR_PROFILE_ENV;

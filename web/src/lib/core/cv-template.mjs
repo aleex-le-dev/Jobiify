@@ -3,17 +3,17 @@ import { pathToFileURL } from "node:url";
 import { BASE_CV_TEMPLATE } from "../run-prompts.mjs";
 
 /**
- * ACL for the core's CV-template resolver (cv-templates.mjs), so a dashboard pdf
+ * ACL for the core's CV-template resolver (scripts/cv-templates.mjs), so a dashboard pdf
  * run fills the same template the CLI fills (#4034).
  *
  * The worker cannot resolve this itself. pdf lost Bash in #2172 and must never
- * regain it, so it can neither run cv-templates.mjs nor list templates/, and the
+ * regain it, so it can neither run scripts/cv-templates.mjs nor list templates/, and the
  * prompt named the base template outright as a result. That silently overrode
  * cv.template for anyone who had set one: same report, two different CVs,
  * depending only on where the run was started.
  *
  * Resolution stays the core's. We call resolveTemplate with no `dir` override, so
- * it uses cv-templates.mjs's own default relative to the user's checkout and
+ * it uses scripts/cv-templates.mjs's own default relative to the user's checkout and
  * template packs (#3202) resolve here exactly as they do on the CLI.
  * Reimplementing the lookup in the web app would be a second source of truth that
  * drifts.
@@ -25,7 +25,7 @@ import { BASE_CV_TEMPLATE } from "../run-prompts.mjs";
  * against a real checkout — `careerOpsRoot()` lives in a `@/`-aliased TS module
  * that `node --test` cannot resolve (#3879).
  *
- * CAREER_OPS_PROFILE is the case that made it matter. cv-templates.mjs resolves a
+ * CAREER_OPS_PROFILE is the case that made it matter. scripts/cv-templates.mjs resolves a
  * RELATIVE value against the cwd, so `CAREER_OPS_PROFILE=config/profile.yml` means
  * `<core>/config/profile.yml` to the CLI and `<core>/web/config/profile.yml` here
  * — the dashboard finds no profile, falls back to the base template, and the two
@@ -42,14 +42,14 @@ import { BASE_CV_TEMPLATE } from "../run-prompts.mjs";
  * @returns {Promise<string>} Repo-relative template path, forward-slashed.
  */
 export async function resolveCvTemplate(root) {
-  const file = path.join(root, "cv-templates.mjs");
+  const file = path.join(root, "scripts/cv-templates.mjs");
   try {
     const mod = await import(/* webpackIgnore: true */ pathToFileURL(file).href);
     if (typeof mod?.resolveTemplate !== "function") return BASE_CV_TEMPLATE;
     const profile = process.env.CAREER_OPS_PROFILE?.trim();
     const abs = mod.resolveTemplate("cv", null, {
       fallback: true,
-      // undefined keeps cv-templates.mjs's own default, rather than restating it
+      // undefined keeps scripts/cv-templates.mjs's own default, rather than restating it
       // here where it would drift.
       profilePath: profile ? path.resolve(root, profile) : undefined,
     });

@@ -1,4 +1,4 @@
-// tests/test-all-inline-jobs.test.mjs — with more than one job, test-all.mjs
+// tests/test-all-inline-jobs.test.mjs — with more than one job, scripts/test-all.mjs
 // runs its inline sections at the same time as the discovered suites, without
 // changing what a run reports (#5146).
 //
@@ -9,7 +9,7 @@
 //
 // The real sections cannot run in a sandbox: they are most of the repository's
 // checks and take the better part of a minute. So the sandbox gets the real
-// test-all.mjs with the stretch between its two INLINE SECTIONS markers
+// scripts/test-all.mjs with the stretch between its two INLINE SECTIONS markers
 // replaced by a few fixture sections. Everything outside the markers is the
 // real runner: starting the child, holding the suites' output, folding the
 // counters back in.
@@ -19,7 +19,7 @@
 // for exactly that.
 import { pass, fail, rmSync, ROOT } from './helpers.mjs';
 import { createRunnerSandbox, helpers, sleep } from './test-all-sandbox.mjs';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -32,14 +32,14 @@ const END = /^\/\/ ── INLINE SECTIONS: END ─+$/gm;
 
 const check = (name, ok, detail) => (ok ? pass(name) : fail(`${name}${detail ? ` — ${detail}` : ''}`));
 
-const realRunner = readFileSync(join(ROOT, 'test-all.mjs'), 'utf-8').replace(/\r\n/g, '\n');
+const realRunner = readFileSync(join(ROOT, 'scripts/test-all.mjs'), 'utf-8').replace(/\r\n/g, '\n');
 const begins = [...realRunner.matchAll(BEGIN)];
 const ends = [...realRunner.matchAll(END)];
 
 if (begins.length !== 1 || ends.length !== 1 || begins[0].index > ends[0].index) {
-  fail(`test-all.mjs must carry one INLINE SECTIONS: BEGIN marker and one END marker after it (found ${begins.length} and ${ends.length}) — this suite replaces the stretch between them`);
+  fail(`scripts/test-all.mjs must carry one INLINE SECTIONS: BEGIN marker and one END marker after it (found ${begins.length} and ${ends.length}) — this suite replaces the stretch between them`);
 } else {
-  pass('test-all.mjs marks where its inline sections begin and end');
+  pass('scripts/test-all.mjs marks where its inline sections begin and end');
 
   const head = realRunner.slice(0, begins[0].index + begins[0][0].length);
   const tail = realRunner.slice(ends[0].index);
@@ -54,7 +54,7 @@ if (begins.length !== 1 || ends.length !== 1 || begins[0].index > ends[0].index)
    * @param {Record<string, string[]>} suites - Suite bodies by tests-relative path.
    */
   const scenario = (sections, suites) => {
-    writeFileSync(join(box.sandbox, 'test-all.mjs'), `${head}\n${sections.join('\n')}\n${tail}`, 'utf-8');
+    writeFileSync((mkdirSync(join(box.sandbox, 'scripts'), { recursive: true }), join(box.sandbox, 'scripts/test-all.mjs')), `${head}\n${sections.join('\n')}\n${tail}`, 'utf-8');
     rmSync(join(box.sandbox, 'tests', 'fx'), { recursive: true, force: true });
     for (const [rel, body] of Object.entries(suites)) box.suite(`fx/${rel}`, body);
   };

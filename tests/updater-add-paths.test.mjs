@@ -25,7 +25,7 @@
 import { writeFileSync, mkdirSync, rmSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { pass, fail, makeUpdaterRepo } from './helpers.mjs';
-import { addPaths, isTracked, expandToShippedFiles, stagingFileList } from '../update-system.mjs';
+import { addPaths, isTracked, expandToShippedFiles, stagingFileList } from '../scripts/update-system.mjs';
 
 // Shared with updater-is-tracked.test.mjs so the git-isolation pins live in one
 // body: dropping one has to redden both suites, not leave this one quietly

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveAtsApi, checkLivenessViaApi } from '../liveness-api.mjs';
+import { resolveAtsApi, checkLivenessViaApi } from '../scripts/liveness-api.mjs';
 
 const greenhouse = 'https://careers.example.com/detail/7823005003/?gh_jid=7823005003';
 const smartrecruiters = 'https://jobs.smartrecruiters.com/ServiceNow/744000131661949-senior-director';

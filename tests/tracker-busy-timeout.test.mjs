@@ -16,7 +16,7 @@ console.log('\ntracker.mjs — SQLite busy_timeout (#1957)');
 
 // Point the index at a throwaway file so the test never touches a real
 // applications.db. openDb() resolves the path per call (#3506), so this holds
-// even though test-all.mjs has already imported tracker.mjs earlier in the same
+// even though scripts/test-all.mjs has already imported scripts/tracker.mjs earlier in the same
 // process — which is precisely what it did NOT do while the path was a
 // module-scope const.
 //
@@ -30,7 +30,7 @@ process.env.CAREER_OPS_TRACKER_DB = join(work, 'applications.db');
 
 try {
   const { DatabaseSync } = await import('node:sqlite');
-  const { openDb } = await import(new URL('../tracker.mjs', import.meta.url).href);
+  const { openDb } = await import(new URL('../scripts/tracker.mjs', import.meta.url).href);
 
   const db = openDb(DatabaseSync);
   const { timeout } = db.prepare('PRAGMA busy_timeout').get();

@@ -15,6 +15,6 @@ fs.writeFileSync(path.join(root, "data/pipeline.md"), `# Fictional inbox
 `);
 // The existing endpoint loads this dependency from the data root. Copy only
 // the self-contained core lock, never a user's configuration or tracker.
-fs.copyFileSync(fileURLToPath(new URL("../../../pipeline-lock.mjs", import.meta.url)), path.join(root, "pipeline-lock.mjs"));
+fs.copyFileSync(fileURLToPath(new URL("../../../scripts/pipeline-lock.mjs", import.meta.url)), path.join(root, "pipeline-lock.mjs"));
 fs.writeFileSync(path.join(root, "cv.md"), "# Fictional browser fixture\n\nNot a real candidate.\n");
 console.log(root);

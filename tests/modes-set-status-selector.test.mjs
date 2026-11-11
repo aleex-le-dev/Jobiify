@@ -1,6 +1,6 @@
-// A bare number given to set-status.mjs is a tracker row id. Mode files hand
+// A bare number given to scripts/set-status.mjs is a tracker row id. Mode files hand
 // the agent a report id, and the two counters diverge as soon as one row has
-// no report, so `set-status.mjs <report#> Applied` exits 3 and the agent has
+// no report, so `scripts/set-status.mjs <report#> Applied` exits 3 and the agent has
 // to retry. Every mode names the selector instead.
 //
 // Run:  node --test tests/modes-set-status-selector.test.mjs
@@ -14,7 +14,7 @@ import { listTree } from '../lib/walk-tree.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
-const CALL = /node set-status\.mjs ([^\s`]+)/g;
+const CALL = /node scripts\/set-status\.mjs ([^\s`]+)/g;
 
 function bareReportPlaceholders(src) {
   return [...src.matchAll(CALL)].map((m) => m[1]).filter((arg) => arg.startsWith('<report#'));
@@ -33,6 +33,6 @@ test('the scan sees the apply-mode calls it guards', () => {
 });
 
 test('a bare report placeholder is reported', () => {
-  assert.deepEqual(bareReportPlaceholders('`node set-status.mjs <report#> Applied`'), ['<report#>']);
-  assert.deepEqual(bareReportPlaceholders('`node set-status.mjs --report <report#> Applied`'), []);
+  assert.deepEqual(bareReportPlaceholders('`node scripts/set-status.mjs <report#> Applied`'), ['<report#>']);
+  assert.deepEqual(bareReportPlaceholders('`node scripts/set-status.mjs --report <report#> Applied`'), []);
 });

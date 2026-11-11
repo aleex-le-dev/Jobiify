@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * cv-title-check.mjs — Zero-LLM job-title consistency checker (#2677).
+ * scripts/cv-title-check.mjs — Zero-LLM job-title consistency checker (#2677).
  *
  * `pdf.md`'s tailoring pipeline legitimately reformulates bullets, the summary,
  * and framing per JD (Steps 10-15) — "keywords get reformulated, never
@@ -18,16 +18,16 @@
  * or PDF exists — `{ experience: [{ company, role, dates, ... }] }` — and
  * writes it to `/tmp/cv-{candidate}-{company}.json`. That payload is the
  * earliest point in the pipeline with company/title/dates as clean structured
- * fields, straight from the tailoring step, before `build-cv-html.mjs` ever
+ * fields, straight from the tailoring step, before `scripts/build-cv-html.mjs` ever
  * touches markup. Checking there means: no HTML/PDF text-scraping regressions
  * to maintain, and the check runs (and can stop bad output) BEFORE the fact
- * gate and PDF render, matching this script's sibling `jd-skill-gap.mjs`
+ * gate and PDF render, matching this script's sibling `scripts/jd-skill-gap.mjs`
  * (checks before drafting, not after rendering). See modes/pdf.md Step 17a.
  *
  * Matching rule (deliberately NOT fuzzy, per the issue): pair a tailored-CV
  * entry with a cv.md entry by {company, dates} — normalized on case/whitespace
  * only, via the same normalizeCompany() the rest of the tracker ecosystem uses
- * for company-name grouping (tracker-utils.mjs). Title is the field being
+ * for company-name grouping (scripts/tracker-utils.mjs). Title is the field being
  * checked, so it can never also be the matching key. An exact string match
  * (case/whitespace-normalized, no fuzzy similarity scoring) is a silent pass;
  * any other difference is a warning printed with both strings side by side so
@@ -49,9 +49,9 @@
  * plus --self-test failures.
  *
  * Usage:
- *   node cv-title-check.mjs /tmp/cv-jane-doe-acme.json
- *   node cv-title-check.mjs /tmp/cv-jane-doe-acme.json --summary
- *   node cv-title-check.mjs --self-test
+ *   node scripts/cv-title-check.mjs /tmp/cv-jane-doe-acme.json
+ *   node scripts/cv-title-check.mjs /tmp/cv-jane-doe-acme.json --summary
+ *   node scripts/cv-title-check.mjs --self-test
  */
 
 import { readFileSync, existsSync, mkdtempSync, writeFileSync, rmSync } from 'fs';
@@ -60,11 +60,11 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { spawnSync } from 'child_process';
 import { normalizeCompany } from './tracker-utils.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import {
   boldLineText, findExperienceSections, headingText, toPlainText, EXPERIENCE_HEADING_NAMES,
-} from './lib/cv-markdown.mjs';
+} from '../lib/cv-markdown.mjs';
 
 const CV_PATH = join(getCareerOpsRoot(), 'cv.md');
 
@@ -294,7 +294,7 @@ export function checkTitles(cvEntries, tailoredEntries) {
  * cv.md the parser cannot read yields zero entries, every tailored entry
  * lands in unmatchedTailored, and the summary used to print ✅ anyway — a
  * planted title inflation went out under a green check. Mirrors
- * verify-cv-structure.mjs's UNVERIFIED and jd-skill-gap.mjs's LOW CONFIDENCE:
+ * scripts/verify-cv-structure.mjs's UNVERIFIED and scripts/jd-skill-gap.mjs's LOW CONFIDENCE:
  * still warn-only (exit 0), but impossible to read as a pass.
  *
  * @param {Array} cvEntries parsed cv.md entries
@@ -708,8 +708,8 @@ function runSelfTest() {
 
 const args = process.argv.slice(2);
 const USAGE = `Usage:
-  node cv-title-check.mjs <tailored-cv-payload.json> [--summary]
-  node cv-title-check.mjs --self-test
+  node scripts/cv-title-check.mjs <tailored-cv-payload.json> [--summary]
+  node scripts/cv-title-check.mjs --self-test
 
 Pairs each tailored-CV {company, dates} entry against cv.md's canonical entry
 and flags an exact-string job-title mismatch (case and whitespace normalized,
@@ -734,8 +734,8 @@ if (isMainModule(import.meta.url)) {
     runSelfTest();
   } else {
     if (!payloadPathArg || !existsSync(payloadPathArg)) {
-      console.error('Usage: node cv-title-check.mjs <tailored-cv-payload.json> [--summary]');
-      console.error('       node cv-title-check.mjs --self-test');
+      console.error('Usage: node scripts/cv-title-check.mjs <tailored-cv-payload.json> [--summary]');
+      console.error('       node scripts/cv-title-check.mjs --self-test');
       process.exit(1);
     }
     if (!existsSync(CV_PATH)) {

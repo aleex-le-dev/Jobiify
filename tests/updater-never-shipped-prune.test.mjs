@@ -17,7 +17,7 @@
  */
 
 import { pass, fail } from './helpers.mjs';
-import { wasEverShippedUpstream } from '../update-system.mjs';
+import { wasEverShippedUpstream } from '../scripts/update-system.mjs';
 
 console.log('\n🧪 Testing never-shipped vs. retired-upstream prune discrimination...');
 

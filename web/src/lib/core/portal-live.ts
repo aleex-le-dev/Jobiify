@@ -7,7 +7,7 @@ import { acceptInZone, type Zone } from "./zone";
 
 /**
  * Interroge EN DIRECT tous les portails de portals.yml (employeurs suivis +
- * sites d'intérim) via le script cœur portal-live.mjs, puis applique les filtres
+ * sites d'intérim) via le script cœur scripts/portal-live.mjs, puis applique les filtres
  * du profil (postes + synonymes, exclusions) et la zone de trajet.
  * Aucune écriture : c'est l'utilisateur qui choisit quoi ajouter au pipeline.
  */
@@ -52,7 +52,7 @@ const TIMEOUT_MS = 120_000;
 
 function runPortalLive(): Promise<LiveResult> {
   const script = rootScript("portal-live");
-  if (!fs.existsSync(script)) return Promise.resolve({ offers: [], errors: [{ name: "portal-live.mjs", error: "script absent" }] });
+  if (!fs.existsSync(script)) return Promise.resolve({ offers: [], errors: [{ name: "scripts/portal-live.mjs", error: "script absent" }] });
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [script], { cwd: careerOpsRoot(), env: process.env });
     let out = "";
@@ -64,12 +64,12 @@ function runPortalLive(): Promise<LiveResult> {
         const parsed = JSON.parse(out.trim().split("\n").pop() || "{}");
         resolve({ offers: Array.isArray(parsed.offers) ? parsed.offers : [], errors: Array.isArray(parsed.errors) ? parsed.errors : [] });
       } catch {
-        resolve({ offers: [], errors: [{ name: "portal-live.mjs", error: "sortie illisible" }] });
+        resolve({ offers: [], errors: [{ name: "scripts/portal-live.mjs", error: "sortie illisible" }] });
       }
     });
     child.on("error", () => {
       clearTimeout(timer);
-      resolve({ offers: [], errors: [{ name: "portal-live.mjs", error: "lancement impossible" }] });
+      resolve({ offers: [], errors: [{ name: "scripts/portal-live.mjs", error: "lancement impossible" }] });
     });
   });
 }

@@ -8,7 +8,7 @@
 //
 // These pin the verdict itself, so the number has one home and every surface
 // derives from it. The failing branch matters most — it is the one that protects
-// that user — and it cannot be exercised through doctor.mjs on a machine that
+// that user — and it cannot be exercised through scripts/doctor.mjs on a machine that
 // already runs a recent Node, which is why the logic is a pure module.
 
 import { pass, fail } from './helpers.mjs';

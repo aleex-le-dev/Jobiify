@@ -2,7 +2,7 @@
 //
 // Pure .mjs so the CV page can import it and `node --test` can cover it.
 //
-// upskill.mjs does the weighting; nothing is recomputed here. What this module
+// scripts/upskill.mjs does the weighting; nothing is recomputed here. What this module
 // decides is when the map is trustworthy enough to show as advice, because two
 // of its metadata fields describe conditions where the gaps are misleading
 // rather than merely sparse — and both produce a map that LOOKS fine.
@@ -48,7 +48,7 @@ export function skillGapModel(payload, limit = 8) {
   /** @type {Caveat[]} */
   const caveats = [];
 
-  // upskill.mjs's own comment: a CV that yields no known skills "would flood the
+  // scripts/upskill.mjs's own comment: a CV that yields no known skills "would flood the
   // gap map with false gaps", because nothing can be subtracted as already-held.
   // The map still renders, which is exactly why this has to be said out loud —
   // a list of skills you already have, presented as things to learn, is worse
@@ -66,7 +66,7 @@ export function skillGapModel(payload, limit = 8) {
   // of the pipeline and says less about the search than its confident ordering
   // suggests.
   //
-  // The gate is on GAPS, not on withMs. upskill.mjs reads a report's Gap TABLE
+  // The gate is on GAPS, not on withMs. scripts/upskill.mjs reads a report's Gap TABLE
   // as well as its Machine Summary, so a pipeline with zero summaries can still
   // produce a full gap map — and the previous `withMs > 0` condition suppressed
   // the warning in exactly that case, the one where coverage is thinnest.

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { pass, fail } from './helpers.mjs';
-import { setHostResolver, validateUrlSecurity } from '../liveness-browser.mjs';
+import { setHostResolver, validateUrlSecurity } from '../scripts/liveness-browser.mjs';
 
 const URL = 'https://careers.example.com/jobs/123';
 const originalNow = Date.now;

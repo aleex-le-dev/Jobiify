@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * dedup-tracker.mjs — Remove duplicate entries from applications.md
+ * scripts/dedup-tracker.mjs — Remove duplicate entries from applications.md
  *
  * Groups by normalized company, then merges only rows whose full role title
  * matches exactly (case- and whitespace-normalized) and whose posting URLs, when
@@ -21,7 +21,7 @@ import {
   MIN_STEM_CHARS, loadCanonicalStates, resolveCanonicalStateId,
 } from './tracker-utils.mjs';
 import { resolveColumns, parseTrackerRow, normalizeVia, extractReqNumber, parseScore } from './tracker-parse.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
 
 const CAREER_OPS = getCareerOpsRoot();
 // Support both layouts: data/applications.md (boilerplate) and applications.md
@@ -30,12 +30,12 @@ const CAREER_OPS = getCareerOpsRoot();
 const APPS_FILE = resolveTrackerPath(CAREER_OPS);
 
 // ── CLI args ────────────────────────────────────────────────────────
-// Same shape as scan-ats-full.mjs (#1633/PR #1635) and reply-watch.mjs
+// Same shape as scripts/scan-ats-full.mjs (#1633/PR #1635) and scripts/reply-watch.mjs
 // (#2743): an unrecognized flag must fail fast, never silently fall through
 // to the live-run default and write to the real tracker (#2744). Shared via
 // lib/cli-flags.mjs's validateFlags() (#2775).
 const KNOWN_FLAGS = ['--dry-run', '--help', '-h'];
-const USAGE = `Usage: node dedup-tracker.mjs [--dry-run]`;
+const USAGE = `Usage: node scripts/dedup-tracker.mjs [--dry-run]`;
 
 const cliArgs = process.argv.slice(2);
 
@@ -70,7 +70,7 @@ const STATUS_RANK = {
 // A file that parses but does not define one of the ranked states is the same
 // hazard, only narrower: every spelling of that state resolves to nothing and
 // ranks 0. `states: []` is the limiting case, where that is every row.
-const STATES_FILE = join(dirname(fileURLToPath(import.meta.url)), 'templates', 'states.yml');
+const STATES_FILE = join(dirname(dirname(fileURLToPath(import.meta.url))), 'templates', 'states.yml');
 let CANONICAL_STATES;
 try {
   CANONICAL_STATES = loadCanonicalStates(STATES_FILE);
@@ -96,7 +96,7 @@ mkdirSync(dirname(APPS_FILE), { recursive: true });
  * The cell is resolved through states.yml (resolveCanonicalStateId), which also
  * strips the bold wrappers and trailing dates legacy trackers carry. An alias
  * ("Sent", "Aplicada", "Başvuruldu", "Mülakat"...) therefore ranks as the state
- * the dashboard and set-status.mjs read it as. Ranking one 0 made an Applied
+ * the dashboard and scripts/set-status.mjs read it as. Ranking one 0 made an Applied
  * row look like a throwaway and let a higher-scored Evaluated sibling delete it.
  *
  * @param {string} status - Raw status cell from applications.md.
@@ -201,7 +201,7 @@ function normalizeRole(role) {
  * Only two present-and-different keys are evidence: a blank or placeholder URL
  * yields no key from normalizeUrl() and is UNKNOWN, never a conflict. Two
  * different known languages of one page are two postings (postingUrlRelation
- * in url-key.mjs).
+ * in scripts/url-key.mjs).
  *
  * @param {object} a - First parsed applications.md row.
  * @param {object} b - Second parsed applications.md row.
@@ -230,7 +230,7 @@ function languageOnOneSide(a, b) {
 /**
  * Check whether two tracker rows carry two different requisition ids in Notes.
  *
- * The rule merge-tracker.mjs applies as `reqNumDiffers` (#1524): an id missing
+ * The rule scripts/merge-tracker.mjs applies as `reqNumDiffers` (#1524): an id missing
  * on either side is UNKNOWN, and only two present-and-different ids are evidence
  * that the rows are distinct openings. An employer posts one title once per city
  * or country, each copy with its own job id, and merge-tracker keeps those rows
@@ -262,7 +262,7 @@ function reqNumsConflict(a, b) {
  * identity.
  *
  * Two present-and-different posting URLs veto every tier, report identity
- * included (#4562). That is the rule merge-tracker.mjs applies (`urlDiffers`),
+ * included (#4562). That is the rule scripts/merge-tracker.mjs applies (`urlDiffers`),
  * through the same postingUrlRelation(): two rows cannot be one application while
  * naming two postings. A blank or placeholder URL yields no key and is
  * UNKNOWN, never a conflict, so rows without URLs behave exactly as before.
@@ -365,10 +365,10 @@ console.log(`📊 ${entries.length} entries loaded`);
 // normalizeCompany() used to strip everything outside [a-z0-9], so distinct
 // non-Latin agency names (リクルート, パーソル, …) all collapsed to the same empty
 // key and one of two genuinely separate submissions was DELETED. Both keys are
-// now Unicode-aware — normalizeCompany comes from tracker-utils.mjs (#2429), so
+// now Unicode-aware — normalizeCompany comes from scripts/tracker-utils.mjs (#2429), so
 // the ordinary company path cannot regress the way this channel path did.
 // normalizeVia() is the same key that
-// merge-tracker.mjs uses for its cross-channel guard, so the two scripts
+// scripts/merge-tracker.mjs uses for its cross-channel guard, so the two scripts
 // cannot drift on agency identity. An absent Via (empty or `—`) still keys to
 // '' and groups with other via-less blind rows, matching merge-tracker, whose
 // guard does not reject a pair whose Via cells are both blank.
@@ -420,7 +420,7 @@ for (const entry of entries) {
 }
 
 // Two blind rows only count as the same listing when their evaluation dates
-// sit within the re-post window (mirrors detect-reposts.mjs's 90 days).
+// sit within the re-post window (mirrors scripts/detect-reposts.mjs's 90 days).
 // Unparseable dates never cluster — deleting a real application is worse than
 // keeping a duplicate.
 const BLIND_WINDOW_DAYS = 90;

@@ -1,6 +1,6 @@
 // The company evidence card must not turn "not checked" into "nothing found".
 //
-// company-history.mjs draws that distinction itself and says why in its own
+// scripts/company-history.mjs draws that distinction itself and says why in its own
 // comment — an aggregator that was skipped "must still not claim
 // `none-detected`, which claims a negative result from a check that never ran".
 // The card is where that could quietly be lost, because both labels want to

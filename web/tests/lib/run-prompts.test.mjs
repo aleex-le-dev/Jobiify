@@ -412,7 +412,7 @@ test("PDF tailoring reads the resolved report even when the application number d
 
 test("buildPrompt: the pdf prompt fills the template the caller resolved", () => {
   // Given a user whose config/profile.yml selects a non-base CV template. The
-  // route resolves it through cv-templates.mjs and hands the path in; the worker
+  // route resolves it through scripts/cv-templates.mjs and hands the path in; the worker
   // cannot resolve it itself, because pdf has no Bash (#2172) and must not regain it.
   const prompt = buildPrompt({ kind: "pdf", ...ARGS, cvTemplate: "templates/cv-template.mine.html" });
 
@@ -433,7 +433,7 @@ test("buildPrompt: the pdf prompt falls back to the base template", () => {
 });
 
 test("buildPrompt: a template pack's directory may contain a space or a plus", () => {
-  // Given a template pack (#3202). cv-templates.mjs takes the pack's DIRECTORY
+  // Given a template pack (#3202). scripts/cv-templates.mjs takes the pack's DIRECTORY
   // name straight from readdirSync — only the FILENAME is constrained, by
   // parseFilename's `cv-template(\.[a-z0-9-]+)?\.(html|tex)` — so `templates/My
   // Pack/cv-template.ats.html` is a path the resolver really does return.
@@ -457,7 +457,7 @@ test("buildPrompt: a template pack's directory may contain a space or a plus", (
   }
 });
 
-test("buildPrompt: a path cv-templates.mjs could not have produced is refused", () => {
+test("buildPrompt: a path scripts/cv-templates.mjs could not have produced is refused", () => {
   // Given a value that did not come from the resolver. The path is interpolated
   // into an agent's instructions, so this is a trust boundary even though
   // config/profile.yml is the user's own file.

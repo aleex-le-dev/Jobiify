@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ROOT, rmSync } from './helpers.mjs';
 
-const SCRIPT = join(ROOT, 'set-status.mjs');
+const SCRIPT = join(ROOT, 'scripts/set-status.mjs');
 const TRACKER = [
   '# Applications',
   '',

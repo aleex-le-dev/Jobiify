@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * contacts.mjs — Job-search phonebook → vCard 3.0 exporter
+ * scripts/contacts.mjs — Job-search phonebook → vCard 3.0 exporter
  *
  * Reads data/contacts.tsv (user layer, gitignored — third-party PII), one
  * contact per line, no header row (writers SHOULD keep a leading `#` comment
@@ -36,29 +36,29 @@
  * collected into a `quality` object — reported loudly, never dropped
  * silently, never throwing.
  *
- * Saved contacts at a company are looked up by contact-lookup.mjs (#4691),
+ * Saved contacts at a company are looked up by scripts/contact-lookup.mjs (#4691),
  * which the `contacto` mode runs before a cold WebSearch — see that file for
- * the matching logic (it reuses tracker-utils.mjs's normalizeCompany(), the
- * same key merge-tracker.mjs/set-status.mjs/company-history.mjs use for
- * same-company lookups). Kept out of THIS file deliberately: contacts.mjs is
+ * the matching logic (it reuses scripts/tracker-utils.mjs's normalizeCompany(), the
+ * same key scripts/merge-tracker.mjs/set-status.mjs/company-history.mjs use for
+ * same-company lookups). Kept out of THIS file deliberately: scripts/contacts.mjs is
  * zero-dep by design (its CLI test suite copies just this script + lib/ +
- * path-resolver.mjs into an isolated temp dir — see tests/contacts.test.mjs
- * §9), and tracker-utils.mjs pulls in tracker-parse.mjs's tracker-aliases.json
+ * scripts/path-resolver.mjs into an isolated temp dir — see tests/contacts.test.mjs
+ * §9), and scripts/tracker-utils.mjs pulls in scripts/tracker-parse.mjs's tracker-aliases.json
  * and the js-yaml package, which that isolation deliberately does not carry.
  *
- * Run: node contacts.mjs                     (JSON: contacts + quality + total)
- *      node contacts.mjs --summary           (human-readable table)
- *      node contacts.mjs --vcf [path]        (write vCard, default output/contacts.vcf)
- *      node contacts.mjs --vcf --caller-id   (FN as "Jane Doe (Acme recruiter)")
- *      node contacts.mjs --self-test
+ * Run: node scripts/contacts.mjs                     (JSON: contacts + quality + total)
+ *      node scripts/contacts.mjs --summary           (human-readable table)
+ *      node scripts/contacts.mjs --vcf [path]        (write vCard, default output/contacts.vcf)
+ *      node scripts/contacts.mjs --vcf --caller-id   (FN as "Jane Doe (Acme recruiter)")
+ *      node scripts/contacts.mjs --self-test
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, realpathSync, lstatSync } from 'fs';
 import { join, dirname, resolve, relative, isAbsolute, basename, sep } from 'path';
 import { createHash } from 'crypto';
-import { validateFlags, hasFlag, flagValue } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { unescapeFormulaCell } from './lib/tsv-formula-escape.mjs';
+import { validateFlags, hasFlag, flagValue } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { unescapeFormulaCell } from '../lib/tsv-formula-escape.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
 const DATA_ROOT = getCareerOpsRoot();
@@ -70,12 +70,12 @@ const DEFAULT_VCF = join(DATA_ROOT, 'output/contacts.vcf');
 const KNOWN_FLAGS = ['--summary', '--self-test', '--caller-id', '--vcf', '--help', '-h'];
 
 const USAGE = `Usage:
-  node contacts.mjs                     # JSON: contacts + quality + total
-  node contacts.mjs --summary           # human-readable table
-  node contacts.mjs --vcf [path]        # write vCard, default output/contacts.vcf
-  node contacts.mjs --vcf --caller-id   # FN as "Jane Doe (Acme recruiter)"
-  node contacts.mjs --self-test         # run the in-memory test suite
-  node contacts.mjs --help              # print this usage block and exit`;
+  node scripts/contacts.mjs                     # JSON: contacts + quality + total
+  node scripts/contacts.mjs --summary           # human-readable table
+  node scripts/contacts.mjs --vcf [path]        # write vCard, default output/contacts.vcf
+  node scripts/contacts.mjs --vcf --caller-id   # FN as "Jane Doe (Acme recruiter)"
+  node scripts/contacts.mjs --self-test         # run the in-memory test suite
+  node scripts/contacts.mjs --help              # print this usage block and exit`;
 
 // Only the CLI has flags. When this module is imported, process.argv belongs to
 // whoever imported it — so parsing it here validated the *host's* flags against
@@ -383,7 +383,7 @@ function printSummary(contacts, quality) {
     console.log('  No contacts yet.');
     console.log('  Add lines to data/contacts.tsv:');
     console.log('  {name}\\t{company}\\t{type}\\t{title}\\t{phone}\\t{email}\\t{linkedin}\\t{tracker#|-}\\t{notes}');
-    console.log('  Export to your phone with: node contacts.mjs --vcf');
+    console.log('  Export to your phone with: node scripts/contacts.mjs --vcf');
   } else {
     const rows = contacts.map(c => [
       c.name, c.company, c.type || '—',
@@ -444,7 +444,7 @@ function writeVcf(contacts, quality) {
   const issues = quality.shortRows.length + quality.missingRequired.length
     + quality.invalidTypes.length + quality.duplicates.length;
   if (issues) {
-    console.error(`⚠ ${issues} data-quality issue${issues === 1 ? '' : 's'} in data/contacts.tsv (details: node contacts.mjs --summary):`);
+    console.error(`⚠ ${issues} data-quality issue${issues === 1 ? '' : 's'} in data/contacts.tsv (details: node scripts/contacts.mjs --summary):`);
     if (quality.shortRows.length) console.error(`    ${quality.shortRows.length} row${quality.shortRows.length === 1 ? '' : 's'} with fewer than 4 cells (skipped)`);
     if (quality.missingRequired.length) console.error(`    ${quality.missingRequired.length} row${quality.missingRequired.length === 1 ? '' : 's'} missing name or company (skipped)`);
     if (quality.invalidTypes.length) console.error(`    ${quality.invalidTypes.length} contact${quality.invalidTypes.length === 1 ? '' : 's'} with off-enum type (kept)`);
@@ -474,7 +474,7 @@ function writeVcf(contacts, quality) {
   // inspects the string: a symlinked child directory (or a symlinked target file)
   // can resolve OUTSIDE the repo while passing it. Create the parent first, then
   // re-verify the CANONICAL destination is inside the repo. Mirrors the
-  // reconcile-pipeline.mjs / followup-seed.mjs realpath-containment pattern.
+  // scripts/reconcile-pipeline.mjs / scripts/followup-seed.mjs realpath-containment pattern.
   mkdirSync(dirname(outPath), { recursive: true });
   // A symlink at the target path (even a dangling one) would let writeFileSync
   // follow it and escape — refuse before resolving anything else.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * hired-share.mjs — draft a Hired Wall story from data the tracker already
+ * scripts/hired-share.mjs — draft a Hired Wall story from data the tracker already
  * holds, show the EXACT payload, and open a prefilled GitHub issue for the
  * user to review and submit themselves.
  *
@@ -9,11 +9,11 @@
  * GitHub account, after seeing every field. career-ops has no backend and no
  * telemetry; the public ledger is the repo itself (HIRED.md + the issues).
  *
- *   node hired-share.mjs --report 12                      # draft from tracker row 12
- *   node hired-share.mjs --report 12 --anonymity role     # role-and-location card, no handle
- *   node hired-share.mjs --report 12 --story "..." --open # custom quote + open the browser
- *   node hired-share.mjs --status                         # hires recorded but never asked
- *   node hired-share.mjs --report 12 --mark never         # user said no: never ask again
+ *   node scripts/hired-share.mjs --report 12                      # draft from tracker row 12
+ *   node scripts/hired-share.mjs --report 12 --anonymity role     # role-and-location card, no handle
+ *   node scripts/hired-share.mjs --report 12 --story "..." --open # custom quote + open the browser
+ *   node scripts/hired-share.mjs --status                         # hires recorded but never asked
+ *   node scripts/hired-share.mjs --report 12 --mark never         # user said no: never ask again
  *
  * Anonymity levels (asked, never defaulted to the most exposed):
  *   handle → card shows @login and avatar (full credit)
@@ -29,8 +29,8 @@
 import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { execFileSync } from 'child_process';
-import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { flagValue, hasFlag, validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { parseTrackerRow, resolveColumns, isSeparatorRow, isHeaderRow } from './tracker-parse.mjs';
 import { resolveTrackerPath, resolveWorkspaceRoot, writeFileAtomic } from './tracker-utils.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
@@ -43,10 +43,10 @@ const KNOWN_FLAGS = ['--report', '--anonymity', '--story', '--weeks', '--feature
 const VALUE_FLAGS = ['--report', '--anonymity', '--story', '--weeks', '--feature', '--mark', '--root'];
 
 const USAGE = `Usage:
-  node hired-share.mjs --report N [--anonymity handle|role|count] [--story "..."]
+  node scripts/hired-share.mjs --report N [--anonymity handle|role|count] [--story "..."]
                        [--weeks N] [--feature "..."] [--open] [--dry-run]
-  node hired-share.mjs --status
-  node hired-share.mjs --report N --mark shared|later|never
+  node scripts/hired-share.mjs --status
+  node scripts/hired-share.mjs --report N --mark shared|later|never
 
 Drafts a Hired Wall story from tracker row N, prints the exact payload, and
 builds a prefilled GitHub issue URL. Nothing is posted by this script: the
@@ -220,7 +220,7 @@ async function main() {
   if (!report) { console.error(`--report is required (or use --status).\n\n${USAGE}`); process.exitCode = 1; return; }
   const hire = hires.find((h) => h.report === String(report).replace(/[^\d]/g, ''));
   if (!hire) {
-    console.error(`No tracker row with state Hired and report #${report}. Record the outcome first: node outcome.mjs ${report} hired`);
+    console.error(`No tracker row with state Hired and report #${report}. Record the outcome first: node scripts/outcome.mjs ${report} hired`);
     process.exitCode = 1; return;
   }
 

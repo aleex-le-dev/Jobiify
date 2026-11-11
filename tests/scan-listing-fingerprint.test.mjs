@@ -1,10 +1,10 @@
-// scan.mjs — strong ATS identity participates in scan dedup across URL aliases.
+// scripts/scan.mjs — strong ATS identity participates in scan dedup across URL aliases.
 import { mkdtempSync, writeFileSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { pass, fail } from './helpers.mjs';
-import { computeListingFingerprint } from '../listing-fingerprint.mjs';
-import { isOfferSeen, loadDedupSnapshot, markOfferSeen, formatScanHistoryRow, collectSeenUrls, retainVerifiedListingIdentities, migrateOfferToUrl, refreshListingKey } from '../scan.mjs';
+import { computeListingFingerprint } from '../scripts/listing-fingerprint.mjs';
+import { isOfferSeen, loadDedupSnapshot, markOfferSeen, formatScanHistoryRow, collectSeenUrls, retainVerifiedListingIdentities, migrateOfferToUrl, refreshListingKey } from '../scripts/scan.mjs';
 
 console.log('\nscan.mjs — listing fingerprint participates in scan dedup');
 

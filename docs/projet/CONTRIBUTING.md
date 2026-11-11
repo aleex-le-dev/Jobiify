@@ -37,7 +37,7 @@ The review process you'll experience here is documented end-to-end in [Agentic m
 2. Fork the repo
 3. Create a branch (`git checkout -b feature/my-feature`)
 4. Make your changes
-5. Test with a fresh clone (see [docs/SETUP.md](docs/SETUP.md))
+5. Test with a fresh clone (see [docs/SETUP.md](../SETUP.md))
 6. Commit and push
 7. Open a Pull Request, referencing the issue if you opened one
 
@@ -66,7 +66,7 @@ Comment `/assign` on any [`good first issue`](https://github.com/career-ops-hq/c
 
 ## The contribution ladder
 
-There's a clear path here, written down in one place: [GOVERNANCE.md](GOVERNANCE.md#contributor-ladder). We credit contributors publicly, and the [`help wanted`](https://github.com/career-ops-hq/career-ops/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) board is open to everyone.
+There's a clear path here, written down in one place: [docs/projet/GOVERNANCE.md](GOVERNANCE.md#contributor-ladder). We credit contributors publicly, and the [`help wanted`](https://github.com/career-ops-hq/career-ops/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) board is open to everyone.
 
 ## Adopting an abandoned PR
 
@@ -112,9 +112,9 @@ Rule of thumb before you build: **provider modules, languages, CLI support, mode
 
 Two words in this document mean different things.
 
-**First-party** means the project designs it and its code lives in this repository under MIT. How listings are indexed and ranked, and the rights in MANIFESTO.md, are set here in the open and changed here in the open.
+**First-party** means the project designs it and its code lives in this repository under MIT. How listings are indexed and ranked, and the rights in docs/projet/MANIFESTO.md, are set here in the open and changed here in the open.
 
-**Official** means a surface someone operates for you. Running infrastructure costs money this project does not have, so an operating entity may be licensed under TRADEMARK.md to run an official surface and pay for it. A licensed operator is bound by the nine rights in MANIFESTO.md, may not paywall or degrade what the open core already does, holds a licence that reverts on change of control, and is disclosed by name wherever it operates.
+**Official** means a surface someone operates for you. Running infrastructure costs money this project does not have, so an operating entity may be licensed under docs/projet/TRADEMARK.md to run an official surface and pay for it. A licensed operator is bound by the nine rights in docs/projet/MANIFESTO.md, may not paywall or degrade what the open core already does, holds a licence that reverts on change of control, and is disclosed by name wherever it operates.
 
 The opt-in shared listings layer is first-party and free: nobody pays to appear in it and nobody can buy position. A hosted web experience is first-party code that an official operator runs for people who would rather not run it themselves.
 
@@ -126,7 +126,7 @@ career-ops says yes to a lot: providers, languages, CLI support, fixes. Where we
 
 1. **Is it on the core path?** The core path is: discover postings, evaluate, tailor, apply, track, close the loop. Infrastructure that strengthens that path is core even when invisible (dedup, atomic writes, the transition ledger). A feature that lives *next to* the path (contact management, calendaring, note-taking) starts as a plugin.
 2. **Who pays the maintenance?** A feature that solves one workflow brilliantly but adds surface for everyone (a new data file, a new script, a new mode) needs either demonstrated demand (issues from several people, not one) or a plugin home.
-3. **Plugin-first, with graduation.** Adjacent features start as plugins (see [docs/PLUGINS.md](docs/PLUGINS.md)): you own the release cycle, we list it in the registry. If a plugin earns real adoption, we will consider graduating it into core. Evidence-based promotion, not gatekeeping: it is how WordPress runs feature-projects.
+3. **Plugin-first, with graduation.** Adjacent features start as plugins (see [docs/PLUGINS.md](../PLUGINS.md)): you own the release cycle, we list it in the registry. If a plugin earns real adoption, we will consider graduating it into core. Evidence-based promotion, not gatekeeping: it is how WordPress runs feature-projects.
 4. **Does it match the project's shape?** A mode or API that breaks established patterns creates cognitive load for every future user and contributor, even when it works. Expect us to ask for the spelling that matches the codebase before the merge.
 
 Failing one of these is a routing, not a rejection. Open the issue first and we will tell you which door fits: core, plugin, or separate project. The plugin registry gives real distribution, and an idea that is wrong for core today can still be the most useful thing you ship.
@@ -145,9 +145,9 @@ career-ops reads job listings from public sources: ATSes, job boards, company ca
 
 5. **The aggregation layer belongs to the project.** A provider reads its own source. Cross-source aggregation, ranking, matching and the registry are the project's own and are never delegated to a source. They are first-party wherever they run: on your machine in the local core, or in the opt-in shared layer the project governs (see "First-party and official surfaces").
 
-6. **The source's own `robots.txt`.** Checked before a provider is written, and read the way a crawler reads it: per path, under the group that binds career-ops's own client (`User-agent: *`, or a token the scanner actually sends). A `Disallow` counts only when it covers a path the provider would fetch — a rule on `/api`, `/data`, a subscribe form or any route the parser never requests is not an obstacle (precedent: ITviec, CareerViet, both carrying disallows they route around). A `Disallow` that does cover the listing paths the provider needs is a stop: the source is not indexed, and the finding goes in the [Evaluated, not supported](docs/SUPPORTED_JOB_BOARDS.md#evaluated-not-supported) table (precedent: Lagou — `Disallow: /*?*` under `User-agent: *`, and every usable request carries a query string). A `robots.txt` rule scoped to a named AI or agent crawler (`ClaudeBot`, `anthropic-ai`, `Claude-Web`, a generic managed AI-bot block) does **not** name this client — the scanner is a distinct, bounded, `career-ops`-identified fetcher, not that crawler — but a scan can still be the first step toward a model reading the posting in a later `pipeline` / `triage` run. Whether the operator's intent reaches it is therefore a maintainer decision on a [source proposal](https://github.com/career-ops-hq/career-ops/issues/new?template=source-proposal.yml), not something the rule settles by itself. Anything ambiguous takes the same route.
+6. **The source's own `robots.txt`.** Checked before a provider is written, and read the way a crawler reads it: per path, under the group that binds career-ops's own client (`User-agent: *`, or a token the scanner actually sends). A `Disallow` counts only when it covers a path the provider would fetch — a rule on `/api`, `/data`, a subscribe form or any route the parser never requests is not an obstacle (precedent: ITviec, CareerViet, both carrying disallows they route around). A `Disallow` that does cover the listing paths the provider needs is a stop: the source is not indexed, and the finding goes in the [Evaluated, not supported](../SUPPORTED_JOB_BOARDS.md#evaluated-not-supported) table (precedent: Lagou — `Disallow: /*?*` under `User-agent: *`, and every usable request carries a query string). A `robots.txt` rule scoped to a named AI or agent crawler (`ClaudeBot`, `anthropic-ai`, `Claude-Web`, a generic managed AI-bot block) does **not** name this client — the scanner is a distinct, bounded, `career-ops`-identified fetcher, not that crawler — but a scan can still be the first step toward a model reading the posting in a later `pipeline` / `triage` run. Whether the operator's intent reaches it is therefore a maintainer decision on a [source proposal](https://github.com/career-ops-hq/career-ops/issues/new?template=source-proposal.yml), not something the rule settles by itself. Anything ambiguous takes the same route.
 
-To see how the rules have actually been applied, read the [Source Indexing Log](docs/SOURCE_INDEXING_LOG.md): one entry per listed source, with what was checked and how.
+To see how the rules have actually been applied, read the [Source Indexing Log](../SOURCE_INDEXING_LOG.md): one entry per listed source, with what was checked and how.
 
 To propose a source (yours or anyone's): [open a source proposal](https://github.com/career-ops-hq/career-ops/issues/new?template=source-proposal.yml) walking through these six rules. A direct PR with the provider is welcome too: the same six rules apply before merge. Operator declarations are verified out-of-band before listing — a contact reachable at the source's own domain, or equivalent proof of domain control. Operators proposing their own board are welcome — that's what rule-based gates are for.
 
@@ -163,12 +163,12 @@ To propose a source (yours or anyone's): [open a source proposal](https://github
 - **PRs that scrape platforms prohibiting automated access** (LinkedIn, etc.). We actively reject these to respect third-party ToS.
 - **PRs that enable auto-submitting applications** without human review. career-ops is a decision-support tool, not a spam bot.
 - **PRs that add external API dependencies** without prior discussion in an issue.
-- **Feature PRs against bundled plugins** (`plugins/apify`, `plugins/gmail`, `plugins/notion`). Bundled plugins are stable *reference seeds* — to extend one, publish your own `career-ops-plugin-<id>` and we'll register it as the maintained successor that takes precedence once installed (see [docs/PLUGINS.md](docs/PLUGINS.md)). Bundled plugins only take security/compat fixes.
+- **Feature PRs against bundled plugins** (`plugins/apify`, `plugins/gmail`, `plugins/notion`). Bundled plugins are stable *reference seeds* — to extend one, publish your own `career-ops-plugin-<id>` and we'll register it as the maintained successor that takes precedence once installed (see [docs/PLUGINS.md](../PLUGINS.md)). Bundled plugins only take security/compat fixes.
 - **PRs that add centralized or hosted infrastructure to the core** (proxies, aggregation services, shared Workers). That's the separate opt-in service, not the open-core — bring it to the [direction discussion](https://github.com/career-ops-hq/career-ops/discussions/904) first.
 - **Universal aggregation indexes as a dependency** — integrating a single third-party service that unifies listings across many sources into one pipe career-ops reads from. Reading individual boards where employers post is exactly what `providers/` is for and stays welcome; the *unified offers-aggregation layer itself* is first-party, the same boundary that keeps the web experience first-party ([#904](https://github.com/career-ops-hq/career-ops/discussions/904) / [#156](https://github.com/career-ops-hq/career-ops/discussions/156)). This boundary applies to the plugin registry as well as core.
 - **Integrations that send your data to a third-party service** — providers or sync features that require a third-party account or push your CV, pipeline, or notes out to an external service. career-ops is local-first and zero-keys: your job-search data stays on your machine unless you opt into a first-party shared surface, and what leaves is stated at that opt-in. Reading *public* job-listing APIs locally is welcome (that's how the built-in providers work); routing your personal data through someone else's service is not.
-- **Integrations whose primary consumer is a third-party product or service** — a module, contract or adapter whose main caller is someone else's product (a bot, a SaaS, an external orchestrator) belongs in a plugin or a separate project, never in core, even when the code itself is generic. The project's own first-party surfaces are the exception: the official web experience and the opt-in shared service described in [#904](https://github.com/career-ops-hq/career-ops/discussions/904) and [#156](https://github.com/career-ops-hq/career-ops/discussions/156) are designed and governed by the project, are always opt-in, and are run either by the project or by an operator licensed under TRADEMARK.md and disclosed by name. The client code that talks to them lands here as a first-party change; the infrastructure they run on does not (see Scope). See "First-party and official surfaces" above.
-- **PRs that add third-party hosted entry-points or service badges to the README** — links or embeds that route users' resumes or job data through a service that is not one of the project's own. The README stays to surfaces the project governs. The official online experience is first-party and stays so; who runs it is disclosed under TRADEMARK.md (see [The Vision](https://github.com/career-ops-hq/career-ops/discussions/156)). Projects built on career-ops are welcome — share them in the [Discord](https://discord.gg/8pRpHETxa4) or Discussions, just not on the front page.
+- **Integrations whose primary consumer is a third-party product or service** — a module, contract or adapter whose main caller is someone else's product (a bot, a SaaS, an external orchestrator) belongs in a plugin or a separate project, never in core, even when the code itself is generic. The project's own first-party surfaces are the exception: the official web experience and the opt-in shared service described in [#904](https://github.com/career-ops-hq/career-ops/discussions/904) and [#156](https://github.com/career-ops-hq/career-ops/discussions/156) are designed and governed by the project, are always opt-in, and are run either by the project or by an operator licensed under docs/projet/TRADEMARK.md and disclosed by name. The client code that talks to them lands here as a first-party change; the infrastructure they run on does not (see Scope). See "First-party and official surfaces" above.
+- **PRs that add third-party hosted entry-points or service badges to the README** — links or embeds that route users' resumes or job data through a service that is not one of the project's own. The README stays to surfaces the project governs. The official online experience is first-party and stays so; who runs it is disclosed under docs/projet/TRADEMARK.md (see [The Vision](https://github.com/career-ops-hq/career-ops/discussions/156)). Projects built on career-ops are welcome — share them in the [Discord](https://discord.gg/8pRpHETxa4) or Discussions, just not on the front page.
 - **PRs containing personal data** (real CVs, emails, phone numbers). Use `examples/` with fictional data instead.
 
 ## Development
@@ -176,38 +176,38 @@ To propose a source (yours or anyone's): [open a source proposal](https://github
 ```bash
 # Scripts
 npm run doctor                # Setup validation
-node verify-pipeline.mjs     # Health check
-node cv-sync-check.mjs        # Config check
+node scripts/verify-pipeline.mjs     # Health check
+node scripts/cv-sync-check.mjs        # Config check
 
 # Dashboard
 npm run build:dashboard       # go build with platform-correct binary name
 npm run serve:dashboard       # launch the TUI against the repo root
 
 # Tests
-node test-all.mjs             # Full suite — run before pushing/opening a PR
-node test-all.mjs --quick     # Full suite, skipping the dashboard build
-node test-all.mjs --only providers/themuse   # Run just one provider's test(s)
-node test-all.mjs --quick --jobs 4           # Run at most 4 test files at a time
+node scripts/test-all.mjs             # Full suite — run before pushing/opening a PR
+node scripts/test-all.mjs --quick     # Full suite, skipping the dashboard build
+node scripts/test-all.mjs --only providers/themuse   # Run just one provider's test(s)
+node scripts/test-all.mjs --quick --jobs 4           # Run at most 4 test files at a time
 ```
 
 **The test files under `tests/` run in parallel**, one process each, as many at
-a time as the machine has CPUs, and the inline sections of `test-all.mjs` run
+a time as the machine has CPUs, and the inline sections of `scripts/test-all.mjs` run
 alongside them in one of those slots. `--jobs N` changes that for one run and
 `CAREER_OPS_TEST_JOBS=N` for a machine; `1` runs everything one after another
 in a single process. The log comes out in the same order either way. If a test
 passes alone and fails in a full run (or the reverse), rerun with `--jobs 1`
-and see "Parallel runs" in [`tests/README.md`](tests/README.md) for what a
+and see "Parallel runs" in [`tests/README.md`](../../tests/README.md) for what a
 suite may not rely on.
 
 **Any new test belongs in its own file** under `tests/`, not as a numbered
-section inside `test-all.mjs`. Anything matching `tests/**/*.test.mjs` is
+section inside `scripts/test-all.mjs`. Anything matching `tests/**/*.test.mjs` is
 auto-discovered, so there is nothing to register and no section number to pick.
 A new file also collides with nobody: several contributors adding sections to
-`test-all.mjs` at the same time all edit its final lines, and each merge forces
+`scripts/test-all.mjs` at the same time all edit its final lines, and each merge forces
 a rebase on the rest.
 
 **Adding a scanner provider?** See
-[`providers/ADDING_A_PROVIDER.md`](providers/ADDING_A_PROVIDER.md) — the full
+[`providers/ADDING_A_PROVIDER.md`](../../providers/ADDING_A_PROVIDER.md) — the full
 contract, the mandatory guards, and what `tests/providers/{name}.test.mjs`
 must cover.
 
@@ -227,11 +227,11 @@ The naming is a convention, not a checked contract.
 `tests/` files matching the given substring and skips every inline core
 section (syntax, scripts, dashboard, data contract, personal data, paths,
 etc.). A green `--only` run is **not** a green suite — always run the full
-`node test-all.mjs` before pushing.
+`node scripts/test-all.mjs` before pushing.
 
 ### Checking translated mode structure
 
-Run `node i18n-drift.mjs --lang tr` (repeat `--lang` for several languages),
+Run `node scripts/i18n-drift.mjs --lang tr` (repeat `--lang` for several languages),
 or omit `--lang` to check every locale. `--json` emits machine-readable results;
 `--summary` prints language totals. The checker runs offline with Node alone and
 reports drift without failing.
@@ -249,8 +249,8 @@ review and the separate evaluation-template parity checks still apply.
 
 ## Brand and Trademark
 
-Contributions to the codebase are governed by the MIT [LICENSE](LICENSE).
-The "career-ops" name itself is governed by [TRADEMARK.md](TRADEMARK.md).
+Contributions to the codebase are governed by the MIT [LICENSE](../../LICENSE).
+The "career-ops" name itself is governed by [docs/projet/TRADEMARK.md](TRADEMARK.md).
 If you fork the project for commercial use, you're welcome to do so
 under MIT — please give it your own product name and follow the
 trademark policy regarding commercial naming and endorsement claims.
@@ -259,4 +259,4 @@ trademark policy regarding commercial naming and endorsement claims.
 
 - [Join the Discord](https://discord.gg/8pRpHETxa4) — fastest way to get answers and connect with other contributors
 - [Open an issue](https://github.com/career-ops-hq/career-ops/issues)
-- [Read the architecture docs](docs/ARCHITECTURE.md)
+- [Read the architecture docs](../ARCHITECTURE.md)

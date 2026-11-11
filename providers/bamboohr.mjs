@@ -13,7 +13,7 @@ import { safeEncodeURIComponent } from './_safe-url.mjs';
 // the Job contract (title, url, location) at zero token cost. The full JD lives
 // behind a second `/careers/<id>/detail` request, which fetch() deliberately
 // skips to stay zero-token (so `description`/`postedAt` are omitted from the
-// list pass). scan-ats-full.mjs's reverse sweep needs a date to apply its
+// list pass). scripts/scan-ats-full.mjs's reverse sweep needs a date to apply its
 // freshness window, so this also exports `enrichDate(job, ctx)` — called only
 // for jobs that already passed the cheap title/location filters (same
 // contract as providers/icims.mjs), so a full directory sweep pays the detail
@@ -43,11 +43,11 @@ import { safeEncodeURIComponent } from './_safe-url.mjs';
 // time sampled — the second request would be pure waste). Any other
 // redirect probes <tenant>.bamboohr.com/jobs/embed2.php, the same public
 // feed the embed widget calls: an empty `departments` array there means a
-// live board with nothing open right now, kept out of dead-boards.mjs's
+// live board with nothing open right now, kept out of scripts/dead-boards.mjs's
 // cache so it gets re-probed every sweep instead of skipped for 30 days; a
 // non-empty array carries the account-restriction signature (real job
 // records, unreachable pages) and is mapped to the same synthetic 404 as a
-// tenant that fails the probe outright, so dead-boards.mjs's cross-run
+// tenant that fails the probe outright, so scripts/dead-boards.mjs's cross-run
 // cache (which only trusts a literal 404) treats it as dead — BambooHR never
 // answers one itself for a redirected tenant, so without this remap the
 // cache never engages.
@@ -128,7 +128,7 @@ export default {
         if (await isLiveWithNoOpenings(origin, ctx)) return [];
         // Unreachable there too, or reachable with a populated board (the
         // suspended-account signature — see the header comment) — either
-        // way, map to 404 so dead-boards.mjs's cache (which only trusts a
+        // way, map to 404 so scripts/dead-boards.mjs's cache (which only trusts a
         // literal 404) treats this as dead, same as every other provider's
         // real 404.
         const deadErr = new Error(`bamboohr: /careers/list redirected (${err.status} -> ${err.location}) — no usable public postings`);
@@ -146,7 +146,7 @@ export default {
    * at `<origin>/careers/<id>/detail` (documented in modes/scan.md), so no
    * separate id needs to be threaded through the Job contract.
    *
-   * Never throws on a missing/malformed date — the caller (scan-ats-full.mjs)
+   * Never throws on a missing/malformed date — the caller (scripts/scan-ats-full.mjs)
    * wraps this in try/catch and leaves the job undated on any failure, same
    * as providers/icims.mjs's enrichDate.
    *
@@ -166,7 +166,7 @@ export default {
  * Probe used when /careers/list redirects to anything other than the
  * marketing-site bounce. Calls the same public `/jobs/embed2.php` JSON feed
  * BambooHR's own embeddable Careers Page widget uses. Only ever used to
- * decide aliveness for dead-boards.mjs's cache — never to source job data:
+ * decide aliveness for scripts/dead-boards.mjs's cache — never to source job data:
  * a populated `departments` array here carries the account-restriction
  * signature, whose job.url (`<origin>/careers/<id>`, the same host
  * /careers/list already failed on) answers with BambooHR's employee-login

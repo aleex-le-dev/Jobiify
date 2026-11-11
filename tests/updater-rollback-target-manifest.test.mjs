@@ -27,11 +27,11 @@ import {
   manifestTreeFiles,
   pruneStaleTargetRefs,
   targetRefForBackup,
-} from '../update-system.mjs';
+} from '../scripts/update-system.mjs';
 import { fail, makeUpdaterRepo, pass, rmSync } from './helpers.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const updaterSource = readFileSync(join(ROOT, 'update-system.mjs'), 'utf8');
+const updaterSource = readFileSync(join(ROOT, 'scripts/update-system.mjs'), 'utf8');
 const protectedUserPaths = [
   'cv.md',
   'data/',
@@ -321,7 +321,7 @@ function rollbackChildEnv() {
 }
 
 function runRollback(dir, timeout = 30_000) {
-  return spawnSync(process.execPath, ['update-system.mjs', 'rollback'], {
+  return spawnSync(process.execPath, ['scripts/update-system.mjs', 'rollback'], {
     cwd: dir,
     encoding: 'utf8',
     timeout,
@@ -341,7 +341,7 @@ function seedRollbackRepo(prefix, { paired, fetchTarget, targetChangesPreExistin
     ? 'backup-pre-update-1.2.3-20260907T120000Z'
     : 'backup-pre-update-1.2.3-20260907T130000Z';
   const commonManifest = [
-    'update-system.mjs',
+    'scripts/update-system.mjs',
     'system/root.txt',
     'system/nested/',
     'writing-samples/README.md',
@@ -354,7 +354,7 @@ function seedRollbackRepo(prefix, { paired, fetchTarget, targetChangesPreExistin
   ];
 
   try {
-    put(dir, 'update-system.mjs', sourceWithManifest(commonManifest));
+    put(dir, 'scripts/update-system.mjs', sourceWithManifest(commonManifest));
     put(dir, 'system/root.txt', 'backup root\n');
     put(dir, 'system/nested/keep.txt', 'backup nested\n');
     put(dir, 'writing-samples/README.md', 'backup scaffold\n');
@@ -367,7 +367,7 @@ function seedRollbackRepo(prefix, { paired, fetchTarget, targetChangesPreExistin
     const backupCommit = g('rev-parse', 'HEAD');
     g('branch', backup, backupCommit);
 
-    put(dir, 'update-system.mjs', sourceWithManifest(targetManifest));
+    put(dir, 'scripts/update-system.mjs', sourceWithManifest(targetManifest));
     put(dir, 'system/root.txt', 'target root\n');
     put(dir, 'system/nested/keep.txt', 'target nested\n');
     put(dir, 'system/nested/target-only.txt', 'target-only nested\n');
@@ -479,7 +479,7 @@ function readMaybe(path) {
     // Simulate local/current manifest drift after apply. The file is covered by
     // the paired target, but not by either updater consulted for restoration;
     // its presence in the backup tree is the only proof that it is not new.
-    put(dir, 'update-system.mjs', sourceWithManifest(commonManifest));
+    put(dir, 'scripts/update-system.mjs', sourceWithManifest(commonManifest));
 
     const result = runRollback(dir);
     check(
@@ -514,7 +514,7 @@ function readMaybe(path) {
   try {
     // Same manifest drift as section 7, but here the target changed the file.
     // Neither restore manifest lists it; only the paired target claims it.
-    put(dir, 'update-system.mjs', sourceWithManifest(commonManifest));
+    put(dir, 'scripts/update-system.mjs', sourceWithManifest(commonManifest));
 
     const result = runRollback(dir);
     check(
@@ -549,19 +549,19 @@ function readMaybe(path) {
   const { dir, g } = fixture;
   const backup = 'backup-pre-update-1.2.3-20260907T140000Z';
   const backupManifest = [
-    'update-system.mjs',
+    'scripts/update-system.mjs',
     'shape-dir/',
     'shape-leaf',
     'CaseExisting.mjs',
   ];
   const targetManifest = [
-    'update-system.mjs',
+    'scripts/update-system.mjs',
     'shape-dir',
     'shape-leaf/new.txt',
     'caseexisting.mjs',
   ];
   try {
-    put(dir, 'update-system.mjs', sourceWithManifest(backupManifest));
+    put(dir, 'scripts/update-system.mjs', sourceWithManifest(backupManifest));
     put(dir, 'shape-dir/backup.txt', 'backup directory child\n');
     put(dir, 'shape-leaf', 'backup leaf\n');
     put(dir, 'CaseExisting.mjs', 'backup alias bytes\n');
@@ -570,7 +570,7 @@ function readMaybe(path) {
     const backupCommit = g('rev-parse', 'HEAD');
     g('branch', backup, backupCommit);
 
-    put(dir, 'update-system.mjs', sourceWithManifest(targetManifest));
+    put(dir, 'scripts/update-system.mjs', sourceWithManifest(targetManifest));
     rmSync(join(dir, 'shape-dir'), { recursive: true, force: true });
     put(dir, 'shape-dir', 'target file\n');
     rmSync(join(dir, 'shape-leaf'), { recursive: true, force: true });
@@ -625,13 +625,13 @@ function readMaybe(path) {
   const { dir, g } = fixture;
   const backup = 'backup-pre-update-1.2.3-20260907T150000Z';
   try {
-    put(dir, 'update-system.mjs', sourceWithManifest(['update-system.mjs', 'deep-shape/']));
+    put(dir, 'scripts/update-system.mjs', sourceWithManifest(['scripts/update-system.mjs', 'deep-shape/']));
     put(dir, 'deep-shape/nested/deeper/backup.txt', 'backup deep child\n');
     g('add', '-A');
     g('commit', '-qm', 'backup deep shape state');
     g('branch', backup, g('rev-parse', 'HEAD'));
 
-    put(dir, 'update-system.mjs', sourceWithManifest(['update-system.mjs', 'deep-shape']));
+    put(dir, 'scripts/update-system.mjs', sourceWithManifest(['scripts/update-system.mjs', 'deep-shape']));
     rmSync(join(dir, 'deep-shape'), { recursive: true, force: true });
     put(dir, 'deep-shape', 'target file\n');
     g('add', '-A');

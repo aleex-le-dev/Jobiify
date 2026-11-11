@@ -3,10 +3,10 @@
 /**
  * Covers follow_ups.enabled in config/profile.yml.
  *
- * Drives followup-cadence.mjs and followup-seed.mjs as the CLI and the web
+ * Drives scripts/followup-cadence.mjs and scripts/followup-seed.mjs as the CLI and the web
  * app do, against a sandboxed root, once with follow-ups on and once off.
  *
- * Run: node test-all.mjs --only followups-toggle
+ * Run: node scripts/test-all.mjs --only followups-toggle
  */
 
 import { execFileSync } from 'child_process';
@@ -67,13 +67,13 @@ const cases = [
 for (const c of cases) {
   const dir = makeRoot(c.profile);
   try {
-    const cadence = run('followup-cadence.mjs', ['--json'], dir);
+    const cadence = run('scripts/followup-cadence.mjs', ['--json'], dir);
     const result = JSON.parse(cadence.stdout.slice(cadence.stdout.indexOf('{')));
     eq(`${c.label}: cadence entries`, result.entries.map((e) => e.num), c.enabled ? [1] : []);
     eq(`${c.label}: cadence followupsEnabled`, result.followupsEnabled, c.enabled ? undefined : false);
     eq(`${c.label}: cadence still reports defaults`, typeof result.cadenceDefaults?.applied_first, 'number');
 
-    const seed = run('followup-seed.mjs', ['1', '--json'], dir);
+    const seed = run('scripts/followup-seed.mjs', ['1', '--json'], dir);
     eq(`${c.label}: seed exit code`, seed.code, 0);
     eq(`${c.label}: seed result`, JSON.parse(seed.stdout).seeded, c.enabled);
     eq(`${c.label}: follow-ups file written`, existsSync(join(dir, 'data', 'follow-ups.md')), c.enabled);
@@ -85,15 +85,15 @@ for (const c of cases) {
 {
   const dir = makeRoot('follow_ups:\n  enabled: false\n');
   try {
-    const summary = run('followup-cadence.mjs', ['--summary'], dir);
+    const summary = run('scripts/followup-cadence.mjs', ['--summary'], dir);
     eq('off: --summary exit code', summary.code, 0);
     eq('off: --summary says follow-ups are off', summary.stdout.trim(), 'Follow-ups are turned off (follow_ups.enabled: false in config/profile.yml).');
 
-    const backfill = run('followup-seed.mjs', ['--backfill', '--json'], dir);
+    const backfill = run('scripts/followup-seed.mjs', ['--backfill', '--json'], dir);
     eq('off: backfill seeds nothing', JSON.parse(backfill.stdout), { seeded: [], skipped: [], reason: 'disabled' });
 
-    const status = run('set-status.mjs', ['1', 'Responded', '--json'], dir);
-    const back = run('set-status.mjs', ['1', 'Applied', '--json'], dir);
+    const status = run('scripts/set-status.mjs', ['1', 'Responded', '--json'], dir);
+    const back = run('scripts/set-status.mjs', ['1', 'Applied', '--json'], dir);
     eq('off: set-status still changes status', [status.code, back.code], [0, 0]);
     eq('off: set-status reports seeding skipped', JSON.parse(back.stdout.slice(back.stdout.indexOf('{'))).followupSeeded, { seeded: false, nextDate: null, reason: 'disabled' });
     eq('off: set-status wrote no follow-ups file', existsSync(join(dir, 'data', 'follow-ups.md')), false);
@@ -107,7 +107,7 @@ for (const c of cases) {
   const dir = makeRoot('follow_ups:\n  enabled: false\n');
   try {
     mkdirSync(join(dir, 'data', 'follow-ups.md'));
-    const cadence = run('followup-cadence.mjs', ['--json'], dir);
+    const cadence = run('scripts/followup-cadence.mjs', ['--json'], dir);
     eq('off: an unreadable follow-ups file is never read', [cadence.code, JSON.parse(cadence.stdout).followupsEnabled], [0, false]);
   } finally {
     rmSync(dir, { recursive: true, force: true });

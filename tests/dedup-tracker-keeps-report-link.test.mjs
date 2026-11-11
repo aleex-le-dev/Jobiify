@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const DEDUP = join(HERE, '..', 'dedup-tracker.mjs');
+const DEDUP = join(HERE, '..', 'scripts/dedup-tracker.mjs');
 const ok = (name, fn) => { try { fn(); pass(name); } catch (e) { fail(`${name} — ${e.message}`); } };
 
 function dedup(rows) {

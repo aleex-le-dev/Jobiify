@@ -1,4 +1,4 @@
-// tests/tracker-delete-backup.test.mjs — `tracker.mjs delete` backs the tracker
+// tests/tracker-delete-backup.test.mjs — `scripts/tracker.mjs delete` backs the tracker
 // up before it removes a row.
 //
 // Every other tracker writer leaves a `.bak` of what it replaced
@@ -33,7 +33,7 @@ function sandbox(fn) {
   const tracker = join(dir, 'applications.md');
   writeFileSync(tracker, TRACKER);
   const cli = (trackerPath, ...args) => {
-    const r = spawnSync(NODE, [join(ROOT, 'tracker.mjs'), 'delete', ...args], {
+    const r = spawnSync(NODE, [join(ROOT, 'scripts/tracker.mjs'), 'delete', ...args], {
       encoding: 'utf-8',
       timeout: 30_000,
       env: { ...process.env, CAREER_OPS_TRACKER: trackerPath, CAREER_OPS_TRACKER_DB: join(dir, 'applications.db') },
@@ -86,7 +86,7 @@ ok('a second delete replaces the .bak with the tracker as it was before THAT del
 
 // A tracker reached through a symlink (a CAREER_OPS_TRACKER pointing at a link)
 // keeps its backup beside the real file, not beside the link. Same choice, for
-// the same reason, as fix-report-links.mjs: the backup is written from the bytes
+// the same reason, as scripts/fix-report-links.mjs: the backup is written from the bytes
 // read inside the lock, next to the path the transaction actually replaces.
 ok('a symlinked tracker gets its .bak beside the real file', () => sandbox(({ dir, tracker, cli }) => {
   const link = join(dir, 'linked.md');

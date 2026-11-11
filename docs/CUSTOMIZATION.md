@@ -77,5 +77,5 @@ Save hooks in `.claude/settings.json` (Claude Code). OpenCode does not support h
 
 The canonical states rarely need changing. If you add new states, update:
 1. `templates/states.yml`
-2. `normalize-statuses.mjs` (alias mappings)
+2. `scripts/normalize-statuses.mjs` (alias mappings)
 3. `modes/_shared.md` (any references)

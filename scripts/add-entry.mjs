@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * add-entry.mjs — Deterministic dedup + insertion for `/career-ops add`.
+ * scripts/add-entry.mjs — Deterministic dedup + insertion for `/career-ops add`.
  *
  * The `add` mode (agent) does the fetching, extraction, ATS-bullet writing,
  * preview, and confirm-before-write gate. This helper does ONE thing: take a
@@ -10,8 +10,8 @@
  * blocks the agent produced.
  *
  * Usage:
- *   node add-entry.mjs <payload.json> [--dry-run]
- *   node add-entry.mjs --stdin [--dry-run]        (read payload JSON from stdin)
+ *   node scripts/add-entry.mjs <payload.json> [--dry-run]
+ *   node scripts/add-entry.mjs --stdin [--dry-run]        (read payload JSON from stdin)
  *
  * Payload shape (both keys optional, at least one required):
  *   {
@@ -43,8 +43,8 @@ import { join, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { normalizeTextKey } from './tracker-parse.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 const CAREER_OPS = getCareerOpsRoot();
 
@@ -54,9 +54,9 @@ const ARTICLE_DIGEST_FILE = process.env.CAREER_OPS_ARTICLE_DIGEST || join(CAREER
 const KNOWN_FLAGS = ['--dry-run', '--stdin', '--help', '-h'];
 
 const USAGE = `Usage:
-  node add-entry.mjs <payload.json> [--dry-run]
-  node add-entry.mjs --stdin [--dry-run]
-  node add-entry.mjs --help                    # print this usage block and exit (-h is an alias)`;
+  node scripts/add-entry.mjs <payload.json> [--dry-run]
+  node scripts/add-entry.mjs --stdin [--dry-run]
+  node scripts/add-entry.mjs --help                    # print this usage block and exit (-h is an alias)`;
 
 // Normalize a title/heading for duplicate detection: lowercase, collapse to
 // letters and digits. "FraudShield", "Fraud-Shield", "fraud shield" all match.

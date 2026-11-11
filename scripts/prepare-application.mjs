@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * prepare-application.mjs — ATS auto-fill for Greenhouse, Ashby, and Lever.
+ * scripts/prepare-application.mjs — ATS auto-fill for Greenhouse, Ashby, and Lever.
  *
  * Detects the ATS from the apply URL, reads candidate data from
  * config/profile.yml, and prints a prefill summary to stdout.
@@ -9,8 +9,8 @@
  * and submits themselves.
  *
  * Usage:
- *   node prepare-application.mjs --url <apply_url> --pdf output/<cv>.pdf
- *   node prepare-application.mjs --url <apply_url> --pdf output/<cv>.pdf --cover cover.txt
+ *   node scripts/prepare-application.mjs --url <apply_url> --pdf output/<cv>.pdf
+ *   node scripts/prepare-application.mjs --url <apply_url> --pdf output/<cv>.pdf --cover cover.txt
  *
  * Supported ATS:
  *   Greenhouse  boards.greenhouse.io / greenhouse.io
@@ -23,7 +23,7 @@ import { basename, resolve, dirname, relative, isAbsolute } from 'path';
 import { fileURLToPath } from 'url';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 
 const ALLOWED_HOSTS = new Set([
@@ -46,7 +46,7 @@ const pdfPath   = get('--pdf');
 const coverPath = get('--cover');
 
 if (!applyUrl || !pdfPath) {
-  console.error('Usage: node prepare-application.mjs --url <apply_url> --pdf <pdf_path> [--cover <cover_txt>]');
+  console.error('Usage: node scripts/prepare-application.mjs --url <apply_url> --pdf <pdf_path> [--cover <cover_txt>]');
   process.exit(1);
 }
 

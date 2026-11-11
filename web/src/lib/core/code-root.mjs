@@ -1,7 +1,7 @@
 import path from "node:path";
 
 /**
- * Resolve the directory holding the engine's root `*.mjs` scripts (doctor,
+ * Resolve the engine checkout whose `scripts/*.mjs` (doctor,
  * scan-ats-full, verify-portals, tracker, …).
  *
  * Scripts live in the **engine checkout** — never in the data root. Under the
@@ -29,7 +29,7 @@ export function resolveCodeRoot(cwd, env = process.env) {
 }
 
 /**
- * Absolute path to one engine root script. The `.mjs` is assembled from the
+ * Absolute path to one engine script (`scripts/<name>.mjs`). The `.mjs` is assembled from the
  * bare name so the literal never appears as a direct execFile/spawn argument —
  * Next's bundler statically traces such literals and fails the build otherwise.
  *
@@ -40,5 +40,5 @@ export function resolveRootScript(codeRoot, nameNoExt) {
   // The checkout is chosen at runtime, so this is the dynamic path Turbopack
   // must not trace: without the ignore, `next build` warns that it traces the
   // whole project into every server bundle that reaches rootScript().
-  return path.join(/* turbopackIgnore: true */ codeRoot, `${nameNoExt}.mjs`);
+  return path.join(/* turbopackIgnore: true */ codeRoot, "scripts", `${nameNoExt}.mjs`);
 }

@@ -75,7 +75,7 @@ async function handoff(issue, why) {
     `If you were about to take it, say so here and a maintainer hands it back to you: people always come first.\n\n<!-- co:gfi-handoff:${n} -->` });
   await rest('POST', `repos/${REPO}/issues/${n}/assignees`, {
     assignees: [COPILOT],
-    agent_assignment: { target_repo: REPO, base_branch: 'main', custom_instructions: 'Follow .github/copilot-instructions.md. Run `node test-all.mjs --quick` before opening the pull request. Label the pull request agent-generated.', custom_agent: '', model: '' },
+    agent_assignment: { target_repo: REPO, base_branch: 'main', custom_instructions: 'Follow .github/copilot-instructions.md. Run `node scripts/test-all.mjs --quick` before opening the pull request. Label the pull request agent-generated.', custom_agent: '', model: '' },
   }, ASSIGN_TOKEN);
   log(`hecho #${n}: agent-candidate + ${COPILOT} : ${why}`);
 }

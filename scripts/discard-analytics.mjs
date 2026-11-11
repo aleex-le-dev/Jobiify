@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * discard-analytics.mjs — Analyze the discard log for filter tuning
+ * scripts/discard-analytics.mjs — Analyze the discard log for filter tuning
  *
  * The discard log (data/discard.log, or batch/logs/discard.log for batch runs)
  * is the only record of what the filters threw away and why. This script reads
@@ -13,7 +13,7 @@
  * lets the candidate judge whether a keyword is costing them real roles. It
  * never infers which keyword to add; that is a guess wearing a number.
  *
- * Run: node discard-analytics.mjs [--log <path>] [--reason <pattern>] [--top N] [--since YYYY-MM-DD]
+ * Run: node scripts/discard-analytics.mjs [--log <path>] [--reason <pattern>] [--top N] [--since YYYY-MM-DD]
  *
  * --log defaults to data/discard.log. Pass batch/logs/discard.log to analyze
  * the batch variant (same shape, one extra id field per row).
@@ -22,7 +22,7 @@
 import { readFileSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 /**
  * Parse a discard log's contents into entries.
@@ -146,7 +146,7 @@ export function renderSummary(agg, topN, firstDate, lastDate) {
 
 if (isMainModule(import.meta.url)) {
   if (process.argv.includes('-h') || process.argv.includes('--help')) {
-    console.log('Usage: node discard-analytics.mjs [--log <path>] [--reason <pattern>] [--top N] [--since YYYY-MM-DD]');
+    console.log('Usage: node scripts/discard-analytics.mjs [--log <path>] [--reason <pattern>] [--top N] [--since YYYY-MM-DD]');
     console.log('  Analyzes the discard log for filter tuning insights.');
     process.exit(0);
   }

@@ -5,7 +5,7 @@
  * Enriches each job with trustScore (0-100), trustFlags (string[]), and
  * trustLevel ('high' | 'medium' | 'low'). Never drops jobs — flag only.
  *
- * Underscore prefix keeps scan.mjs's provider loader from importing this
+ * Underscore prefix keeps scripts/scan.mjs's provider loader from importing this
  * as a job-board provider.
  *
  * V1 heuristics:
@@ -109,7 +109,7 @@ export function matchesDomainList(hostname, domainList) {
  * ASCII-fold a company name for comparison against a hostname.
  *
  * NFD is the right tool HERE and the wrong one in foldStatusInput()
- * (tracker-utils.mjs, #2705). There the fold must not collapse distinct
+ * (scripts/tracker-utils.mjs, #2705). There the fold must not collapse distinct
  * identities — Żubr must never become Zubr. Here we are deliberately comparing
  * against an ASCII hostname, so folding to the ASCII base letter is the whole
  * point: "societegenerale.com" IS the ASCII folding of "Société Générale".
@@ -171,7 +171,7 @@ export function companyMatchesHostname(company, hostname) {
 /**
  * Build a trust validator function from portals.yml config.
  *
- * Usage mirrors buildLocationFilter / buildSalaryFilter in scan.mjs.
+ * Usage mirrors buildLocationFilter / buildSalaryFilter in scripts/scan.mjs.
  *
  * @param {object} [config]
  * @param {boolean} [config.enabled]

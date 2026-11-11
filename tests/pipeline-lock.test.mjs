@@ -1,5 +1,5 @@
 /**
- * pipeline-lock.test.mjs — regression tests for pipeline-lock.mjs.
+ * pipeline-lock.test.mjs — regression tests for scripts/pipeline-lock.mjs.
  *
  * The lock exists to serialize appendToPipeline()'s read-modify-write on
  * data/pipeline.md (#2188). These tests pin the three properties that make
@@ -13,7 +13,7 @@
  *      the same lock stale can have the second one's rmSync delete the first
  *      one's freshly created lock, after which both believe they hold it.
  *   3. Fresh-install robustness — the lock must not throw ENOENT when the
- *      parent data/ directory does not exist yet (plugins.mjs's cmdRun calls
+ *      parent data/ directory does not exist yet (scripts/plugins.mjs's cmdRun calls
  *      appendToPipeline with no directory pre-creation).
  */
 
@@ -28,7 +28,7 @@ import {
   acquirePipelineLock, LockTimeoutError, OWNERLESS_GRACE_MS,
   lockRecoveryVerdict, RECOVER_STALE, RECOVER_VANISHED, RECOVER_LIVE,
   createLockWaitPolicy,
-} from '../pipeline-lock.mjs';
+} from '../scripts/pipeline-lock.mjs';
 import { collectMjsFiles } from '../lib/mjs-files.mjs';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -99,7 +99,7 @@ async function churnLockInWorker(lockDir, everyMs) {
     workerData: {
       lockDir,
       everyMs,
-      trackerUtilsUrl: pathToFileURL(join(dirname(fileURLToPath(import.meta.url)), '..', 'tracker-utils.mjs')).href,
+      trackerUtilsUrl: pathToFileURL(join(dirname(fileURLToPath(import.meta.url)), '..', 'scripts/tracker-utils.mjs')).href,
     },
   });
   await new Promise((resolve, reject) => {
@@ -184,7 +184,7 @@ test('acquirePipelineLock: configurable timing — the contention timeout is not
 test('acquirePipelineLock: creates a missing parent data/ directory instead of throwing ENOENT (fresh install)', async () => {
   const root = mkdtempSync(join(tmpdir(), 'career-ops-pipeline-lock-fresh-'));
   try {
-    // No data/ directory at all — the plugins.mjs cmdRun path.
+    // No data/ directory at all — the scripts/plugins.mjs cmdRun path.
     const p = join(root, 'data', 'pipeline.md');
     assert.equal(existsSync(dirname(p)), false);
     const lock = await acquirePipelineLock(p, { timeoutMs: 300, retryMs: 20 });
@@ -472,7 +472,7 @@ test('acquirePipelineLock: a lock that keeps changing hands does not time out a 
     const startedAt = Date.now();
     // The old absolute deadline killed this caller at 150ms with
     // LockTimeoutError even though the lock was healthy and briskly shared —
-    // which for agent-inbox.mjs meant its request was silently dropped. The
+    // which for scripts/agent-inbox.mjs meant its request was silently dropped. The
     // timeout is for a WEDGED holder, not for losing the retry lottery.
     const lock = await acquirePipelineLock(p, { timeoutMs: 150, retryMs: 15 });
     const elapsed = Date.now() - startedAt;
@@ -767,7 +767,7 @@ test('createLockWaitPolicy: a hardDeadline that is not a number is refused, not 
 });
 
 test('no lock module re-derives the wait ceiling — the policy holds the only copy (#3895)', () => {
-  const policyModule = join(REPO_ROOT, 'pipeline-lock.mjs');
+  const policyModule = join(REPO_ROOT, 'scripts/pipeline-lock.mjs');
   const sources = collectMjsFiles(REPO_ROOT).filter((f) => f !== SELF && f !== policyModule);
 
   // A guard that cannot look must never pass: an empty or tiny scan means the
@@ -972,7 +972,7 @@ test('createLockWaitPolicy: a re-armed per-holder window still sleeps a full jit
 // ── #4537: the ownerless grace floor must be reachable from the environment ──
 //
 // Its three siblings all read it, and
-// followup-seed.mjs layers a second set on top. This one is a bare constant,
+// scripts/followup-seed.mjs layers a second set on top. This one is a bare constant,
 // so the single window whose budget process startup spends is the one window a
 // caller cannot widen. followup-seed-tests.mjs test 16 backdates a lock 100ms
 // into that 1s floor and then hands the rest to execFileSync plus Node startup;
@@ -1002,7 +1002,7 @@ for (const [label, value] of [
     const prior = process.env.CAREER_OPS_OWNERLESS_GRACE_MS;
     process.env.CAREER_OPS_OWNERLESS_GRACE_MS = value;
     try {
-      const lock = await import(`../pipeline-lock.mjs?grace-bad-${label.replace(/\s/g, '-')}`);
+      const lock = await import(`../scripts/pipeline-lock.mjs?grace-bad-${label.replace(/\s/g, '-')}`);
       assert.equal(
         lock.OWNERLESS_GRACE_MS, 1_000,
         `${label} is not a floor, so the 1000ms default must stand`,
@@ -1028,7 +1028,7 @@ test('a valid CAREER_OPS_OWNERLESS_GRACE_MS is still honored (control)', async (
   const prior = process.env.CAREER_OPS_OWNERLESS_GRACE_MS;
   process.env.CAREER_OPS_OWNERLESS_GRACE_MS = '2500';
   try {
-    const lock = await import('../pipeline-lock.mjs?grace-good');
+    const lock = await import('../scripts/pipeline-lock.mjs?grace-good');
     assert.equal(lock.OWNERLESS_GRACE_MS, 2_500, 'a finite positive override must reach the floor');
   } finally {
     if (prior === undefined) delete process.env.CAREER_OPS_OWNERLESS_GRACE_MS;
@@ -1041,7 +1041,7 @@ test('the ownerless grace floor honors CAREER_OPS_OWNERLESS_GRACE_MS', async () 
   const prior = process.env.CAREER_OPS_OWNERLESS_GRACE_MS;
   process.env.CAREER_OPS_OWNERLESS_GRACE_MS = '30000';
   try {
-    const lock = await import('../pipeline-lock.mjs?grace-env');
+    const lock = await import('../scripts/pipeline-lock.mjs?grace-env');
     const dir = join(root, 'x.lock');
     mkdirSync(dir, { recursive: true });
     backdate(dir, 5_000); // ownerless and 5s old: past the 1s default floor

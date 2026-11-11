@@ -8,7 +8,7 @@
 // iCIMS list pages carry title/location/URL but NO posted date; dates live
 // only on the job detail page's JSON-LD (schema.org JobPosting `datePosted`).
 // The provider therefore returns undated jobs plus an `enrichDate(job, ctx)`
-// hook — scan-ats-full.mjs calls it only for jobs that already passed the
+// hook — scripts/scan-ats-full.mjs calls it only for jobs that already passed the
 // cheap title/location filters, so a 10k-tenant sweep pays detail-page
 // requests for real candidates only, never for noise.
 
@@ -144,7 +144,7 @@ export default {
 
   /**
    * Walk a tenant's search pages. An entry may carry `fallback_urls`: other
-   * hosts the same tenant could be served from (scan-ats-full.mjs builds them,
+   * hosts the same tenant could be served from (scripts/scan-ats-full.mjs builds them,
    * because the public dataset stores some tenants bare and some as a full
    * portal subdomain). A fallback is tried only when the previous host answers
    * 404 on its FIRST page, the one response that means "no board here". Any

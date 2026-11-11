@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * validate-profile.mjs — structural check for config/profile.yml.
+ * scripts/validate-profile.mjs — structural check for config/profile.yml.
  *
  * profile.yml steers scoring targets, output language, spend tier, CV format
- * and location policy, and nothing checked its shape. `doctor.mjs` checks that
+ * and location policy, and nothing checked its shape. `scripts/doctor.mjs` checks that
  * the file EXISTS; every reader then does `profile?.language?.output` and takes
  * the fallback when the key is missing — which is indistinguishable from the
  * key being misspelled. A profile reading
@@ -19,7 +19,7 @@
  * WARN, never FAIL. career-ops is meant to work out of the box and an unknown
  * key is not a broken install — it is almost always a typo, and the right
  * response is to name it, not to refuse to run. `portals.yml` gets
- * validate-portals.mjs and the plugin registry gets validate-plugin-registry.mjs;
+ * scripts/validate-portals.mjs and the plugin registry gets scripts/validate-plugin-registry.mjs;
  * this is the same family for the one file that had none.
  *
  * The known-key set is DERIVED from config/profile.example.yml rather than
@@ -29,7 +29,7 @@
  * chase reality, and that list is short and auditable.
  *
  * Usage:
- *   node validate-profile.mjs [--profile <path>] [--json] [--self-test]
+ *   node scripts/validate-profile.mjs [--profile <path>] [--json] [--self-test]
  *
  * Exit codes:
  *   0  clean, or findings (they are warnings)
@@ -42,9 +42,9 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
-const CODE_ROOT = dirname(fileURLToPath(import.meta.url));
+const CODE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 
 export const EXAMPLE_PATH = join(CODE_ROOT, 'config', 'profile.example.yml');
@@ -60,8 +60,8 @@ export const DEFAULT_PROFILE_PATH = process.env.CAREER_OPS_PROFILE
  * `undocumented` finding below, which reports the gap instead of hiding it.
  */
 export const UNDOCUMENTED_KEYS = {
-  rejection_latency: 'rejection-latency.mjs (courtesy_days)',
-  table_freshness: 'check-table-freshness.mjs (max_age_months)',
+  rejection_latency: 'scripts/rejection-latency.mjs (courtesy_days)',
+  table_freshness: 'scripts/check-table-freshness.mjs (max_age_months)',
 };
 
 /**
@@ -69,7 +69,7 @@ export const UNDOCUMENTED_KEYS = {
  *
  * Optional sections ship commented out (`# style:`, `# page_format: letter`),
  * so parsing alone misses them, and a profile that set one was told the setting
- * had no effect while theme-style.mjs / lib/page-format.mjs were reading it.
+ * had no effect while scripts/theme-style.mjs / lib/page-format.mjs were reading it.
  * Each one is written `# key:` at column 0 with a single space. A key nested in
  * such a block is indented past the `#`, and no prose line in the example opens
  * with a bare lowercase word and a colon, so neither is taken for a top-level
@@ -126,7 +126,7 @@ export function validateProfile(profileText, exampleText) {
   // package.json asks for ^5.3.0 and there is no root lockfile, so which major a
   // given checkout has is not fixed — inferring "empty" from what the parser
   // does would report a blank profile as malformed on one and not the other.
-  // The identical hazard bit #3593 in plugins.mjs; same answer here.
+  // The identical hazard bit #3593 in scripts/plugins.mjs; same answer here.
   const hasContent = String(profileText ?? '').split('\n').some((line) => {
     const t = line.trim();
     return t !== '' && !t.startsWith('#');
@@ -232,7 +232,7 @@ if (isMainModule(import.meta.url)) {
   const args = process.argv.slice(2);
   if (args.includes('--self-test')) runSelfTest();
   if (args.includes('--help') || args.includes('-h')) {
-    console.log('Usage: node validate-profile.mjs [--profile <path>] [--json] [--self-test]');
+    console.log('Usage: node scripts/validate-profile.mjs [--profile <path>] [--json] [--self-test]');
     process.exit(0);
   }
   const pi = args.indexOf('--profile');

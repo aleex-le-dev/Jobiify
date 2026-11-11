@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * discover-ats.mjs — Company-list → scannable ATS board resolver for career-ops
+ * scripts/discover-ats.mjs — Company-list → scannable ATS board resolver for career-ops
  *
  * Takes a list of companies and resolves each to a scannable ATS board by
  * probing the public JSON APIs career-ops already supports (see VENDOR_ORDER)
@@ -18,12 +18,12 @@
  * Input: a YAML file `companies: [{name, slug?, website?}]` (via --in), and/or
  * bare company names as positional CLI args.
  *
- * Run: node discover-ats.mjs --in companies.yml            (preview — writes nothing)
- *      node discover-ats.mjs --in companies.yml --write    (opt in: append to portals.yml)
- *      node discover-ats.mjs Stripe Ramp Mollie            (bare names)
- *      node discover-ats.mjs --in companies.yml --summary  (human table)
- *      node discover-ats.mjs --in companies.yml --vendors gh,ashby
- *      node discover-ats.mjs --self-test
+ * Run: node scripts/discover-ats.mjs --in companies.yml            (preview — writes nothing)
+ *      node scripts/discover-ats.mjs --in companies.yml --write    (opt in: append to portals.yml)
+ *      node scripts/discover-ats.mjs Stripe Ramp Mollie            (bare names)
+ *      node scripts/discover-ats.mjs --in companies.yml --summary  (human table)
+ *      node scripts/discover-ats.mjs --in companies.yml --vendors gh,ashby
+ *      node scripts/discover-ats.mjs --self-test
  *
  * Probing hits live third-party APIs, so honor CAREER_OPS_PORTALS to point at a
  * scratch portals file during tests/experiments.
@@ -37,42 +37,42 @@ import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 import { renameSyncWithRetry } from './tracker-utils.mjs';
 
-import { makeHttpCtx, isRefusedRedirectError } from './providers/_http.mjs';
-import greenhouse from './providers/greenhouse.mjs';
-import ashby from './providers/ashby.mjs';
-import lever from './providers/lever.mjs';
-import workday from './providers/workday.mjs';
-import workable from './providers/workable.mjs';
-import smartrecruiters from './providers/smartrecruiters.mjs';
-import recruitee from './providers/recruitee.mjs';
-import breezy from './providers/breezy.mjs';
-import bamboohr from './providers/bamboohr.mjs';
-import pinpoint from './providers/pinpoint.mjs';
-import rippling from './providers/rippling.mjs';
-import joinProvider from './providers/join.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { makeHttpCtx, isRefusedRedirectError } from '../providers/_http.mjs';
+import greenhouse from '../providers/greenhouse.mjs';
+import ashby from '../providers/ashby.mjs';
+import lever from '../providers/lever.mjs';
+import workday from '../providers/workday.mjs';
+import workable from '../providers/workable.mjs';
+import smartrecruiters from '../providers/smartrecruiters.mjs';
+import recruitee from '../providers/recruitee.mjs';
+import breezy from '../providers/breezy.mjs';
+import bamboohr from '../providers/bamboohr.mjs';
+import pinpoint from '../providers/pinpoint.mjs';
+import rippling from '../providers/rippling.mjs';
+import joinProvider from '../providers/join.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { DEFAULT_SMALL_THRESHOLD, isSmallBoard, smallBoardDetail } from './lib/small-board.mjs';
+import { DEFAULT_SMALL_THRESHOLD, isSmallBoard, smallBoardDetail } from '../lib/small-board.mjs';
 import { findBlacklistEntry, loadBlacklist } from './scan.mjs';
 
-const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
+const CAREER_OPS = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const PORTALS_PATH = process.env.CAREER_OPS_PORTALS || join(DATA_ROOT, 'portals.yml');
 const BLACKLIST_PATH = process.env.CAREER_OPS_BLACKLIST || join(DATA_ROOT, 'data', 'blacklist.md');
 
 // Safe charset for a slug that will be interpolated into an ATS URL. Consistent
-// with the SLUG_RE guard in scan-ats-full.mjs and seeds/vc-portfolios.mjs — a
+// with the SLUG_RE guard in scripts/scan-ats-full.mjs and seeds/vc-portfolios.mjs — a
 // tampered or malformed input can never inject unexpected characters into a URL.
 // Mixed case is intentional: Ashby boards are case-sensitive (AlephAlpha, DeepL).
 export const SLUG_RE = /^[A-Za-z0-9._-]+$/;
 
-// Bounded concurrency for live probes — lower than scan-ats-full.mjs's 20
+// Bounded concurrency for live probes — lower than scripts/scan-ats-full.mjs's 20
 // because Ashby's provider holds a ~30s connection per board.
 const DEFAULT_CONCURRENCY = 8;
 
 // Vendor probe registry. buildUrl(slug) produces a careers_url in the exact
 // shape each provider's detect() recognizes, so the probe reuses the real scan
-// path — a board we confirm here is exactly one scan.mjs can later read.
+// path — a board we confirm here is exactly one scripts/scan.mjs can later read.
 //
 // Greenhouse/Ashby/Lever resolve from a single slug. Workday is different: it
 // needs <tenant>.<instance>.myworkdayjobs.com/<site> — three coordinates, only
@@ -125,15 +125,15 @@ const VENDOR_ORDER = ['gh', 'ashby', 'lever', 'workable', 'smartrecruiters', 're
 const WORKDAY_INSTANCES = ['wd1', 'wd2', 'wd3', 'wd5', 'wd10', 'wd12', 'wd101', 'wd103'];
 
 const USAGE = `Usage:
-  node discover-ats.mjs --in companies.yml            # PREVIEW — resolve + print entries, write nothing
-  node discover-ats.mjs --in companies.yml --write    # opt in: append resolved entries to portals.yml
-  node discover-ats.mjs Stripe Ramp Mollie            # company names as positional args
-  node discover-ats.mjs --in companies.yml --summary  # human-readable table
-  node discover-ats.mjs --in companies.yml --vendors gh,ashby,lever  # restrict probes
-  node discover-ats.mjs --in companies.yml --vendors workday         # Workday only
-  node discover-ats.mjs --in companies.yml --small-threshold 10  # what counts as a small board (default ${DEFAULT_SMALL_THRESHOLD}, 0 = off)
-  node discover-ats.mjs --self-test                   # inline test suite
-  node discover-ats.mjs --help                        # print this usage block
+  node scripts/discover-ats.mjs --in companies.yml            # PREVIEW — resolve + print entries, write nothing
+  node scripts/discover-ats.mjs --in companies.yml --write    # opt in: append resolved entries to portals.yml
+  node scripts/discover-ats.mjs Stripe Ramp Mollie            # company names as positional args
+  node scripts/discover-ats.mjs --in companies.yml --summary  # human-readable table
+  node scripts/discover-ats.mjs --in companies.yml --vendors gh,ashby,lever  # restrict probes
+  node scripts/discover-ats.mjs --in companies.yml --vendors workday         # Workday only
+  node scripts/discover-ats.mjs --in companies.yml --small-threshold 10  # what counts as a small board (default ${DEFAULT_SMALL_THRESHOLD}, 0 = off)
+  node scripts/discover-ats.mjs --self-test                   # inline test suite
+  node scripts/discover-ats.mjs --help                        # print this usage block
 
 portals.yml is a user-layer file: this command NEVER writes it unless you pass
 --write. The default previews the entries it would add (see pendingEntries).
@@ -825,12 +825,12 @@ export async function resolveCompany(company, { vendors = VENDOR_ORDER, ctx, inc
 
 /**
  * Split companies on the user's do-not-apply list (data/blacklist.md) away from
- * the rest, using scan.mjs's own findBlacklistEntry so discovery and scanning
+ * the rest, using scripts/scan.mjs's own findBlacklistEntry so discovery and scanning
  * agree on what is blacklisted. Before probing, a company is checked by name and
  * by every URL it carries (a Workday URL hint AND `website`: either one can be
  * the host a domain-scope entry names); after probing, `urlsOf` lets the caller
  * re-check a resolved board's careers_url. A blacklisted company is never
- * written to portals.yml: scan.mjs would drop every posting from it anyway.
+ * written to portals.yml: scripts/scan.mjs would drop every posting from it anyway.
  *
  * @returns {{allowed:any[], blacklisted:{name:string, entry:string, reason:string}[]}}
  */
@@ -860,7 +860,7 @@ function asBlacklistUrl(value) {
   return /^[a-z][a-z0-9+.-]*:\/\//i.test(v) ? v : `https://${v}`;
 }
 
-/** Bounded-concurrency map (mirrors scan-ats-full.mjs parallelEach; not exported there). */
+/** Bounded-concurrency map (mirrors scripts/scan-ats-full.mjs parallelEach; not exported there). */
 async function parallelEach(items, limit, fn) {
   let i = 0;
   async function worker() {
@@ -1155,7 +1155,7 @@ function parseArgs(argv) {
   // Positional args (not flags, not a consumed flag value) are company names.
   const names = args.filter((a, idx) => !a.startsWith('-') && !consumedValueIndices.has(idx));
 
-  // Same shape check as audit-portals.mjs: a non-negative number, 0 = off.
+  // Same shape check as scripts/audit-portals.mjs: a non-negative number, 0 = off.
   const rawThreshold = valueOf('--small-threshold');
   const smallThreshold = rawThreshold === null ? DEFAULT_SMALL_THRESHOLD : Number(rawThreshold);
   if (!Number.isFinite(smallThreshold) || smallThreshold < 0 || String(rawThreshold).trim() === '') {
@@ -1239,7 +1239,7 @@ async function main() {
   // Data-contract rule: portals.yml is a USER-LAYER file and is NEVER written
   // unless the user explicitly opts in with --write. The default is preview —
   // we print the entries we WOULD add and touch nothing. This mirrors how the
-  // rest of career-ops treats user files (see DATA_CONTRACT.md).
+  // rest of career-ops treats user files (see docs/projet/DATA_CONTRACT.md).
   let written = false;
   if (opts.write && fresh.length && existsSync(PORTALS_PATH)) {
     const current = readFileSync(PORTALS_PATH, 'utf-8');

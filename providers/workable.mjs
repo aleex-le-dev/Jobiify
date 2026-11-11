@@ -8,8 +8,8 @@
 //
 // The widget API returns the account's FULL posting list in one request (verified
 // live against a 259-posting account) and ships `description` + `published_on`
-// for free, so scan.mjs's content_filter and the recency logic in
-// scan-ats-full.mjs both work for Workable companies.
+// for free, so scripts/scan.mjs's content_filter and the recency logic in
+// scripts/scan-ats-full.mjs both work for Workable companies.
 //
 // The older markdown feed at /<slug>/jobs.md is kept as a fallback only. It
 // cannot be the primary path:
@@ -201,7 +201,7 @@ function safeJobUrl(raw) {
 }
 
 // Joins the locations of a multi-country posting into one cell. This is the
-// shape location_filter already expects — see buildLocationFilter in scan.mjs,
+// shape location_filter already expects — see buildLocationFilter in scripts/scan.mjs,
 // whose always_allow tier exists precisely so "Stockholm · London · Madrid"
 // survives one blocked city — and the shape the Ashby provider already emits.
 const LOCATION_SEPARATOR = ' · ';

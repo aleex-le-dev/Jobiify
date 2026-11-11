@@ -1,5 +1,5 @@
 /**
- * tests/coverage-check-robustness.test.mjs — coverage-check.mjs on input a user
+ * tests/coverage-check-robustness.test.mjs — scripts/coverage-check.mjs on input a user
  * can legitimately hand it.
  *
  *   1. A pasted URL carrying a stray % ("100%-remote") is not a valid escape.
@@ -13,7 +13,7 @@ import { mkdtempSync, mkdirSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { spawnSync } from 'child_process';
-import { atsFromUrl } from '../coverage-check.mjs';
+import { atsFromUrl } from '../scripts/coverage-check.mjs';
 import { pass, fail, ROOT, NODE, rmSync } from './helpers.mjs';
 
 console.log('\ncoverage-check.mjs — malformed percent escape and missing portals.yml');
@@ -29,7 +29,7 @@ try {
 const tmp = mkdtempSync(join(tmpdir(), 'co-cov-'));
 try {
   mkdirSync(join(tmp, 'data'), { recursive: true });
-  const run = spawnSync(NODE, [join(ROOT, 'coverage-check.mjs'), 'https://jobs.lever.co/acme/1', '--company', 'Acme', '--title', 'Engineer'], {
+  const run = spawnSync(NODE, [join(ROOT, 'scripts/coverage-check.mjs'), 'https://jobs.lever.co/acme/1', '--company', 'Acme', '--title', 'Engineer'], {
     cwd: ROOT, encoding: 'utf8', timeout: 60000,
     env: { ...process.env, CAREER_OPS_ROOT: tmp, CAREER_OPS_PORTALS: '' },
   });

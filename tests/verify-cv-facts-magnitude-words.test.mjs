@@ -1,7 +1,7 @@
 // tests/verify-cv-facts-magnitude-words.test.mjs — a magnitude written out as a
 // word has to count as part of the number.
 //
-// verify-cv-facts.mjs reads a number together with the magnitude that follows it,
+// scripts/verify-cv-facts.mjs reads a number together with the magnitude that follows it,
 // so "50k users" cannot be produced as evidence for a CV that says "50 users"
 // (#2612). The spelled-out spelling fell through to the modifier window instead,
 // where the magnitude was consumed as an ordinary word and dropped on the floor:
@@ -31,7 +31,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { metricClaims, auditClaims } from '../verify-cv-facts.mjs';
+import { metricClaims, auditClaims } from '../scripts/verify-cv-facts.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -94,7 +94,7 @@ function run({ source, generated }, args = []) {
   try {
     const r = spawnSync(
       process.execPath,
-      [join(ROOT, 'verify-cv-facts.mjs'), join(dataRoot, 'generated.md'), ...args],
+      [join(ROOT, 'scripts/verify-cv-facts.mjs'), join(dataRoot, 'generated.md'), ...args],
       {
         cwd: dataRoot,
         encoding: 'utf-8',

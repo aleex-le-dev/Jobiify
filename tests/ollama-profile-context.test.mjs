@@ -21,24 +21,24 @@ const copyIntoFixture = (relativePath) => {
 };
 
 for (const relativePath of [
-  'ollama-eval.mjs',
-  'profile-language.mjs',
-  'reserve-report-num.mjs',
+  'scripts/ollama-eval.mjs',
+  'scripts/profile-language.mjs',
+  'scripts/reserve-report-num.mjs',
   'tracker-aliases.json',
-  'tracker-parse.mjs',
-  'tracker-utils.mjs',
+  'scripts/tracker-parse.mjs',
+  'scripts/tracker-utils.mjs',
   // tracker-utils imports the shared lock-contention helpers (#2777 fix):
   // a fixture that carries tracker-utils has to carry its import too.
-  'pipeline-lock.mjs',
+  'scripts/pipeline-lock.mjs',
   // ollama-eval/reserve-report-num resolve user-layer paths via
-  // path-resolver.mjs (CAREER_OPS_ROOT), so the fixture carries that too.
-  'path-resolver.mjs',
+  // scripts/path-resolver.mjs (CAREER_OPS_ROOT), so the fixture carries that too.
+  'scripts/path-resolver.mjs',
   'lib/context-budget.mjs',
   // ollama-eval builds its tracker-addition row with the shared helpers
   // (#3796), so the fixture has to carry the module they were consolidated
-  // into -- same reason pipeline-lock.mjs is on this list.
+  // into -- same reason scripts/pipeline-lock.mjs is on this list.
   'lib/tracker-addition.mjs',
-  // reserve-report-num.mjs's main-guard comes from lib/is-main-module.mjs
+  // scripts/reserve-report-num.mjs's main-guard comes from lib/is-main-module.mjs
   // (#3170), so a fixture that carries it has to carry the helper too.
   'lib/is-main-module.mjs',
   // ollama-eval dates its report with localToday() rather than the UTC day,
@@ -112,7 +112,7 @@ try {
   const result = await new Promise((resolve) => {
     execFile(
       NODE,
-      [join(fixtureRoot, 'ollama-eval.mjs'), '--url', `http://127.0.0.1:${port}`, '--no-save', 'On-site role.'],
+      [join(fixtureRoot, 'scripts/ollama-eval.mjs'), '--url', `http://127.0.0.1:${port}`, '--no-save', 'On-site role.'],
       // The fixture is its own data root; without this the evaluator reads
       // the profile from the root the suite pins, not the one written above.
       { timeout: 30000, env: ownRootEnv() },

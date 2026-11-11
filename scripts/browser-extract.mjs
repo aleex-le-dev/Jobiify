@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * browser-extract.mjs — headless Playwright reader for the scan / JD-extraction
+ * scripts/browser-extract.mjs — headless Playwright reader for the scan / JD-extraction
  * path (the opt-in alternative to the browser MCP; see #1449).
  *
  * The token cost of the MCP path is `browser_snapshot` streaming a page's whole
@@ -12,7 +12,7 @@
  * fills — that boundary is exactly what keeps this separate from `apply`.
  *
  * Usage:
- *   node browser-extract.mjs <url> [--mode jd|listing] [--max N] [--max-chars N] [--timeout MS]
+ *   node scripts/browser-extract.mjs <url> [--mode jd|listing] [--max N] [--max-chars N] [--timeout MS]
  *
  * `--max-chars` overrides the jd-mode text cap (default 12000) — raise it when a
  * long JD would otherwise be truncated at the tail, at the cost of more tokens.
@@ -29,16 +29,16 @@
  * instead of the rendered page: Workday hydrates the JD into a virtualized DOM
  * that readDom() below cannot see, so scraping it returned a well-formed result
  * with an EMPTY `text` — indistinguishable, to a caller, from a posting that
- * genuinely has no content. Same API family scan.mjs already uses for Workday
+ * genuinely has no content. Same API family scripts/scan.mjs already uses for Workday
  * boards (providers/workday.mjs); the per-job URL derivation is reused from
- * liveness-api.mjs so the two cannot drift.
+ * scripts/liveness-api.mjs so the two cannot drift.
  *
  * Output: compact JSON to stdout. Exit 0 on success; exit 1 on a hard error,
  * printing `{ "error": "...", "code": "..." }` (so a caller/mode can fall back
  * to the MCP path silently). An empty/near-empty jd-mode extraction is one of
  * those hard errors (`code: "empty_text"`) rather than a successful-looking
  * empty JD — the documented silent fallback only fires if the tool actually
- * reports failure. Reuses liveness-browser.mjs's SSRF host guard and
+ * reports failure. Reuses scripts/liveness-browser.mjs's SSRF host guard and
  * realistic-UA context so it isn't instantly bot-walled.
  */
 
@@ -50,12 +50,12 @@ import { LIVENESS_CONTEXT_OPTIONS, rejectPrivateOrInvalid } from './liveness-bro
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { resolveAtsApi, JD_TEXT_API_ATS } from './liveness-api.mjs';
 import { classifyLiveness } from './liveness-core.mjs';
-import { decodeEntities } from './providers/_html-entities.mjs';
-import { isWorkModelOnly } from './providers/greenhouse.mjs';
-import { isZohoRecordClosed, parseZohoDetailPage } from './providers/zoho-recruit.mjs';
+import { decodeEntities } from '../providers/_html-entities.mjs';
+import { isWorkModelOnly } from '../providers/greenhouse.mjs';
+import { isZohoRecordClosed, parseZohoDetailPage } from '../providers/zoho-recruit.mjs';
 import { DEFAULT_USER_AGENT } from './user-agent.mjs';
-import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { flagValue, hasFlag, validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 const CAREER_OPS = getCareerOpsRoot();
 
@@ -87,7 +87,7 @@ const NAV_LABEL_STOPWORDS = new Set([
  * Resolve the configured scan extractor: `cli` (this helper) or `mcp` (default).
  * Reads `scan.extractor` from config/profile.yml; anything unrecognized — or a
  * missing/unreadable file — yields `mcp` so behavior never breaks. Exported so
- * doctor.mjs reports the same value.
+ * scripts/doctor.mjs reports the same value.
  * @param {string} [profilePath]
  * @returns {'cli'|'mcp'}
  */
@@ -153,7 +153,7 @@ export function normalizeJd(raw, finalUrl, textCap = JD_TEXT_CAP) {
  * or null for any other URL.
  *
  * Derivation (tenant/shard/site/jobPath -> `/wday/cxs/{tenant}/{site}/job/{path}`)
- * is delegated to liveness-api.mjs's Workday provider so there is exactly one
+ * is delegated to scripts/liveness-api.mjs's Workday provider so there is exactly one
  * copy of it, including its SSRF guard: every path segment taken from the input
  * URL is charset-validated and ".." -rejected before it reaches the fixed
  * `{tenant}.{shard}.myworkdayjobs.com` host template.
@@ -481,7 +481,7 @@ async function fetchGreenhouseJd(apiUrl, postingUrl, textCap, timeoutMs) {
  * `--max-chars` has to drop boilerplate, not requirements.
  *
  * There is no closed-state check. The public v0 endpoint 404s a closed posting
- * (liveness-api.mjs:91) and emits no `state` field at all on a live one
+ * (scripts/liveness-api.mjs:91) and emits no `state` field at all on a live one
  * (verified over 10 postings on two boards), so the fetcher's non-OK guard is
  * the whole of it.
  *
@@ -725,7 +725,7 @@ export const JD_FETCHERS = {
 /**
  * Try every known JD-text-capable ATS API for one posting URL before anyone
  * reaches for a browser. This is the single dispatch point both this script's
- * own CLI (jd mode) and `fetch-jd.mjs` (the bash-callable front door) call —
+ * own CLI (jd mode) and `scripts/fetch-jd.mjs` (the bash-callable front door) call —
  * one copy of the routing table, so the interactive and headless paths cannot
  * drift on which ATS is API-fetchable.
  *
@@ -743,9 +743,9 @@ export async function fetchJdViaKnownApi(url, textCap = JD_TEXT_CAP, timeoutMs =
   if (!fetcher) return null;
 
   // `resolveAtsApi` carries a per-ATS timeout for the APIs that need one
-  // (Ashby: 20 s, liveness-api.mjs:113); without it a slow Ashby board that
+  // (Ashby: 20 s, scripts/liveness-api.mjs:113); without it a slow Ashby board that
   // liveness waits for falls through here on the generic 15 s both callers
-  // pass. Same precedence liveness-api.mjs:357 applies to the same field —
+  // pass. Same precedence scripts/liveness-api.mjs:357 applies to the same field —
   // the resolved value wins, the argument is the fallback for every ATS that
   // declares none.
   const budgetMs = resolved.timeoutMs || timeoutMs;
@@ -843,7 +843,7 @@ const KNOWN_FLAGS = [...VALUE_FLAGS, '--help', '-h'];
 
 // One synopsis, used by both --help and the no_url error, so the two cannot
 // drift apart: the error's own copy already omitted --timeout.
-const USAGE_SYNOPSIS = 'browser-extract.mjs <url> [--mode jd|listing] [--max N] [--max-chars N] [--timeout MS]';
+const USAGE_SYNOPSIS = 'scripts/browser-extract.mjs <url> [--mode jd|listing] [--max N] [--max-chars N] [--timeout MS]';
 
 const USAGE = `Usage:
   node ${USAGE_SYNOPSIS}

@@ -12,7 +12,7 @@
 //
 // The providers already receive the id and were discarding it. These checks pin the
 // capture (providers/_types.js Job.requisitionId / .externalId) so a future provider
-// edit cannot silently drop it back to the lossy path. scan.mjs records
+// edit cannot silently drop it back to the lossy path. scripts/scan.mjs records
 // requisitionId in scan-history.tsv's requisition_id column (#4613); externalId
 // has no consumer yet.
 //
@@ -33,7 +33,7 @@ import eightfold from '../../providers/eightfold.mjs';
 console.log('\nproviders — ATS-native identifier capture');
 
 // ── PROVIDER-LEVEL: these must fail if the capture is deleted from the provider.
-// An earlier version of this file only exercised scan.mjs's formatters with
+// An earlier version of this file only exercised scripts/scan.mjs's formatters with
 // hand-built literals, so stripping externalId/requisitionId from all five
 // providers left the whole suite green, so a provider edit could drop the
 // capture with no failing test.

@@ -4,9 +4,9 @@
 //
 // `new Date().toISOString().slice(0, 10)` is the UTC day. West of Greenwich,
 // an evening "Add to pipeline" click stamped first_seen one day ahead of the
-// user's own clock, so scan.mjs's shouldDedupScanHistoryRow recheck/cooldown
+// user's own clock, so scripts/scan.mjs's shouldDedupScanHistoryRow recheck/cooldown
 // window opened a day late for that row. #3071 fixed the same pattern in six
-// core .mjs call sites (including scan.mjs's own DEFAULT for this argument),
+// core .mjs call sites (including scripts/scan.mjs's own DEFAULT for this argument),
 // but pipeline.ts always passes an explicit `date` argument, which overrides
 // that default — so this call site needed its own fix and its own guard.
 //

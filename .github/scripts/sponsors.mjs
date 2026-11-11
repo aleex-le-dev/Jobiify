@@ -14,7 +14,7 @@
 // are language-invariant (name and description are rendered verbatim,
 // untranslated) so they are byte-identical across all 17 files and can be
 // pinned by one check. Adding a sponsor is one JSON entry plus --write;
-// test-all.mjs runs --check so the READMEs and the JSON cannot disagree.
+// scripts/test-all.mjs runs --check so the READMEs and the JSON cannot disagree.
 // Every logo must be a file inside docs/sponsors/ (no hotlinking). The link
 // carries no tracking parameters.
 

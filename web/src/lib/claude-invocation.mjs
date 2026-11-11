@@ -2,7 +2,7 @@
  * claude-invocation.mjs — how a headless `claude` run is invoked: which tools each
  * web worker kind may use, and the argv that carries that decision (#2185).
  *
- * Everything here is asserted on as VALUES (test-all.mjs §55.6), never by matching
+ * Everything here is asserted on as VALUES (scripts/test-all.mjs §55.6), never by matching
  * route.ts's source: five source-text versions of that guard were each defeated by
  * rewriting the route around them while pdf kept full write access. So the argv is
  * built here — `claudeCliArgs({kind:"pdf"})` IS the command line — and the only
@@ -90,7 +90,7 @@ export function scopeFrom(allowed) {
 /**
  * One scope per capability record, so Claude honours BOTH axes the policy states.
  *
- * `persisting` is the writing record (fix-portal runs verify-portals.mjs). pdf
+ * `persisting` is the writing record (fix-portal runs scripts/verify-portals.mjs). pdf
  * and evaluate emit their artifact inline and the backend persists it, so they
  * take a read-only scope. evaluate still fetches the posting. A posting is
  * untrusted input, and Write or Bash on that run could be aimed at cv.md.

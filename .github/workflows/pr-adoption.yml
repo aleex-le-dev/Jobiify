@@ -13,7 +13,7 @@ name: 'PR adoption ladder'
 #
 # Any activity from the PR author at any step resets the ladder completely
 # (all adoption/* labels removed, nothing posted). The policy is public:
-# CONTRIBUTING.md -> "Adopting an abandoned PR".
+# docs/projet/CONTRIBUTING.md -> "Adopting an abandoned PR".
 
 on:
   schedule:
@@ -104,7 +104,7 @@ jobs:
                   `branch to finish it. **Your commits and your credit travel with the work either way**: the adopter builds ` +
                   `on your commits or credits you with \`Co-authored-by\`, and you stay the original author. ` +
                   `And if you come back later, the work is still yours to reclaim - just say so on the issue. ` +
-                  `Details: CONTRIBUTING.md, "Adopting an abandoned PR".` });
+                  `Details: docs/projet/CONTRIBUTING.md, "Adopting an abandoned PR".` });
                 await github.rest.issues.addLabels({ owner, repo, issue_number: n, labels: ['adoption/warned'] });
                 core.info(`#${n}: warned`);
                 continue;

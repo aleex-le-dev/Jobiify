@@ -15,11 +15,11 @@ import { profileTargetKeywords } from "@/lib/profile-keywords.mjs";
  * We also read the real portals.yml + config/profile.yml (tolerantly) only to
  * SEED sensible defaults for the first search.
  *
- * Filter semantics mirror scan.mjs::buildTitleFilter / buildLocationFilter:
+ * Filter semantics mirror scripts/scan.mjs::buildTitleFilter / buildLocationFilter:
  *   title positive → substring match (empty = everything matches)
  *   title negative → substring reject
  *   location block_hard > always_allow > block > allow (case-insensitive substring);
- *   block_hard is the one tier always_allow cannot override (scan.mjs, #2956)
+ *   block_hard is the one tier always_allow cannot override (scripts/scan.mjs, #2956)
  */
 type FilterLists = Pick<ExploreFilters, "positive" | "negative" | "allow" | "block" | "alwaysAllow" | "blockHard">;
 

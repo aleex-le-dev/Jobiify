@@ -4,10 +4,10 @@
 // Six scripts did not recognise the flag, and an unrecognised flag was simply
 // discarded — so `--help` fell through to the analysis and the script RAN:
 //
-//   calibrate.mjs --help              printed a full calibration report
-//   salary-gap.mjs --help             printed JSON
-//   tracker-sync-check.mjs --help     printed JSON
-//   story-provenance-check.mjs --help printed JSON
+//   scripts/calibrate.mjs --help              printed a full calibration report
+//   scripts/salary-gap.mjs --help             printed JSON
+//   scripts/tracker-sync-check.mjs --help     printed JSON
+//   scripts/story-provenance-check.mjs --help printed JSON
 //
 // Nothing errored, which is the problem: the user asked what the flags are and
 // got output that answers a different question, with no sign the flag was never
@@ -30,8 +30,8 @@ import { trackedFiles } from '../lib/mjs-files.mjs';
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const FIXED = [
-  'calibrate.mjs', 'salary-gap.mjs', 'tracker-sync-check.mjs',
-  'story-provenance-check.mjs', 'negotiation-roi.mjs', 'jd-skill-gap.mjs',
+  'scripts/calibrate.mjs', 'scripts/salary-gap.mjs', 'scripts/tracker-sync-check.mjs',
+  'scripts/story-provenance-check.mjs', 'scripts/negotiation-roi.mjs', 'scripts/jd-skill-gap.mjs',
 ];
 
 // ── Isolation ───────────────────────────────────────────────────────────────
@@ -174,17 +174,17 @@ test('-h is accepted wherever --help is, and suppresses the same work', () => {
 // Each of these has the same defect the six fixed here had: an unrecognised
 // flag is discarded, so `--help` falls through and the script runs.
 const KNOWN_WITHOUT_HELP = new Set([
-  'batch-evaluate-gemini.mjs', 'cv-templates.mjs', 'fetch-jd.mjs',
-  'generate-cover-letter.mjs', 'generate-pdf.mjs', 'intake.mjs',
-  'match-star.mjs', 'openrouter-runner.mjs', 'plugins.mjs',
-  'seed-fixture.mjs',
-  'validate-plugin-registry.mjs', 'validate-untrusted-content-coverage.mjs',
-  // generate-latex.mjs and verify-portals.mjs were here and have since been
+  'scripts/batch-evaluate-gemini.mjs', 'scripts/cv-templates.mjs', 'scripts/fetch-jd.mjs',
+  'scripts/generate-cover-letter.mjs', 'scripts/generate-pdf.mjs', 'scripts/intake.mjs',
+  'scripts/match-star.mjs', 'scripts/openrouter-runner.mjs', 'scripts/plugins.mjs',
+  'scripts/seed-fixture.mjs',
+  'scripts/validate-plugin-registry.mjs', 'scripts/validate-untrusted-content-coverage.mjs',
+  // scripts/generate-latex.mjs and scripts/verify-portals.mjs were here and have since been
   // fixed upstream; the ratchet's other end caught that on the rebase and
   // required their removal, which is the half of it that keeps the list from
   // quietly rotting into a description of nothing.
   //
-  // normalize-statuses.mjs, scan-hn.mjs and scan-interamt.mjs left the same way
+  // scripts/normalize-statuses.mjs, scan-hn.mjs and scan-interamt.mjs left the same way
   // on this rebase: all three gained KNOWN_FLAGS containing '--help' between
   // 2026-09-30 and 2026-10-03, from other contributors.
 
@@ -195,12 +195,12 @@ const KNOWN_WITHOUT_HELP = new Set([
   // instead of turning it into a seven-script fix; the ratchet's rule is
   // unchanged and the list may only get shorter from here.
   //
-  // keyword-match.mjs is the one worth a second look: it PRINTS usage for
+  // scripts/keyword-match.mjs is the one worth a second look: it PRINTS usage for
   // `--help`, which reads as handled, but only because the flag falls through
   // to its "report file not found" path — so it exits 1 and would run the
   // comparison if a file by that name existed.
   'batch/aggregate-tokens.mjs',
-  'keyword-match.mjs',
+  'scripts/keyword-match.mjs',
   'plugins/h1b-sponsor/install-h1b-index.mjs',
   'plugins/h1b-sponsor/token.mjs',
 
@@ -211,8 +211,8 @@ const KNOWN_WITHOUT_HELP = new Set([
   //
   // These two are the only additions; the list is net SHORTER than before this
   // change, which is the direction the ratchet allows. The three root-level
-  // CLIs the same scan surfaced (cv-title-check.mjs, scan-dayforce.mjs,
-  // sync-pdf-flags.mjs) are user-facing and were FIXED in this PR rather than
+  // CLIs the same scan surfaced (scripts/cv-title-check.mjs, scan-dayforce.mjs,
+  // scripts/sync-pdf-flags.mjs) are user-facing and were FIXED in this PR rather than
   // listed, because listing them is what turns this into a description of
   // nothing.
   '.github/scripts/sponsors.mjs',

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * followup-seed.mjs — Seed data/follow-ups.md when a row is marked Applied (#1430)
+ * scripts/followup-seed.mjs — Seed data/follow-ups.md when a row is marked Applied (#1430)
  *
  * WHY: the follow-up system was "born dead". Marking a tracker row Applied only
  * updated applications.md — data/follow-ups.md stayed empty until the user ran
@@ -12,7 +12,7 @@
  * never a table row, because a table row in follow-ups.md means "a follow-up
  * was SENT", which seeding must not claim.
  *
- * Pin format (parsed by `parseNextOverrides` in followup-cadence.mjs):
+ * Pin format (parsed by `parseNextOverrides` in scripts/followup-cadence.mjs):
  *   - next #<appNum> <YYYY-MM-DD> (set <YYYY-MM-DD>)
  * First date = seeded next-follow-up date. `(set …)` = the day the pin was
  * written. The LAST pin per application wins, so re-seeding with --force is
@@ -35,8 +35,8 @@
  * Pass --force to append a fresh pin anyway.
  *
  * Usage:
- *   node followup-seed.mjs <appNum> [--date YYYY-MM-DD] [--force] [--dry-run] [--json]
- *   node followup-seed.mjs --backfill [--dry-run] [--json]
+ *   node scripts/followup-seed.mjs <appNum> [--date YYYY-MM-DD] [--force] [--dry-run] [--json]
+ *   node scripts/followup-seed.mjs --backfill [--dry-run] [--json]
  *
  * Exit codes:
  *   0 success or idempotent no-op
@@ -45,7 +45,7 @@
  *   2 row not found (or tracker missing)
  *   4 lock timeout
  *
- * Env overrides (mirroring merge-tracker.mjs / followup-cadence.mjs):
+ * Env overrides (mirroring scripts/merge-tracker.mjs / scripts/followup-cadence.mjs):
  *   CAREER_OPS_TRACKER                     tracker path
  *   CAREER_OPS_FOLLOWUPS                   follow-ups path
  *   CAREER_OPS_PROFILE                     profile.yml path (cadence overrides)
@@ -53,7 +53,7 @@
  *   CAREER_OPS_FOLLOWUPS_LOCK_TIMEOUT_MS   lock acquire timeout
  *   CAREER_OPS_FOLLOWUPS_LOCK_RETRY_MS     lock retry interval
  *   CAREER_OPS_FOLLOWUPS_LOCK_STALE_MS     stale-lock recovery threshold
- *   CAREER_OPS_OWNERLESS_GRACE_MS          ownerless-lock floor (pipeline-lock.mjs; shared, not per-script)
+ *   CAREER_OPS_OWNERLESS_GRACE_MS          ownerless-lock floor (scripts/pipeline-lock.mjs; shared, not per-script)
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, statSync, realpathSync } from 'fs';
@@ -62,7 +62,7 @@ import { fileURLToPath } from 'url';
 import { createHash, randomUUID } from 'crypto';
 // Third copy of the directory-lock protocol in this repo, and the one #2984
 // missed: that fix declared "one definition, no sibling drift" while patching
-// pipeline-lock.mjs and tracker-utils.mjs, and this file was carrying all three
+// scripts/pipeline-lock.mjs and scripts/tracker-utils.mjs, and this file was carrying all three
 // faces of #2777 the whole time. The classifiers come from pipeline-lock now,
 // so the next Windows-contention finding lands in one place instead of three.
 import {
@@ -72,7 +72,7 @@ import {
 import { makeCliFailWith, renameSyncWithRetry } from './tracker-utils.mjs';
 import { tmpdir } from 'os';
 import { resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
-import { localToday } from './lib/local-today.mjs';
+import { localToday } from '../lib/local-today.mjs';
 import {
   resolveCadenceConfig,
   loadFollowupsEnabled,
@@ -83,9 +83,9 @@ import {
   parseDate,
   addDays,
 } from './followup-cadence.mjs';
-import { flagValue } from './lib/cli-flags.mjs';
+import { flagValue } from '../lib/cli-flags.mjs';
 import { getCareerOpsRoot, canonicalizeTrackerPath, resolveTrackerPath as sharedResolveTrackerPath } from './path-resolver.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 const CAREER_OPS = getCareerOpsRoot();
 
@@ -124,7 +124,7 @@ function todayStr() {
 /**
  * Validate a `YYYY-MM-DD` string is both well-formed AND a real calendar date.
  *
- * `parseDate` (followup-cadence.mjs) happily accepts `2026-02-31` because the
+ * `parseDate` (scripts/followup-cadence.mjs) happily accepts `2026-02-31` because the
  * underlying `Date` constructor silently rolls invalid days over into the next
  * month. Round-tripping the parsed date back through `toISOString` catches
  * that: a real date always survives the round trip unchanged.
@@ -157,8 +157,8 @@ export function isValidCalendarDate(str) {
  *
  * A wrong date you can see beats a wrong date you cannot, so the proxy is now
  * preferred over the guess and `appDateSource` says which one you got. That
- * matches followup-cadence.mjs's `resolveAppliedDate` (same fallback, same
- * labelling) and company-history.mjs's `dateBasis`, so all three agree.
+ * matches scripts/followup-cadence.mjs's `resolveAppliedDate` (same fallback, same
+ * labelling) and scripts/company-history.mjs's `dateBasis`, so all three agree.
  *
  * `today` remains the last resort for a row whose `date` column is missing or
  * unusable — but it is now labelled too, rather than being indistinguishable
@@ -198,7 +198,7 @@ export function resolveAppliedDate(row, explicitDate, statusChangeDate) {
 
 /**
  * Format one pin directive line. The parser side lives in
- * followup-cadence.mjs's `OVERRIDE_RE` / `parseNextOverrides`.
+ * scripts/followup-cadence.mjs's `OVERRIDE_RE` / `parseNextOverrides`.
  *
  * @param {number} appNum
  * @param {string} nextDate - YYYY-MM-DD
@@ -252,7 +252,7 @@ function isAlreadySeeded(content, appNum) {
   return parseFollowups(content).some(entry => entry.appNum === appNum);
 }
 
-// --- Locking (mirrors merge-tracker.mjs's tracker lock, scoped to follow-ups) --
+// --- Locking (mirrors scripts/merge-tracker.mjs's tracker lock, scoped to follow-ups) --
 
 function pathIsInside(childPath, parentDir) {
   const relativePath = relative(parentDir, childPath);
@@ -301,7 +301,7 @@ function readLockOwner(lockDir) {
 
 /**
  * Acquire an exclusive filesystem lock covering the read-check-append
- * critical section for data/follow-ups.md. Mirrors merge-tracker.mjs's
+ * critical section for data/follow-ups.md. Mirrors scripts/merge-tracker.mjs's
  * tracker lock: atomic `mkdirSync`, an `owner.json` with pid/timestamp,
  * pid-alive detection, stale-lock recovery, and retry/backoff.
  *
@@ -433,7 +433,7 @@ async function acquireFollowupsLock(lockDir, followupsPath, options = {}) {
   throw new SeedError('LOCK_TIMEOUT', `Timed out waiting for follow-ups lock at ${lockDir}`);
 }
 
-// --- Atomic write (mirrors writeFileAtomic in tracker.mjs / merge-tracker.mjs) --
+// --- Atomic write (mirrors writeFileAtomic in scripts/tracker.mjs / scripts/merge-tracker.mjs) --
 
 function writeFileAtomic(filePath, content) {
   const tmpPath = join(dirname(filePath), `.${basename(filePath)}.${process.pid}.${Date.now()}.${randomUUID()}.tmp`);
@@ -505,7 +505,7 @@ function appendPins(existingContent, pinLines) {
  *      each caller's hands.
  *
  *   2. It is NOT reentrant. Holding this lock and then invoking a core script
- *      that also takes it (`followup-seed.mjs` itself) self-deadlocks until the
+ *      that also takes it (`scripts/followup-seed.mjs` itself) self-deadlocks until the
  *      timeout. Callers that write the file directly are safe; callers that
  *      orchestrate core scripts must not wrap them in this.
  *
@@ -568,8 +568,8 @@ export async function seedFollowup(appNum, options = {}) {
   }
 
   // appDateSource travels with the result so a caller can tell a measured apply
-  // date from a proxy or a guess — the same contract followup-cadence.mjs and
-  // company-history.mjs already expose.
+  // date from a proxy or a guess — the same contract scripts/followup-cadence.mjs and
+  // scripts/company-history.mjs already expose.
   const { appliedDate, appDateSource } = resolveAppliedDate(row, options.date, options.statusChangeDate);
   const cadence = resolveCadenceConfig({ profilePath: options.profilePath });
   const nextDate = addDays(parseDate(appliedDate), cadence.applied_first);
@@ -702,8 +702,8 @@ export async function seedBackfill(options = {}) {
 // --- CLI ---------------------------------------------------------------
 
 const USAGE = `Usage:
-  node followup-seed.mjs <appNum> [--date YYYY-MM-DD] [--force] [--dry-run] [--json]
-  node followup-seed.mjs --backfill [--force] [--dry-run] [--json]
+  node scripts/followup-seed.mjs <appNum> [--date YYYY-MM-DD] [--force] [--dry-run] [--json]
+  node scripts/followup-seed.mjs --backfill [--force] [--dry-run] [--json]
 
   --date <YYYY-MM-DD>  override applied date (single-app only)
   --backfill           seed all Applied rows lacking pins/logs
@@ -750,7 +750,7 @@ function parseCliArgs(argv) {
     }
   } else {
     if (positionals.length !== 1) {
-      throw new SeedError('USAGE', 'Usage: node followup-seed.mjs <appNum> [--date YYYY-MM-DD] [--force] [--dry-run] [--json]');
+      throw new SeedError('USAGE', 'Usage: node scripts/followup-seed.mjs <appNum> [--date YYYY-MM-DD] [--force] [--dry-run] [--json]');
     }
     const raw = positionals[0];
     const n = parseInt(raw, 10);

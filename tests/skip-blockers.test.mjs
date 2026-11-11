@@ -13,7 +13,7 @@ import { isDeepStrictEqual } from 'util';
 console.log('\nskip-blockers.mjs: requirements behind recent skips');
 
 const { rankSkipBlockers, blockerGroups, parseRequirementImportance } =
-  await import(pathToFileURL(join(ROOT, 'skip-blockers.mjs')).href);
+  await import(pathToFileURL(join(ROOT, 'scripts/skip-blockers.mjs')).href);
 
 const check = (label, actual, expected) => {
   if (isDeepStrictEqual(actual, expected)) pass(label);
@@ -72,7 +72,7 @@ check('parses requirement rows and drops malformed ones', parseRequirementImport
 check('a summary without the key yields no rows', parseRequirementImportance(undefined), []);
 
 {
-  // upskill.mjs checks report links against the canonical tracker path, and macOS tmpdirs sit behind the /var symlink.
+  // scripts/upskill.mjs checks report links against the canonical tracker path, and macOS tmpdirs sit behind the /var symlink.
   const sandbox = realpathSync(mkdtempSync(join(tmpdir(), 'co-skip-blockers-')));
   try {
     mkdirSync(join(sandbox, 'data'));
@@ -85,16 +85,16 @@ check('a summary without the key yields no rows', parseRequirementImportance(und
       writeFileSync(join(sandbox, 'reports', file), `# Evaluation: Acme ${i}\n\n## Machine Summary\n\n\`\`\`yaml\nscore: 3.${i + 3}\nfinal_decision: "Skip"\nhard_stops: []\nsoft_gaps: []\nrequirement_importance:\n  - requirement: "Active TS/SCI clearance"\n    jd_signal: "Active TS/SCI clearance"\n    evidence: "stated"\n    importance: "critical"\n    match: "missing"\n\`\`\`\n`);
     }
     writeFileSync(join(sandbox, 'data', 'applications.md'), ['# Applications Tracker', '', '| # | Date | Company | Role | Score | Status | PDF | Report | Notes |', '|---|---|---|---|---|---|---|---|---|', ...rows].join('\n') + '\n');
-    const res = spawnSync(NODE, [join(ROOT, 'upskill.mjs')], {
+    const res = spawnSync(NODE, [join(ROOT, 'scripts/upskill.mjs')], {
       cwd: ROOT, encoding: 'utf-8', timeout: 60000, env: { ...process.env, CAREER_OPS_ROOT: sandbox },
     });
     const out = JSON.parse(res.stdout.slice(res.stdout.indexOf('{')));
-    check('upskill.mjs reports the blocker from the tracker\'s skipped rows only', out.skipBlockers, {
+    check('scripts/upskill.mjs reports the blocker from the tracker\'s skipped rows only', out.skipBlockers, {
       window: 20,
       skips: 4,
       blockers: [{ label: 'Security clearance', kind: 'theme', skips: 4, missing: 4, partial: 0, closeCalls: 3, reports: [4, 3, 2, 1], wordings: ['Active TS/SCI clearance'], nudge: 'learn' }],
     });
-    const summary = spawnSync(NODE, [join(ROOT, 'upskill.mjs'), '--summary'], {
+    const summary = spawnSync(NODE, [join(ROOT, 'scripts/upskill.mjs'), '--summary'], {
       cwd: ROOT, encoding: 'utf-8', timeout: 60000, env: { ...process.env, CAREER_OPS_ROOT: sandbox },
     }).stdout;
     check('--summary prints the blocker row', summary.split('\n').filter((l) => /BLOCKED|Security clearance/.test(l)), [
@@ -102,7 +102,7 @@ check('a summary without the key yields no rows', parseRequirementImportance(und
       '4      4        0        3     learn it                     Security clearance',
     ]);
   } catch (err) {
-    fail(`upskill.mjs skipBlockers run failed: ${err.message}`);
+    fail(`scripts/upskill.mjs skipBlockers run failed: ${err.message}`);
   } finally {
     rmSync(sandbox, { recursive: true, force: true });
   }

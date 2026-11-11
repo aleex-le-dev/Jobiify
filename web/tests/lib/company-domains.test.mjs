@@ -8,7 +8,7 @@
 //
 // The stems used to be built by DELETING every character outside [a-z0-9],
 // which is the defect lib/ascii-fold.mjs exists to end. Its docstring names
-// verify-portals.mjs (#2930) and providers/_trust-validator.mjs (#2924) as the
+// scripts/verify-portals.mjs (#2930) and providers/_trust-validator.mjs (#2924) as the
 // two prior instances; this was a third, in the one place where the result is
 // cached forever.
 //

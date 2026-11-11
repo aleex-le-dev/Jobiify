@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
   const root = careerOpsRoot();
   const file = path.join(root, "data", "pipeline.md");
-  const lockModule = path.join(root, "pipeline-lock.mjs");
+  const lockModule = path.join(root, "scripts/pipeline-lock.mjs");
   if (!fs.existsSync(lockModule)) {
     return NextResponse.json(
       { error: "inbox skip needs the Jobiify scripts; this root has data only", code: "core-script-missing" },

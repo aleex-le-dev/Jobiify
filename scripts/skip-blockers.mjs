@@ -1,10 +1,10 @@
 /**
- * skip-blockers.mjs — which JD requirements keep showing up in the roles you skip.
+ * scripts/skip-blockers.mjs — which JD requirements keep showing up in the roles you skip.
  *
  * Reads the `requirement_importance` rows every Machine Summary carries (see
  * batch/batch-prompt.md) for your most recent skipped and discarded roles, and
  * counts each critical or high requirement the evaluator marked `missing` or
- * `partial`. upskill.mjs calls it and adds the result to its JSON as
+ * `partial`. scripts/upskill.mjs calls it and adds the result to its JSON as
  * `skipBlockers`.
  *
  * This differs from the upskill gap map in two ways that matter. It does not
@@ -23,7 +23,7 @@ const BLOCKING_IMPORTANCE = new Set(['critical', 'high']);
 const UNMET = new Set(['missing', 'partial']);
 
 // Requirements that are not tool names but recur across JDs in many wordings.
-// A requirement that names a skill from skill-extract.mjs groups under the
+// A requirement that names a skill from scripts/skill-extract.mjs groups under the
 // skill first. Anything else that matches no theme groups by its own wording.
 const THEMES = [
   ['People management', /\b(?:people|team) manage|\bmanag(?:e|es|ed|ing)\s+(?:\S+\s+){0,2}(?:teams?|engineers|managers|people|direct reports)\b|\bdirect reports\b/i],

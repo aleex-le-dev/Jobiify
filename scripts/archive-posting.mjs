@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 /**
- * archive-posting.mjs — Save a live job posting as PDF before it disappears.
+ * scripts/archive-posting.mjs — Save a live job posting as PDF before it disappears.
  *
  * Job postings vanish after they're filled, reposted, or companies reorganise.
  * This captures the fully-rendered page via Playwright so you always have the
  * original requirements for interview prep and salary negotiation evidence.
  *
  * Usage:
- *   node archive-posting.mjs <url>
- *   node archive-posting.mjs <url> --company=Anthropic --role=senior-ai-engineer
- *   node archive-posting.mjs <url> --report=042    Key the capture to report #42
- *   node archive-posting.mjs --pipeline          Archive pending URLs in data/pipeline.md
- *   node archive-posting.mjs --dry-run <url>     Preview filename without saving
+ *   node scripts/archive-posting.mjs <url>
+ *   node scripts/archive-posting.mjs <url> --company=Anthropic --role=senior-ai-engineer
+ *   node scripts/archive-posting.mjs <url> --report=042    Key the capture to report #42
+ *   node scripts/archive-posting.mjs --pipeline          Archive pending URLs in data/pipeline.md
+ *   node scripts/archive-posting.mjs --dry-run <url>     Preview filename without saving
  *
  * Output:    jds/YYYY-MM-DD_company-slug_role-slug.pdf
  *            jds/NNN-YYYY-MM-DD_company-slug_role-slug.pdf   (with --report)
@@ -19,7 +19,7 @@
  *
  * Prefer --report. Without it the capture can only be found again by rebuilding
  * its filename from today's date and the scraped company and role, so it stops
- * resolving the next day. outcome.mjs looks captures up by report number.
+ * resolving the next day. scripts/outcome.mjs looks captures up by report number.
  */
 
 import { chromium } from 'playwright';
@@ -30,12 +30,12 @@ import { fileURLToPath } from 'url';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { captureSlug, reportPrefix } from './jd-capture.mjs';
 import { rejectPrivateOrInvalid, validateUrlSecurity } from './liveness-browser.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { localToday } from './lib/local-today.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { localToday } from '../lib/local-today.mjs';
 import { detectNonContentMarker } from './check-jd-archive.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const JDS_DIR = join(DATA_ROOT, 'jds');
 const PIPELINE_PATH = join(DATA_ROOT, 'data', 'pipeline.md');
@@ -64,10 +64,10 @@ const HELP_TEXT = `
   Save a live job posting as PDF before it disappears.
 
   USAGE
-    node archive-posting.mjs <url>
-    node archive-posting.mjs <url> --company=Anthropic --role=senior-ai-engineer
-    node archive-posting.mjs --pipeline     Archive all pending URLs in data/pipeline.md
-    node archive-posting.mjs --dry-run <url>
+    node scripts/archive-posting.mjs <url>
+    node scripts/archive-posting.mjs <url> --company=Anthropic --role=senior-ai-engineer
+    node scripts/archive-posting.mjs --pipeline     Archive all pending URLs in data/pipeline.md
+    node scripts/archive-posting.mjs --dry-run <url>
 
   OPTIONS
     --company <name>   Override auto-detected company name
@@ -84,16 +84,16 @@ const HELP_TEXT = `
   WHY --report
     Without it, a capture is only findable by rebuilding its filename from
     today's date and the scraped company and role, so it stops resolving the
-    next day. outcome.mjs looks captures up by report number.
+    next day. scripts/outcome.mjs looks captures up by report number.
 
   PIPELINE REFERENCE (paste into pipeline.md or reports/)
     local:jds/{filename}
 
   EXAMPLES
-    node archive-posting.mjs "https://jobs.ashbyhq.com/anthropic/abc123"
-    node archive-posting.mjs "https://boards.greenhouse.io/openai/jobs/456" --company=OpenAI
-    node archive-posting.mjs "https://jobs.lever.co/acme/xyz" --report=42
-    node archive-posting.mjs --pipeline
+    node scripts/archive-posting.mjs "https://jobs.ashbyhq.com/anthropic/abc123"
+    node scripts/archive-posting.mjs "https://boards.greenhouse.io/openai/jobs/456" --company=OpenAI
+    node scripts/archive-posting.mjs "https://jobs.lever.co/acme/xyz" --report=42
+    node scripts/archive-posting.mjs --pipeline
     npm run archive -- "https://jobs.lever.co/elevenlabs/abc"
 `;
 
@@ -110,7 +110,7 @@ let reportNum = null;
 function parseCliArgs(args) {
   // Reject a mistyped flag (--comany, --reprot) before any work, and handle
   // --help/-h wherever they appear. Inside the function, not at module scope:
-  // this file is imported for its exports (test-all.mjs does), and a
+  // this file is imported for its exports (scripts/test-all.mjs does), and a
   // module-scope call would read the IMPORTER's argv and exit(1) on flags that
   // are perfectly valid for it.
   validateFlags(args, KNOWN_FLAGS, HELP_TEXT, {
@@ -358,7 +358,7 @@ export async function archiveUrl(browser, url, { company: companyHint, role: rol
     const h1Text = await page.$eval('h1', el => el.innerText.trim()).catch(() => '');
     const urlCompany = extractCompanyFromUrl(url);
 
-    // check-jd-archive.mjs already knows how to recognize a login wall, a 404
+    // scripts/check-jd-archive.mjs already knows how to recognize a login wall, a 404
     // shell, a paywall interstitial, or a "please enable JavaScript" page —
     // but only at AUDIT time, well after the fact. Applying the same
     // detection HERE, before anything is written, means a capture never

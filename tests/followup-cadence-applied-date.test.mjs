@@ -6,13 +6,13 @@
  * a date. Any word in between — including the channel phrasing career-ops'
  * own apply modes write, "Applied via {ATS} {date}" — missed the match
  * entirely and silently degraded to the evaluation-date fallback, which
- * `followup-cadence.mjs`'s own header comment calls out as the failure this
+ * `scripts/followup-cadence.mjs`'s own header comment calls out as the failure this
  * lookup exists to prevent.
  *
- * Run: node test-all.mjs --only followup-cadence-applied-date
+ * Run: node scripts/test-all.mjs --only followup-cadence-applied-date
  */
 import { pass, fail } from './helpers.mjs';
-import { parseAppliedDate } from '../followup-cadence.mjs';
+import { parseAppliedDate } from '../scripts/followup-cadence.mjs';
 
 console.log('\nfollowup-cadence.mjs — parseAppliedDate bounded-gap matching (#4084)');
 

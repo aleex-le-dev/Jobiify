@@ -10,7 +10,7 @@
 import { writeFileSync, rmSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { pass, fail, ROOT } from './helpers.mjs';
-import { inlineLocalFonts } from '../generate-pdf.mjs';
+import { inlineLocalFonts } from '../scripts/generate-pdf.mjs';
 
 const fontsDir = join(ROOT, 'fonts');
 const fontName = `__cache-probe-${process.pid}.woff2`;

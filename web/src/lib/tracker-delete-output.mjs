@@ -1,5 +1,5 @@
 /**
- * Read the report a `tracker.mjs delete` run leaves behind out of its stderr.
+ * Read the report a `scripts/tracker.mjs delete` run leaves behind out of its stderr.
  *
  * The script names the removed row's report in one of two lines:
  *

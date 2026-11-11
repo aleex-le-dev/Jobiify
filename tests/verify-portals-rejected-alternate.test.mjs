@@ -19,7 +19,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const { verifyCompanies, printResults } = await import(pathToFileURL(join(ROOT, 'verify-portals.mjs')).href);
+const { verifyCompanies, printResults } = await import(pathToFileURL(join(ROOT, 'scripts/verify-portals.mjs')).href);
 
 /**
  * Exact hostname of a URL, for fixture routing.

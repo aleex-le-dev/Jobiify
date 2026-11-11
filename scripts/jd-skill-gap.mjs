@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * jd-skill-gap.mjs — Zero-LLM JD skill-gap checker.
+ * scripts/jd-skill-gap.mjs — Zero-LLM JD skill-gap checker.
  *
  * Extracts an explicit skill/requirement list from a JD (regex-based, no LLM
  * call — see extractJdSkills()), then classifies each one against cv.md into
@@ -21,17 +21,17 @@
  * only matters if a tool is allowed to add something automatically).
  *
  * Usage:
- *   node jd-skill-gap.mjs jds/acme.md
- *   node jd-skill-gap.mjs jds/acme.md --summary
- *   node jd-skill-gap.mjs --self-test
+ *   node scripts/jd-skill-gap.mjs jds/acme.md
+ *   node scripts/jd-skill-gap.mjs jds/acme.md --summary
+ *   node scripts/jd-skill-gap.mjs --self-test
  */
 
 import { readFileSync, existsSync } from 'fs';
 import { canonicalize, extractSkills, SKILL_PATTERN } from './skill-extract.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { join } from 'path';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { normalizePandocLine, toPlainText } from './lib/cv-markdown.mjs';
+import { normalizePandocLine, toPlainText } from '../lib/cv-markdown.mjs';
 
 // ── Config ──────────────────────────────────────────────────────────
 
@@ -213,7 +213,7 @@ function stripBoldMarkers(line) {
 //
 // Trailing boundary: \b fails at symbol edges (\bC\+\+\b needs a word char
 // AFTER the +), so C++/C#/F# would never match standalone — same bug and fix
-// as upskill.mjs's SKILL_PATTERN, where (?!\w) is equivalent to \b for
+// as scripts/upskill.mjs's SKILL_PATTERN, where (?!\w) is equivalent to \b for
 // word-char edges and correct for symbol edges. Because the char class here
 // is greedy and contains ".", the last token char is additionally pinned to
 // a word char / # / + so a sentence-ending period is never swallowed into
@@ -293,7 +293,7 @@ class SkillCollector extends Set {
  *
  * Kept as one state machine with extractJdSkills deliberately: a second copy of
  * the block-open/block-close logic would drift from this one, which is the exact
- * failure the shared skill-extract.mjs module was introduced to end.
+ * failure the shared scripts/skill-extract.mjs module was introduced to end.
  *
  * @param {string} jdText
  * @returns {{skills: string[], sawRequirementSection: boolean}}
@@ -411,7 +411,7 @@ function extractJdSkills(jdText) {
  * reasons that have nothing to do with dictionary coverage: SKILL_TOKEN_RE only
  * captures uppercase-leading tokens, so a lowercase bullet like
  * "- python and kubernetes experience" yields nothing even though
- * skill-extract.mjs knows both names. STOPWORDS can also empty a bullet. All the
+ * scripts/skill-extract.mjs knows both names. STOPWORDS can also empty a bullet. All the
  * caller can honestly be told is that nothing was classified.
  *
  * There is deliberately no minimum-length test here. That would need a
@@ -507,7 +507,7 @@ const ANY_HEADING_RE = /^#{1,6}\s/;
 // Which headings open a named skills section (#4879). The heading is read
 // through lib/cv-markdown.mjs first, so `## **[Skills]{.smallcaps}**` counts.
 // "Skills" or "Competencies" anywhere in the heading counts at any level
-// ("Technical Skills", "Core Competencies", the title build-cv-html.mjs
+// ("Technical Skills", "Core Competencies", the title scripts/build-cv-html.mjs
 // renders for the competency grid). "Tools" / "Technologies" / "Tech Stack" only count on a
 // level-1 or level-2 heading: at level 3 they would also match an employer
 // such as "### Acme Technologies — Remote" and promote that job's prose into
@@ -561,10 +561,10 @@ function classifySkillGaps(jdSkills, cvText) {
   const { namedSkillsText, proseText } = splitSkillsSection(cvText);
 
   // Canonical skill sets present in each CV region. Folding BOTH the JD token
-  // and the CV text through skill-extract.mjs's canonicalize() is what closes
+  // and the CV text through scripts/skill-extract.mjs's canonicalize() is what closes
   // the alias gap this file was reported for (#1896): a CV that writes "k8s"
   // and a JD that says "Kubernetes" resolve to the same canonical name instead
-  // of being reported as a false gap. This is the shared tokenizer upskill.mjs
+  // of being reported as a false gap. This is the shared tokenizer scripts/upskill.mjs
   // already promised — three parallel copies used to disagree.
   const namedCanon = extractSkills(namedSkillsText);
   const proseCanon = extractSkills(proseText);
@@ -603,7 +603,7 @@ function classifySkillGaps(jdSkills, cvText) {
   return { existing, supportedByResume, gap };
 }
 
-// ── Exports (for test-all.mjs and other consumers) ───────────────────
+// ── Exports (for scripts/test-all.mjs and other consumers) ───────────────────
 export { extractJdSkills, skillMentionedInText, classifySkillGaps, diagnoseExtraction, diagnoseCoverage };
 
 // ── CLI ──────────────────────────────────────────────────────────────
@@ -810,7 +810,7 @@ Python, Docker, Zookeeper
 
   // Regression: tokens ending in a symbol (C#, C++, F#). The original trailing
   // \b needs a word char AFTER the symbol, so these never matched standalone —
-  // same bug upskill.mjs's SKILL_PATTERN fixed with a (?!\w) lookahead. The
+  // same bug scripts/upskill.mjs's SKILL_PATTERN fixed with a (?!\w) lookahead. The
   // sentence-ending "Docker." assertion guards the other edge of the fix: the
   // greedy char class contains ".", so the lookahead alone would swallow the
   // trailing period into the token.
@@ -1024,7 +1024,7 @@ Shipped a support assistant on Llama 3.
 
   // The reason code must not be read as "the vocabulary is missing these".
   // SKILL_TOKEN_RE only captures uppercase-leading tokens, so a lowercase bullet
-  // extracts nothing even when skill-extract.mjs knows every name in it. Same
+  // extracts nothing even when scripts/skill-extract.mjs knows every name in it. Same
   // reason code, and the message must stay true here too.
   const lowercaseKnownJd = `
 # Role
@@ -1223,7 +1223,7 @@ Be a flexible thinker
 // Derived from the flags this file actually accepts, so `--help` cannot
 // describe an option that does not exist.
 const USAGE = `Usage:
-  node jd-skill-gap.mjs <jd-file> [--summary] [--self-test]
+  node scripts/jd-skill-gap.mjs <jd-file> [--summary] [--self-test]
 
   --summary    human-readable output instead of JSON
   --self-test  run the built-in checks
@@ -1241,8 +1241,8 @@ if (selfTestMode) {
   runSelfTest();
 } else {
   if (!jdPathArg || !existsSync(jdPathArg)) {
-    console.error('Usage: node jd-skill-gap.mjs <jd-file> [--summary]');
-    console.error('       node jd-skill-gap.mjs --self-test');
+    console.error('Usage: node scripts/jd-skill-gap.mjs <jd-file> [--summary]');
+    console.error('       node scripts/jd-skill-gap.mjs --self-test');
     process.exit(1);
   }
   if (!existsSync(CV_PATH)) {

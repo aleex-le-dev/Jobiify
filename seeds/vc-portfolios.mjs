@@ -9,28 +9,28 @@
  * Design constraints:
  *  - Zero auth — public sources only, no login, no API keys.
  *  - Zero LLM tokens — pure HTTP + JSON / HTML.
- *  - Same SLUG_RE guard used by scan-ats-full.mjs for every slug that reaches
+ *  - Same SLUG_RE guard used by scripts/scan-ats-full.mjs for every slug that reaches
  *    URL interpolation — a tampered or malformed payload can never inject
  *    unexpected characters into a URL.
  *  - `parseSeedEntries()` is a pure, synchronous function (no network) so it
  *    can be unit-tested with inline fixtures without any mocking.
  *
- * Typical usage (via scan-ats-full.mjs --seeds flag):
- *   node scan-ats-full.mjs --seeds yc
- *   node scan-ats-full.mjs --seeds yc,a16z --since 7 --dry-run
+ * Typical usage (via scripts/scan-ats-full.mjs --seeds flag):
+ *   node scripts/scan-ats-full.mjs --seeds yc
+ *   node scripts/scan-ats-full.mjs --seeds yc,a16z --since 7 --dry-run
  *
  * Direct usage:
  *   import { fetchYCCompanies, fetchA16zCompanies } from './seeds/vc-portfolios.mjs';
  *   const companies = await fetchYCCompanies();
  */
 
-import { DEFAULT_USER_AGENT } from '../user-agent.mjs';
+import { DEFAULT_USER_AGENT } from '../scripts/user-agent.mjs';
 
 // ── Constants ────────────────────────────────────────────────────────
 
 /**
  * Safe charset for slug values that will be interpolated into ATS URLs.
- * Consistent with the SLUG_RE guard in scan-ats-full.mjs.
+ * Consistent with the SLUG_RE guard in scripts/scan-ats-full.mjs.
  */
 export const SLUG_RE = /^[A-Za-z0-9._-]+$/;
 
@@ -242,7 +242,7 @@ export function parseA16zPayload(html) {
   return [...seen.values()];
 }
 
-// ── Generic pure parser (entry point for test-all.mjs) ───────────────
+// ── Generic pure parser (entry point for scripts/test-all.mjs) ───────────────
 
 /**
  * Parse a raw seed payload (either YC JSON or a16z HTML) into validated
@@ -425,7 +425,7 @@ export async function fetchA16zCompanies({ timeoutMs = DEFAULT_TIMEOUT_MS } = {}
 
 /**
  * Registry mapping seed source names to their fetch functions.
- * Consumed by scan-ats-full.mjs --seeds flag and CLI tooling.
+ * Consumed by scripts/scan-ats-full.mjs --seeds flag and CLI tooling.
  *
  * To add a new VC portfolio:
  *  1. Add a fetchXyzCompanies() function above.

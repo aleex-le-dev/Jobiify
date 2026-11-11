@@ -1,8 +1,8 @@
 // tests/fact-gate-language-coverage.test.mjs — the fabrication gate must not
 // report a confident pass on a document it could not read.
 //
-// verify-cv-facts.mjs is the last check before a generated CV or cover letter
-// goes out (generate-cover-letter.mjs calls assertFacts on every one). Its
+// scripts/verify-cv-facts.mjs is the last check before a generated CV or cover letter
+// goes out (scripts/generate-cover-letter.mjs calls assertFacts on every one). Its
 // count extractor is keyed on METRIC_NOUNS, an English word list, and
 // COUNT_CLAIM_RE's modifier window is `[A-Za-z]`. Percentages, currency and
 // multipliers are language-neutral and still checked everywhere — a COUNT is
@@ -23,7 +23,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { verifyFacts, diagnoseCoverage } from '../verify-cv-facts.mjs';
+import { verifyFacts, diagnoseCoverage } from '../scripts/verify-cv-facts.mjs';
 
 // No sources and no config: this asks what the gate SEES, not what it allows.
 const BARE = { sourcePaths: [], configPath: 'config/__no_such_config__.json' };

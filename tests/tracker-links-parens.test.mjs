@@ -7,7 +7,7 @@ import { pass, fail, ROOT } from './helpers.mjs';
 console.log('\ntracker-links — parentheses in report filenames');
 
 const { normalizeReportLink } = await import(
-  pathToFileURL(join(ROOT, 'tracker-links.mjs')).href
+  pathToFileURL(join(ROOT, 'scripts/tracker-links.mjs')).href
 );
 
 const trackerDir = join(ROOT, 'data');

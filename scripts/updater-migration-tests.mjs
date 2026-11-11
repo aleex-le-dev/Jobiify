@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * updater-migration-tests.mjs — source-level safety checks for update-system.
+ * scripts/updater-migration-tests.mjs — source-level safety checks for update-system.
  *
  * Protects cross-version migrations where an older installed updater must fetch
  * newly introduced system paths without touching user data.
@@ -37,10 +37,10 @@ function applyFailure(result) {
 
 let source = '';
 try {
-  source = readFileSync('update-system.mjs', 'utf-8');
-  pass('update-system.mjs is readable');
+  source = readFileSync('scripts/update-system.mjs', 'utf-8');
+  pass('scripts/update-system.mjs is readable');
 } catch (error) {
-  fail(`update-system.mjs is readable: ${error.message}`);
+  fail(`scripts/update-system.mjs is readable: ${error.message}`);
   process.exit(1);
 }
 
@@ -52,7 +52,7 @@ try {
 // That repository is scaffolding for this suite alone, so it is removed again
 // on exit. test-all runs every smoke script from the SAME shared copy, and a
 // `.git` left behind makes that copy a checkout of its own for every script
-// after this one: `update-system.mjs check` then passes its nested-install
+// after this one: `scripts/update-system.mjs check` then passes its nested-install
 // guard and fetches upstream main into the empty fixture repository - a full
 // clone over the network inside the smoke matrix, killed at the shared 30s
 // budget on any connection slow enough (`exit null, signal SIGTERM`).
@@ -111,7 +111,7 @@ try {
     execFileSync('git', ['init', '-q'], { cwd });
     execFileSync('git', ['config', 'user.email', 'tests@example.invalid'], { cwd });
     execFileSync('git', ['config', 'user.name', 'career-ops tests'], { cwd });
-    execFileSync('git', ['add', 'update-system.mjs', 'updater-migration-tests.mjs', 'AGENTS.md'], { cwd });
+    execFileSync('git', ['add', 'scripts/update-system.mjs', 'scripts/updater-migration-tests.mjs', 'AGENTS.md'], { cwd });
     execFileSync('git', ['commit', '-qm', 'test fixture'], { cwd });
   }
 } catch (error) {
@@ -148,7 +148,7 @@ function runApplyWithEnv(env, args = ['apply']) {
   // invocation must start from the same lock-free state so the assertions
   // below test the child, not test-order residue.
   rmSync('.update-lock', { force: true, recursive: true });
-  return spawnSync(process.execPath, ['update-system.mjs', ...args], {
+  return spawnSync(process.execPath, ['scripts/update-system.mjs', ...args], {
     cwd: process.cwd(),
     encoding: 'utf8',
     env: {
@@ -257,7 +257,7 @@ const ALLOWED_MISSING_ENTRIES = new Set([
   // Retired by #3765, which moved these four suites into tests/. They are kept
   // in SYSTEM_PATHS deliberately so `staleSystemFiles` can still prune an
   // upgrading install's leftover copies (see the "Retired paths" block in
-  // update-system.mjs); a retired path is only useful to the prune while it is
+  // scripts/update-system.mjs); a retired path is only useful to the prune while it is
   // still listed, and by definition it is no longer on disk here.
   'agent-inbox-tests.mjs',
   'followup-seed-tests.mjs',
@@ -304,13 +304,8 @@ const requiredSystemPaths = [
   '.qwen/',
   '.antigravitycli/skills/',
   '.grok/skills/',
-  'updater-migration-tests.mjs',
+  'scripts/updater-migration-tests.mjs',
   'CHANGELOG.md',
-  'CODE_OF_CONDUCT.md',
-  'GOVERNANCE.md',
-  'SECURITY.md',
-  'SUPPORT.md',
-  'TRADEMARK.md',
 ];
 
 const requiredBootstrapPaths = [
@@ -319,11 +314,11 @@ const requiredBootstrapPaths = [
   '.antigravitycli/skills/',
   '.grok/skills/',
   'providers/',
-  'liveness-browser.mjs',
-  'role-matcher.mjs',
-  'tracker-utils.mjs',
-  'tracker-parse.mjs',
-  'updater-migration-tests.mjs',
+  'scripts/liveness-browser.mjs',
+  'scripts/role-matcher.mjs',
+  'scripts/tracker-utils.mjs',
+  'scripts/tracker-parse.mjs',
+  'scripts/updater-migration-tests.mjs',
 ];
 
 for (const path of requiredSystemPaths) {
@@ -396,7 +391,7 @@ const twoPassManifestChecks = [
   },
   {
     name: 'apply resolves the re-exec checkout closure from the pinned target (#1245, #3052)',
-    pattern: /resolveReexecCheckout\(targetCommit,\s*'update-system\.mjs'\)/,
+    pattern: /resolveReexecCheckout\(targetCommit,\s*'scripts\/update-system\.mjs'\)/,
   },
   {
     name: 'apply checks out the resolved re-exec files literally from the pinned target (#1245, #3052)',
@@ -404,7 +399,7 @@ const twoPassManifestChecks = [
   },
   {
     name: 'apply validates the canonical form of the self-bootstrap import closure',
-    pattern: /const reexecFiles = assertCanonicalManifestPaths\([\s\S]{0,240}?resolveReexecCheckout\(targetCommit,\s*'update-system\.mjs'\)[\s\S]{0,240}?'Target updater import closure'/,
+    pattern: /const reexecFiles = assertCanonicalManifestPaths\([\s\S]{0,240}?resolveReexecCheckout\(targetCommit,\s*'scripts\/update-system\.mjs'\)[\s\S]{0,240}?'Target updater import closure'/,
   },
   {
     name: 'apply gives the self-bootstrap import closure the same user-layer decision as the manifest',
@@ -420,7 +415,7 @@ const twoPassManifestChecks = [
   },
   {
     name: 'apply re-execs through the current Node binary',
-    pattern: /execFileSync\(process\.execPath,\s*\[[\s\S]*?'update-system\.mjs',\s*'apply',\s*'--confirm'/,
+    pattern: /execFileSync\(process\.execPath,\s*\[[\s\S]*?'scripts\/update-system\.mjs',\s*'apply',\s*'--confirm'/,
   },
   {
     name: 'apply carries the original backup branch across re-exec',
@@ -432,7 +427,7 @@ const twoPassManifestChecks = [
   },
   {
     name: 'apply reads the target updater manifest from the pinned target (#3052)',
-    pattern: /git\('show',\s*`\$\{targetCommit\}:update-system\.mjs`\)/,
+    pattern: /git\('show',\s*`\$\{targetCommit\}:scripts\/update-system\.mjs`\)/,
   },
   {
     name: 'apply extracts SYSTEM_PATHS from the target updater',
@@ -707,11 +702,11 @@ if (appearsInOrder(applySource, [pairCall, 'pruneStaleTargetRefs();'])) {
 
 if (appearsInOrder(applySource, [
   pairCall,
-  "remoteUpdaterSource = git('show', `${targetCommit}:update-system.mjs`);",
+  "remoteUpdaterSource = git('show', `${targetCommit}:scripts/update-system.mjs`);",
   "remoteSystemPaths = assertCanonicalManifestPaths(remoteSystemPaths, 'Target SYSTEM_PATHS');",
   'const validatedManifestPaths = assertCanonicalManifestPaths(',
   "'Merged updater manifest',",
-  "resolveReexecCheckout(targetCommit, 'update-system.mjs')",
+  "resolveReexecCheckout(targetCommit, 'scripts/update-system.mjs')",
   "'Target updater import closure',",
   'uncoveredReexecFiles.length > 0',
   'const { refused: refusedReexecFiles } = rejectUserLayerPaths(',
@@ -726,7 +721,7 @@ if (appearsInOrder(applySource, [
 if (appearsInOrder(rollbackSource, [
   'targetRef = targetRefForBackup(latest);',
   "git('show-ref', '--verify', '--quiet', targetRef);",
-  "git('show', `${targetRef}:update-system.mjs`);",
+  "git('show', `${targetRef}:scripts/update-system.mjs`);",
   'manifestTreeFiles(safeTargetPaths, targetRef, userPaths,',
 ]) && !/\b(?:git|gitQuiet|gitShowRaw)\([^)]*\bFETCH_HEAD\b[^)]*\)/s.test(rollbackSource)) {
   pass('rollback derives target removals only from the durable backup-paired ref, never FETCH_HEAD');
@@ -734,17 +729,17 @@ if (appearsInOrder(rollbackSource, [
   fail('rollback can derive target removals from a mutable or unpaired ref');
 }
 
-// #1706: update-system.mjs must be self-loading — no static (top-level) relative
+// #1706: scripts/update-system.mjs must be self-loading — no static (top-level) relative
 // imports. A pre-#1245 client's apply() self-reexec checks out ONLY
-// update-system.mjs before re-execing it, so any top-level `import ... from
+// scripts/update-system.mjs before re-execing it, so any top-level `import ... from
 // './...'` (or bare `import './...'`) crashes that re-exec with
 // ERR_MODULE_NOT_FOUND on the old→new jump. Relative modules must be lazily
 // `await import()`ed at their point of use instead.
 const staticRelativeImport = /^\s*(?:import|export)\b[^\n]*?\bfrom\s*['"]\.[^'"]*['"]|^\s*import\s*['"]\.[^'"]*['"]/m;
 if (staticRelativeImport.test(source)) {
-  fail('update-system.mjs is self-loading — no static relative imports (#1706)');
+  fail('scripts/update-system.mjs is self-loading — no static relative imports (#1706)');
 } else {
-  pass('update-system.mjs is self-loading — no static relative imports (#1706)');
+  pass('scripts/update-system.mjs is self-loading — no static relative imports (#1706)');
 }
 
 for (const userPath of ['cv.md', 'config/profile.yml', 'modes/_profile.md', 'portals.yml', 'data/', 'reports/']) {

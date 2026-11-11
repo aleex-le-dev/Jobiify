@@ -1,12 +1,12 @@
 // tests/dedup-tracker-url-conflict.test.mjs — a posting-URL conflict blocks dedup (#4562).
 //
-// dedup-tracker.mjs clustered rows on company + role alone, so two rows naming
+// scripts/dedup-tracker.mjs clustered rows on company + role alone, so two rows naming
 // the same role at one company but pointing at two DIFFERENT live postings were
-// merged and the lower-scored one deleted. merge-tracker.mjs already treats two
+// merged and the lower-scored one deleted. scripts/merge-tracker.mjs already treats two
 // present-and-different posting URLs as proof the rows are distinct (#1524,
-// #2009); dedup now asks the same question through the same url-key.mjs rule.
+// #2009); dedup now asks the same question through the same scripts/url-key.mjs rule.
 //
-// Drives the REAL dedup-tracker.mjs CLI against a temp tracker via the
+// Drives the REAL scripts/dedup-tracker.mjs CLI against a temp tracker via the
 // CAREER_OPS_TRACKER hook, because the deletion is what loses data — asserting
 // on the rows left in the tracker is what proves the guard.
 import { pass, fail, rmSync } from './helpers.mjs';
@@ -18,7 +18,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const DEDUP = join(HERE, '..', 'dedup-tracker.mjs');
+const DEDUP = join(HERE, '..', 'scripts/dedup-tracker.mjs');
 const ok = (name, fn) => { try { fn(); pass(name); } catch (e) { fail(`${name} — ${e.message}`); } };
 
 const HEADER_URL = '| # | Date | Company | Role | Score | Status | PDF | Report | Notes | URL |';

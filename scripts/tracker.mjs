@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * tracker.mjs — SQLite derived index for the applications tracker (RFC #918, phase 1).
+ * scripts/tracker.mjs — SQLite derived index for the applications tracker (RFC #918, phase 1).
  *
  * data/applications.md stays the source of truth. The SQLite DB is a derived
  * index, built and rebuilt from the markdown — safe to delete at any time, it
  * regenerates on the next sync. Tools and agents READ through the index for
  * schema-validated, model-independent results; all writes keep going to the
- * markdown exactly as today (merge-tracker.mjs, hand edits).
+ * markdown exactly as today (scripts/merge-tracker.mjs, hand edits).
  *
  * Why: at hundreds of rows, a markdown table degrades structurally — encoding
  * corruption propagates, columns drift, a `|` inside a cell shifts every
@@ -22,14 +22,14 @@
  * Zero new dependencies — uses node:sqlite (built into Node; unflagged from 22.13).
  *
  * Usage:
- *   node tracker.mjs sync [--check]             # (re)build applications.db from applications.md
+ *   node scripts/tracker.mjs sync [--check]             # (re)build applications.db from applications.md
  *                                               # --check: diagnose only, no write; exit 1 if issues found
- *   node tracker.mjs query [--status Applied] [--company acme] [--role designer]
+ *   node scripts/tracker.mjs query [--status Applied] [--company acme] [--role designer]
  *                          [--since 2026-01-01] [--id N] [--limit 20] [--json]
- *   node tracker.mjs history --id N             # status transition log observed across syncs
- *   node tracker.mjs export [--out FILE] [--force]  # inverse: applications.db → markdown (stdout by default)
+ *   node scripts/tracker.mjs history --id N             # status transition log observed across syncs
+ *   node scripts/tracker.mjs export [--out FILE] [--force]  # inverse: applications.db → markdown (stdout by default)
  *                                               # --force: write even when columns would be dropped
- *   node tracker.mjs delete --num N [--dry-run] # remove one application row from applications.md + reindex
+ *   node scripts/tracker.mjs delete --num N [--dry-run] # remove one application row from applications.md + reindex
  *
  * query/history auto-resync when applications.md changed since the last sync,
  * so the index can never serve stale reads.
@@ -41,7 +41,7 @@ import { dirname, resolve, join, basename } from 'path';
 import { pathToFileURL, fileURLToPath } from 'url';
 import { format } from 'util';
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
-import { localToday } from './lib/local-today.mjs';
+import { localToday } from '../lib/local-today.mjs';
 import * as yaml from 'js-yaml';
 import {
   resolveColumns, detectColumns, isHeaderRow, isSeparatorRow, LEGACY_COLMAP,
@@ -49,8 +49,8 @@ import {
 import {
   canonicalizeTrackerPath, openTrackerTransaction, writeFileAtomic,
 } from './tracker-utils.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
 
 /**
  * Where the derived SQLite index lives for a given tracker.
@@ -88,25 +88,25 @@ function defaultDbPath() {
  */
 class TrackerExit extends Error {
   constructor(code) {
-    super(`tracker.mjs exited with ${code}`);
+    super(`scripts/tracker.mjs exited with ${code}`);
     this.exitCode = code;
   }
 }
 
 // templates/states.yml ships with the code, so it is resolved from this module's
 // own directory. It used to be a bare relative path, i.e. resolved against
-// process.cwd(), which made every tracker.mjs command fail from anywhere but the
+// process.cwd(), which made every scripts/tracker.mjs command fail from anywhere but the
 // repo root — including the shape the data-root mechanism invites, where you cd
 // to your data directory and run the tool out of the checkout (#3508). Third
 // variant of #3500: that one looked for this file under the data root, this one
 // looked for it under whatever directory the shell happened to be in.
-const CODEBASE_ROOT = dirname(fileURLToPath(import.meta.url));
+const CODEBASE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const STATES_PATH = join(CODEBASE_ROOT, 'templates/states.yml');
 const HEADER = '| # | Date | Company | Role | Score | Status | PDF | Report | Notes |';
 const SEPARATOR = '|---|------|---------|------|-------|--------|-----|--------|-------|';
 
 // The nine fields the index stores as real columns, keyed by the field name
-// tracker-parse.mjs's column map uses. Everything else a header declares
+// scripts/tracker-parse.mjs's column map uses. Everything else a header declares
 // (Location, Via, URL, a user's own column) is carried through the round-trip
 // by POSITION in `applications.extras` instead of being widened into the
 // schema — see the export section (#3703).
@@ -136,7 +136,7 @@ async function loadSqlite(ctx) {
     const { DatabaseSync } = await import('node:sqlite');
     return DatabaseSync;
   } catch {
-    ctx.error('Error: node:sqlite is not available. tracker.mjs needs Node >= 22.13 (you are on ' + process.version + ').');
+    ctx.error('Error: node:sqlite is not available. scripts/tracker.mjs needs Node >= 22.13 (you are on ' + process.version + ').');
     ctx.error('The markdown tracker keeps working without it — the index is optional.');
     throw new TrackerExit(1);
   } finally {
@@ -333,7 +333,7 @@ function parseMarkdownRows(text, diag) {
   // edit, since nothing in the loss list could see it (PR #3794 review).
   const raw = text.split('\n').map(l => l.replace(/\r$/, ''));
   const lines = raw.map(l => l.trim());
-  // Map columns by header name (tracker-parse.mjs, #954) so a customized layout
+  // Map columns by header name (scripts/tracker-parse.mjs, #954) so a customized layout
   // (e.g. an inserted Location column) can't shift Score into Status. Falls back
   // to the legacy fixed 9-column layout when no header row is found.
   const colmap = resolveColumns(lines);
@@ -474,8 +474,8 @@ export function removeRowByNum(content, num) {
 
 // Parse + normalize the markdown into index-ready rows. The markdown itself is
 // never modified — normalization lives only in the derived index, and the
-// diagnostics tell the user what to fix at the source (normalize-statuses.mjs,
-// dedup-tracker.mjs).
+// diagnostics tell the user what to fix at the source (scripts/normalize-statuses.mjs,
+// scripts/dedup-tracker.mjs).
 function parseTracker(states, ctx) {
   const diag = { mojibake: 0, scoreInStatus: 0, unknownStatus: 0, badId: 0, badDate: 0, strayPipes: 0 };
   const { rows, layout } = parseMarkdownRows(readFileSync(ctx.mdPath, 'utf-8'), diag);
@@ -550,7 +550,7 @@ function reportDiagnostics(diag, ctx) {
   if (diag.badId) ctx.error(`  ${diag.badId} missing/malformed/duplicate id(s), reassigned in the index`);
   if (diag.badDate) ctx.error(`  ${diag.badDate} malformed date(s), kept as-is`);
   if (diag.strayPipes) ctx.error(`  ${diag.strayPipes} row(s) with stray pipes, folded into notes`);
-  ctx.error('Fix at the source with `node normalize-statuses.mjs` / `node dedup-tracker.mjs`, then re-sync.');
+  ctx.error('Fix at the source with `node scripts/normalize-statuses.mjs` / `node scripts/dedup-tracker.mjs`, then re-sync.');
   return total;
 }
 
@@ -926,7 +926,7 @@ async function exportMd(args, ctx) {
 async function deleteApp(args, ctx) {
   const num = flagValue(args, '--num');
   if (!num) {
-    ctx.error('Usage: node tracker.mjs delete --num <N> [--dry-run]   (remove one application row by its number)');
+    ctx.error('Usage: node scripts/tracker.mjs delete --num <N> [--dry-run]   (remove one application row by its number)');
     throw new TrackerExit(1);
   }
   if (!existsSync(ctx.mdPath)) {
@@ -989,7 +989,7 @@ async function deleteApp(args, ctx) {
 
 const COMMANDS = { sync, query, history, export: exportMd, delete: deleteApp };
 
-const TOP_LEVEL_USAGE = 'Usage: node tracker.mjs <sync|query|history|export|delete> [flags]\n'
+const TOP_LEVEL_USAGE = 'Usage: node scripts/tracker.mjs <sync|query|history|export|delete> [flags]\n'
   + 'See the header comment of this file for examples, or docs/SCRIPTS.md.';
 
 // Every flag each subcommand accepts, from the header comment (lines 24-32).
@@ -997,45 +997,45 @@ const TOP_LEVEL_USAGE = 'Usage: node tracker.mjs <sync|query|history|export|dele
 // fall through `delete`'s `args.includes('--dry-run')` check unseen, so the
 // row was removed for real instead of failing fast. validateFlags() rejects
 // an unrecognized flag before the subcommand ever sees args, and also
-// answers `--help`/`-h` per subcommand — assessment-log.mjs picks its valid
+// answers `--help`/`-h` per subcommand — scripts/assessment-log.mjs picks its valid
 // flags by subcommand the same way.
 const SUBCOMMAND_FLAGS = {
   sync: {
     known: ['--check', '--help', '-h'],
     valueFlags: [],
-    usage: 'Usage: node tracker.mjs sync [--check]\n'
+    usage: 'Usage: node scripts/tracker.mjs sync [--check]\n'
       + '  (re)build applications.db from applications.md\n'
       + '  --check: diagnose only, no write; exit 1 if issues found',
   },
   query: {
     known: ['--status', '--company', '--role', '--since', '--id', '--limit', '--json', '--help', '-h'],
     valueFlags: ['--status', '--company', '--role', '--since', '--id', '--limit'],
-    usage: 'Usage: node tracker.mjs query [--status Applied] [--company acme] [--role designer]\n'
+    usage: 'Usage: node scripts/tracker.mjs query [--status Applied] [--company acme] [--role designer]\n'
       + '                              [--since 2026-01-01] [--id N] [--limit 20] [--json]',
   },
   history: {
     known: ['--id', '--help', '-h'],
     valueFlags: ['--id'],
-    usage: 'Usage: node tracker.mjs history --id N\n'
+    usage: 'Usage: node scripts/tracker.mjs history --id N\n'
       + '  status transition log observed across syncs',
   },
   export: {
     known: ['--out', '--force', '--help', '-h'],
     valueFlags: ['--out'],
-    usage: 'Usage: node tracker.mjs export [--out FILE] [--force]\n'
+    usage: 'Usage: node scripts/tracker.mjs export [--out FILE] [--force]\n'
       + '  inverse: applications.db → markdown (stdout by default)\n'
       + '  --force: write even when columns would be dropped',
   },
   delete: {
     known: ['--num', '--dry-run', '--help', '-h'],
     valueFlags: ['--num'],
-    usage: 'Usage: node tracker.mjs delete --num N [--dry-run]\n'
+    usage: 'Usage: node scripts/tracker.mjs delete --num N [--dry-run]\n'
       + '  remove one application row from applications.md + reindex',
   },
 };
 
 /**
- * Run one tracker.mjs command against the paths given, in-process.
+ * Run one scripts/tracker.mjs command against the paths given, in-process.
  *
  * The CLI branch below is the only caller that reads the environment; it
  * resolves the tracker and index paths and calls this. Anything else — a test,

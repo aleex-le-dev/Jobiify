@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
-import { formatApplicationAnswersSection, parseApplicationAnswersSection, upsertApplicationAnswersSection } from '../application-answers.mjs';
+import { formatApplicationAnswersSection, parseApplicationAnswersSection, upsertApplicationAnswersSection } from '../scripts/application-answers.mjs';
 
 function check(label, run) {
   try {
@@ -30,8 +30,8 @@ for (const heading of ['##\tInterview Notes', '  ## Interview Notes', '##', '# I
       const input = join(root, 'answers.json');
       writeFileSync(report, reportText);
       writeFileSync(input, JSON.stringify({ ...snapshot, freeText: [{ question: 'Why?', answer: 'Updated.' }] }));
-      const run = spawnSync(process.execPath, ['application-answers.mjs', '--report', report, '--input', input], {
-        cwd: new URL('..', import.meta.url), encoding: 'utf8',
+      const run = spawnSync(process.execPath, ['scripts/application-answers.mjs', '--report', report, '--input', input], {
+        cwd: new URL('../', import.meta.url), encoding: 'utf8',
         env: { ...process.env, CAREER_OPS_ROOT: root, CAREER_OPS_DATA_DIR: '', CAREER_OPS_TRACKER: '' },
       });
       assert.equal(run.status, 0, run.stderr);

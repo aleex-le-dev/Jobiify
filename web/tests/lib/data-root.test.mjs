@@ -99,9 +99,9 @@ test("a dot-dot relative marker escapes the checkout, as the core intends", () =
 
 // ── agreement with the core (the point of the whole module) ──────────────────
 
-test("AGREES with the core's path-resolver.mjs on every branch", async (t) => {
-  const src = path.join(CORE, "path-resolver.mjs");
-  if (!fs.existsSync(src)) return t.skip("core path-resolver.mjs not present");
+test("AGREES with the core's scripts/path-resolver.mjs on every branch", async (t) => {
+  const src = path.join(CORE, "scripts/path-resolver.mjs");
+  if (!fs.existsSync(src)) return t.skip("core scripts/path-resolver.mjs not present");
 
   // The core resolver derives __dirname from import.meta.url, so it reads the
   // directory it is LOADED FROM. Copying it into a fixture is the pattern its
@@ -124,7 +124,7 @@ test("AGREES with the core's path-resolver.mjs on every branch", async (t) => {
     const abs = tmpdir();
     const subst = (v) => (v === "ABS" ? abs : v);
 
-    fs.copyFileSync(src, path.join(core, "path-resolver.mjs"));
+    fs.copyFileSync(src, (fs.mkdirSync(path.join(core, 'scripts'), { recursive: true }), path.join(core, "scripts/path-resolver.mjs")));
     if (c.marker !== null) fs.writeFileSync(path.join(core, ".career-ops-data"), subst(c.marker));
 
     const env = Object.fromEntries(Object.entries(c.env).map(([k, v]) => [k, subst(v)]));
@@ -137,7 +137,7 @@ test("AGREES with the core's path-resolver.mjs on every branch", async (t) => {
     let core_answer;
     try {
       // cache-bust: each fixture is a distinct module instance
-      const mod = await import(`${pathToFileURL(path.join(core, "path-resolver.mjs")).href}?c=${encodeURIComponent(c.name)}`);
+      const mod = await import(`${pathToFileURL(path.join(core, "scripts/path-resolver.mjs")).href}?c=${encodeURIComponent(c.name)}`);
       core_answer = mod.getCareerOpsRoot();
     } finally {
       for (const k of Object.keys(process.env)) delete process.env[k];

@@ -22,7 +22,7 @@ import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import childProcess from "node:child_process";
 import { syncBuiltinESMExports } from "node:module";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import "../helpers/web-ts-alias-loader.mjs";
@@ -63,7 +63,8 @@ after(() => {
 
 /** Write the stand-in for a core script into the temp checkout. */
 function standIn(name, body) {
-  writeFileSync(join(codeRoot, `${name}.mjs`), body);
+  mkdirSync(join(codeRoot, "scripts"), { recursive: true });
+  writeFileSync(join(codeRoot, "scripts", `${name}.mjs`), body);
 }
 
 /** Run a handler; return its JSON body and the launches it made. */
@@ -102,7 +103,7 @@ test("all four core-script routes launch with process.execPath and windowsHide",
   // process (bare "node" is whatever PATH finds first) and without a console.
   for (const [script, { launches: made }] of runs) {
     assert.equal(made.length, 1, `${script}: one launch`);
-    assert.equal(made[0].script, join(codeRoot, `${script}.mjs`));
+    assert.equal(made[0].script, join(codeRoot, "scripts", `${script}.mjs`));
     assert.equal(made[0].file, process.execPath, `${script}: launched with process.execPath`);
     assert.equal(made[0].options?.windowsHide, true, `${script}: launched with windowsHide`);
   }

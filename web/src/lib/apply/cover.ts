@@ -4,7 +4,7 @@ import { careerOpsRoot, findApplication, isRegularContainedFile } from "@/lib/ca
 import { companySlug } from "@/lib/company-slug.mjs";
 import { hasToken, matchesTailoredCover, sortNewestFirst } from "./cv-match.mjs";
 
-/** The length generate-cover-letter.mjs truncates a role slug to when it builds
+/** The length scripts/generate-cover-letter.mjs truncates a role slug to when it builds
  *  a default output filename (`role.slice(0, 30)`). A role longer than this is
  *  on disk only in its cut form, so both spellings are accepted below. */
 const ROLE_SLUG_MAX = 30;

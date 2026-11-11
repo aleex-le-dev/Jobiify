@@ -1,11 +1,11 @@
-// portal-health-lock.mjs — a cross-process advisory lock for
-// data/portal-health.tsv, so appendPortalHealth() (scan.mjs) and any
+// scripts/portal-health-lock.mjs — a cross-process advisory lock for
+// data/portal-health.tsv, so appendPortalHealth() (scripts/scan.mjs) and any
 // read-modify-write cleanup of the same file (tests/portal-health-guard.mjs)
 // can never interleave. A concurrent appender that lands between a cleanup's
 // read and write would otherwise be silently discarded.
 //
 // Protocol — deliberately the same shape as the tracker lock in
-// tracker-utils.mjs, so there is one lock idiom in the codebase:
+// scripts/tracker-utils.mjs, so there is one lock idiom in the codebase:
 //   - the lock is a directory ("<path>.lock"); a mkdir is atomic.
 //   - the holder records owner.json — pid, a unique token, started_at — so
 //     both stale-reclaim and release can verify who actually owns the lock
@@ -29,8 +29,8 @@ import { join, dirname } from 'path';
 import { randomUUID } from 'crypto';
 // Fourth copy of the directory-lock protocol in this repo. #2984 patched two of
 // them and declared "one definition, no sibling drift"; this one and
-// followup-seed.mjs were still carrying all three faces of #2777. The
-// classifiers live in pipeline-lock.mjs so the next finding lands once.
+// scripts/followup-seed.mjs were still carrying all three faces of #2777. The
+// classifiers live in scripts/pipeline-lock.mjs so the next finding lands once.
 import {
   isMkdirContention, rmLockArtifactSync, createLockWaitPolicy, sameLockDirectory,
   lockRecoveryVerdict, RECOVER_STALE,

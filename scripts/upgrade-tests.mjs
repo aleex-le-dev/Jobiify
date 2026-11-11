@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * upgrade-tests.mjs — dynamic upgrade regression harness (Layer 1: PR gate).
+ * scripts/upgrade-tests.mjs — dynamic upgrade regression harness (Layer 1: PR gate).
  *
  * Proves the commit under test can be upgraded TO from an old install
  * without touching user data. The old install's `apply` self-reexecs into
@@ -13,11 +13,11 @@
  * VERSION (apply has no version gate; equal-VERSION content drift is normal).
  *
  * Usage:
- *   node upgrade-tests.mjs --pr-gate     # newest old tag -> HEAD, one leg per
+ *   node scripts/upgrade-tests.mjs --pr-gate     # newest old tag -> HEAD, one leg per
  *                                        # dismiss-marker state (untracked/tracked)
- *   node upgrade-tests.mjs --canary      # planted user-file clobber must go RED
- *   node upgrade-tests.mjs --local-paths # a declared fork-local path survives (#2421)
- *   node upgrade-tests.mjs --user-layer-refusal # a user-layer manifest entry is refused,
+ *   node scripts/upgrade-tests.mjs --canary      # planted user-file clobber must go RED
+ *   node scripts/upgrade-tests.mjs --local-paths # a declared fork-local path survives (#2421)
+ *   node scripts/upgrade-tests.mjs --user-layer-refusal # a user-layer manifest entry is refused,
  *                                        # the update completes, rollback leaves it alone
  */
 import { execFileSync } from 'child_process';
@@ -27,9 +27,9 @@ import { tmpdir } from 'os';
 import { join, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { seedFixture, loadExpectations } from './seed-fixture.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const CANONICAL = 'https://github.com/career-ops-hq/career-ops.git';
 // Tags cut before the move to career-ops-hq ship an updater that still
 // fetches the old address; both must resolve to the local mirror or an
@@ -116,7 +116,7 @@ function hermeticEnv(cfg) {
  *  the target and the leg would go spuriously RED. */
 function pickOracle(mirror, oldTag, targetSha, systemPaths) {
   const changed = git(mirror, 'diff', '--name-only', `${oldTag}..${targetSha}`).split('\n').filter(Boolean);
-  if (changed.includes('update-system.mjs')) return { oracle: 'update-system.mjs', changed };
+  if (changed.includes('scripts/update-system.mjs')) return { oracle: 'scripts/update-system.mjs', changed };
   const managed = (f) => systemPaths.some((p) => (p.endsWith('/') ? f.startsWith(p) : f === p));
   const candidate = changed.find((f) => {
     if (!managed(f)) return false;
@@ -153,9 +153,9 @@ export function runLeg({ oldTag, targetSha, label = oldTag, mutateMirror = null,
     // selection (a changed file apply actually rewrites) and the #1998-class
     // new-path assertion below. A refactor that renames the constant would make
     // the regex miss; fail loud rather than dereference null.
-    const targetUpdater = git(mirror, 'show', `${targetSha}:update-system.mjs`);
+    const targetUpdater = git(mirror, 'show', `${targetSha}:scripts/update-system.mjs`);
     const sysMatch = targetUpdater.match(/const\s+SYSTEM_PATHS\s*=\s*\[([\s\S]*?)\];/);
-    if (!sysMatch) throw new Error(`Could not locate SYSTEM_PATHS in the target's update-system.mjs (constant renamed?) — refusing to run a leg with no managed-path set`);
+    if (!sysMatch) throw new Error(`Could not locate SYSTEM_PATHS in the target's scripts/update-system.mjs (constant renamed?) — refusing to run a leg with no managed-path set`);
     const targetSystemPaths = Array.from(sysMatch[1].matchAll(/['"]([^'"]+)['"]/g), (m) => m[1]);
 
     const { oracle, changed } = pickOracle(mirror, oldTag, targetSha, targetSystemPaths);
@@ -176,7 +176,7 @@ export function runLeg({ oldTag, targetSha, label = oldTag, mutateMirror = null,
     const { manifest } = seedFixture(install, { state });
 
     // Dismiss an update before applying one — the shape a user reaches by
-    // running `update-system.mjs dismiss` and then `apply`. Both marker states
+    // running `scripts/update-system.mjs dismiss` and then `apply`. Both marker states
     // have to be exercised, because apply() branches on trackedness and each
     // branch fails differently:
     //
@@ -215,7 +215,7 @@ export function runLeg({ oldTag, targetSha, label = oldTag, mutateMirror = null,
     try {
       // The fixture is an explicit installation acceptance test, so pass the
       // same confirmation a user would provide after reviewing the preview.
-      output = execFileSync(process.execPath, ['update-system.mjs', 'apply', '--confirm'], {
+      output = execFileSync(process.execPath, ['scripts/update-system.mjs', 'apply', '--confirm'], {
         cwd: install, encoding: 'utf-8', timeout: 300000,
         env: { ...hermeticEnv(cfg), CAREER_OPS_UPDATE_CONFIRM: '1' },
       });
@@ -292,11 +292,11 @@ export function runLeg({ oldTag, targetSha, label = oldTag, mutateMirror = null,
     // Secondary smoke only (runs the PR's own code — never the sole oracle).
     let doctorOk = false, doctorReason = '';
     try {
-      const d = JSON.parse(execFileSync(process.execPath, ['doctor.mjs', '--json'], { cwd: install, encoding: 'utf-8', timeout: 60000 }));
+      const d = JSON.parse(execFileSync(process.execPath, ['scripts/doctor.mjs', '--json'], { cwd: install, encoding: 'utf-8', timeout: 60000 }));
       doctorOk = d.onboardingNeeded === false;
       if (!doctorOk) doctorReason = ` (onboardingNeeded=${JSON.stringify(d.onboardingNeeded)}, missing=${JSON.stringify(d.missing ?? [])})`;
     } catch (e) { doctorReason = ` (${String(e.stderr || e.message || e).split('\n')[0].slice(0, 160)})`; }
-    ok(doctorOk, `doctor.mjs --json smoke: onboardingNeeded false${doctorReason}`);
+    ok(doctorOk, `scripts/doctor.mjs --json smoke: onboardingNeeded false${doctorReason}`);
     if (failures.length && output) {
       console.log(`  --- apply output tail [${label}] ---`);
       console.log(output.split('\n').slice(-15).join('\n'));
@@ -355,16 +355,16 @@ function canary() {
       const wt = join(work, 'poison-wt');
       git(mirror, 'worktree', 'add', wt, 'main');
       const completion = "    console.log(`\\nUpdate complete: v${local} → v${remote}`);";
-      const updater = readFileSync(join(wt, 'update-system.mjs'), 'utf-8')
+      const updater = readFileSync(join(wt, 'scripts/update-system.mjs'), 'utf-8')
         .replace(
           completion,
           `    writeFileSync(join(ROOT, 'cv.md'), '# CLOBBERED BY UPDATE\\n');\n${completion}`,
         );
-      if (updater === readFileSync(join(wt, 'update-system.mjs'), 'utf-8')) {
+      if (updater === readFileSync(join(wt, 'scripts/update-system.mjs'), 'utf-8')) {
         throw new Error('Could not inject the canary user-file clobber');
       }
-      writeFileSync(join(wt, 'update-system.mjs'), updater);
-      git(wt, 'add', 'update-system.mjs');
+      writeFileSync(join(wt, 'scripts/update-system.mjs'), updater);
+      git(wt, 'add', 'scripts/update-system.mjs');
       git(wt, '-c', 'user.name=canary', '-c', 'user.email=canary@test', 'commit', '-qm', 'canary: poison');
       const sha = git(wt, 'rev-parse', 'HEAD');
       git(mirror, 'worktree', 'remove', '--force', wt);
@@ -427,11 +427,11 @@ function localPathsLeg() {
     const wt = join(work, 'poison-wt');
     git(mirror, 'worktree', 'add', wt, 'main');
     writeFileSync(join(wt, FORK_FILE), '# UPSTREAM VERSION — must never land on top of the fork\n');
-    const updater = readFileSync(join(wt, 'update-system.mjs'), 'utf-8')
+    const updater = readFileSync(join(wt, 'scripts/update-system.mjs'), 'utf-8')
       .replace(/const\s+SYSTEM_PATHS\s*=\s*\[/, `const SYSTEM_PATHS = [\n  '${FORK_FILE}',`);
     if (!updater.includes(`'${FORK_FILE}',`)) throw new Error('Could not inject the poisoned SYSTEM_PATHS entry (constant renamed?)');
-    writeFileSync(join(wt, 'update-system.mjs'), updater);
-    git(wt, 'add', '-f', FORK_FILE, 'update-system.mjs');
+    writeFileSync(join(wt, 'scripts/update-system.mjs'), updater);
+    git(wt, 'add', '-f', FORK_FILE, 'scripts/update-system.mjs');
     commit(wt, 'poison: upstream adopts a path a fork already owns');
     const targetSha = git(wt, 'rev-parse', 'HEAD');
     git(mirror, 'worktree', 'remove', '--force', wt);
@@ -455,7 +455,7 @@ function localPathsLeg() {
 
     let exitCode = 0, output = '';
     try {
-      output = execFileSync(process.execPath, ['update-system.mjs', 'apply', '--confirm'], {
+      output = execFileSync(process.execPath, ['scripts/update-system.mjs', 'apply', '--confirm'], {
         cwd: install, encoding: 'utf-8', timeout: 300000,
         env: hermeticEnv(cfg),
       });
@@ -505,7 +505,7 @@ function userLayerRefusalLeg() {
   const ok = (cond, msg) => { console.log(`  ${cond ? 'PASS' : 'FAIL'} [user-layer-refusal] ${msg}`); if (!cond) failures.push(msg); };
   const run = (cwd, cfg, ...args) => {
     try {
-      return { exitCode: 0, output: execFileSync(process.execPath, ['update-system.mjs', ...args], {
+      return { exitCode: 0, output: execFileSync(process.execPath, ['scripts/update-system.mjs', ...args], {
         cwd, encoding: 'utf-8', timeout: 300000, env: hermeticEnv(cfg), stdio: ['ignore', 'pipe', 'pipe'],
       }) };
     } catch (e) { return { exitCode: e.status ?? 1, output: `${e.stdout ?? ''}${e.stderr ?? ''}` }; }
@@ -518,11 +518,11 @@ function userLayerRefusalLeg() {
     const wt = join(work, 'poison-wt');
     git(mirror, 'worktree', 'add', wt, 'main');
     writeFileSync(join(wt, USER_FILE), '# UPSTREAM VERSION — must never land on top of the user\n');
-    const updater = readFileSync(join(wt, 'update-system.mjs'), 'utf-8')
+    const updater = readFileSync(join(wt, 'scripts/update-system.mjs'), 'utf-8')
       .replace(/const\s+SYSTEM_PATHS\s*=\s*\[/, `const SYSTEM_PATHS = [\n  '${USER_FILE}',`);
     if (!updater.includes(`'${USER_FILE}',`)) throw new Error('Could not inject the poisoned SYSTEM_PATHS entry (constant renamed?)');
-    writeFileSync(join(wt, 'update-system.mjs'), updater);
-    git(wt, 'add', '-f', USER_FILE, 'update-system.mjs');
+    writeFileSync(join(wt, 'scripts/update-system.mjs'), updater);
+    git(wt, 'add', '-f', USER_FILE, 'scripts/update-system.mjs');
     git(wt, '-c', 'user.name=upgrade-tests', '-c', 'user.email=upgrade-tests@career-ops.test', 'commit', '-qm', 'poison: manifest names the user layer');
     const targetSha = git(wt, 'rev-parse', 'HEAD');
     git(mirror, 'worktree', 'remove', '--force', wt);
@@ -546,7 +546,7 @@ function userLayerRefusalLeg() {
     );
     ok(applied.output.includes('Update complete'), 'apply reports the update as complete');
     ok(
-      git(install, 'rev-parse', 'HEAD:update-system.mjs') === git(mirror, 'rev-parse', `${targetSha}:update-system.mjs`),
+      git(install, 'rev-parse', 'HEAD:scripts/update-system.mjs') === git(mirror, 'rev-parse', `${targetSha}:scripts/update-system.mjs`),
       'the rest of the update landed (updater matches the target)',
     );
     ok(intact(), `user file is byte-identical after apply: ${USER_FILE}`);
@@ -580,5 +580,5 @@ if (isMainModule(import.meta.url)) {
   else if (mode === '--canary') canary();
   else if (mode === '--local-paths') localPathsLeg();
   else if (mode === '--user-layer-refusal') userLayerRefusalLeg();
-  else { console.error('Usage: node upgrade-tests.mjs --pr-gate | --canary | --local-paths | --user-layer-refusal'); process.exit(1); }
+  else { console.error('Usage: node scripts/upgrade-tests.mjs --pr-gate | --canary | --local-paths | --user-layer-refusal'); process.exit(1); }
 }

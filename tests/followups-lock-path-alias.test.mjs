@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pass, fail } from './helpers.mjs';
-import { withFollowupsLock } from '../followup-seed.mjs';
+import { withFollowupsLock } from '../scripts/followup-seed.mjs';
 
 const dir = mkdtempSync(join(tmpdir(), 'followups-alias-'));
 try {

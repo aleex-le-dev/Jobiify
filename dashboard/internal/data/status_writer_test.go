@@ -31,7 +31,7 @@ func TestDashboardStatusLifecycleMatchesCLIAndWeb(t *testing.T) {
 					}
 					return
 				}
-				args := []string{filepath.Join(getRepoRoot(), "set-status.mjs"), "--row", "42", status, "--json"}
+				args := []string{filepath.Join(getRepoRoot(), "scripts/set-status.mjs"), "--row", "42", status, "--json"}
 				if note != "" {
 					args = append(args, "--note", note)
 				}
@@ -220,8 +220,8 @@ func TestDashboardStatusRejectsInvalidWriterResults(t *testing.T) {
 	for _, body := range []string{"console.log('not json')", "console.log('{}')", "console.log(JSON.stringify({changed:true,newStatus:'Interview'})); process.exit(1)", "console.log(JSON.stringify({error:'writer refused'}))"} {
 		t.Run(body, func(t *testing.T) {
 			root := t.TempDir()
-			writeStatusTarget(t, filepath.Join(root, "path-resolver.mjs"), "")
-			writeStatusTarget(t, filepath.Join(root, "set-status.mjs"), body)
+			writeStatusTarget(t, filepath.Join(root, "scripts/path-resolver.mjs"), "")
+			writeStatusTarget(t, filepath.Join(root, "scripts/set-status.mjs"), body)
 			cwd, err := os.Getwd()
 			if err != nil {
 				t.Fatal(err)
@@ -264,7 +264,7 @@ func TestDashboardStatusDoesNotExecuteDataOnlyScripts(t *testing.T) {
 			if location == "cwd" {
 				cwd = root
 			}
-			writeStatusTarget(t, filepath.Join(root, "set-status.mjs"), "throw new Error('untrusted script ran')")
+			writeStatusTarget(t, filepath.Join(root, "scripts/set-status.mjs"), "throw new Error('untrusted script ran')")
 			previous, err := os.Getwd()
 			if err != nil {
 				t.Fatal(err)
@@ -278,7 +278,7 @@ func TestDashboardStatusDoesNotExecuteDataOnlyScripts(t *testing.T) {
 				}
 			})
 			err = UpdateApplicationStatus(root, model.CareerApplication{ReportNumber: "7"}, "Interview")
-			if err == nil || !strings.Contains(err.Error(), "need set-status.mjs in the career-ops checkout") {
+			if err == nil || !strings.Contains(err.Error(), "need scripts/set-status.mjs in the career-ops checkout") {
 				t.Fatalf("data-only script must not run: %v", err)
 			}
 		})

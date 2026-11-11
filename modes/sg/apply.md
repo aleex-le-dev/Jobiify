@@ -89,6 +89,6 @@ refresh it from `filled` to `submitted`.
 ## After applying (optional)
 
 If the candidate confirms submission, follow `modes/apply.md` → Step 9
-(Post-apply) as written: status via `set-status.mjs`, the follow-up seed via
-`followup-seed.mjs`, the `## Application Answers` refresh to `submitted`, and
+(Post-apply) as written: status via `scripts/set-status.mjs`, the follow-up seed via
+`scripts/followup-seed.mjs`, the `## Application Answers` refresh to `submitted`, and
 the `contacto` suggestion. Nothing Singapore-specific changes in that step.

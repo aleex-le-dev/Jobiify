@@ -5,7 +5,7 @@
 // checkout, and linking that checkout in is the natural way to do it.
 // readdirSync does not follow links, so a symlinked entry reports
 // isDirectory() === false and a bare isDirectory() filter drops it with no
-// warning at all: the plugin never appears in `plugins.mjs list` even though
+// warning at all: the plugin never appears in `scripts/plugins.mjs list` even though
 // config/plugins.yml enables it.
 //
 // Discovery is only the first gate. An enabled plugin still has to survive
@@ -23,7 +23,7 @@ import { pathToFileURL } from 'url';
 // A directory SYMLINK needs SeCreateSymbolicLinkPrivilege on Windows, which a
 // non-elevated shell lacks unless Developer Mode is on. All three links below
 // threw EPERM there, losing every check in this file as one opaque suite
-// failure (#3259). A junction needs no privilege, and it is what test-all.mjs's
+// failure (#3259). A junction needs no privilege, and it is what scripts/test-all.mjs's
 // e2e fixture and generate-pdf-page-budget.test.mjs already use for exactly
 // this reason. The swap is invisible to what this suite asserts: discovery
 // still walks the link, readdirSync still reports isDirectory() === false for

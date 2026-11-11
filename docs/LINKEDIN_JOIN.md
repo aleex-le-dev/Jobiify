@@ -1,6 +1,6 @@
 # LinkedIn Join — the connections cross-reference
 
-`linkedin-join.mjs` answers one question: **do I already know someone at a
+`scripts/linkedin-join.mjs` answers one question: **do I already know someone at a
 company in my funnel?**
 
 It takes the `Connections.csv` file LinkedIn gives you when you export your
@@ -37,7 +37,7 @@ If you would rather keep the file somewhere else, every command below accepts
 ## 2. Run it
 
 ```bash
-node linkedin-join.mjs --summary
+node scripts/linkedin-join.mjs --summary
 ```
 
 ```
@@ -90,7 +90,7 @@ than "checked, nobody". `--company` answers in words either way, and the company
 does not have to be tracked yet:
 
 ```bash
-node linkedin-join.mjs --company Datavant --summary
+node scripts/linkedin-join.mjs --company Datavant --summary
 ```
 
 ```
@@ -116,10 +116,10 @@ Do you know anyone at "Stripe"?
 
 `--tsv` prints rows shaped for `data/contacts.tsv`, skipping anyone already in
 it. It **prints and never appends** — read the rows, then paste the keepers in
-yourself, and `contacts.mjs` and the `contacto` mode pick them up from there.
+yourself, and `scripts/contacts.mjs` and the `contacto` mode pick them up from there.
 
 ```bash
-node linkedin-join.mjs --tsv
+node scripts/linkedin-join.mjs --tsv
 ```
 
 ```
@@ -266,12 +266,12 @@ block at the end of `--summary` explains what was excluded and why:
 - `N target rows skipped (placeholder names)` — anonymized companies, as above.
 
 If you expected a hit that did not appear, try `--include-weak` and read the raw
-names it prints. If matching itself looks wrong, `node linkedin-join.mjs
+names it prints. If matching itself looks wrong, `node scripts/linkedin-join.mjs
 --self-test` runs the matcher's own checks without needing an export at all.
 
 ## See also
 
 - [`docs/SCRIPTS.md`](SCRIPTS.md) — the full script reference
-- [`DATA_CONTRACT.md`](../DATA_CONTRACT.md) — which files are yours and which
+- [`docs/projet/DATA_CONTRACT.md`](projet/DATA_CONTRACT.md) — which files are yours and which
   the updater owns, including the `data/Connections.csv` row
-- `contacts.mjs` — the phonebook that `--tsv` rows are destined for
+- `scripts/contacts.mjs` — the phonebook that `--tsv` rows are destined for

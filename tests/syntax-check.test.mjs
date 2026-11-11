@@ -142,7 +142,7 @@ try {
   // Agreement, not "every file parses": another suite may be creating or
   // removing a file under the repository while this one runs, and a file that
   // is gone is rejected by both, which is still agreement. A file with a real
-  // syntax error is section 1 of test-all.mjs's to report.
+  // syntax error is section 1 of scripts/test-all.mjs's to report.
   {
     const repoFiles = collectMjsFiles(ROOT);
     const repoFast = await parseInOneProcess(repoFiles, { cwd: ROOT });
@@ -232,7 +232,7 @@ try {
   }
 
   // ── 4. Both gates use it ──
-  for (const rel of ['test-all.mjs', 'scripts/check-syntax.mjs']) {
+  for (const rel of ['scripts/test-all.mjs', 'scripts/check-syntax.mjs']) {
     const src = readFileSync(join(ROOT, rel), 'utf-8');
     if (/\bcheckSyntax\(/.test(src) && /from '\.{1,2}\/lib\/syntax-check\.mjs'/.test(src)) {
       pass(`${rel} checks syntax through lib/syntax-check.mjs`);
@@ -240,7 +240,7 @@ try {
       fail(`${rel} should check syntax through checkSyntax() from lib/syntax-check.mjs`);
     }
     // `--check` as the FIRST argument is a hand-rolled `node --check` spawn.
-    // (`['dedup-tracker.mjs', '--check']` is a script's own flag and is fine.)
+    // (`['scripts/dedup-tracker.mjs', '--check']` is a script's own flag and is fine.)
     if (/\[\s*['"]--check['"]\s*,/.test(src)) {
       fail(`${rel} spawns node --check itself; a second syntax gate is free to drift from the shared one`);
     } else {

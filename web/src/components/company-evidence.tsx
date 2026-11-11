@@ -6,7 +6,7 @@ import { companyCardModel, isConclusion, factLine } from "@/lib/company-history.
 import type { CompanyCardModel, Verdict } from "@/lib/company-history.mjs";
 
 // What the tracker already knows about this company, from the core's
-// company-history.mjs via /api/company-history.
+// scripts/company-history.mjs via /api/company-history.
 //
 // On the report because it answers the question that sits next to "should I
 // apply?": have these people ever replied to me, and do they re-list this role?
@@ -45,7 +45,7 @@ export function CompanyEvidence({ company }: { company: string }) {
   }
 
   // Silent when unavailable. Unlike the keyword panel, this one adds context to
-  // a page that reads fine without it, and "company-history.mjs isn't in this
+  // a page that reads fine without it, and "scripts/company-history.mjs isn't in this
   // checkout" is not something the reader can act on from here.
   if (!model.available) return null;
 

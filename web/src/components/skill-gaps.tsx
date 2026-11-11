@@ -7,11 +7,11 @@ import { skillGapModel, barPct, blockerText } from "@/lib/skill-gaps.mjs";
 import type { SkillGapModel } from "@/lib/skill-gaps.mjs";
 import { useI18n } from "@/components/i18n-provider";
 
-// What keeps costing you roles, from the core's upskill.mjs via /api/upskill.
+// What keeps costing you roles, from the core's scripts/upskill.mjs via /api/upskill.
 //
 // On the CV page because this is the page for improving your candidacy, and the
 // gaps are the difference between the CV as written and the roles being
-// targeted. It is NOT a to-do list for the CV: upskill.mjs never adds a claim to
+// targeted. It is NOT a to-do list for the CV: scripts/upskill.mjs never adds a claim to
 // cv.md, and neither does this — writing a skill you do not have into the
 // document is the fabrication the project rules forbid.
 //

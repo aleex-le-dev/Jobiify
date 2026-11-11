@@ -1,7 +1,7 @@
 # Architecture
 
 This file describes the runtime flows. Design principles and the
-system/user data-contract layers live in [../ARCHITECTURE.md](../ARCHITECTURE.md).
+system/user data-contract layers live in [../ARCHITECTURE.md](projet/ARCHITECTURE.md).
 
 ## System Overview
 
@@ -53,9 +53,9 @@ system/user data-contract layers live in [../ARCHITECTURE.md](../ARCHITECTURE.md
    - H: Draft application answers (only when the score is 4.5 or above)
 5. **Score**: Weighted average across 5 dimensions (1-5)
 6. **Report**: Save as `reports/{num}-{company}-{date}.md`
-7. **PDF**: Generate ATS-optimized CV (`generate-pdf.mjs`)
+7. **PDF**: Generate ATS-optimized CV (`scripts/generate-pdf.mjs`)
 8. **Track**: New entries via TSV in `batch/tracker-additions/` merged by
-   `merge-tracker.mjs`; status updates to existing rows via `set-status.mjs`
+   `scripts/merge-tracker.mjs`; status updates to existing rows via `scripts/set-status.mjs`
 
 ## Batch Processing
 
@@ -99,12 +99,12 @@ Scripts maintain data consistency:
 
 | Script | Purpose |
 |--------|---------|
-| `merge-tracker.mjs` | Merges batch TSV additions into applications.md |
-| `verify-pipeline.mjs` | Health check: statuses, duplicates, links |
-| `dedup-tracker.mjs` | Removes duplicate entries by company+role |
-| `normalize-statuses.mjs` | Maps status aliases to canonical values |
-| `fix-report-links.mjs` | Rewrites Report cells that link to a missing file to `—` (previewable, backed up) |
-| `cv-sync-check.mjs` | Validates setup consistency |
+| `scripts/merge-tracker.mjs` | Merges batch TSV additions into applications.md |
+| `scripts/verify-pipeline.mjs` | Health check: statuses, duplicates, links |
+| `scripts/dedup-tracker.mjs` | Removes duplicate entries by company+role |
+| `scripts/normalize-statuses.mjs` | Maps status aliases to canonical values |
+| `scripts/fix-report-links.mjs` | Rewrites Report cells that link to a missing file to `—` (previewable, backed up) |
+| `scripts/cv-sync-check.mjs` | Validates setup consistency |
 
 ## Dashboard TUI
 

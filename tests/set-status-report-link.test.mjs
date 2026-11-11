@@ -7,8 +7,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { detectColumns, parseTrackerRow, resolveColumns } from '../tracker-parse.mjs';
-import { analyzeFromContent } from '../followup-cadence.mjs';
+import { detectColumns, parseTrackerRow, resolveColumns } from '../scripts/tracker-parse.mjs';
+import { analyzeFromContent } from '../scripts/followup-cadence.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const HEADER = '| # | Date | Company | Role | Score | Status | PDF | Report | Notes |\n';
@@ -25,7 +25,7 @@ function fixture(t, content = HEADER + ROW) {
 }
 
 function run(f, args = ['--report-link', '7', 'Applied']) {
-  const result = spawnSync(process.execPath, [join(ROOT, 'set-status.mjs'), ...args, '--json'], {
+  const result = spawnSync(process.execPath, [join(ROOT, 'scripts/set-status.mjs'), ...args, '--json'], {
     cwd: ROOT,
     env: { ...process.env, CAREER_OPS_ROOT: f.dir, CAREER_OPS_TRACKER: f.tracker, CAREER_OPS_TRACKER_LOCK: '' },
     encoding: 'utf8', timeout: 30_000,
@@ -182,7 +182,7 @@ test('pipe-only writers cannot begin rewriting tab rows through the shared parse
   const otherRow = ROW.replace('42', '99').replace('[7](reports/007.md)', '[8](reports/008-other.md)');
   const before = HEADER + tabRow + otherRow;
   const f = fixture(t, before);
-  const result = spawnSync(process.execPath, [join(ROOT, 'mark-pdf-ready.mjs'), '7', '--json'], {
+  const result = spawnSync(process.execPath, [join(ROOT, 'scripts/mark-pdf-ready.mjs'), '7', '--json'], {
     cwd: ROOT,
     env: { ...process.env, CAREER_OPS_ROOT: f.dir, CAREER_OPS_TRACKER: f.tracker, CAREER_OPS_TRACKER_LOCK: '' },
     encoding: 'utf8', timeout: 30_000,

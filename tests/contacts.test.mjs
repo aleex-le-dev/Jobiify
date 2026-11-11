@@ -1,5 +1,5 @@
 /**
- * tests/contacts.test.mjs — Systematic test suite for contacts.mjs
+ * tests/contacts.test.mjs — Systematic test suite for scripts/contacts.mjs
  *
  * Tests every exported function across:
  * - TSV phonebook parsing (well-formed, malformed, comments, `-` tracker ref)
@@ -15,13 +15,13 @@
  * Expected vCard strings are built in code on purpose — a committed .vcf
  * fixture would be corrupted by git autocrlf on Windows.
  *
- * Run: node test-all.mjs --only contacts
+ * Run: node scripts/test-all.mjs --only contacts
  *      Running the file directly prints the same ✅/❌ lines, but a
  *      discovered suite reports through the shared counters and never
  *      exits — so a direct run returns 0 even when assertions fail.
  */
 
-import { parseContacts, escapeVcard, foldLine, slug, uidPart, normalizeForHash, contactUid, contactToVcard, buildVcf } from '../contacts.mjs';
+import { parseContacts, escapeVcard, foldLine, slug, uidPart, normalizeForHash, contactUid, contactToVcard, buildVcf } from '../scripts/contacts.mjs';
 import { execFileSync, spawnSync } from 'child_process';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -305,7 +305,7 @@ ok('the LATER occurrence wins', dupVcf.includes('fresh line') && !dupVcf.include
 // ============================================================================
 console.log('\n--- 9. CLI behavior ---');
 
-const scriptPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'contacts.mjs');
+const scriptPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'scripts/contacts.mjs');
 
 try {
   execFileSync('node', [scriptPath, '--self-test'], { encoding: 'utf-8', timeout: 10000 });
@@ -337,7 +337,7 @@ ok('--help --bogus exits 1 (unknown flag checked before --help)', helpBogusR.sta
 ok('--help --bogus names the bad flag in stderr', helpBogusR.stderr.includes('--bogus'));
 ok('--help --bogus writes nothing to stdout', helpBogusR.stdout === '');
 
-// contacts.mjs resolves its paths from import.meta.url and is zero-dep, so a
+// scripts/contacts.mjs resolves its paths from import.meta.url and is zero-dep, so a
 // copy of the script into a temp dir is a fully isolated career-ops root:
 // data/contacts.tsv and output/ under the temp dir, no dependence on whatever
 // the caller's real workspace contains — a contributor with a real phonebook
@@ -345,7 +345,7 @@ ok('--help --bogus writes nothing to stdout', helpBogusR.stdout === '');
 // NOT realpathed, deliberately. macOS tmpdir() is a symlink (/var/folders →
 // /private/var), and this used to be resolved to keep the copied script's
 // hand-rolled main-guard from silently defeating itself. That guard is now
-// lib/is-main-module.mjs, which realpaths both sides (#3170) — and contacts.mjs
+// lib/is-main-module.mjs, which realpaths both sides (#3170) — and scripts/contacts.mjs
 // canonicalizes internally for its own containment checks (realpath-containment
 // right before the write), so nothing here needs a pre-resolved root.
 //
@@ -353,12 +353,14 @@ ok('--help --bogus writes nothing to stdout', helpBogusR.stdout === '');
 // is a symlink at all is a platform accident (macOS yes, Linux CI usually no).
 // The deliberate coverage is in tests/main-guard-convention.test.mjs.
 const tmpRoot = mkdtempSync(join(tmpdir(), 'contacts-cli-'));
-const tmpScript = join(tmpRoot, 'contacts.mjs');
+const tmpScript = join(tmpRoot, 'scripts/contacts.mjs');
+mkdirSync(join(tmpRoot, 'scripts'), { recursive: true });
 try {
+  mkdirSync(join(tmpScript, ".."), { recursive: true });
   copyFileSync(scriptPath, tmpScript);
-  // contacts.mjs resolves user-layer paths via path-resolver.mjs
+  // scripts/contacts.mjs resolves user-layer paths via scripts/path-resolver.mjs
   // (CAREER_OPS_ROOT), so the fixture carries that too.
-  copyFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'path-resolver.mjs'), join(tmpRoot, 'path-resolver.mjs'));
+  copyFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'scripts/path-resolver.mjs'), (mkdirSync(join(tmpRoot, 'scripts'), { recursive: true }), join(tmpRoot, 'scripts/path-resolver.mjs')));
   mkdirSync(join(tmpRoot, 'lib'), { recursive: true });
   copyFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'lib/cli-flags.mjs'), join(tmpRoot, 'lib/cli-flags.mjs'));
   copyFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'lib/is-main-module.mjs'), join(tmpRoot, 'lib/is-main-module.mjs'));
@@ -475,18 +477,18 @@ try {
 // Empty store: fresh temp root with NO data/contacts.tsv at all.
 const emptyRoot = mkdtempSync(join(tmpdir(), 'contacts-empty-'));
 try {
-  copyFileSync(scriptPath, join(emptyRoot, 'contacts.mjs'));
-  // contacts.mjs resolves user-layer paths via path-resolver.mjs
+  copyFileSync(scriptPath, (mkdirSync(join(emptyRoot, 'scripts'), { recursive: true }), join(emptyRoot, 'scripts/contacts.mjs')));
+  // scripts/contacts.mjs resolves user-layer paths via scripts/path-resolver.mjs
   // (CAREER_OPS_ROOT), so the fixture carries that too.
-  copyFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'path-resolver.mjs'), join(emptyRoot, 'path-resolver.mjs'));
+  copyFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'scripts/path-resolver.mjs'), (mkdirSync(join(emptyRoot, 'scripts'), { recursive: true }), join(emptyRoot, 'scripts/path-resolver.mjs')));
   mkdirSync(join(emptyRoot, 'lib'), { recursive: true });
   copyFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'lib/cli-flags.mjs'), join(emptyRoot, 'lib/cli-flags.mjs'));
   copyFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'lib/is-main-module.mjs'), join(emptyRoot, 'lib/is-main-module.mjs'));
   copyFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'lib/tsv-formula-escape.mjs'), join(emptyRoot, 'lib/tsv-formula-escape.mjs'));
-  const emptyJson = JSON.parse(execFileSync('node', [join(emptyRoot, 'contacts.mjs')], { env: ownRootEnv(), encoding: 'utf-8', timeout: 10000 }));
+  const emptyJson = JSON.parse(execFileSync('node', [join(emptyRoot, 'scripts/contacts.mjs')], { env: ownRootEnv(), encoding: 'utf-8', timeout: 10000 }));
   eq('missing store: JSON total = 0', emptyJson.total, 0);
   eq('missing store: contacts = []', emptyJson.contacts, []);
-  const emptyVcfOut = execFileSync('node', [join(emptyRoot, 'contacts.mjs'), '--vcf'], { env: ownRootEnv(), encoding: 'utf-8', timeout: 10000 });
+  const emptyVcfOut = execFileSync('node', [join(emptyRoot, 'scripts/contacts.mjs'), '--vcf'], { env: ownRootEnv(), encoding: 'utf-8', timeout: 10000 });
   ok('missing store: --vcf exits 0 with a clear message', emptyVcfOut.includes('No contacts to export'));
   ok('missing store: --vcf writes no file', !existsSync(join(emptyRoot, 'output/contacts.vcf')));
 } finally {

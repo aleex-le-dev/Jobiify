@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { capabilityCard } from '../plugins.mjs';
+import { capabilityCard } from '../scripts/plugins.mjs';
 
 const manifest = {
   id: 'commute',

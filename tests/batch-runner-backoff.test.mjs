@@ -154,9 +154,9 @@ test('full runner resumes persisted retries and schedules paused rows only with 
   writeFileSync(join(dir, 'batch/batch-input.tsv'), 'id\turl\tsource\tnotes\n1\thttps://example.com/job\ttest\tfixture\n');
   // Isolate report allocation and post-run integrations; use the real runner's
   // argument parsing, scheduling, state reads/writes, process_offer and backoff.
-  writeFileSync(join(dir, 'reserve-report-num.mjs'), 'if (!process.argv.includes("--release")) console.log("001");\n');
+  writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/reserve-report-num.mjs')), 'if (!process.argv.includes("--release")) console.log("001");\n');
   for (const script of ['merge-tracker', 'reconcile-pipeline', 'verify-pipeline']) {
-    writeFileSync(join(dir, `${script}.mjs`), '// No external integrations in this fixture.\n');
+    writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts', `${script}.mjs`)), '// No external integrations in this fixture.\n');
   }
   const stateFile = join(dir, 'batch/batch-state.tsv');
   for (const [status, resume, scheduled] of [

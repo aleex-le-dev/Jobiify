@@ -1,6 +1,6 @@
 # Signatures — The CareerOps Manifesto
 
-The manifesto lives in [MANIFESTO.md](./MANIFESTO.md) and at
+The manifesto lives in [docs/projet/MANIFESTO.md](docs/projet/MANIFESTO.md) and at
 https://career-ops.org/manifesto. Anyone who practices CareerOps can sign —
 step-by-step instructions (non-devs welcome):
 https://career-ops.org/manifesto#how-to-sign
@@ -32,7 +32,7 @@ personal card at `career-ops.org/manifesto/s/your-username`.
 **A note on the numbers.** Signing makes you part of this repository's
 story, not its code statistics: signatures are credited via `Co-authored-by`
 and tracked here; code contributors are tracked separately in
-[CONTRIBUTORS.md](./CONTRIBUTORS.md). When we talk about this project
+[docs/projet/CONTRIBUTORS.md](docs/projet/CONTRIBUTORS.md). When we talk about this project
 publicly, we count signatories and code contributors as what they are: two
 different, equally welcome things.
 

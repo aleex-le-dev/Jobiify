@@ -13,10 +13,10 @@
 // were dropped. Probed against the production function, that left an upgrading
 // install holding all four forever, where tests/root-tests-registration.test.mjs
 // reports them as unregistered suites and turns a healthy install's
-// `node test-all.mjs` red. Found in review by @nikitacometa.
+// `node scripts/test-all.mjs` red. Found in review by @nikitacometa.
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { staleSystemFiles } from '../update-system.mjs';
+import { staleSystemFiles } from '../scripts/update-system.mjs';
 import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\nupdate-system.mjs — retired paths stay prunable');
@@ -28,7 +28,7 @@ const RETIRED = [
   'set-status-tests.mjs',
 ];
 
-const src = readFileSync(join(ROOT, 'update-system.mjs'), 'utf-8');
+const src = readFileSync(join(ROOT, 'scripts/update-system.mjs'), 'utf-8');
 const block = src.match(/const SYSTEM_PATHS = \[([\s\S]*?)\n\];/);
 const systemPaths = block ? Array.from(block[1].matchAll(/'([^']+)'/g), (m) => m[1]) : [];
 
@@ -39,8 +39,8 @@ if (systemPaths.length > 0) {
 }
 
 // An upgrading install: it still holds the retired files, upstream does not.
-const local = [...RETIRED, 'test-all.mjs', 'tests/set-status.test.mjs'];
-const remote = ['test-all.mjs', 'tests/set-status.test.mjs'];
+const local = [...RETIRED, 'scripts/test-all.mjs', 'tests/set-status.test.mjs'];
+const remote = ['scripts/test-all.mjs', 'tests/set-status.test.mjs'];
 const pruned = staleSystemFiles(local, remote, systemPaths);
 
 const missed = RETIRED.filter((p) => !pruned.includes(p));

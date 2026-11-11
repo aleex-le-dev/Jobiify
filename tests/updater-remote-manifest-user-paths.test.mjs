@@ -23,7 +23,7 @@
  */
 
 import { pass, fail, ROOT } from './helpers.mjs';
-import { rejectUserLayerPaths, manifestProbes } from '../update-system.mjs';
+import { rejectUserLayerPaths, manifestProbes } from '../scripts/update-system.mjs';
 
 // A stand-in for effectiveUserPaths() covering both declaration forms: a
 // trailing `/` is a directory, anything else is an exact file path.
@@ -159,7 +159,7 @@ console.log('\n🧪 Testing rejectUserLayerPaths (fetched manifest vs local user
 
 {
   // Given: an ordinary manifest with nothing touching the user layer
-  const remote = ['modes/pdf/', 'modes/de/interview/', 'scan.mjs', 'AGENTS.md'];
+  const remote = ['modes/pdf/', 'modes/de/interview/', 'scripts/scan.mjs', 'AGENTS.md'];
 
   // When: the manifest is split
   const { kept, refused } = rejectUserLayerPaths(remote, USER_PATHS, probes);
@@ -289,7 +289,7 @@ console.log('\n🧪 Testing rejectUserLayerPaths (fetched manifest vs local user
 
 {
   // Given: the ordinary canonical spellings the real manifest actually ships
-  const remote = ['modes/pdf/', 'scan.mjs', 'lib/context-budget.mjs', 'docs/FAQ.md'];
+  const remote = ['modes/pdf/', 'scripts/scan.mjs', 'lib/context-budget.mjs', 'docs/FAQ.md'];
 
   // When: the manifest is split
   const { kept, refused } = rejectUserLayerPaths(remote, USER_PATHS, probes);
@@ -393,7 +393,7 @@ console.log('\n🧪 Testing manifestProbes (git output -> the rule\'s three ques
   const probes = manifestProbes({ trackedOutput: '', upstreamOutput: '', root: ROOT });
 
   // When/Then: it reports on the real filesystem under that root
-  if (probes.exists('update-system.mjs') && !probes.exists('no-such-file-xyz.md')) {
+  if (probes.exists('scripts/update-system.mjs') && !probes.exists('no-such-file-xyz.md')) {
     pass('exists() resolves against the root it was given');
   } else {
     fail('exists() does not resolve against the given root');

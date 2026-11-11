@@ -1,6 +1,6 @@
 # providers/
 
-Job-source provider modules for the zero-token portal scanner (`scan.mjs`).
+Job-source provider modules for the zero-token portal scanner (`scripts/scan.mjs`).
 
 ## Purpose
 
@@ -21,7 +21,7 @@ catalog is [`_types.js`](_types.js).
 
 Core providers must be zero-auth against public endpoints; auth-gated or
 login-required sources belong in the plugin layer instead (see
-[ARCHITECTURE.md](../ARCHITECTURE.md) and `CONTRIBUTING.md`).
+[docs/projet/ARCHITECTURE.md](../docs/projet/ARCHITECTURE.md) and `docs/projet/CONTRIBUTING.md`).
 
 ## Loading and routing
 

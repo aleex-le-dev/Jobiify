@@ -1,7 +1,7 @@
 // tests/no-root-suites.test.mjs — no test suite may sit at the repo root,
 // because nothing there runs it.
 //
-// test-all.mjs discovers tests/**/*.test.mjs (#1440) and the comment on that
+// scripts/test-all.mjs discovers tests/**/*.test.mjs (#1440) and the comment on that
 // function is explicit that discovery stops there: root-level standalone
 // *.test.mjs files are never picked up. Until #3306 the nine that lived at the
 // root were named one by one in a `scripts` list, and a list is a thing you can
@@ -14,12 +14,12 @@
 // different kind of check. The old one asked "is every root suite registered?"
 // — procedural, one entry per file, drifting the moment someone forgets. This
 // one asks "is there a root suite at all?" — a location, with nothing to keep
-// in sync, and it encodes the doctrine ARCHITECTURE.md now states rather than a
+// in sync, and it encodes the doctrine docs/projet/ARCHITECTURE.md now states rather than a
 // list of the files that happen to satisfy it.
 //
 // `*.test.mjs` specifically, NOT "anything test-shaped". test-salary-filter.mjs
 // and test-trust-validator.mjs sit at the root and are correctly registered in
-// test-all.mjs; a looser pattern would redden on two files that are fine.
+// scripts/test-all.mjs; a looser pattern would redden on two files that are fine.
 // #3411 moves them into tests/, after which this check reads the same either
 // way — which is the point of matching the discovery pattern rather than a
 // naming convention.
@@ -32,21 +32,21 @@ console.log('\ntest-all.mjs — no suite outside discovery');
 // 1. Look in the right place first. The invariant below only ever reports an
 //    ABSENCE, and a wrong or unreadable ROOT produces exactly that reading while
 //    measuring nothing — a silent pass, which is the same shape as the bug this
-//    file exists to prevent. test-all.mjs is the cheapest sentinel: it is the
+//    file exists to prevent. scripts/test-all.mjs is the cheapest sentinel: it is the
 //    harness itself and cannot move without this check's premise moving with it.
 //    statSync().isFile() rather than existsSync(), so a directory of that name
 //    cannot satisfy the premise either.
 let rootOk = false;
 try {
-  rootOk = statSync(join(ROOT, 'test-all.mjs')).isFile();
+  rootOk = statSync(join(ROOT, 'scripts/test-all.mjs')).isFile();
 } catch {
   rootOk = false;
 }
 
 if (rootOk) {
-  pass('ROOT is the repo root — test-all.mjs is a file there, so an empty result means empty');
+  pass('ROOT is the repo root — scripts/test-all.mjs is a file there, so an empty result means empty');
 } else {
-  fail(`ROOT does not hold test-all.mjs as a file (${ROOT}) — this guard is looking in the wrong place and would otherwise pass on any tree`);
+  fail(`ROOT does not hold scripts/test-all.mjs as a file (${ROOT}) — this guard is looking in the wrong place and would otherwise pass on any tree`);
 }
 
 // 2. The invariant itself, and only when the premise holds. Reporting "no stray

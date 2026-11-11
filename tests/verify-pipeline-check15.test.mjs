@@ -1,5 +1,5 @@
 // tests/verify-pipeline-check15.test.mjs — Check 15 (portals.yml coverage) end
-// to end, through the real verify-pipeline.mjs process.
+// to end, through the real scripts/verify-pipeline.mjs process.
 //
 // tests/audit-portals.test.mjs pins the contract this check leans on:
 // findUnclaimedEntries() skips an enabled entry with no `name`, adding it to no
@@ -12,7 +12,7 @@
 //
 // Only the portals file is pointed at a fixture. CAREER_OPS_ROOT stays the
 // checkout so providers/ resolves; tracker and reports go to a temp dir the
-// same way test-all.mjs's own verify-pipeline fixtures do, so the other checks
+// same way scripts/test-all.mjs's own verify-pipeline fixtures do, so the other checks
 // never read a user's real data. Provider resolution is config matching — no
 // network is touched.
 import { execFileSync } from 'child_process';
@@ -51,7 +51,7 @@ try {
   const runVp = (portalsFile) => {
     const env = { ...process.env, CAREER_OPS_TRACKER: tracker, CAREER_OPS_REPORTS: reports, CAREER_OPS_PORTALS: portalsFile };
     try {
-      return execFileSync(NODE, [join(ROOT, 'verify-pipeline.mjs')], { cwd: ROOT, env, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 60_000 });
+      return execFileSync(NODE, [join(ROOT, 'scripts/verify-pipeline.mjs')], { cwd: ROOT, env, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 60_000 });
     } catch (err) {
       return typeof err.stdout === 'string' ? err.stdout : '';
     }

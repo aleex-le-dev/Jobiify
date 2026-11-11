@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { rmSync } from './helpers.mjs';
 
-const doctor = fileURLToPath(new URL('../doctor.mjs', import.meta.url));
+const doctor = fileURLToPath(new URL('../scripts/doctor.mjs', import.meta.url));
 
 function run(t, scenario) {
   const dir = mkdtempSync(join(tmpdir(), 'doctor-git-locale-'));

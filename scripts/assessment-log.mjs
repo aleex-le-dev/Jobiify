@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * assessment-log.mjs — Skills-assessment event logger (eSkill, HackerRank, Criteria, ...)
+ * scripts/assessment-log.mjs — Skills-assessment event logger (eSkill, HackerRank, Criteria, ...)
  *
  * "Received a skills assessment" is its own pipeline event — not Applied /
  * Interview / Rejected — so it gets logged structurally instead of buried in
@@ -16,22 +16,22 @@
  * the threshold, and some platforms never reveal the score.
  *
  * Future work (out of scope here): fold per-vendor staleness rates into
- * analyze-patterns.mjs the way ATS channel yield is analyzed today.
+ * scripts/analyze-patterns.mjs the way ATS channel yield is analyzed today.
  *
- * Run: node assessment-log.mjs add --company <name> [--report <num>] \
+ * Run: node scripts/assessment-log.mjs add --company <name> [--report <num>] \
  *        --platform <vendor> --subject <topic> [--threshold <pct>] \
  *        [--score <pct>] [--stale "<observed staleness note>"]
- *      node assessment-log.mjs             (JSON)
- *      node assessment-log.mjs --summary   (human-readable)
- *      node assessment-log.mjs --self-test
+ *      node scripts/assessment-log.mjs             (JSON)
+ *      node scripts/assessment-log.mjs --summary   (human-readable)
+ *      node scripts/assessment-log.mjs --self-test
  */
 
 import { readFileSync, existsSync, appendFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { localToday } from './lib/local-today.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { localToday } from '../lib/local-today.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 const CAREER_OPS = getCareerOpsRoot();
 const LOG_PATH = join(CAREER_OPS, 'data/assessments.tsv');
@@ -40,11 +40,11 @@ const KNOWN_FLAGS = ['--self-test', '--summary', '--help', '-h'];
 const ADD_VALUE_FLAGS = ['--company', '--report', '--platform', '--subject', '--threshold', '--score', '--stale'];
 
 const USAGE = `Usage:
-  node assessment-log.mjs add --company <name> [--report <num>] --platform <vendor> --subject <topic> [--threshold <pct>] [--score <pct>] [--stale "<note>"]
-  node assessment-log.mjs                         # print the assessment log as JSON
-  node assessment-log.mjs --summary               # print a human-readable summary
-  node assessment-log.mjs --self-test             # run the in-memory test suite
-  node assessment-log.mjs --help                  # print this usage block and exit (-h is an alias)`;
+  node scripts/assessment-log.mjs add --company <name> [--report <num>] --platform <vendor> --subject <topic> [--threshold <pct>] [--score <pct>] [--stale "<note>"]
+  node scripts/assessment-log.mjs                         # print the assessment log as JSON
+  node scripts/assessment-log.mjs --summary               # print a human-readable summary
+  node scripts/assessment-log.mjs --self-test             # run the in-memory test suite
+  node scripts/assessment-log.mjs --help                  # print this usage block and exit (-h is an alias)`;
 
 const HEADER_COMMENT = [
   '# assessments.tsv — append-only skills-assessment log (user layer). Never rewrite rows.',
@@ -256,7 +256,7 @@ function printSummary(result) {
 
   if (!assessments.length) {
     console.log('  No assessments logged yet.');
-    console.log('  Log one: node assessment-log.mjs add --company <name> --platform <vendor> --subject <topic>');
+    console.log('  Log one: node scripts/assessment-log.mjs add --company <name> --platform <vendor> --subject <topic>');
   } else {
     console.log('  Events:');
     for (const a of assessments) {

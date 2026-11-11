@@ -1,7 +1,7 @@
 // #3431: location keywords must not anchor inside Unicode words, and a
 // Workday title-only URL must not manufacture a nonempty location.
 import { pass, fail } from './helpers.mjs';
-import { buildLocationFilter, locationHintFromUrl } from '../scan.mjs';
+import { buildLocationFilter, locationHintFromUrl } from '../scripts/scan.mjs';
 
 console.log('\nLocation filter — Unicode boundaries and Workday URL shapes');
 

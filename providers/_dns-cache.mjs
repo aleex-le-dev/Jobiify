@@ -31,7 +31,7 @@
  * Scope of the patch — deliberately narrow:
  *   - Only the callback-style `dns.lookup` on the `node:dns` module object.
  *   - `dns/promises` has its own independent `lookup` and is NOT affected.
- *     That matters: the SSRF egress guard in `upskill.mjs` resolves through
+ *     That matters: the SSRF egress guard in `scripts/upskill.mjs` resolves through
  *     `dns/promises` (`dns.resolve` + `dns.promises.lookup`), so its
  *     validation still hits the resolver every time and cannot be poisoned
  *     by this cache. Verify with:
@@ -96,7 +96,7 @@ const DEFAULT_NEGATIVE_TTL_MS = 30_000;
 // headroom left for the rest of the machine (#2229).
 const DEFAULT_LOOKUPS_PER_MIN = 400;
 // One sweep worker per token, so a cold start of CONCURRENCY=20 workers
-// (scan-ats-full.mjs) is admitted at once and pacing only bites afterwards.
+// (scripts/scan-ats-full.mjs) is admitted at once and pacing only bites afterwards.
 // Small runs against a handful of hostnames are therefore never slowed.
 const DEFAULT_BURST = 20;
 // setTimeout clamps anything larger to 1ms (and warns), which would turn a

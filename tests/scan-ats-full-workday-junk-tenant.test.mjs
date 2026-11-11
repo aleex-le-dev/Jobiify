@@ -9,7 +9,7 @@ import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\nscan-ats-full — workday junk-tenant filter');
 
-const { SOURCES } = await import(pathToFileURL(join(ROOT, 'scan-ats-full.mjs')).href);
+const { SOURCES } = await import(pathToFileURL(join(ROOT, 'scripts/scan-ats-full.mjs')).href);
 
 // A junk-shaped tenant (instance-name lookalike) is dropped outright.
 {

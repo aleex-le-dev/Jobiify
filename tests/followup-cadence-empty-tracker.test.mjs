@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const SCRIPT = join(ROOT, 'followup-cadence.mjs');
+const SCRIPT = join(ROOT, 'scripts/followup-cadence.mjs');
 
 function runWithTracker(trackerContent) {
   const dir = mkdtempSync(join(tmpdir(), 'cadence-empty-'));

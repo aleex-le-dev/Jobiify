@@ -118,7 +118,7 @@ test('allowNestedCheckouts descends anyway — the exemption is a call-site argu
 });
 
 test('a leftover scratch copy is skipped like a checkout — directories only, at any depth', () => {
-  // A copy left by an interrupted test-all.mjs carries no `.git`, so only its
+  // A copy left by an interrupted scripts/test-all.mjs carries no `.git`, so only its
   // name marks it (#3940). Planted at the root and nested inside another, the
   // shape a copy that wrapped an earlier leftover produces. A FILE carrying the
   // prefix is source and must survive: skipping it would quietly drop it from
@@ -151,7 +151,7 @@ test('listTree carries the same guard, so a one-call walk cannot forget it', () 
 });
 
 test('skip sees files and directories, and depth 0 means "directly inside the root"', () => {
-  // test-all.mjs's tree copy needs the root-only form: a top-level `data/` is
+  // scripts/test-all.mjs's tree copy needs the root-only form: a top-level `data/` is
   // excluded, but `test-fixtures/upgrade/state-*/data` must still be copied.
   const dir = tree({ 'data/x.mjs': 'x', 'sub/data/y.mjs': 'y', 'skipme.mjs': 'z', 'keep.mjs': 'k' });
   try {
@@ -237,8 +237,8 @@ test('links: follow survives a link onto an ancestor, and still follows sibling 
   // A link pointing back up its own tree (docs/current -> docs/) passes statSync
   // as an ordinary directory, so without a cycle guard the walk re-enters it
   // until the path length or the stack gives out. Both callers that follow
-  // links walk trees a user can shape: test-all.mjs's repo copy and
-  // seed-fixture.mjs's fixture manifest.
+  // links walk trees a user can shape: scripts/test-all.mjs's repo copy and
+  // scripts/seed-fixture.mjs's fixture manifest.
   const dir = tree({ 'docs/a.txt': 'x', 'docs/deep/b.txt': 'y' });
   try {
     try {
@@ -523,7 +523,7 @@ const EXEMPT = new Map([
     // walkTree to express "fail on a fifo" would be bending a shared walker
     // around one caller's threat model.
   ]],
-  ['intake.mjs', [
+  ['scripts/intake.mjs', [
     'claimRealDirs', 'walk',
     // Deliberately follows symlinks (a symlinked master CV is a natural setup)
     // AND dedupes by realpath in two passes, so that the key written into

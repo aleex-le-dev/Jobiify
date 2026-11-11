@@ -6,10 +6,10 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { ROOT } from './helpers.mjs';
 
-test('every tracker.mjs query filter the tracker mode tells agents to use works', (t) => {
+test('every scripts/tracker.mjs query filter the tracker mode tells agents to use works', (t) => {
   const mode = readFileSync(join(ROOT, 'modes', 'tracker.md'), 'utf8');
-  const paragraph = mode.split('\n').find((l) => l.includes('node tracker.mjs query'));
-  assert.ok(paragraph, 'modes/tracker.md points agents at node tracker.mjs query');
+  const paragraph = mode.split('\n').find((l) => l.includes('node scripts/tracker.mjs query'));
+  assert.ok(paragraph, 'modes/tracker.md points agents at node scripts/tracker.mjs query');
   const filters = [...paragraph.matchAll(/`(--[a-z]+)(?: ([^`]+))?`/g)].map((m) => (m[2] ? [m[1], m[2]] : [m[1]]));
   assert.ok(filters.length >= 5, `found filters ${JSON.stringify(filters)}`);
 
@@ -23,7 +23,7 @@ test('every tracker.mjs query filter the tracker mode tells agents to use works'
     '| 43 | 2026-08-01 | Globex | Designer | 3.1/5 | SKIP | ❌ | — | fictional |',
   ].join('\n') + '\n');
   for (const args of filters) {
-    const result = spawnSync(process.execPath, [join(ROOT, 'tracker.mjs'), 'query', ...args], {
+    const result = spawnSync(process.execPath, [join(ROOT, 'scripts/tracker.mjs'), 'query', ...args], {
       env: { ...process.env, CAREER_OPS_ROOT: root, CAREER_OPS_DATA_DIR: root }, encoding: 'utf8', timeout: 20_000,
     });
     assert.equal(result.status, 0, `${args.join(' ')}: ${result.stdout}${result.stderr}`);

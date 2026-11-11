@@ -23,7 +23,7 @@ import {
   normalizeUrlForDedup,
   recordUrlVariant,
   variantTitleKey,
-} from '../scan.mjs';
+} from '../scripts/scan.mjs';
 import { SCAN_HISTORY_COLUMNS } from '../lib/scan-history-columns.mjs';
 
 console.log('\nScan dedup — language versions sharing a URL key');

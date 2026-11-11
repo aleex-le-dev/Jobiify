@@ -88,7 +88,7 @@ const LANGUAGE_PARAM = 'lang';
 
 // A language code as Recruitee writes it in `translations` (`de`, `en`). Codes
 // go into job URLs verbatim, so this gate keeps them to tag characters;
-// scan.mjs canonicalizes them for comparison.
+// scripts/scan.mjs canonicalizes them for comparison.
 const LANGUAGE_RE = /^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/i;
 
 /**
@@ -118,10 +118,10 @@ function withLanguage(url, language) {
  *
  * Without `allLanguages`, the offer comes back from its top-level fields,
  * tagged with the default language when one matches, followed by the
- * translations in a preferred language (`rank` ≥ 0), so scan.mjs can keep the
+ * translations in a preferred language (`rank` ≥ 0), so scripts/scan.mjs can keep the
  * preferred version. When no translation matches, the offer comes back once:
  * the translation in the best-ranked preferred language, else its top-level
- * fields — an untagged version next to tagged ones would leave scan.mjs
+ * fields — an untagged version next to tagged ones would leave scripts/scan.mjs
  * nothing to tell them apart by.
  *
  * With `allLanguages`, every translation comes back, the default one first;
@@ -247,7 +247,7 @@ function containsWholeWord(text, word) {
  * for already naming it. Each field is checked and appended independently, so
  * a name missing only one of the two still gets exactly that one added.
  * Deduped and joined with " · ", the separator the providers share for
- * multi-place postings (`grep -l "' · '" providers/*.mjs`), so scan.mjs's
+ * multi-place postings (`grep -l "' · '" providers/*.mjs`), so scripts/scan.mjs's
  * location_filter sees every place a multi-location role is open to.
  *
  * Falls back to the single-place logic — explicit `location` (with the
@@ -394,7 +394,7 @@ function parseSalary(salary) {
  *   free (same request — verified against a live board) in two fields:
  *   `description` (the introduction) and `requirements` (the tasks and the
  *   candidate profile, usually the longer one). Both are joined in that order
- *   and stripped to plain text here, so scan.mjs's content_filter /
+ *   and stripped to plain text here, so scripts/scan.mjs's content_filter /
  *   visa_filter see the whole posting. Omitted when neither carries a body.
  * - postedAt: `published_at` (`YYYY-MM-DD HH:MM:SS UTC`) → epoch ms; omitted
  *   when absent, malformed, or not a real calendar date and time.
@@ -412,7 +412,7 @@ function parseSalary(salary) {
  *   the top-level fields — unless the entry's careers_url carries `?lang=xx`,
  *   which returns that translation alone wherever the offer has it. Every Job
  *   that carries a `language` carries it as `?lang=` on its URL too, so the
- *   language versions of one offer share a dedup key in scan.mjs and are told
+ *   language versions of one offer share a dedup key in scripts/scan.mjs and are told
  *   apart by `language`. The translations ship in the same response, so no
  *   request is added.
  * - a posting Recruitee itself marks "(Sample)" in the title is dropped
@@ -430,7 +430,7 @@ function parseSalary(salary) {
  * `url: ''` — same convention as `parseIbmResponse` (`providers/ibm.mjs`) and
  * `parseEightfoldResponse` (`providers/eightfold.mjs`). The URL requirement
  * is load-bearing beyond the general "required field" convention: `url` is
- * this provider's own dedup key downstream (`scan.mjs`'s `normalizeUrlForDedup`
+ * this provider's own dedup key downstream (`scripts/scan.mjs`'s `normalizeUrlForDedup`
  * treats an empty string as a value like any other), so a second title-bearing,
  * URL-less offer from the same tenant would silently collapse onto the first
  * one in `seenUrls` and be dropped as a false duplicate — worse than omitting

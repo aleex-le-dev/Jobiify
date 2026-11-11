@@ -1,4 +1,4 @@
-// tests/check-liveness.test.mjs — CLI contract for check-liveness.mjs (issue #2576).
+// tests/check-liveness.test.mjs — CLI contract for scripts/check-liveness.mjs (issue #2576).
 //
 // The script under test lives at the repository root, so its path is resolved
 // from ROOT, not from this file's directory: the first version resolved
@@ -12,7 +12,7 @@ import { join } from 'path';
 
 console.log('\ncheck-liveness — --help/-h contract');
 
-const scriptPath = join(ROOT, 'check-liveness.mjs');
+const scriptPath = join(ROOT, 'scripts/check-liveness.mjs');
 const run = (args) => spawnSync(NODE, [scriptPath, ...args], {
   encoding: 'utf-8',
   timeout: 10000,
@@ -33,7 +33,7 @@ for (const flag of ['--no-fallback', '--throttle', '--no-record', '--file', '--h
   if ((help.stdout || '').includes(flag)) pass(`--help documents ${flag}`);
   else fail(`--help documents ${flag}`);
 }
-if ((help.stdout || '').includes('node check-liveness.mjs -h')) pass('--help documents -h');
+if ((help.stdout || '').includes('node scripts/check-liveness.mjs -h')) pass('--help documents -h');
 else fail('--help documents -h');
 
 const h = run(['-h']);

@@ -7,14 +7,14 @@
  * shared by PDF generators so every generated document gets the same gate.
  *
  * Usage:
- *   node verify-cv-facts.mjs <generated-cv.html|md|tex>
- *   node verify-cv-facts.mjs <generated-cv> --source cv.md --source article-digest.md
- *   node verify-cv-facts.mjs --self-test
+ *   node scripts/verify-cv-facts.mjs <generated-cv.html|md|tex>
+ *   node scripts/verify-cv-facts.mjs <generated-cv> --source cv.md --source article-digest.md
+ *   node scripts/verify-cv-facts.mjs --self-test
  */
 
 import { existsSync, readFileSync } from 'fs';
 import { isAbsolute, join, basename } from 'path';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
 // Two roots, because this gate compares user-layer files against a user-layer
@@ -1641,8 +1641,8 @@ function countShapedSpans(text) {
  * governs "reports, tracker notes, PDFs, cover letters ... any user-visible
  * prose"), so this is not an edge.
  *
- * Reporting it rather than blocking is the same choice jd-skill-gap.mjs's
- * diagnoseExtraction() and story-provenance-check.mjs's diagnose() make, and
+ * Reporting it rather than blocking is the same choice scripts/jd-skill-gap.mjs's
+ * diagnoseExtraction() and scripts/story-provenance-check.mjs's diagnose() make, and
  * for the reason story-provenance states outright: so "an empty/near-empty
  * result isn't misread as 'scanned and clean'". Blocking instead would fail
  * every non-English document, trading a silent gap for a wall.
@@ -1969,8 +1969,8 @@ function parseCliArgs(args) {
 
 /** Return the command-line usage text. */
 function usage() {
-  return `Usage: node verify-cv-facts.mjs <generated-document> [--source path] [--config path] [--json]
-       node verify-cv-facts.mjs --self-test
+  return `Usage: node scripts/verify-cv-facts.mjs <generated-document> [--source path] [--config path] [--json]
+       node scripts/verify-cv-facts.mjs --self-test
 
 Checks generated candidate-facing text for unsupported metrics and explicitly asserted
 non-metric facts (employers, titles, tools, delegated-work authorship, scope-verb

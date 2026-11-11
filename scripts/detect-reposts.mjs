@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * detect-reposts.mjs — Repost Detector for career-ops
+ * scripts/detect-reposts.mjs — Repost Detector for career-ops
  *
  * Reads data/scan-history.tsv, groups rows by company, groups role titles by
  * title identity (see titleIdentityKey), and flags any company+role that
@@ -46,12 +46,12 @@
  * on a real history, an aggregator's clusters are indistinguishable by shape
  * from legitimate ones.
  *
- * Run: node detect-reposts.mjs             (JSON to stdout)
- *      node detect-reposts.mjs --summary   (human-readable table)
- *      node detect-reposts.mjs --window 60 (override 90-day window)
- *      node detect-reposts.mjs --min-span 7 (override 1-day minimum span)
- *      node detect-reposts.mjs --self-test
- *      node detect-reposts.mjs --help
+ * Run: node scripts/detect-reposts.mjs             (JSON to stdout)
+ *      node scripts/detect-reposts.mjs --summary   (human-readable table)
+ *      node scripts/detect-reposts.mjs --window 60 (override 90-day window)
+ *      node scripts/detect-reposts.mjs --min-span 7 (override 1-day minimum span)
+ *      node scripts/detect-reposts.mjs --self-test
+ *      node scripts/detect-reposts.mjs --help
  *
  * Issue #1205 — github.com/career-ops-hq/career-ops
  */
@@ -67,14 +67,14 @@ import * as yaml from 'js-yaml';
 import { roleFuzzyMatch } from './role-matcher.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { normalizeCompanyName } from './invite-match.mjs';
-import { flagValue, validateFlags, safeIntFlag } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { parseDate } from './lib/parse-date.mjs';
-import { parseScanHistoryLine, scanHistoryLineHasColumn } from './lib/scan-history-columns.mjs';
+import { flagValue, validateFlags, safeIntFlag } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { parseDate } from '../lib/parse-date.mjs';
+import { parseScanHistoryLine, scanHistoryLineHasColumn } from '../lib/scan-history-columns.mjs';
 
 const CAREER_OPS = getCareerOpsRoot();
 const SCAN_HISTORY_PATH = join(CAREER_OPS, 'data/scan-history.tsv');
-// Same resolution scan.mjs uses, so a sandboxed run overrides both together.
+// Same resolution scripts/scan.mjs uses, so a sandboxed run overrides both together.
 const PORTALS_PATH = process.env.CAREER_OPS_PORTALS || join(CAREER_OPS, 'portals.yml');
 const DEFAULT_WINDOW_DAYS = 90;
 
@@ -98,12 +98,12 @@ const KNOWN_FLAGS = ['--window', '--min-span', '--summary', '--self-test', '--he
 const VALUE_FLAGS = ['--window', '--min-span'];
 
 const USAGE = `Usage:
-  node detect-reposts.mjs                       # full JSON repost clusters to stdout
-  node detect-reposts.mjs --summary             # human-readable table
-  node detect-reposts.mjs --window 60           # override the default 90-day window
-  node detect-reposts.mjs --min-span 7          # override the default 1-day minimum span
-  node detect-reposts.mjs --self-test           # run the in-memory test suite
-  node detect-reposts.mjs --help                # print this usage block and exit`;
+  node scripts/detect-reposts.mjs                       # full JSON repost clusters to stdout
+  node scripts/detect-reposts.mjs --summary             # human-readable table
+  node scripts/detect-reposts.mjs --window 60           # override the default 90-day window
+  node scripts/detect-reposts.mjs --min-span 7          # override the default 1-day minimum span
+  node scripts/detect-reposts.mjs --self-test           # run the in-memory test suite
+  node scripts/detect-reposts.mjs --help                # print this usage block and exit`;
 
 const args = process.argv.slice(2);
 const summaryMode = args.includes('--summary');
@@ -111,7 +111,7 @@ const selfTestMode = args.includes('--self-test');
 // Both numeric flags read through flagValue, so `--min-span=7` behaves exactly
 // like `--min-span 7` — the defect lib/cli-flags.mjs exists to keep the next
 // script from rediscovering. The rules and the reasoning now live in
-// lib/cli-flags.mjs's safeIntFlag() so process-quality.mjs stops being the
+// lib/cli-flags.mjs's safeIntFlag() so scripts/process-quality.mjs stops being the
 // file that lacks them (#2982); the behaviour here is unchanged, including
 // the deliberate fall back to the default rather than an exit.
 const intFlag = (flag, fallback) => safeIntFlag(flagValue(args, flag), fallback);
@@ -160,7 +160,7 @@ export function parseScanHistory(content) {
 }
 
 // Canonical clustering key for a row. Prefers the stored normalized-company
-// column (written by scan.mjs via normalizeCompanyName) so "Acme Inc." and
+// column (written by scripts/scan.mjs via normalizeCompanyName) so "Acme Inc." and
 // "Acme" cluster without re-deriving anything; falls back to normalizing the
 // raw company on the fly for pre-column rows and for row objects built directly
 // (e.g. tests). A final fallback to the raw lowercased name preserves the
@@ -191,7 +191,7 @@ export function companyKey(row) {
 // detector must never fail because an optional config is missing.
 // Returns a Map of key -> the raw name as written in portals.yml, not a bare
 // Set. The key is what the detector matches on; the raw name is what a reader
-// has to see. company-history.mjs renders a card for a flagged company even
+// has to see. scripts/company-history.mjs renders a card for a flagged company even
 // when it has no tracker rows and no clusters, and without the original name
 // that card would be titled with the normalized key — "joinupch" rather than
 // "joinup.ch". Map.has() is identical to Set.has() on the matching path.
@@ -217,7 +217,7 @@ export function loadAggregatorCompanies(portalsPath = PORTALS_PATH) {
       }
     }
   } catch {
-    // A malformed portals.yml is scan.mjs's problem to report, not this
+    // A malformed portals.yml is scripts/scan.mjs's problem to report, not this
     // script's problem to crash on.
     return found;
   }
@@ -762,7 +762,7 @@ if (isMainModule(import.meta.url)) {
   // also runs the unrecognized-flag check BEFORE --help, so `--help --bogus`
   // errors rather than exiting 0 unread.
   //
-  // Inside the main-module guard, not at import time: company-history.mjs
+  // Inside the main-module guard, not at import time: scripts/company-history.mjs
   // imports detectReposts/parseScanHistory from here, so a top-level check
   // would judge the IMPORTER's argv.
   // requireOperand: without it, `--window --summary` reads --summary as the

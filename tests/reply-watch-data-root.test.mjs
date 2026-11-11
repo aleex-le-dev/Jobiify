@@ -1,8 +1,8 @@
 // tests/reply-watch-data-root.test.mjs — the reply-watch pair reads and writes the
 // USER's data directory, not the directory the scripts live in.
 //
-// reply-watch.mjs resolved three user-layer paths against __dirname: the tracker,
-// data/follow-ups.md, and data/reply-candidates.json. DATA_CONTRACT.md resolves
+// scripts/reply-watch.mjs resolved three user-layer paths against __dirname: the tracker,
+// data/follow-ups.md, and data/reply-candidates.json. docs/projet/DATA_CONTRACT.md resolves
 // the user layer through CAREER_OPS_ROOT / CAREER_OPS_DATA_DIR / a
 // .career-ops-data marker, and none of those reached this script.
 //
@@ -11,8 +11,8 @@
 // the digest still printed a type, evidence and a suggested status. Only the match
 // to an application was missing -- the one thing the tracker is consulted for.
 //
-// paste-reply.mjs shared the defect, and its header said so ("next to this
-// script, matching reply-watch.mjs's default"). The two agreed with each other,
+// scripts/paste-reply.mjs shared the defect, and its header said so ("next to this
+// script, matching scripts/reply-watch.mjs's default"). The two agreed with each other,
 // which is what made the pair look correct, so both legs are asserted here: a fix
 // to one alone splits the documented handoff.
 
@@ -42,7 +42,7 @@ const CANDIDATE = [{
   date: '2026-09-20',
 }];
 
-// The shape reply-watch.mjs's own loadFollowups() parses, not the one
+// The shape scripts/reply-watch.mjs's own loadFollowups() parses, not the one
 // data/follow-ups.md shows a human. It reads positionally and REQUIRES
 // `parts[2]` to be an integer application number:
 //
@@ -133,7 +133,7 @@ function runScript(script, args, environment) {
 // ── the tracker: a matched reply names the ROW, not the email ───────────────
 {
   const dir = makeDataRoot();
-  const r = runScript('reply-watch.mjs', [], env(dir));
+  const r = runScript('scripts/reply-watch.mjs', [], env(dir));
 
   // The discriminator. Unmatched, reply-watch falls back to the email's subject
   // for the header; matched, it prints "{company} — {role}" from the tracker row.
@@ -159,7 +159,7 @@ function runScript(script, args, environment) {
 // intact. Each root mechanism is exercised on its own.
 {
   const dir = makeDataRoot();
-  const r = runScript('reply-watch.mjs', [], {
+  const r = runScript('scripts/reply-watch.mjs', [], {
     ...process.env,
     CAREER_OPS_ROOT: '',
     CAREER_OPS_DATA_DIR: dir,
@@ -179,7 +179,7 @@ function runScript(script, args, environment) {
 // so testing it means writing a file into the checkout the suite is running from
 // — the hazard tests/stats.test.mjs has to work around for its own live-file
 // assertions. The two env legs above cover the same resolver; the marker is
-// path-resolver.mjs's own contract and is tested there.
+// scripts/path-resolver.mjs's own contract and is tested there.
 
 // ── the candidates ledger: written and read in the same place ──────────────
 {
@@ -188,7 +188,7 @@ function runScript(script, args, environment) {
     'Subject: Interview at Acme Corp\nFrom: recruiting@acmecorp.com\n\nWe would like to schedule an interview.\n');
 
   const repoLedgerExisted = existsSync(REPO_LEDGER);
-  const pasted = runScript('paste-reply.mjs', ['--file', join(dir, 'mail.txt')], env(dir));
+  const pasted = runScript('scripts/paste-reply.mjs', ['--file', join(dir, 'mail.txt')], env(dir));
   if (pasted.code === 0) pass('paste-reply accepts a pasted reply');
   else fail(`paste-reply failed: ${pasted.stderr.slice(0, 200)}`);
 
@@ -223,8 +223,8 @@ function runScript(script, args, environment) {
       + 'skipping the untouched-checkout check rather than reading or rewriting a developer\'s ledger');
   }
 
-  // The handoff paste-reply's own output promises: "Next: run node reply-watch.mjs".
-  const watched = runScript('reply-watch.mjs', [], env(dir));
+  // The handoff paste-reply's own output promises: "Next: run node scripts/reply-watch.mjs".
+  const watched = runScript('scripts/reply-watch.mjs', [], env(dir));
   if (/1 application updates? need review/.test(watched.stdout)) {
     pass('reply-watch picks up the ledger paste-reply just wrote (the documented handoff)');
   } else {
@@ -233,7 +233,7 @@ function runScript(script, args, environment) {
 
   // Guard: the explicit override still wins over the data root.
   const custom = join(dir, 'elsewhere.json');
-  const overridden = runScript('paste-reply.mjs', ['--file', join(dir, 'mail.txt')],
+  const overridden = runScript('scripts/paste-reply.mjs', ['--file', join(dir, 'mail.txt')],
     env(dir, { CAREER_OPS_REPLY_CANDIDATES: custom }));
   if (overridden.code === 0 && existsSync(custom)) {
     pass('CAREER_OPS_REPLY_CANDIDATES still outranks the data root');
@@ -244,7 +244,7 @@ function runScript(script, args, environment) {
 
 // ── follow-ups.md: the file followup-seed writes ───────────────────────────
 //
-// followup-seed.mjs writes join(getCareerOpsRoot(), 'data/follow-ups.md'), so
+// scripts/followup-seed.mjs writes join(getCareerOpsRoot(), 'data/follow-ups.md'), so
 // before the fix one script wrote a file the other could not see.
 //
 // The writer half is MEASURED: followup-seed is spawned against a root with no
@@ -263,7 +263,7 @@ function runScript(script, args, environment) {
 // path and one precise one.
 {
   const dir = makeDataRoot({ withFollowups: false });
-  const seeded = runScript('followup-seed.mjs', ['1', '--json'], env(dir, { CAREER_OPS_FOLLOWUPS: '' }));
+  const seeded = runScript('scripts/followup-seed.mjs', ['1', '--json'], env(dir, { CAREER_OPS_FOLLOWUPS: '' }));
 
   // Positive control first: an assertion that the file is absent from the wrong
   // place is worthless if the script never ran. `seeded:true` is the script's
@@ -301,7 +301,7 @@ function runScript(script, args, environment) {
       + 'untouched-checkout check rather than reading or rewriting a developer\'s follow-ups');
   }
 
-  const src = readFileSync(join(ROOT, 'reply-watch.mjs'), 'utf8');
+  const src = readFileSync(join(ROOT, 'scripts/reply-watch.mjs'), 'utf8');
 
   if (/FOLLOWUPS_FILE = path\.join\(DATA_ROOT, 'data', 'follow-ups\.md'\)/.test(src)) {
     pass('reply-watch resolves follow-ups.md against the data root');
@@ -340,7 +340,7 @@ for (const dir of cleanup) rmSync(dir, { recursive: true, force: true, maxRetrie
 // directory for good reasons (a shipped template, a sibling module, .env), and
 // judging those needs the context each one carries.
 {
-  for (const file of ['reply-watch.mjs', 'paste-reply.mjs']) {
+  for (const file of ['scripts/reply-watch.mjs', 'scripts/paste-reply.mjs']) {
     const src = readFileSync(join(ROOT, file), 'utf8');
     const offenders = src.split('\n')
       .map((line, i) => ({ line: line.trim(), n: i + 1 }))

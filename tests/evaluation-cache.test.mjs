@@ -7,15 +7,15 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dump as yamlDump, load as yamlLoad } from 'js-yaml';
 import { rmSync } from './helpers.mjs';
-import { extractJobFacts, invalidateJobFacts, lookupJobFacts } from '../evaluation-cache.mjs';
+import { extractJobFacts, invalidateJobFacts, lookupJobFacts } from '../scripts/evaluation-cache.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const identityUrl = new URL('../listing-fingerprint.mjs', import.meta.url);
+const identityUrl = new URL('../scripts/listing-fingerprint.mjs', import.meta.url);
 // The dependency PR owns the identity contract. Never substitute a copied
 // implementation here: extraction tests run now; integration runs once that
 // module is available, including when testing both changes together locally.
 const identity = existsSync(identityUrl) ? await import(identityUrl.href) : null;
-const integration = { skip: identity ? false : 'Requires the #1030 listing-fingerprint.mjs dependency' };
+const integration = { skip: identity ? false : 'Requires the #1030 scripts/listing-fingerprint.mjs dependency' };
 const NOW = Date.parse('2026-09-30T10:00:00.000Z');
 const HOUR = 60 * 60 * 1000;
 const POSTING_URL = 'https://boards.greenhouse.io/example/jobs/12345';
@@ -344,7 +344,7 @@ test('report symlinks cannot read or mutate files outside the reports directory'
 });
 
 function runCli(...args) {
-  const result = spawnSync(process.execPath, [join(ROOT, 'evaluation-cache.mjs'), ...args], {
+  const result = spawnSync(process.execPath, [join(ROOT, 'scripts/evaluation-cache.mjs'), ...args], {
     cwd: ROOT, encoding: 'utf8', timeout: 10_000,
   });
   assert.equal(result.error, undefined);

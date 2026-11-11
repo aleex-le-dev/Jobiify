@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * agent-inbox.mjs — a tiny bridge between *looking at* the pipeline and
+ * scripts/agent-inbox.mjs — a tiny bridge between *looking at* the pipeline and
  * *acting on* it.
  *
  * career-ops is driven from an AI session, but there's no durable place to drop
@@ -27,9 +27,9 @@
  * be read off a single `list` without drifting.
  *
  * Usage:
- *   node agent-inbox.mjs add "evaluate https://acme.com/jobs/42"
- *   node agent-inbox.mjs list [--all]                 # pending only, or every item
- *   node agent-inbox.mjs resolve 1 [--expect "Acme"] [--result "scored 4.3 — report 012"]
+ *   node scripts/agent-inbox.mjs add "evaluate https://acme.com/jobs/42"
+ *   node scripts/agent-inbox.mjs list [--all]                 # pending only, or every item
+ *   node scripts/agent-inbox.mjs resolve 1 [--expect "Acme"] [--result "scored 4.3 — report 012"]
  */
 
 import {
@@ -51,7 +51,7 @@ const HEADER = [
   '> decision) → ask the user to start them instead of running them.',
   '>',
   '> Nothing here auto-submits — queued items are *intents* for you to action and',
-  '> the user to review. Appended by hand, by a dashboard, or by agent-inbox.mjs.',
+  '> the user to review. Appended by hand, by a dashboard, or by scripts/agent-inbox.mjs.',
   '',
 ].join('\n');
 
@@ -162,7 +162,7 @@ function optAll(name) {
 
 async function add() {
   const text = oneLine(process.argv.slice(3).join(' '));
-  if (!text) fail('add needs a request, e.g. node agent-inbox.mjs add "evaluate https://..."');
+  if (!text) fail('add needs a request, e.g. node scripts/agent-inbox.mjs add "evaluate https://..."');
   // Append rather than rewrite. This is the queue's concurrent path — anything
   // running in the background can drop an item in — and a read-whole-file /
   // write-whole-file cycle loses every request that lands between the two. With
@@ -176,7 +176,7 @@ async function add() {
   // remove — it just moved to the one platform the guarantee does not cover.
   //
   // The lock is the repo's existing one rather than a second mechanism: the
-  // same `withPipelineLock` that scan.mjs uses for scan-history appends. Two
+  // same `withPipelineLock` that scripts/scan.mjs uses for scan-history appends. Two
   // lock implementations would drift, and the append is short enough that
   // serializing it costs nothing next to spawning the process that calls it.
   //
@@ -192,7 +192,7 @@ async function add() {
   // ~100. On the slow, contended windows-latest runner that shortfall makes one
   // waiter time out and its item is LOST, the exact #2777 drop, reappearing as
   // a loud LockTimeoutError instead of a silent overwrite. Jitter in
-  // pipeline-lock.mjs cuts the collision rate ~6x but is explicitly "not a
+  // scripts/pipeline-lock.mjs cuts the collision rate ~6x but is explicitly "not a
   // cure"; the fit-for-purpose budget for a burst-write queue is the contained
   // fix. 30s gives ~375 rounds of headroom, well past the herd's worst case,
   // while the critical section itself is a single sub-millisecond append.
@@ -296,7 +296,7 @@ async function resolve() {
 }
 
 function fail(msg) {
-  process.stderr.write(`agent-inbox.mjs: ${msg}\n`);
+  process.stderr.write(`scripts/agent-inbox.mjs: ${msg}\n`);
   process.exit(1);
 }
 
@@ -307,9 +307,9 @@ else if (cmd === 'resolve') await resolve();
 else {
   process.stdout.write(
     'Usage:\n' +
-    '  node agent-inbox.mjs add "evaluate https://acme.com/jobs/42"\n' +
-    '  node agent-inbox.mjs list [--all]\n' +
-    '  node agent-inbox.mjs resolve <n> [--expect "substring"] [--result "..."]\n' +
+    '  node scripts/agent-inbox.mjs add "evaluate https://acme.com/jobs/42"\n' +
+    '  node scripts/agent-inbox.mjs list [--all]\n' +
+    '  node scripts/agent-inbox.mjs resolve <n> [--expect "substring"] [--result "..."]\n' +
     '\n' +
     'Numbers are stable file positions: `list` shows gaps once items are\n' +
     'resolved, and a batch of resolves read off one `list` stays correct.\n' +

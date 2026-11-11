@@ -1,11 +1,11 @@
 // @ts-check
 /**
- * liveness-api.mjs — zero-token liveness check for ATS-hosted job postings.
+ * scripts/liveness-api.mjs — zero-token liveness check for ATS-hosted job postings.
  *
  * Many postings live on ATS platforms (Greenhouse, Lever, Ashby, Workday, ...) that
  * expose a public JSON endpoint. We can confirm whether a posting is still live by
  * hitting that endpoint directly — no browser, no LLM tokens — and only fall back to
- * the Playwright check (liveness-browser.mjs) for non-ATS pages or when the API is
+ * the Playwright check (scripts/liveness-browser.mjs) for non-ATS pages or when the API is
  * inconclusive. This is the cheap first rung of the liveness ladder.
  *
  * CONSERVATIVE BY DESIGN: a false "expired" is worse than the status quo (the user
@@ -36,9 +36,9 @@
  */
 
 import { DEFAULT_USER_AGENT } from './user-agent.mjs';
-import { isZohoRecordClosed, parseZohoDetailPage } from './providers/zoho-recruit.mjs';
+import { isZohoRecordClosed, parseZohoDetailPage } from '../providers/zoho-recruit.mjs';
 import { atsVendorOf } from './ats-vendor.mjs';
-import { linkedInJobId, linkedInGuestUrl } from './lib/linkedin-url.mjs';
+import { linkedInJobId, linkedInGuestUrl } from '../lib/linkedin-url.mjs';
 
 const TIMEOUT_MS = 8_000;
 // Strict path-segment charset. Anything with a slash, dot-dot, or other char is
@@ -327,7 +327,7 @@ const ATS_PROVIDERS = [
     api: ({ id }) => linkedInGuestUrl(id),
     // The endpoint is unauthenticated and rate-limited. Space our calls; the
     // interval sits on the provider so it holds for every caller rather than only
-    // the loop in check-liveness.mjs.
+    // the loop in scripts/check-liveness.mjs.
     throttleMs: 3_500,
     // We parse HTML here, so ask for it. The endpoint also serves HTML under an
     // application/json Accept, but a request that misdescribes what it wants is one
@@ -354,7 +354,7 @@ const LINKEDIN_APPLY_CONTROL = /public_jobs_apply-link-onsite|job-details-topcar
 
 /**
  * Decide liveness for one LinkedIn posting from its guest-endpoint HTML.
- * Pure + deterministic (no I/O), mirroring classifyLiveness in liveness-core.mjs.
+ * Pure + deterministic (no I/O), mirroring classifyLiveness in scripts/liveness-core.mjs.
  *
  * The two signals are read independently and must agree before this concludes
  * anything. A body carrying the closed banner AND an apply control, or neither, is
@@ -421,7 +421,7 @@ export async function throttleProviderRequest(providerId, intervalMs) {
 
 /**
  * Decide liveness for one Ashby posting from its org's job-board API payload.
- * Pure + deterministic (no I/O), mirroring classifyLiveness in liveness-core.mjs.
+ * Pure + deterministic (no I/O), mirroring classifyLiveness in scripts/liveness-core.mjs.
  *
  * The public board lists only currently-published postings, so a posting that is
  * absent (or explicitly `isListed: false`) has been removed/unlisted → expired.
@@ -445,7 +445,7 @@ export function classifyAshbyBoard(json, jobId) {
 
 /**
  * Decide liveness for one Workable posting from its v2 endpoint JSON.
- * Pure + deterministic (no I/O), mirroring classifyLiveness in liveness-core.mjs.
+ * Pure + deterministic (no I/O), mirroring classifyLiveness in scripts/liveness-core.mjs.
  *
  * The live shape measured against a real posting is `state: "published"` (#5000);
  * every other readable state stays `uncertain` rather than expired, because the
@@ -573,8 +573,8 @@ export function isAtsPosting(url) {
 // embeds the record with its HTML `Job_Description`.
 // Microsoft and LinkedIn are on ATS_PROVIDERS
 // for liveness only — their public endpoints answer search/status, never body
-// text — so they are deliberately excluded here; see fetch-jd.mjs / the
-// fetch*Jd() family in browser-extract.mjs for the per-provider fetchers.
+// text — so they are deliberately excluded here; see scripts/fetch-jd.mjs / the
+// fetch*Jd() family in scripts/browser-extract.mjs for the per-provider fetchers.
 export const JD_TEXT_API_ATS = new Set(['greenhouse', 'greenhouse-embedded', 'lever', 'ashby', 'workday', 'smartrecruiters', 'zoho-recruit']);
 
 /**

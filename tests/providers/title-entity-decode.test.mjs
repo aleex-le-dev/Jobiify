@@ -1,7 +1,7 @@
 // tests/providers/title-entity-decode.test.mjs — titles must be entity-decoded
 // before they reach title_filter (#2921).
 //
-// Not cosmetic. scan.mjs's buildTitleFilter lowercases and substring-matches,
+// Not cosmetic. scripts/scan.mjs's buildTitleFilter lowercases and substring-matches,
 // so an undecoded "R&amp;D Engineer" fails a positive keyword "r&d" and the
 // posting is silently dropped — it never reaches pipeline.md and the user
 // never learns it existed. A negative keyword fails the opposite way: the veto
@@ -19,7 +19,7 @@ const load = (f) => import(pathToFileURL(join(ROOT, `providers/${f}`)).href);
 
 console.log('\nProviders — title entity decoding (#2921)');
 try {
-  const { buildTitleFilter } = await load('../scan.mjs');
+  const { buildTitleFilter } = await load('../scripts/scan.mjs');
 
   // The end-to-end claim: the decoded title survives the user's own filter.
   const keepsRnD = buildTitleFilter({ positive: ['r&d'], negative: [] });

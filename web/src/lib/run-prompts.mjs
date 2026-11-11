@@ -4,8 +4,8 @@
  * The web ORCHESTRATES the real career-ops engine — it does NOT reimplement it.
  * kind "evaluate" runs the REAL modes/oferta.md scoring and emits the report in
  * a <<report-md>> envelope; the backend persists it via the SAME scripts the
- * CLI uses (reserve-report-num.mjs → reports/ → batch/tracker-additions/ →
- * merge-tracker.mjs). The agent itself holds no Write/Bash — a posting is
+ * CLI uses (scripts/reserve-report-num.mjs → reports/ → batch/tracker-additions/ →
+ * scripts/merge-tracker.mjs). The agent itself holds no Write/Bash — a posting is
  * untrusted input and must not be able to aim those tools. kind "research"
  * stays read-only.
  */
@@ -17,7 +17,7 @@ import { COVER_TONES } from "./cover-brief.mjs";
  * Is this company name safe to interpolate into a shell command inside a prompt?
  *
  * The fix-portal prompt tells the agent to run
- * `node verify-portals.mjs --add "<company>"`, and fix-portal is one of the kinds
+ * `node scripts/verify-portals.mjs --add "<company>"`, and fix-portal is one of the kinds
  * that still holds Bash. Company names are not always the user's own typing — they
  * reach the dashboard from public ATS listings — so a crafted one could close the
  * quote and append a command. Allow the characters real company names use and
@@ -46,7 +46,7 @@ const SAFE_COMPANY_NAME = /^[\p{L}\p{N} .,&'()+/-]+$/u;
  * Lives in a plain .mjs so it can be asserted on as a VALUE: the pdf prompt is
  * the load-bearing half of #2185 (it is what tells the agent to emit the CV
  * inline instead of writing it), and a guard that greps route.ts for the marker
- * text matched the route's own comments instead. See test-all.mjs §55.6.
+ * text matched the route's own comments instead. See scripts/test-all.mjs §55.6.
  *
  * @param {{kind: string, input: string, memory: string, today: string, postedAt?: string, lang?: {output: string, modesDir: string, evalModeFile: string}}} args
  * @returns {string}
@@ -58,7 +58,7 @@ const ISO_DATE_RE = /^20\d{2}-\d{2}-\d{2}$/;
 export const BASE_CV_TEMPLATE = "templates/cv-template.html";
 
 /**
- * The two shapes cv-templates.mjs can produce, and nothing wider.
+ * The two shapes scripts/cv-templates.mjs can produce, and nothing wider.
  *
  * FILENAME: its parseFilename() only ever matches
  * `cv-template(.<name>)?.(html|tex)` with `<name>` in `[a-z0-9-]`, so the filename
@@ -160,10 +160,10 @@ Target: ${input}`;
     // cv.md or data/applications.md. The agent now emits the CV inline and the
     // backend (a plain Node process, no CLI sandbox) writes and renders it, so
     // pdf mode runs with no write tool at all.
-    return `You are tailoring the user's ATS-optimized CV for application #${input}, headless, on their machine. Run the REAL career-ops "pdf" mode's CONTENT step: follow modes/pdf.md's TAILORING rules exactly (do not improvise your own scoring or format). Apply its CONTENT rules — keyword injection, ordering, the competency grid, project selection, and its never-invent-a-skill rule. Its steps that shell out (the jd-skill-gap.mjs check) and its build/save/render steps are NOT performed on web runs; the platform handles output itself.
+    return `You are tailoring the user's ATS-optimized CV for application #${input}, headless, on their machine. Run the REAL career-ops "pdf" mode's CONTENT step: follow modes/pdf.md's TAILORING rules exactly (do not improvise your own scoring or format). Apply its CONTENT rules — keyword injection, ordering, the competency grid, project selection, and its never-invent-a-skill rule. Its steps that shell out (the scripts/jd-skill-gap.mjs check) and its build/save/render steps are NOT performed on web runs; the platform handles output itself.
 1. Read modes/pdf.md, cv.md, config/profile.yml, and the evaluation report at ${JSON.stringify(reportFile ?? `reports/${input}-*.md`)} (for the JD keywords + analysis).
 2. Tailor the CV per modes/pdf.md: inject the JD's keywords into the summary + first bullets, reorder experience by relevance, build the competency grid, pick the top 3–4 projects. NEVER invent skills — only reword REAL experience using the JD's vocabulary.
-3. Fill ${safeCvTemplate(cvTemplate)}'s {{...}} placeholders with the tailored content. Use that exact file: the platform already resolved it from cv.template through cv-templates.mjs, so do NOT run modes/pdf.md's own template-resolution step. ${CV_ENVELOPE_INSTRUCTION}
+3. Fill ${safeCvTemplate(cvTemplate)}'s {{...}} placeholders with the tailored content. Use that exact file: the platform already resolved it from cv.template through scripts/cv-templates.mjs, so do NOT run modes/pdf.md's own template-resolution step. ${CV_ENVELOPE_INSTRUCTION}
 4. Emit the envelope EXACTLY ONCE. The platform writes the HTML, renders the PDF, and updates the tracker's PDF column itself, only after a confirmed successful render. Do not submit anything anywhere.
 
 After the envelope, end with EXACTLY one final line: VERDICT: {5 if the complete HTML envelope was emitted, else 1}/5 — {a one-line summary, ≤12 words}`;
@@ -189,9 +189,9 @@ End with EXACTLY one final line: VERDICT: {5 if a complete draft was written, el
   }
   if (kind === "fix-portal") {
     return `A company's job-portal ATS slug is BROKEN — career-ops can no longer scan it, so it silently disappears from every future scan. Repair it (headless, on the user's machine):
-1. Run \`node verify-portals.mjs --add "${input}"\` — it probes Greenhouse/Ashby/Lever for the company's correct ATS slug and prints the suggested ats + slug.
+1. Run \`node scripts/verify-portals.mjs --add "${input}"\` — it probes Greenhouse/Ashby/Lever for the company's correct ATS slug and prints the suggested ats + slug.
 2. Open portals.yml, find the "${input}" entry under tracked_companies, and update its careers_url (and any api/slug field) to the suggested WORKING ATS URL. Change ONLY this one company; preserve all other YAML structure, comments and formatting exactly.
-3. Re-run \`node verify-portals.mjs\` and confirm "${input}" now shows ✅ live (not ❌).
+3. Re-run \`node scripts/verify-portals.mjs\` and confirm "${input}" now shows ✅ live (not ❌).
 If NO slug variant resolves, say so clearly and leave portals.yml unchanged. Never touch any other company. This is a config repair: do not submit, send, or click Apply anywhere, and edit no file other than portals.yml.
 
 End with EXACTLY one final line: VERDICT: {5 if now live, else 1}/5 — {what you changed, ≤12 words}`;

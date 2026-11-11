@@ -1,5 +1,5 @@
 /**
- * tests/company-history.test.mjs — External test suite for company-history.mjs
+ * tests/company-history.test.mjs — External test suite for scripts/company-history.mjs
  *
  * Complements the 38 in-file `--self-test` fixtures (join/label goldens,
  * right-censoring, rejection-is-an-answer, confidence-vs-label, staleness,
@@ -11,7 +11,7 @@
  * loading real files from disk via the exported loaders, and CLI smoke
  * tests.
  *
- * Run: node test-all.mjs --only company-history
+ * Run: node scripts/test-all.mjs --only company-history
  *      Running the file directly prints the same ✅/❌ lines, but a
  *      discovered suite reports through the shared counters and never
  *      exits — so a direct run returns 0 even when assertions fail.
@@ -29,7 +29,7 @@ import {
   buildCompanyCards,
   getCompanyCard,
   renderSummary,
-} from '../company-history.mjs';
+} from '../scripts/company-history.mjs';
 import { writeFileSync, mkdirSync, mkdtempSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -62,12 +62,12 @@ function followup(num, appNum, date, company, role = 'Engineer', channel = 'Emai
   return { num, appNum, date, company, role, channel, contact, notes };
 }
 
-// Repost-cluster fixture — mirrors detect-reposts.mjs's detectReposts() output shape.
+// Repost-cluster fixture — mirrors scripts/detect-reposts.mjs's detectReposts() output shape.
 function cluster(company, role, repostCount, firstSeen, lastSeen, daysSpan, appearances) {
   return { company, role, repostCount, firstSeen, lastSeen, daysSpan, appearances };
 }
 
-const scriptPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'company-history.mjs');
+const scriptPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'scripts/company-history.mjs');
 const NOW = new Date('2026-07-09T00:00:00Z');
 
 // ============================================================================

@@ -8,14 +8,14 @@
 // modes/_profile.md, reports/, batch/tracker-additions/) follow the data root.
 // Two entry points got that wrong, in opposite directions:
 //
-//   openrouter-runner.mjs   read the system modes from the DATA root, found
+//   scripts/openrouter-runner.mjs   read the system modes from the DATA root, found
 //                           none, and evaluated on a prompt with no shared
 //                           rules and no evaluation mode.
 //   batch/batch-runner.sh   built every path from the CHECKOUT, so workers were
 //                           scored against the checkout's template profile and
 //                           their reports and tracker lines were looked for in
-//                           directories reserve-report-num.mjs and
-//                           merge-tracker.mjs never read.
+//                           directories scripts/reserve-report-num.mjs and
+//                           scripts/merge-tracker.mjs never read.
 //
 // Every data root here holds user-layer files ONLY. The existing
 // openrouter-runner data-root test planted modes/apply.md inside its data root,
@@ -84,7 +84,7 @@ function splitEnv(extra = {}) {
   };
 }
 
-// ── openrouter-runner.mjs ───────────────────────────────────────────────────
+// ── scripts/openrouter-runner.mjs ───────────────────────────────────────────────────
 
 // Preloaded with --import. Records the request the runner would have sent to
 // OpenRouter and answers it; any other request fails, so the test cannot reach
@@ -106,7 +106,7 @@ function sentSystemPrompt(base, dataRoot, args) {
   const capture = join(base, `request-${args[0]}.json`);
   const cwd = join(base, 'decoy-cwd');
   mkdirSync(cwd, { recursive: true });
-  const r = spawnSync(process.execPath, ['--import', pathToFileURL(stub).href, join(ROOT, 'openrouter-runner.mjs'), ...args], {
+  const r = spawnSync(process.execPath, ['--import', pathToFileURL(stub).href, join(ROOT, 'scripts/openrouter-runner.mjs'), ...args], {
     cwd, encoding: 'utf8', timeout: 60_000, stdio: ['ignore', 'pipe', 'pipe'],
     // A pinned model skips the free-model listing, the runner's other request.
     env: splitEnv({
@@ -215,15 +215,15 @@ function makeCheckout(base, { realTools }) {
   chmodSync(join(dir, 'batch', 'batch-runner.sh'), 0o755);
   writeFileSync(join(dir, 'batch', 'batch-prompt.md'), 'Fixture worker prompt.\n\nReport: reports/{{REPORT_NUM}}-{company-slug}-{{DATE}}.md\nTracker: batch/tracker-additions/{{ID}}.tsv\n');
   writeFileSync(join(dir, 'batch', 'batch-input.tsv'), 'id\turl\tsource\tnotes\n1\thttps://example.com/one\tfixture\t-\n');
-  copyFileSync(join(ROOT, 'path-resolver.mjs'), join(dir, 'path-resolver.mjs'));
+  copyFileSync(join(ROOT, 'scripts/path-resolver.mjs'), (mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/path-resolver.mjs')));
 
   if (realTools) {
-    for (const name of ['reserve-report-num.mjs', 'merge-tracker.mjs']) writeFileSync(join(dir, name), realScriptShim(name));
+    for (const name of ['scripts/reserve-report-num.mjs', 'scripts/merge-tracker.mjs']) writeFileSync(join(dir, name), realScriptShim(name));
   } else {
-    writeFileSync(join(dir, 'reserve-report-num.mjs'), "if (!process.argv.includes('--release')) console.log('001');\n");
-    writeFileSync(join(dir, 'merge-tracker.mjs'), '// No merge in this fixture.\n');
+    writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/reserve-report-num.mjs')), "if (!process.argv.includes('--release')) console.log('001');\n");
+    writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/merge-tracker.mjs')), '// No merge in this fixture.\n');
   }
-  for (const name of ['reconcile-pipeline.mjs', 'verify-pipeline.mjs']) writeFileSync(join(dir, name), '// Not under test here.\n');
+  for (const name of ['scripts/reconcile-pipeline.mjs', 'scripts/verify-pipeline.mjs']) writeFileSync(join(dir, name), '// Not under test here.\n');
 
   writeFileSync(join(dir, 'config', 'profile.yml'), 'candidate:\n  full_name: Checkout Decoy\nspend_tier: premium\n');
   writeFileSync(join(dir, 'modes', '_profile.md'), '# CHECKOUT-DECOY-PROFILE\n');
@@ -297,10 +297,10 @@ test('batch-runner: personalization, spend_tier, reports and tracker additions f
     assert.deepEqual(listDir(join(dataRoot, 'reports')).filter((f) => f.includes('RESERVED')), [],
       'the report-number reservation was not released');
 
-    // 4. The tracker line was read from the directory merge-tracker.mjs merges,
+    // 4. The tracker line was read from the directory scripts/merge-tracker.mjs merges,
     //    by the real merge, into the data root's tracker.
     assert.deepEqual(listDir(join(checkout.dir, 'batch', 'tracker-additions')), [],
-      'a tracker addition was left in the checkout, where merge-tracker.mjs never looks');
+      'a tracker addition was left in the checkout, where scripts/merge-tracker.mjs never looks');
     const tracker = readFileSync(join(dataRoot, 'data', 'applications.md'), 'utf8');
     const merged = tracker.split('\n').find((line) => /^\|\s*4\s*\|/.test(line)) ?? '';
     assert.ok(/Acme/.test(merged) && /4\.5\/5/.test(merged),
@@ -315,7 +315,7 @@ test('batch-runner: a .career-ops-data marker with a relative path is honored li
   try {
     makeDataRoot(base, 'marked-root');
     const checkout = makeCheckout(base, { realTools: false });
-    // Relative to the checkout, the way path-resolver.mjs resolves it.
+    // Relative to the checkout, the way scripts/path-resolver.mjs resolves it.
     writeFileSync(join(checkout.dir, '.career-ops-data'), '../marked-root\n');
 
     const r = runBatch(checkout, { WORKER_WRITES: 'no' });

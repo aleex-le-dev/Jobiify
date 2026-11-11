@@ -13,7 +13,7 @@
 // no catch, the copy of the user's CV survives — one per failure, forever,
 // since nothing else ever removes it.
 //
-// The core's writeFileAtomic (tracker-utils.mjs) has always had that catch. This
+// The core's writeFileAtomic (scripts/tracker-utils.mjs) has always had that catch. This
 // pins the same two properties here:
 //
 //   1. the rename is inside a try whose catch removes the temp file, and

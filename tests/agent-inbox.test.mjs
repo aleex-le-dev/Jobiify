@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * tests/agent-inbox.test.mjs — regression tests for agent-inbox.mjs.
+ * tests/agent-inbox.test.mjs — regression tests for scripts/agent-inbox.mjs.
  *
  * Locks in the queue's behaviour:
  *   1. A first `add` seeds the header + agent protocol and one pending item.
@@ -48,13 +48,13 @@ import {
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { pathToFileURL } from 'url';
-import { acquirePipelineLock } from '../pipeline-lock.mjs';
+import { acquirePipelineLock } from '../scripts/pipeline-lock.mjs';
 
 import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\nagent-inbox.mjs — queued requests, locking and resolve');
 const NODE = process.execPath;
-const CLI = join(ROOT, 'agent-inbox.mjs');
+const CLI = join(ROOT, 'scripts/agent-inbox.mjs');
 
 function check(name, cond, detail = '') {
   if (cond) pass(name);
@@ -100,7 +100,7 @@ export function causeOf(stderr) {
     || '(no stderr)';
 }
 
-// Run agent-inbox.mjs against a provisioned queue file; returns stdout.
+// Run scripts/agent-inbox.mjs against a provisioned queue file; returns stdout.
 function run(inbox, args, opts = {}) {
   return execFileSync(NODE, [CLI, ...args], {
     cwd: ROOT,
@@ -303,7 +303,7 @@ console.log('7. concurrent adds do not lose items (append, not rewrite)');
   check('every concurrent add exited cleanly', failedSpawn === 0, `${failedSpawn} non-zero exits`);
   for (const l of losers) {
     const cause = causeOf(l.err);
-    // Generous, because the owner record pipeline-lock.mjs appends to a
+    // Generous, because the owner record scripts/pipeline-lock.mjs appends to a
     // LockTimeoutError is the diagnostic payload; truncating it away would
     // leave the same symptom-without-mechanism this instrumentation exists
     // to end.
@@ -515,7 +515,7 @@ console.log('9. the lock is never held by two processes at once');
   const holder = join(dir, 'hold-once.mjs');
   writeFileSync(holder, `
 import { writeFileSync, existsSync } from 'node:fs';
-import { withPipelineLock } from ${JSON.stringify(pathToFileURL(join(ROOT, 'pipeline-lock.mjs')).href)};
+import { withPipelineLock } from ${JSON.stringify(pathToFileURL(join(ROOT, 'scripts/pipeline-lock.mjs')).href)};
 const [,, target, out, id, readyFile, goFile] = process.argv;
 writeFileSync(readyFile, '1');
 // Spin on the release rather than sleeping: a timer would hand control back to

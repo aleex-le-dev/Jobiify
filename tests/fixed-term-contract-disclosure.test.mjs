@@ -3,7 +3,7 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { pass, fail } from './helpers.mjs';
 
-const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
+const ROOT = join(fileURLToPath(new URL('./', import.meta.url)), '..');
 const oferta = readFileSync(join(ROOT, 'modes', 'oferta.md'), 'utf8');
 const apply = readFileSync(join(ROOT, 'modes', 'apply.md'), 'utf8');
 const batch = readFileSync(join(ROOT, 'batch', 'batch-prompt.md'), 'utf8');

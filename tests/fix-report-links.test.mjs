@@ -8,7 +8,7 @@ import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writ
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { fixReportLinks } from '../fix-report-links.mjs';
+import { fixReportLinks } from '../scripts/fix-report-links.mjs';
 
 const CODE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const HEADER = [
@@ -34,7 +34,7 @@ function run(root, args = [], envExtra = { CAREER_OPS_ROOT: root }) {
   const env = { ...process.env };
   for (const k of ['CAREER_OPS_ROOT', 'CAREER_OPS_DATA_DIR', 'CAREER_OPS_TRACKER']) delete env[k];
   Object.assign(env, envExtra);
-  const r = spawnSync(process.execPath, [join(CODE_ROOT, 'fix-report-links.mjs'), ...args], { cwd: CODE_ROOT, env, encoding: 'utf-8', timeout: 30_000 });
+  const r = spawnSync(process.execPath, [join(CODE_ROOT, 'scripts/fix-report-links.mjs'), ...args], { cwd: CODE_ROOT, env, encoding: 'utf-8', timeout: 30_000 });
   assert.equal(r.error, undefined);
   return { status: r.status, out: `${r.stdout ?? ''}${r.stderr ?? ''}` };
 }
@@ -153,7 +153,7 @@ function runVerify(root) {
   const env = { ...process.env };
   for (const k of ['CAREER_OPS_ROOT', 'CAREER_OPS_DATA_DIR', 'CAREER_OPS_TRACKER']) delete env[k];
   env.CAREER_OPS_ROOT = root;
-  const r = spawnSync(process.execPath, [join(CODE_ROOT, 'verify-pipeline.mjs')], { cwd: CODE_ROOT, env, encoding: 'utf-8', timeout: 30_000 });
+  const r = spawnSync(process.execPath, [join(CODE_ROOT, 'scripts/verify-pipeline.mjs')], { cwd: CODE_ROOT, env, encoding: 'utf-8', timeout: 30_000 });
   assert.equal(r.error, undefined);
   return { status: r.status, out: `${r.stdout ?? ''}${r.stderr ?? ''}` };
 }
@@ -257,7 +257,7 @@ test('unknown flag is rejected; --help prints usage', withRoot((root) => {
   assert.equal(tracker(root), before, 'a mistyped flag must not fall through to a live run');
   const help = run(root, ['--help']);
   assert.equal(help.status, 0);
-  assert.match(help.out, /Usage: node fix-report-links\.mjs/);
+  assert.match(help.out, /Usage: node scripts\/fix-report-links\.mjs/);
 }));
 
 test('extra Via/URL columns: the Report column is found by header name', withRoot((root) => {

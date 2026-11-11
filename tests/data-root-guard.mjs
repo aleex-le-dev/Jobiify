@@ -22,7 +22,7 @@ import { walkTree } from '../lib/walk-tree.mjs';
 
 /**
  * The user layer, relative to the data root — the content half of
- * `USER_PATHS` in update-system.mjs; the rest is `CHECKOUT_GUARDED_PATHS`
+ * `USER_PATHS` in scripts/update-system.mjs; the rest is `CHECKOUT_GUARDED_PATHS`
  * and `UNGUARDED_USER_PATHS` below. An entry is a file or a directory; one that
  * does not exist contributes nothing, so a fresh clone snapshots to almost
  * nothing and costs nothing.
@@ -48,9 +48,9 @@ export const GUARDED_PATHS = [
 
 /**
  * The user files resolved from the checkout, not from the data root (#5207):
- * the plugin store and its trust lock sit beside plugins/ (`plugins.mjs`,
- * `plugin-install.mjs`, `plugins/_lock.mjs`), and the CLI configs are read
- * from the working directory (`doctor.mjs`, and the CLIs themselves). The
+ * the plugin store and its trust lock sit beside plugins/ (`scripts/plugins.mjs`,
+ * `scripts/plugin-install.mjs`, `plugins/_lock.mjs`), and the CLI configs are read
+ * from the working directory (`scripts/doctor.mjs`, and the CLIs themselves). The
  * scratch root the suite pins does not move them, so they are fingerprinted
  * where they are, relative to the checkout.
  */

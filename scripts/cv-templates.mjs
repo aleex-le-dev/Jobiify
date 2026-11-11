@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// cv-templates.mjs — discover, resolve, and validate CV / cover-letter templates.
+// scripts/cv-templates.mjs — discover, resolve, and validate CV / cover-letter templates.
 // Single source of truth for "which template file, and is it usable?".
 // Backward-compatible: with no config and no named files, resolves the base
 // templates/cv-template.html (name "standard"), identical to prior behavior.
@@ -8,20 +8,20 @@ import { readdirSync, readFileSync, existsSync, statSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { decodeEntities } from './providers/_html-entities.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { decodeEntities } from '../providers/_html-entities.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import {
   parseMeta, PARTIAL_SECTIONS, declaredSections, checkDeclaredSections,
-} from './lib/template-manifest.mjs';
+} from '../lib/template-manifest.mjs';
 
 // The manifest block and the section vocabulary live in lib/template-manifest.mjs
-// so build-cv-html.mjs can share them without importing this module (and the
+// so scripts/build-cv-html.mjs can share them without importing this module (and the
 // js-yaml it pulls in for profile defaults). Re-exported here because this is
 // where callers have always found parseMeta.
 export { parseMeta, PARTIAL_SECTIONS, declaredSections, checkDeclaredSections };
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(dirname(fileURLToPath(import.meta.url)));
 // templates/ is System Layer (code root); config/profile.yml is User Layer and
 // follows the data root. CAREER_OPS_PROFILE still wins over both.
 const DEFAULT_TEMPLATES_DIR = resolve(__dirname, 'templates');
@@ -92,7 +92,7 @@ function entryFor(parsed, path, pack) {
 // have always lived there, plus one level of *template packs* (#3202).
 //
 // A pack is a subdirectory holding its own `<prefix>.<name>.<format>` next to
-// its own `sections/`. That co-location is the whole point: build-cv-html.mjs
+// its own `sections/`. That co-location is the whole point: scripts/build-cv-html.mjs
 // resolves partials relative to the template file, so a pack gets its own DOM
 // without touching the `sections/` every flat template shares.
 //
@@ -113,8 +113,8 @@ function entryFor(parsed, path, pack) {
 // can drop it as a real directory holding the same file, so skipping buys no
 // protection against a hostile template — it only makes a legitimate one
 // vanish. The repo's actual symlink guards are on a different axis, and both
-// stay intact: resolveInsideRepo() in reconcile-pipeline.mjs resolves
-// user-supplied path *arguments* before a boundary check, and contacts.mjs
+// stay intact: resolveInsideRepo() in scripts/reconcile-pipeline.mjs resolves
+// user-supplied path *arguments* before a boundary check, and scripts/contacts.mjs
 // refuses to *write* through a link escaping the project. Discovery does
 // neither — it enumerates a directory the project owns and only ever reads.
 //
@@ -390,7 +390,7 @@ const HIDDEN_SIGNALS = [
 // INLINE style attributes only. A stylesheet rule hiding a class is layout —
 // templates/ats/cv-template.ats.html hides a decorative separator that way, so
 // a stylesheet-wide scan fires on the template named "ats". `style="…"` on a
-// span is where the stuffing trick actually lives; verify-ats.mjs draws the
+// span is where the stuffing trick actually lives; scripts/verify-ats.mjs draws the
 // same line for white text and explains why at its check 8. That boundary is
 // the rule's ceiling, not an oversight: see `must_not_flag` in the YAML.
 function detectHiddenText(html) {
@@ -418,7 +418,7 @@ function detectHiddenText(html) {
 
 // True when `text` is nothing but `{{PLACEHOLDER}}` runs and whitespace.
 // `{{...}}` is this repo's only substitution syntax. validateTemplate above
-// looks for `{{NAME}}` literally, and build-cv-html.mjs resolves the same form.
+// looks for `{{NAME}}` literally, and scripts/build-cv-html.mjs resolves the same form.
 //
 // Two parts of the same file ask this one question. A heading that is only a
 // placeholder has no wording yet. A `lang` that is only a placeholder has no
@@ -625,7 +625,7 @@ export function resolveTemplate(kind, name, opts = {}) {
   // lists is a name that resolves. Constructing `dir/fileFor(chosen)` directly
   // would find flat templates only: a pack would list fine and then throw here,
   // which is the failure mode that passes review because the demo path works.
-  // Every by-name caller lands here — build-cv-latex.mjs, generate-cover-letter.mjs.
+  // Every by-name caller lands here — scripts/build-cv-latex.mjs, scripts/generate-cover-letter.mjs.
   const found = discover(kind, { dir, format });
 
   let entry = found.get(chosen);
@@ -702,7 +702,7 @@ if (isMain) {
       const name = positionals[0];
       process.stdout.write(JSON.stringify(atsLint(resolveTemplate(kind, name, { format, fallback: Boolean(flags.fallback) }), kind), null, 2) + '\n');
     } else {
-      process.stderr.write('Usage: node cv-templates.mjs <list|resolve|lint> <cv|cover> [name] [--format=html|tex] [--fallback]\n');
+      process.stderr.write('Usage: node scripts/cv-templates.mjs <list|resolve|lint> <cv|cover> [name] [--format=html|tex] [--fallback]\n');
       process.exit(2);
     }
   } catch (err) {

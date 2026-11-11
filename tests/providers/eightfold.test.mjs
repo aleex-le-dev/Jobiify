@@ -1,6 +1,6 @@
 // tests/providers/eightfold.test.mjs — contract test for the Eightfold AI
-// provider. Auto-discovered by test-all.mjs under tests/**; no registration.
-// Run alone with: node test-all.mjs --only providers/eightfold
+// provider. Auto-discovered by scripts/test-all.mjs under tests/**; no registration.
+// Run alone with: node scripts/test-all.mjs --only providers/eightfold
 //
 // Every fixture here is synthetic (acme/other/big.eightfold.ai). Nothing in
 // this file touches the network.
@@ -288,7 +288,7 @@ try {
     fail(`max_pages: ${capped.calls.length} requests, ${cappedJobs.length} jobs (expected 4 / 40)`);
   }
 
-  // ctx.maxPages is verify-portals.mjs's health-probe hint — it must narrow further.
+  // ctx.maxPages is scripts/verify-portals.mjs's health-probe hint — it must narrow further.
   const probe = mockCtx(bigPages);
   await ef.fetch({ name: 'Big', careers_url: 'https://big.eightfold.ai/careers' }, { ...probe.ctx, maxPages: 1 });
   if (probe.calls.length === 1) {
@@ -511,7 +511,7 @@ try {
 
   // A PCSX probe that 404s means PCSX is simply not there, so the v2 403 is the
   // real story (a WAF or datacenter-IP block). Surfacing the probe's 404 instead
-  // read as "board gone" to dead-boards.mjs, which skips a board after 3 misses.
+  // read as "board gone" to scripts/dead-boards.mjs, which skips a board after 3 misses.
   {
     const { ctx } = recording((c) => {
       if (c.url.includes('/api/apply/v2/jobs')) throw httpErr(403, 'Forbidden');

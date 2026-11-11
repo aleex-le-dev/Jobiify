@@ -2,32 +2,32 @@ import assert from 'assert/strict';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { atsVendorOf } from '../ats-vendor.mjs';
-import { knownAtsVendorOf } from '../analyze-patterns.mjs';
+import { atsVendorOf } from '../scripts/ats-vendor.mjs';
+import { knownAtsVendorOf } from '../scripts/analyze-patterns.mjs';
 import {
   atsBoardUrlOf,
   loadHistoryAtsSeeds,
   parseScanHistoryAtsSeeds,
   parseTrackerAtsSeeds,
-} from '../history-ats-seeds.mjs';
-import { parseArgs, runHistorySeedScan } from '../scan-ats-full.mjs';
+} from '../scripts/history-ats-seeds.mjs';
+import { parseArgs, runHistorySeedScan } from '../scripts/scan-ats-full.mjs';
 import { pass, fail } from './helpers.mjs';
 
 console.log('\nATS vendor + user-history reverse-scan seeds (#3697)');
 
 try {
-  assert.equal(parseArgs(['node', 'scan-ats-full.mjs']).historySeeds, false);
+  assert.equal(parseArgs(['node', 'scripts/scan-ats-full.mjs']).historySeeds, false);
   assert.throws(
-    () => parseArgs(['node', 'scan-ats-full.mjs', '--ats', 'successfactors']),
+    () => parseArgs(['node', 'scripts/scan-ats-full.mjs', '--ats', 'successfactors']),
     /--ats successfactors has no public directory source.*--history-seeds/,
   );
   assert.throws(
-    () => parseArgs(['node', 'scan-ats-full.mjs', '--ats', 'greenhouse,successfactors']),
+    () => parseArgs(['node', 'scripts/scan-ats-full.mjs', '--ats', 'greenhouse,successfactors']),
     /--ats successfactors has no public directory source.*--history-seeds/,
   );
-  assert.equal(parseArgs(['node', 'scan-ats-full.mjs', '--history-seeds']).historySeeds, true);
+  assert.equal(parseArgs(['node', 'scripts/scan-ats-full.mjs', '--history-seeds']).historySeeds, true);
   assert.equal(
-    parseArgs(['node', 'scan-ats-full.mjs', '--history-seeds', '--ats', 'successfactors']).historySeeds,
+    parseArgs(['node', 'scripts/scan-ats-full.mjs', '--history-seeds', '--ats', 'successfactors']).historySeeds,
     true,
   );
   pass('application-history board discovery is disabled by default and requires --history-seeds');

@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { ROOT, getBash, rmSync } from './helpers.mjs';
 
 // A failed report-number reservation (lock timeout, unwritable reports/, ...)
-// makes reserve-report-num.mjs exit 1 with nothing on stdout. The runner used
+// makes scripts/reserve-report-num.mjs exit 1 with nothing on stdout. The runner used
 // to take the empty string as the number: it launched the paid worker with a
 // blank "Report number:", recorded an empty report_num cell in batch-state.tsv
 // (which the next row rewrite reads back shifted, tab being IFS whitespace),
@@ -26,8 +26,8 @@ function fixture() {
   // test never touches the network even when the reservation wrongly succeeds.
   writeFileSync(join(batch, 'batch-input.tsv'), 'id\turl\tsource\tnotes\n1\thttp://localhost/jobs/1\ttest\tfirst\n');
   // The allocator fails with no output, as it does when it cannot take its lock.
-  writeFileSync(join(root, 'reserve-report-num.mjs'), 'process.stderr.write("reserve-report-num: lock timeout\\n");\nprocess.exitCode = 1;\n');
-  for (const name of ['merge-tracker.mjs', 'reconcile-pipeline.mjs', 'verify-pipeline.mjs']) {
+  writeFileSync((mkdirSync(join(root, 'scripts'), { recursive: true }), join(root, 'scripts/reserve-report-num.mjs')), 'process.stderr.write("reserve-report-num: lock timeout\\n");\nprocess.exitCode = 1;\n');
+  for (const name of ['scripts/merge-tracker.mjs', 'scripts/reconcile-pipeline.mjs', 'scripts/verify-pipeline.mjs']) {
     writeFileSync(join(root, name), '// stub: the merge steps are not under test\n');
   }
   const marker = join(root, 'worker-ran');

@@ -16,7 +16,7 @@
 // This test runs offline with stubs. Given no `providers` map a feed resolves to
 // `skipped` (it is still in the result); given a stub `providers` map it is
 // probed and classified. The per-ATS response shapes and the stub-provider
-// pattern match the tier-2 fixtures in test-all.mjs §10b. Entry names are
+// pattern match the tier-2 fixtures in scripts/test-all.mjs §10b. Entry names are
 // invented.
 import { mkdtempSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
@@ -27,7 +27,7 @@ import { pass, fail, ROOT, rmSync } from './helpers.mjs';
 console.log('\nverify-portals — job_boards are swept alongside tracked_companies');
 
 const { verifyPortalsFile } = await import(
-  pathToFileURL(join(ROOT, 'verify-portals.mjs')).href
+  pathToFileURL(join(ROOT, 'scripts/verify-portals.mjs')).href
 );
 
 // tracked_companies control: a real ATS slug, probed via tier 1. Greenhouse/Ashby

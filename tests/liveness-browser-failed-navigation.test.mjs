@@ -15,7 +15,7 @@
 // cannot launch. Its pages come from routes and its DNS is a stub, so nothing
 // leaves the machine.
 import { pass, fail, warn } from './helpers.mjs';
-import { checkUrlLiveness, installLivenessRouteGuard, newLivenessPage, setHostResolver } from '../liveness-browser.mjs';
+import { checkUrlLiveness, installLivenessRouteGuard, newLivenessPage, setHostResolver } from '../scripts/liveness-browser.mjs';
 
 console.log('\nliveness-browser — after a failed navigation');
 

@@ -1,6 +1,6 @@
 // tests/merge-tracker-url-dedup.test.mjs — URL-keyed deterministic dedup.
 //
-// Drives the REAL merge-tracker.mjs CLI end-to-end against a temp tracker via
+// Drives the REAL scripts/merge-tracker.mjs CLI end-to-end against a temp tracker via
 // the CAREER_OPS_TRACKER / CAREER_OPS_ADDITIONS env hooks — the merge path is
 // where the bug lived, so asserting on the resulting tracker rows is what
 // actually proves the fix. normalizeUrl's own unit cases live in
@@ -14,10 +14,10 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 // The written cell is a markdown link since #3516; the KEY is its href, so the
 // assertions below read the href and check the rendering separately.
-import { extractCellUrl } from '../tracker-parse.mjs';
+import { extractCellUrl } from '../scripts/tracker-parse.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const MERGE = join(HERE, '..', 'merge-tracker.mjs');
+const MERGE = join(HERE, '..', 'scripts/merge-tracker.mjs');
 const ok = (name, fn) => { try { fn(); pass(name); } catch (e) { fail(`${name} — ${e.message}`); } };
 
 // ───────────────────────── merge-tracker (integration) ─────────────────────────
@@ -478,7 +478,7 @@ ok('KNOWN LIMITATION: an unmapped aggregator id shape over-merges two requisitio
   // over-merge direction, which loses the second posting. It is accepted here
   // only because the alternative available today is a guessed regex, whose own
   // failure mode is splitting one posting into two rows: the outcome the
-  // cross-host gate was rejected for. url-key.mjs extracts only ids it can
+  // cross-host gate was rejected for. scripts/url-key.mjs extracts only ids it can
   // point at a verified shape for, so the fix is a verified Glassdoor shape,
   // and the workaround meanwhile is the req-id-in-notes rule (#1524). Pinned so
   // that adding that shape is a deliberate change with a failing test behind it
@@ -567,7 +567,7 @@ ok('row with `---` in its URL (Workday slug) stays visible to dedup', () => {
 // runMerge spreads process.env and overrides only CAREER_OPS_TRACKER and
 // CAREER_OPS_ADDITIONS, so CAREER_OPS_ROOT, CAREER_OPS_DATA_DIR,
 // CAREER_OPS_BATCH_STATE and CAREER_OPS_CODE_ROOT leak in from whatever shell
-// runs the suite. merge-tracker.mjs:68 says CAREER_OPS_BATCH_STATE exists "used
+// runs the suite. scripts/merge-tracker.mjs:68 says CAREER_OPS_BATCH_STATE exists "used
 // by tests", and this suite was the one not using it.
 //
 // The leak is observable because a batch-state row marked `failed` for a report

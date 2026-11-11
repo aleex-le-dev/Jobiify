@@ -3,7 +3,7 @@
 // Chromium installation; only the transport objects are replaced.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { verifyOffers } from '../scan.mjs';
+import { verifyOffers } from '../scripts/scan.mjs';
 
 const offer = (url, extra = {}) => ({ company: 'Example', title: 'Platform Engineer', url, ...extra });
 const active = { result: 'active', code: 'greenhouse_api_ok', reason: 'Posting is live' };

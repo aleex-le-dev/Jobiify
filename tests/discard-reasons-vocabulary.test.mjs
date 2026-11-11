@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { load as yamlLoad } from 'js-yaml';
 import { pass, fail, ROOT, rmSync } from './helpers.mjs';
-import { loadDiscardReasonVocabulary } from '../analyze-patterns.mjs';
+import { loadDiscardReasonVocabulary } from '../scripts/analyze-patterns.mjs';
 
 console.log('\ndiscard-reasons vocabulary: one list, restated consistently');
 

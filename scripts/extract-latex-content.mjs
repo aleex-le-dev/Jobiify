@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 
 /**
- * extract-latex-content.mjs — Detect LaTeX CV family and list editable prose slots.
+ * scripts/extract-latex-content.mjs — Detect LaTeX CV family and list editable prose slots.
  *
  * v1 families:
  *   - resumeSubheading (\\resumeItem bullets + \\textbf{Category}{: skills})
  *   - tabularx-itemize (\\item bodies inside itemize, no resume macros)
  *
  * Usage:
- *   node extract-latex-content.mjs <source.tex>
- *   node extract-latex-content.mjs <source.tex> --out manifest.json
+ *   node scripts/extract-latex-content.mjs <source.tex>
+ *   node scripts/extract-latex-content.mjs <source.tex> --out manifest.json
  */
 
 import { readFile, writeFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { resolve, basename } from 'path';
-import { buildManifest } from './lib/latex-content.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { buildManifest } from '../lib/latex-content.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 async function main() {
   const args = process.argv.slice(2).filter(a => a !== '--help');
@@ -29,7 +29,7 @@ async function main() {
 
   const sourcePath = args[0];
   if (!sourcePath) {
-    console.error('Usage: node extract-latex-content.mjs <source.tex> [--out manifest.json]');
+    console.error('Usage: node scripts/extract-latex-content.mjs <source.tex> [--out manifest.json]');
     process.exit(1);
   }
 

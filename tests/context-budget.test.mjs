@@ -8,7 +8,7 @@
  *      noCompress flag
  *   4. Edge cases — empty input, missing optional fields
  *
- * Run: node test-all.mjs --only context-budget
+ * Run: node scripts/test-all.mjs --only context-budget
  */
 
 import { pass, fail, ROOT } from './helpers.mjs';
@@ -17,7 +17,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 // The assertions below are unchanged from when this file lived in lib/ and ran
-// standalone; only the counters are. A discovered suite shares test-all.mjs's
+// standalone; only the counters are. A discovered suite shares scripts/test-all.mjs's
 // own pass/fail counters and must never print its own summary or exit.
 function ok(label, cond) {
   if (cond) pass(label);
@@ -206,7 +206,7 @@ const nullPrompt = buildBudgetedPrompt(null);
 eq('null opts object → empty prompt', nullPrompt.contextBody, '');
 eq('null opts object → empty report', nullPrompt.budgetReport.totalTokens, 0);
 
-// Without profile files (openai-eval.mjs style)
+// Without profile files (scripts/openai-eval.mjs style)
 const noProfile = buildBudgetedPrompt({
   sharedContent: SHARED_STUB,
   ofertaContent: 'Evaluate job offers.',
@@ -216,7 +216,7 @@ const noProfile = buildBudgetedPrompt({
 ok('no profile: does not crash', typeof noProfile.contextBody === 'string');
 ok('no profile: report is valid', typeof noProfile.budgetReport === 'object');
 
-// With profile files (gemini-eval.mjs style)
+// With profile files (scripts/gemini-eval.mjs style)
 const withProfile = buildBudgetedPrompt({
   sharedContent: SHARED_STUB,
   ofertaContent: 'Evaluate job offers.',

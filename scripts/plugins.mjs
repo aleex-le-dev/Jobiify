@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 // @ts-check
 /**
- * plugins.mjs — explicit CLI host for the non-provider plugin hooks.
+ * scripts/plugins.mjs — explicit CLI host for the non-provider plugin hooks.
  *
- *   node plugins.mjs list                       # discovered plugins + status
- *   node plugins.mjs run <id> [hook] [args…]    # run one hook of one plugin
- *   node plugins.mjs run gmail                  # ingest (the plugin's only hook)
- *   node plugins.mjs run notion search "staff platform engineer"
- *   node plugins.mjs run notion export [--dry-run]
+ *   node scripts/plugins.mjs list                       # discovered plugins + status
+ *   node scripts/plugins.mjs run <id> [hook] [args…]    # run one hook of one plugin
+ *   node scripts/plugins.mjs run gmail                  # ingest (the plugin's only hook)
+ *   node scripts/plugins.mjs run notion search "staff platform engineer"
+ *   node scripts/plugins.mjs run notion export [--dry-run]
  *
- * Provider plugins are NOT run here — they ride `node scan.mjs` via a
+ * Provider plugins are NOT run here — they ride `node scripts/scan.mjs` via a
  * `provider: <id>` entry in portals.yml. Keeping ingest/search/notify/export
- * behind this explicit CLI is deliberate: a plain `node scan.mjs` never silently
+ * behind this explicit CLI is deliberate: a plain `node scripts/scan.mjs` never silently
  * hits email/Notion/a paid API, and this file (not the plugin) OWNS every write
  * to the web-facing data files, so a plugin can't break their format.
  */
@@ -25,16 +25,16 @@ import {
   discoverPlugins, pluginRoots, loadPluginConfig, pluginStatus,
   runHook, filterResultsForId, loadDotenvOnce, HOOK_KINDS, loadSkill, resolveSuccessorIds,
   warnConfigLeftInCodeRoot,
-} from './plugins/_engine.mjs';
-import { loadRegistry, findInRegistry, classifySource, sourceBadge, successorFor } from './plugins/_registry.mjs';
-import { readLock, writeLockEntry, removeLockEntry, hashPluginTree, consentSurface } from './plugins/_lock.mjs';
+} from '../plugins/_engine.mjs';
+import { loadRegistry, findInRegistry, classifySource, sourceBadge, successorFor } from '../plugins/_registry.mjs';
+import { readLock, writeLockEntry, removeLockEntry, hashPluginTree, consentSurface } from '../plugins/_lock.mjs';
 import { installFromRepo, scaffoldNew, parseRepoArg } from './plugin-install.mjs';
 import { appendToPipeline } from './scan.mjs';
 import { postingKey } from './url-key.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
-const ROOT = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const APPLICATIONS_PATH = path.join(DATA_ROOT, 'data', 'applications.md');
 const PIPELINE_PATH = path.join(DATA_ROOT, 'data', 'pipeline.md');
@@ -137,19 +137,19 @@ async function cmdList() {
     console.log(`  ${m.id}  [${m.hooks.join(', ')}]  — ${state}${tag}`);
     console.log(`      ${m.description}`);
   }
-  console.log('\nEnable in config/plugins.yml, add keys to .env, then `node plugins.mjs run <id>`.');
+  console.log('\nEnable in config/plugins.yml, add keys to .env, then `node scripts/plugins.mjs run <id>`.');
 }
 
 async function cmdRun(args) {
   const dryRun = args.includes('--dry-run');
   const positional = args.filter(a => a !== '--dry-run');
   const id = positional[0];
-  if (!id) { console.error('Usage: node plugins.mjs run <id> [hook] [args…] [--dry-run]'); process.exit(1); }
+  if (!id) { console.error('Usage: node scripts/plugins.mjs run <id> [hook] [args…] [--dry-run]'); process.exit(1); }
 
   warnConfigLeftInCodeRoot(ROOT, DATA_ROOT);
   const cfg = await loadPluginConfig(DATA_ROOT);
   const manifest = discoverPlugins(pluginRoots(ROOT), resolveSuccessorIds(ROOT)).find(m => m.id === id);
-  if (!manifest) { console.error(`Unknown plugin "${id}". Run \`node plugins.mjs list\`.`); process.exit(1); }
+  if (!manifest) { console.error(`Unknown plugin "${id}". Run \`node scripts/plugins.mjs list\`.`); process.exit(1); }
 
   // Provider hooks ride scan, never this CLI.
   const runnable = manifest.hooks.filter(h => h !== 'provider');
@@ -163,7 +163,7 @@ async function cmdRun(args) {
   const hookArgStart = hook ? 2 : 1;
   if (!hook) {
     if (runnable.length === 1) hook = runnable[0];
-    else { console.error(`Plugin "${id}" exposes multiple hooks (${runnable.join(', ')}). Specify one: node plugins.mjs run ${id} <hook>`); process.exit(1); }
+    else { console.error(`Plugin "${id}" exposes multiple hooks (${runnable.join(', ')}). Specify one: node scripts/plugins.mjs run ${id} <hook>`); process.exit(1); }
   }
   if (!manifest.hooks.includes(hook)) { console.error(`Plugin "${id}" does not expose a "${hook}" hook (has: ${manifest.hooks.join(', ')}).`); process.exit(1); }
 
@@ -178,7 +178,7 @@ async function cmdRun(args) {
 
   if (hook === 'ingest' || hook === 'search') {
     const payload = hook === 'search' ? positional.slice(hookArgStart).join(' ') : undefined;
-    if (hook === 'search' && !payload) { console.error(`search needs a query: node plugins.mjs run ${id} search "<query>"`); process.exit(1); }
+    if (hook === 'search' && !payload) { console.error(`search needs a query: node scripts/plugins.mjs run ${id} search "<query>"`); process.exit(1); }
     const results = filterResultsForId(await runHook(hook, payload, { root: ROOT, dataRoot: DATA_ROOT, dryRun, pluginId: id }), id);
     const found = results.filter(r => r.ok && Array.isArray(r.result)).flatMap(r => r.result).map(sanitizeJob).filter(Boolean);
     const jobs = newPipelineJobs(found, existingPipelineUrls());
@@ -230,7 +230,7 @@ function findManifest(id) {
  *
  * The trigger is a YAML typo — the most likely reason a hand-edited config does
  * not parse, and precisely when the file is most in need of not being replaced.
- * config/plugins.yml is a USER path in update-system.mjs, so there is no copy to
+ * config/plugins.yml is a USER path in scripts/update-system.mjs, so there is no copy to
  * restore from.
  *
  * @param {string|null} raw - File contents, or null when the file does not exist.
@@ -295,7 +295,7 @@ export function capabilityCard(manifest, source) {
     `  Hooks:         ${manifest.hooks.join(', ')}`,
     `  Reads keys:    ${manifest.requiredEnv.length ? manifest.requiredEnv.join(', ') + '  (you provide these in .env)' : 'none'}`,
     `  Network:       ${manifest.allowedHosts.length ? manifest.allowedHosts.join(', ') : '(none declared)'}${localhostSuffix}`,
-    `  Ships a skill: ${manifest.skill ? 'yes — instructs your AI tool when you run `plugins.mjs skill`' : 'no'}`,
+    `  Ships a skill: ${manifest.skill ? 'yes — instructs your AI tool when you run `scripts/plugins.mjs skill`' : 'no'}`,
   ].join('\n');
 }
 
@@ -316,7 +316,7 @@ async function cmdAvailable() {
       const seed = p.supersedesBundled === true ? `  🔁 maintained successor of the bundled "${p.id}" reference` : '';
       console.log(`  ${p.name}  [${p.hooks.join(', ')}]  ✓ approved (pinned ${String(p.sha).slice(0, 7)})  — ${p.description}  (by ${p.author}, v${p.version})${seed}`);
     }
-    console.log('\nInstall:  node plugins.mjs add <name>');
+    console.log('\nInstall:  node scripts/plugins.mjs add <name>');
   }
 }
 
@@ -324,7 +324,7 @@ function cmdSkill(args) {
   const id = args[0];
   if (!id) {
     const withSkill = discoverPlugins(pluginRoots(ROOT), resolveSuccessorIds(ROOT)).filter(m => m.skill);
-    console.log(withSkill.length ? 'Plugins that ship a skill:\n' + withSkill.map(m => `  ${m.id}`).join('\n') + '\n\nRead one: node plugins.mjs skill <id>' : 'No installed plugin ships a skill.');
+    console.log(withSkill.length ? 'Plugins that ship a skill:\n' + withSkill.map(m => `  ${m.id}`).join('\n') + '\n\nRead one: node scripts/plugins.mjs skill <id>' : 'No installed plugin ships a skill.');
     return;
   }
   const m = findManifest(id);
@@ -339,16 +339,16 @@ function cmdSkill(args) {
 function cmdEnable(args) {
   const id = args.find(a => !a.startsWith('--'));
   const confirm = args.includes('--confirm');
-  if (!id) { console.error('Usage: node plugins.mjs enable <id> [--confirm]'); process.exit(1); }
+  if (!id) { console.error('Usage: node scripts/plugins.mjs enable <id> [--confirm]'); process.exit(1); }
   const m = findManifest(id);
-  if (!m) { console.error(`Unknown plugin "${id}". Run \`node plugins.mjs list\`.`); process.exit(1); }
+  if (!m) { console.error(`Unknown plugin "${id}". Run \`node scripts/plugins.mjs list\`.`); process.exit(1); }
   const lock = readLock(ROOT);
   const entry = lock.plugins?.[id];
   const source = classifySource(m, ROOT, entry);
   if (!confirm) {
     console.log(capabilityCard(m, source));
     if (source === 'unverified') console.log('\n  ⚠️  UNVERIFIED — not reviewed by career-ops; you are trusting this author.');
-    console.log(`\n  This grants the capabilities above. To confirm, run:\n    node plugins.mjs enable ${id} --confirm\n`);
+    console.log(`\n  This grants the capabilities above. To confirm, run:\n    node scripts/plugins.mjs enable ${id} --confirm\n`);
     return;
   }
   const tree = hashPluginTree(m.dir);
@@ -374,7 +374,7 @@ function cmdTrust(args) {
 
 function cmdRemove(args) {
   const id = args[0];
-  if (!id) { console.error('Usage: node plugins.mjs remove <id>'); process.exit(1); }
+  if (!id) { console.error('Usage: node scripts/plugins.mjs remove <id>'); process.exit(1); }
   const dir = path.join(ROOT, 'plugins.local', id);
   if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
   removeLockEntry(ROOT, id);
@@ -395,12 +395,12 @@ function cmdRemove(args) {
 
 function cmdNew(args) {
   const name = args[0];
-  if (!name) { console.error('Usage: node plugins.mjs new <name>'); process.exit(1); }
+  if (!name) { console.error('Usage: node scripts/plugins.mjs new <name>'); process.exit(1); }
   let dest;
   try { dest = scaffoldNew(ROOT, name); } catch (e) { console.error(`✗ ${e.message}`); process.exit(1); }
   console.log(`✓ Scaffolded plugins.local/${name}/`);
   console.log('  Next: edit manifest.json + index.mjs, then either');
-  console.log(`    A) develop locally:  node plugins.mjs enable ${name}`);
+  console.log(`    A) develop locally:  node scripts/plugins.mjs enable ${name}`);
   console.log(`    B) publish:          push a github repo named "career-ops-plugin-${name}", then open a registry PR (docs/PLUGINS.md)`);
 }
 
@@ -410,7 +410,7 @@ async function cmdAdd(args) {
   const shaIdx = args.indexOf('--sha');
   const sha = shaIdx !== -1 ? args[shaIdx + 1] : null;
   const confirm = args.includes('--confirm');
-  if (!target) { console.error('Usage: node plugins.mjs add <name|owner/repo> [--sha <commit>] [--confirm]'); process.exit(1); }
+  if (!target) { console.error('Usage: node scripts/plugins.mjs add <name|owner/repo> [--sha <commit>] [--confirm]'); process.exit(1); }
 
   let url, useSha, approved;
   const reg = findInRegistry(ROOT, target);
@@ -436,7 +436,7 @@ async function cmdAdd(args) {
   console.log(`✓ Installed plugins.local/${installed.id}  (${approved ? '✓ approved' : '❓ unverified'}, pinned ${String(useSha).slice(0, 7)})`);
   console.log(capabilityCard(installed.manifest, approved ? 'approved' : 'unverified'));
   if (confirm) { setEnabled(installed.id, true); console.log(`\n✅ Enabled.${installed.manifest.requiredEnv.length ? ' Add keys to .env: ' + installed.manifest.requiredEnv.join(', ') : ''}`); }
-  else console.log(`\n  To enable it (grants the above), run:  node plugins.mjs enable ${installed.id} --confirm`);
+  else console.log(`\n  To enable it (grants the above), run:  node scripts/plugins.mjs enable ${installed.id} --confirm`);
 }
 
 async function main() {
@@ -453,7 +453,7 @@ async function main() {
     case 'trust': return cmdTrust(rest);
     case 'remove': return cmdRemove(rest);
     default:
-      console.error('Usage: node plugins.mjs [list | available | run <id> [hook] | skill <id> | new <name> | add <name|owner/repo> [--sha <c>] [--confirm] | enable <id> [--confirm] | trust <id> | remove <id>]');
+      console.error('Usage: node scripts/plugins.mjs [list | available | run <id> [hook] | skill <id> | new <name> | add <name|owner/repo> [--sha <c>] [--confirm] | enable <id> [--confirm] | trust <id> | remove <id>]');
       process.exit(1);
   }
 }

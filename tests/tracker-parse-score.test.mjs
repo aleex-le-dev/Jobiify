@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Focused unit coverage for parseScore exported from tracker-parse.mjs (#4962).
+ * Focused unit coverage for parseScore exported from scripts/tracker-parse.mjs (#4962).
  *
  * Verifies that parseScore extracts numeric scores, strips bolding, normalizes
  * decimal commas, and strictly returns 0 for non-numeric/sentinel values.
@@ -8,7 +8,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseScore } from '../tracker-parse.mjs';
+import { parseScore } from '../scripts/tracker-parse.mjs';
 
 test('parseScore parses integers and decimal scores', () => {
   assert.equal(parseScore('5'), 5);

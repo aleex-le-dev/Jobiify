@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * skill-extract.mjs — the shared skill vocabulary + canonical extractor (#1896)
+ * scripts/skill-extract.mjs — the shared skill vocabulary + canonical extractor (#1896)
  *
  * Single source of truth for how career-ops recognizes and canonicalizes hard
- * skills. Lifted verbatim from upskill.mjs (the most-tested copy) so upskill,
+ * skills. Lifted verbatim from scripts/upskill.mjs (the most-tested copy) so upskill,
  * jd-skill-gap, and analyze-patterns can converge on ONE vocabulary + canonical
  * form instead of three drifting ones — the drift class that shipped #1851
  * (CV "k8s" not suppressing JD "Kubernetes" is the same failure in jd-skill-gap).
@@ -17,7 +17,7 @@
  * Pure + dependency-free, so it's unit-testable without a tracker or network.
  */
 
-// Skill tokenizer. Superset of the tech regex in analyze-patterns.mjs
+// Skill tokenizer. Superset of the tech regex in scripts/analyze-patterns.mjs
 // (deliberately duplicated — see #1520 discussion: extracting a shared module
 // from a tested core script is a follow-up once both call sites are stable).
 export const SKILL_TOKENS = [
@@ -53,7 +53,7 @@ export const SKILL_TOKENS = [
   // lists into a reported gap: the shipped example CV
   // examples/dual-track-engineer-instructor/cv.md writes "HuggingFace
   // Transformers" under Skills, and jd-skill-gap listed Hugging Face as a gap.
-  // The spelled-out NLP and LLM forms are the pairs keyword-match.mjs's
+  // The spelled-out NLP and LLM forms are the pairs scripts/keyword-match.mjs's
   // SYNONYMS already treats as one skill.
   //
   // Left out on purpose: the verb forms ('fine-tune', 'fine-tuned'). Both are

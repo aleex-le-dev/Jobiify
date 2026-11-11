@@ -23,7 +23,7 @@ console.log('\nCV section order from config/profile.yml (#2533)');
 const TIME_BUDGET_MS = 2000;
 
 // Section titles the builders render for each key, mirroring
-// DEFAULT_SECTION_TITLES in build-cv-html.mjs. Used to turn the shipped
+// DEFAULT_SECTION_TITLES in scripts/build-cv-html.mjs. Used to turn the shipped
 // template into a realistic rendered document.
 const RENDERED_TITLES = {
   SECTION_SUMMARY: 'Professional Summary',
@@ -115,9 +115,9 @@ function captureWarnings(fn) {
 
 try {
   const { cvSectionOrderFrom, readCvSectionOrder } =
-    await import(pathToFileURL(join(ROOT, 'theme-style.mjs')).href);
+    await import(pathToFileURL(join(ROOT, 'scripts/theme-style.mjs')).href);
   const { reorderCvSections, CV_SECTION_KEYS, validateCvSectionOrder, sectionKey } =
-    await import(pathToFileURL(join(ROOT, 'generate-pdf.mjs')).href);
+    await import(pathToFileURL(join(ROOT, 'scripts/generate-pdf.mjs')).href);
 
   // ── Reading the config ────────────────────────────────────────────────────
 
@@ -996,30 +996,31 @@ ${sections.join('\n')}</div>
   mkdirSync(outputRoot, { recursive: true });
   // realpathSync: see tests/generate-pdf-page-budget.test.mjs -- argv[1] keeps the
   // caller's spelling while import.meta.url is realpathed, so a symlinked
-  // output/ makes generate-pdf.mjs's isMain guard false and the spawn a no-op (#3165).
+  // output/ makes scripts/generate-pdf.mjs's isMain guard false and the spawn a no-op (#3165).
   const sandbox = realpathSync(mkdtempSync(join(outputRoot, 'section-order-batch-')));
   try {
-    const script = join(sandbox, 'generate-pdf.mjs');
+    const script = join(sandbox, 'scripts/generate-pdf.mjs');
+    mkdirSync(join(sandbox, 'scripts'), { recursive: true });
     for (const f of [
-      'generate-pdf.mjs', 'cv-experience-order.mjs', 'theme-style.mjs', 'tracker-utils.mjs',
-      'tracker-parse.mjs', 'tracker-aliases.json', 'pipeline-lock.mjs',
-      'cv-sections-core.mjs',
+      'scripts/generate-pdf.mjs', 'scripts/cv-experience-order.mjs', 'scripts/theme-style.mjs', 'scripts/tracker-utils.mjs',
+      'scripts/tracker-parse.mjs', 'tracker-aliases.json', 'scripts/pipeline-lock.mjs',
+      'scripts/cv-sections-core.mjs',
     ]) {
-      copyFileSync(join(ROOT, f), join(sandbox, f));
+      (mkdirSync(join(sandbox, f, '..'), { recursive: true }), (mkdirSync(join(sandbox, f, '..'), { recursive: true }), copyFileSync(join(ROOT, f), join(sandbox, f))));
     }
-    // generate-pdf.mjs resolves user-layer paths via path-resolver.mjs
+    // scripts/generate-pdf.mjs resolves user-layer paths via scripts/path-resolver.mjs
     // (CAREER_OPS_ROOT), so the fixture carries that too.
-    copyFileSync(join(ROOT, 'path-resolver.mjs'), join(sandbox, 'path-resolver.mjs'));
-    // generate-pdf.mjs's main-guard now lives in lib/is-main-module.mjs (#3170),
+    copyFileSync(join(ROOT, 'scripts/path-resolver.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/path-resolver.mjs')));
+    // scripts/generate-pdf.mjs's main-guard now lives in lib/is-main-module.mjs (#3170),
     // so the copy needs it beside itself or it dies with ERR_MODULE_NOT_FOUND
     // before parsing an argument.
     mkdirSync(join(sandbox, 'lib'), { recursive: true });
     copyFileSync(join(ROOT, 'lib', 'is-main-module.mjs'), join(sandbox, 'lib', 'is-main-module.mjs'));
-    // lib/page-format.mjs owns the paper size generate-pdf.mjs imports at
+    // lib/page-format.mjs owns the paper size scripts/generate-pdf.mjs imports at
     // module scope, so the copy needs it for the same reason.
     copyFileSync(join(ROOT, 'lib', 'page-format.mjs'), join(sandbox, 'lib', 'page-format.mjs'));
 
-    // theme-style.mjs and tracker-utils.mjs both `import * as yaml from
+    // scripts/theme-style.mjs and scripts/tracker-utils.mjs both `import * as yaml from
     // 'js-yaml'`, resolved by walking up into the repo's node_modules -- from
     // the sandbox's REALPATH, so a checkout with a symlinked output/ never
     // reaches it and the spawned generate-pdf dies before parsing argv (#3165).
@@ -1140,30 +1141,31 @@ export const chromium = {
   mkdirSync(outputRoot, { recursive: true });
   // realpathSync: see tests/generate-pdf-page-budget.test.mjs -- argv[1] keeps the
   // caller's spelling while import.meta.url is realpathed, so a symlinked
-  // output/ makes generate-pdf.mjs's isMain guard false and the spawn a no-op (#3165).
+  // output/ makes scripts/generate-pdf.mjs's isMain guard false and the spawn a no-op (#3165).
   const sandbox = realpathSync(mkdtempSync(join(outputRoot, 'section-order-anchor-')));
   try {
-    const script = join(sandbox, 'generate-pdf.mjs');
+    const script = join(sandbox, 'scripts/generate-pdf.mjs');
+    mkdirSync(join(sandbox, 'scripts'), { recursive: true });
     for (const f of [
-      'generate-pdf.mjs', 'cv-experience-order.mjs', 'theme-style.mjs', 'tracker-utils.mjs',
-      'tracker-parse.mjs', 'tracker-aliases.json', 'pipeline-lock.mjs',
-      'cv-sections-core.mjs',
+      'scripts/generate-pdf.mjs', 'scripts/cv-experience-order.mjs', 'scripts/theme-style.mjs', 'scripts/tracker-utils.mjs',
+      'scripts/tracker-parse.mjs', 'tracker-aliases.json', 'scripts/pipeline-lock.mjs',
+      'scripts/cv-sections-core.mjs',
     ]) {
-      copyFileSync(join(ROOT, f), join(sandbox, f));
+      (mkdirSync(join(sandbox, f, '..'), { recursive: true }), (mkdirSync(join(sandbox, f, '..'), { recursive: true }), copyFileSync(join(ROOT, f), join(sandbox, f))));
     }
-    // generate-pdf.mjs resolves user-layer paths via path-resolver.mjs
+    // scripts/generate-pdf.mjs resolves user-layer paths via scripts/path-resolver.mjs
     // (CAREER_OPS_ROOT), so the fixture carries that too.
-    copyFileSync(join(ROOT, 'path-resolver.mjs'), join(sandbox, 'path-resolver.mjs'));
-    // generate-pdf.mjs's main-guard now lives in lib/is-main-module.mjs (#3170),
+    copyFileSync(join(ROOT, 'scripts/path-resolver.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/path-resolver.mjs')));
+    // scripts/generate-pdf.mjs's main-guard now lives in lib/is-main-module.mjs (#3170),
     // so the copy needs it beside itself or it dies with ERR_MODULE_NOT_FOUND
     // before parsing an argument.
     mkdirSync(join(sandbox, 'lib'), { recursive: true });
     copyFileSync(join(ROOT, 'lib', 'is-main-module.mjs'), join(sandbox, 'lib', 'is-main-module.mjs'));
-    // lib/page-format.mjs owns the paper size generate-pdf.mjs imports at
+    // lib/page-format.mjs owns the paper size scripts/generate-pdf.mjs imports at
     // module scope, so the copy needs it for the same reason.
     copyFileSync(join(ROOT, 'lib', 'page-format.mjs'), join(sandbox, 'lib', 'page-format.mjs'));
 
-    // theme-style.mjs and tracker-utils.mjs both `import * as yaml from
+    // scripts/theme-style.mjs and scripts/tracker-utils.mjs both `import * as yaml from
     // 'js-yaml'`, resolved by walking up into the repo's node_modules -- from
     // the sandbox's REALPATH, so a checkout with a symlinked output/ never
     // reaches it and the spawned generate-pdf dies before parsing argv (#3165).
@@ -1290,7 +1292,7 @@ export const chromium = {
 //    this file stays safe to cat and safe to paste into a review.
 {
   const { reorderCvSections: reorder } =
-    await import(pathToFileURL(join(ROOT, 'generate-pdf.mjs')).href);
+    await import(pathToFileURL(join(ROOT, 'scripts/generate-pdf.mjs')).href);
 
   const esc = String.fromCharCode(0x1b);
   const ESC = esc + '[31mFAKE-ERROR' + esc + '[0m';
@@ -1302,7 +1304,7 @@ export const chromium = {
 
   const CONTROLS = new RegExp('[\u0000-\u001f\u007f-\u009f]');
   const BIDI = new RegExp('[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]');
-  // Mirrors DISPLAY_TITLE_MAX in generate-pdf.mjs. Asserted rather than just
+  // Mirrors DISPLAY_TITLE_MAX in scripts/generate-pdf.mjs. Asserted rather than just
   // described: "the full 200-char name is absent" is satisfied by ANY
   // truncation, so on its own it still passed with the cap widened to 150
   // (CodeRabbit; confirmed by mutation). Measuring the quoted name pins the

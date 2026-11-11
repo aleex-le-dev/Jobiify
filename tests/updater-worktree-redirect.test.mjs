@@ -2,31 +2,31 @@
  * updater-worktree-redirect.test.mjs — updates from a linked worktree land on main.
  *
  * Agents such as Claude Code run each session in a linked git worktree on a
- * throwaway branch. update-system.mjs runs every git call from its own
+ * throwaway branch. scripts/update-system.mjs runs every git call from its own
  * directory, so an update started there used to commit to that branch and
  * leave the user's main checkout on the old release. From a linked worktree
  * the CLI now re-runs itself in the checkout that has `main` checked out.
  *
  * The behavioral sections drive `dismiss --version` because it is the one
  * subcommand that writes checkout-local state with no network: where the
- * `.update-dismissed` marker lands is where the command ran. update-system.mjs
+ * `.update-dismissed` marker lands is where the command ran. scripts/update-system.mjs
  * is self-loading by contract (#1706), so copying just it and VERSION is a
  * faithful install.
  */
 
-import { mkdtempSync, writeFileSync, readFileSync, copyFileSync, existsSync, realpathSync } from 'fs';
+import { mkdtempSync, writeFileSync, readFileSync, copyFileSync, existsSync, realpathSync, mkdirSync } from 'fs';
 import { spawnSync } from 'child_process';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { pass, fail, NODE, ROOT, rmSync, hermeticGitEnv } from './helpers.mjs';
-import { parseWorktreeList, worktreeUpdateTarget } from '../update-system.mjs';
+import { parseWorktreeList, worktreeUpdateTarget } from '../scripts/update-system.mjs';
 
 console.log('\n🧪 Testing updater worktree redirect...');
 
 const canonicalize = realpathSync.native ?? realpathSync;
 const same = (a, b) => Boolean(a && b) && canonicalize(a) === canonicalize(b);
 
-// A main checkout with update-system.mjs committed, plus a linked worktree on
+// A main checkout with scripts/update-system.mjs committed, plus a linked worktree on
 // a feature branch beside it — the layout an agent session produces.
 function makeFixture() {
   const base = realpathSync(mkdtempSync(join(tmpdir(), 'co-worktree-')));
@@ -46,7 +46,7 @@ function makeFixture() {
   g(main, 'config', 'commit.gpgsign', 'false');
   g(main, 'config', 'core.hooksPath', join(base, 'no-such-hooks'));
   g(main, 'config', 'core.autocrlf', 'false');
-  copyFileSync(join(ROOT, 'update-system.mjs'), join(main, 'update-system.mjs'));
+  copyFileSync(join(ROOT, 'scripts/update-system.mjs'), (mkdirSync(join(main, 'scripts'), { recursive: true }), join(main, 'scripts/update-system.mjs')));
   copyFileSync(join(ROOT, 'VERSION'), join(main, 'VERSION'));
   writeFileSync(join(main, '.gitignore'), '.update-dismissed\n');
   g(main, 'add', '-A');
@@ -56,7 +56,7 @@ function makeFixture() {
 }
 
 function runUpdater(cwd, args, env) {
-  return spawnSync(NODE, ['update-system.mjs', ...args], { cwd, env, encoding: 'utf-8', timeout: 60000 });
+  return spawnSync(NODE, ['scripts/update-system.mjs', ...args], { cwd, env, encoding: 'utf-8', timeout: 60000 });
 }
 
 // ── 1. parseWorktreeList ──

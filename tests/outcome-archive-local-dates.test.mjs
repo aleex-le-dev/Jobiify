@@ -4,13 +4,13 @@
 // lib/local-today.mjs exists because "what day is it" has a wrong answer:
 // `new Date().toISOString().slice(0, 10)` is the UTC day, so west of Greenwich
 // an evening run answers with TOMORROW. #2765 fixed followup-seed, #2932
-// set-status, #3070 the gates, and outcome.mjs's today() has since been
-// converted too. archive-posting.mjs and application-answers.mjs were in none of
+// set-status, #3070 the gates, and scripts/outcome.mjs's today() has since been
+// converted too. scripts/archive-posting.mjs and scripts/application-answers.mjs were in none of
 // those sweeps and still read the UTC day; this file fixes those two.
 //
-// outcome.mjs is covered here as a GUARD rather than a fix. It is the script that
+// scripts/outcome.mjs is covered here as a GUARD rather than a fix. It is the script that
 // shows why the rule matters: it writes its journal with today() and, in the same
-// invocation, spawns set-status.mjs, which stamps data/status-log.tsv with
+// invocation, spawns scripts/set-status.mjs, which stamps data/status-log.tsv with
 // localToday(). If today() ever went back to UTC, one event would again produce
 // two records a day apart -- so the agreement between those two files is worth an
 // assertion even though both sides are correct today.
@@ -38,7 +38,7 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { execFileSync } from 'child_process';
 import { pass, fail, ROOT, NODE } from './helpers.mjs';
-import { formatApplicationAnswersSection } from '../application-answers.mjs';
+import { formatApplicationAnswersSection } from '../scripts/application-answers.mjs';
 
 console.log('\noutcome + archival path — dates follow the local calendar');
 
@@ -129,7 +129,7 @@ function makeWorkspace() {
 function recordHire(tz) {
   const dir = makeWorkspace();
   const before = dayIn(tz);
-  execFileSync(NODE, [join(ROOT, 'outcome.mjs'), '1', 'hired', '--json'], {
+  execFileSync(NODE, [join(ROOT, 'scripts/outcome.mjs'), '1', 'hired', '--json'], {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
     timeout: 30_000,
@@ -156,7 +156,7 @@ function recordHire(tz) {
   return { journalDate, ledgerDate, days: before === after ? [before] : [before, after] };
 }
 
-// ── outcome.mjs: one event, one date ────────────────────────────────────────
+// ── scripts/outcome.mjs: one event, one date ────────────────────────────────────────
 {
   const east = recordHire(EAST);
   const west = recordHire(WEST);
@@ -191,7 +191,7 @@ function recordHire(tz) {
   }
 }
 
-// ── archive-posting.mjs: the capture filename ───────────────────────────────
+// ── scripts/archive-posting.mjs: the capture filename ───────────────────────────────
 //
 // Asserted on the REAL filename, not on the expression that builds it.
 // `--dry-run` is documented as "preview filename without saving": it prints the
@@ -220,7 +220,7 @@ function recordHire(tz) {
   const captureName = (tz) => {
     const out = execFileSync(
       NODE,
-      [join(ROOT, 'archive-posting.mjs'), '--dry-run', 'https://boards.greenhouse.io/openai/jobs/123'],
+      [join(ROOT, 'scripts/archive-posting.mjs'), '--dry-run', 'https://boards.greenhouse.io/openai/jobs/123'],
       { encoding: 'utf8', env: { ...process.env, TZ: tz }, timeout: 30_000 },
     );
     return (out.match(/local:jds\/(\d{4}-\d{2}-\d{2})_/) || [])[1] ?? null;
@@ -246,7 +246,7 @@ function recordHire(tz) {
   }
 }
 
-// ── application-answers.mjs: the default date ──────────────────────────────
+// ── scripts/application-answers.mjs: the default date ──────────────────────────────
 //
 // formatApplicationAnswersSection is exported, so this one is a direct call in a
 // child pinned to each zone -- no source reading needed.
@@ -254,7 +254,7 @@ function recordHire(tz) {
   const renderedDate = (tz) => {
     const out = execFileSync(NODE, [
       '--input-type=module', '-e',
-      `import { formatApplicationAnswersSection } from ${JSON.stringify(new URL('../application-answers.mjs', import.meta.url).href)};`
+      `import { formatApplicationAnswersSection } from ${JSON.stringify(new URL('../scripts/application-answers.mjs', import.meta.url).href)};`
       + 'process.stdout.write(formatApplicationAnswersSection({ state: "filled" }));',
     ], { encoding: 'utf8', env: { ...process.env, TZ: tz }, timeout: 30_000 });
     return (out.match(/\d{4}-\d{2}-\d{2}/) || [])[0] ?? null;

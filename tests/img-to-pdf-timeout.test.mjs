@@ -3,7 +3,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { chromium } from 'playwright';
-import { convertImageToPdf } from '../img-to-pdf.mjs';
+import { convertImageToPdf } from '../scripts/img-to-pdf.mjs';
 import { pass, fail } from './helpers.mjs';
 
 const root = mkdtempSync(join(tmpdir(), 'image-pdf-timeout-'));

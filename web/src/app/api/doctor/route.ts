@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 const UNAVAILABLE = { available: false, onboardingNeeded: false, missing: [], warnings: [] };
 
-// Orchestrates the core's own cold-start check (doctor.mjs --json) — the SAME
+// Orchestrates the core's own cold-start check (scripts/doctor.mjs --json) — the SAME
 // source of truth the CLI uses to decide onboarding. We never reimplement the
 // prerequisite list; we read the core's verdict.
 export async function GET() {

@@ -12,7 +12,7 @@ import { normalizeTextKey as webKey } from "../../src/lib/core/normalize-text-ke
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const { normalizeTextKey: coreKey } = await import(
-  pathToFileURL(join(ROOT, "tracker-parse.mjs")).href
+  pathToFileURL(join(ROOT, "scripts/tracker-parse.mjs")).href
 );
 
 const CASES = [

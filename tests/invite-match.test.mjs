@@ -1,10 +1,10 @@
 /**
- * tests/invite-match.test.mjs — regression tests for invite-match.mjs's ambiguous-
+ * tests/invite-match.test.mjs — regression tests for scripts/invite-match.mjs's ambiguous-
  * match ranking, which is the part most likely to silently regress: a wrong
  * top candidate is worse than no candidate at all. Also covers the #2098
  * rejection-classification and --apply-to-Rejected additions.
  *
- * Run: node test-all.mjs --only invite-match
+ * Run: node scripts/test-all.mjs --only invite-match
  *      Running the file directly prints the same ✅/❌ lines, but a
  *      discovered suite reports through the shared counters and never
  *      exits — so a direct run returns 0 even when assertions fail.
@@ -15,12 +15,12 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
-import { matchInvite, normalizeCompanyName, companySimilarity, extractCompany, extractDate, extractReqId, extractPlatform, isAIInterviewerPlatform, classifyEmail, analyzeInvite, applyRejectionStatus, selectApplyTarget } from '../invite-match.mjs';
+import { matchInvite, normalizeCompanyName, companySimilarity, extractCompany, extractDate, extractReqId, extractPlatform, isAIInterviewerPlatform, classifyEmail, analyzeInvite, applyRejectionStatus, selectApplyTarget } from '../scripts/invite-match.mjs';
 import { pass, fail } from './helpers.mjs';
 
 console.log('\ninvite-match.mjs — interview invite matching');
 
-const SCRIPT_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'invite-match.mjs');
+const SCRIPT_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'scripts/invite-match.mjs');
 
 
 function eq(label, actual, expected) {
@@ -335,7 +335,7 @@ eq('exact-company/weak-phrase fixture does not classify as rejection at all (ben
 // classification gate above --apply's candidate-selection step; this
 // confirms selectApplyTarget is never even reached in that case since the
 // CLI's classification check runs first (see the --apply block in
-// invite-match.mjs).
+// scripts/invite-match.mjs).
 
 // --- maintainer finding, PR #2100 review comment 2026-08-07: realistic
 // non-rejection emails must never classify as `rejection`. This is the exact
@@ -439,7 +439,7 @@ function runCli(args = []) {
 // 1. --help prints usage, documents both --help and -h, and exits 0
 const helpResult = runCli(['--help']);
 eq('CLI: --help exits with code 0', helpResult.status, 0);
-eq('CLI: --help stdout contains Usage block', helpResult.stdout.includes('Usage:\n  node invite-match.mjs'), true);
+eq('CLI: --help stdout contains Usage block', helpResult.stdout.includes('Usage:\n  node scripts/invite-match.mjs'), true);
 eq('CLI: --help stdout documents --help', helpResult.stdout.includes('--help'), true);
 eq('CLI: --help stdout documents -h', helpResult.stdout.includes('-h'), true);
 
@@ -465,7 +465,7 @@ const mistypedResult = runCli(['--sumary']);
 eq('CLI: mistyped flag (--sumary) exits non-zero (code 1)', mistypedResult.status, 1);
 eq('CLI: mistyped flag stderr names the mistyped flag', mistypedResult.stderr.includes('--sumary'), true);
 
-// --- Cases ported from invite-match.mjs runSelfTest() (#5182) ---
+// --- Cases ported from scripts/invite-match.mjs runSelfTest() (#5182) ---
 
 // normalizeCompanyName: corporate suffixes, branding, whitespace, and Unicode script preservation
 eq('strips "Corp." suffix', normalizeCompanyName('Acme Corp.'), 'acme');

@@ -108,11 +108,11 @@ The basic workflow is:
 
 1. Fork the repository and create a branch from `main`.
 2. Make one focused change and keep personal data such as `cv.md`, `profile.yml`, applications, and reports out of the commit.
-3. Run the relevant checks; for a broad validation, use `node test-all.mjs --quick`.
+3. Run the relevant checks; for a broad validation, use `node scripts/test-all.mjs --quick`.
 4. Commit and push your branch to your fork.
 5. Open a pull request against `career-ops-hq/career-ops` and explain what changed and why.
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full contribution guidelines and examples of good first contributions.
+See [docs/projet/CONTRIBUTING.md](projet/CONTRIBUTING.md) for the full contribution guidelines and examples of good first contributions.
 
 ### PDF rendering (one-time)
 
@@ -140,8 +140,8 @@ On NixOS, skip this step: the browsers it downloads can't run there. Use the fla
 ## Verify Setup
 
 ```bash
-node cv-sync-check.mjs      # Check configuration
-node verify-pipeline.mjs     # Check pipeline integrity
+node scripts/cv-sync-check.mjs      # Check configuration
+node scripts/verify-pipeline.mjs     # Check pipeline integrity
 ```
 
 ## Build Dashboard (Optional)

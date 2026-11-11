@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Remove ONE application row from applications.md by orchestrating the core
-// write-gate `tracker.mjs delete --num N` (#1200) — we NEVER hand-edit the file
+// write-gate `scripts/tracker.mjs delete --num N` (#1200) — we NEVER hand-edit the file
 // (atomic write + SQLite reindex + orphan-report report all live in the script).
 // This is the disc#9 fix: a bogus row (e.g. an evaluation that errored mid-run)
 // must be removable. `--dry-run` previews; the real delete is irreversible, so the
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     );
   }
   // Serialize: the delete must not run while an evaluation is writing the tracker
-  // (tracker.mjs delete doesn't share a lock with merge-tracker yet).
+  // (scripts/tracker.mjs delete doesn't share a lock with merge-tracker yet).
   if (isTrackerWriting()) {
     return Response.json(
       { error: "An evaluation is updating your tracker right now — try again in a moment." },
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
       try {
         child = spawn(process.execPath, args, { cwd: careerOpsRoot(), env: process.env });
       } catch (e) {
-        resolve({ code: 1, err: e instanceof Error ? e.message : "failed to start tracker.mjs" });
+        resolve({ code: 1, err: e instanceof Error ? e.message : "failed to start scripts/tracker.mjs" });
         return;
       }
       child.stderr.on("data", (d: Buffer) => {

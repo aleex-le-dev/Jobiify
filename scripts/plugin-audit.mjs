@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-check
-// plugin-audit.mjs — static safety scan for COMMUNITY/registry plugins (run by
-// `plugins.mjs add` and by the registry-validate CI). Lives at repo ROOT (not
+// scripts/plugin-audit.mjs — static safety scan for COMMUNITY/registry plugins (run by
+// `scripts/plugins.mjs add` and by the registry-validate CI). Lives at repo ROOT (not
 // under plugins/) on purpose: it must reference forbidden-API names + firewall
 // phrases, and root files are not walked by test-all's plugin deny-list/firewall
 // greps. Bundled plugins in plugins/ are reviewed in-tree and are NOT subject to
@@ -13,9 +13,9 @@
 
 import { readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { listTree } from './lib/walk-tree.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { listTree } from '../lib/walk-tree.mjs';
 
 // Built from fragments so the literal API/firewall tokens never appear verbatim
 // (keeps this file clean against any future repo-wide grep).
@@ -42,8 +42,8 @@ const firewallRe = new RegExp('\\b(' + ['revenue', 'pricing', 'paywall', 'moneti
 const KNOWN_FLAGS = ['--help', '-h'];
 
 const USAGE = `Usage:
-  node plugin-audit.mjs <plugin-dir>
-  node plugin-audit.mjs --help`;
+  node scripts/plugin-audit.mjs <plugin-dir>
+  node scripts/plugin-audit.mjs --help`;
 
 function collectSpecifiers(src) {
   const specs = [];
@@ -97,7 +97,7 @@ export function auditPlugin(dir) {
   return { ok: findings.length === 0, findings };
 }
 
-// CLI: node plugin-audit.mjs <dir>
+// CLI: node scripts/plugin-audit.mjs <dir>
 if (isMainModule(import.meta.url)) {
   const args = process.argv.slice(2);
   validateFlags(args, KNOWN_FLAGS, USAGE);

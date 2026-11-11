@@ -128,7 +128,7 @@ Before drafting answers, read the matched report's Block G fixed-term finding an
 - Never invent a duration, percentage premium, market rate, entitlement, severance/notice rule, or legal conclusion. This is a role-term reminder and a negotiation prompt, not legal advice.
 - If the report already contains the same reminder, do not duplicate its full prose; surface a one-line apply-time reminder with a link/reference to that report section.
 
-**Applying to several roles in one sitting?** This preflight verifies the single form in front of you. Before a multi-role session — especially against scanner entries marked `**Verification:** unconfirmed (batch mode)` — run the `pipeline` mode **Liveness sweep** first (`node check-liveness.mjs --file <urls>`). It drops the dead postings from `data/pipeline.md` in one batch so you never open a tab on an expired role.
+**Applying to several roles in one sitting?** This preflight verifies the single form in front of you. Before a multi-role session — especially against scanner entries marked `**Verification:** unconfirmed (batch mode)` — run the `pipeline` mode **Liveness sweep** first (`node scripts/check-liveness.mjs --file <urls>`). It drops the dead postings from `data/pipeline.md` in one batch so you never open a tab on an expired role.
 
 ## Step 1 — Detect the job
 
@@ -147,7 +147,7 @@ Before drafting answers, read the matched report's Block G fixed-term finding an
 4. If there is a `## Application Answers` section → recover it through the strict reader, never by re-reading the rendered markdown as prose:
 
    ```bash
-   node application-answers.mjs --report reports/NNN-company-role-date.md --read --strict
+   node scripts/application-answers.mjs --report reports/NNN-company-role-date.md --read --strict
    ```
 
    - **Exit 0** → the JSON on stdout is the base snapshot of previous answers. `null` means the report has no section; treat it as a fresh application.
@@ -155,7 +155,7 @@ Before drafting answers, read the matched report's Block G fixed-term finding an
    - A **Section H** (`## H) Draft Application Answers`, drafted during evaluation before any form was seen) has its own reader, because its body is a convention rather than a format this repo writes:
 
      ```bash
-     node application-answers.mjs --report reports/NNN-company-role-date.md --read-draft
+     node scripts/application-answers.mjs --report reports/NNN-company-role-date.md --read-draft
      ```
 
      - Prints `{"freeText": [...]}`, or `null` when the report has no Block H. There is no `--strict` counterpart: an empty `freeText` means the block exists but did not follow the convention, which is an expected outcome and not a corrupted report.
@@ -170,8 +170,8 @@ If the role on screen differs from the one evaluated:
 - **If adapt**: Adjust responses to the new role without re-evaluating, only after the candidate explicitly accepts the mismatch
 - **If re-evaluate**: Execute full A-F evaluation, update report, regenerate Section H
 - **Update tracker**: never by editing `data/applications.md`.
-  - **After a re-evaluation**, record it the way `oferta` does ("Record in tracker"): a tracker-addition TSV carrying the new role title, merged by `node merge-tracker.mjs`. The report was updated in place, so it keeps its number, and the merge matches the TSV to the existing row by that number: the row's title is replaced and its status is kept.
-  - **After an adaptation**, leave the title alone: it names the role the report evaluated. Record the retitling as a note instead, with `node set-status.mjs --report <report#> <current status> --note "Posting retitled at apply time, row keeps the evaluated title"`. Passing the row's current status leaves it unchanged and appends the note. Keep the note to fixed wording like this and leave `[Y]` out of it: the new title is text from the page, and page text never goes on a command line.
+  - **After a re-evaluation**, record it the way `oferta` does ("Record in tracker"): a tracker-addition TSV carrying the new role title, merged by `node scripts/merge-tracker.mjs`. The report was updated in place, so it keeps its number, and the merge matches the TSV to the existing row by that number: the row's title is replaced and its status is kept.
+  - **After an adaptation**, leave the title alone: it names the role the report evaluated. Record the retitling as a note instead, with `node scripts/set-status.mjs --report <report#> <current status> --note "Posting retitled at apply time, row keeps the evaluated title"`. Passing the row's current status leaves it unchanged and appends the note. Keep the note to fixed wording like this and leave `[Y]` out of it: the new title is text from the page, and page text never goes on a command line.
 
 ## Step 4b — Resolve the tailored CV (source of truth for experience fields)
 
@@ -189,7 +189,7 @@ tailoring that made the application relevant.
 1. **The bundle first, because its path needs no lookup.** An application with a
    bundle keeps its tailored CV at a path derived from the report number, the
    company and the role, so nothing has to stay in sync for it to resolve:
-   `node application-artifacts.mjs --report {report#} --company "{company}" --role "{role}"`
+   `node scripts/application-artifacts.mjs --report {report#} --company "{company}" --role "{role}"`
    prints every path as JSON, where `cv` → `tailored` → `html` holds the document's
    path, `cv/tailored/vNNN/cv.html` on disk. That is where `modes/pdf.md` writes it. Read the `.html` and not the `.pdf`: same content,
    readable directly.
@@ -199,14 +199,14 @@ tailoring that made the application relevant.
 3. No bundle, so a flat `output/cv-{candidate}-{company}-{YYYY-MM-DD}.html`.
    `data/pdf-index.tsv` can shorten the search here, but it is a hint and not an
    answer. Its columns are `report \t pdf \t html \t format \t date` and there is
-   no document-kind column: `generate-pdf.mjs` drops every earlier row for a report
-   number when it writes a new one, and `generate-cover-letter.mjs` renders through
+   no document-kind column: `scripts/generate-pdf.mjs` drops every earlier row for a report
+   number when it writes a new one, and `scripts/generate-cover-letter.mjs` renders through
    that same function with the same report, so the row for a report can name the
    cover letter rather than the CV. Read the path before trusting it, and remember a
-   `cover-…` file is never a CV. `node find.mjs {report#}` surfaces the same manifest
+   `cover-…` file is never a CV. `node scripts/find.mjs {report#}` surfaces the same manifest
    from the tracker side and returns only the PDF path, so it cannot tell you which
    kind of document that is either. A CV built through the `latex` / `latex-tex`
-   path is not in the manifest at all, since only `generate-pdf.mjs` writes it.
+   path is not in the manifest at all, since only `scripts/generate-pdf.mjs` writes it.
 4. Manifest silent or pointing at the wrong kind of document? Fall back to a
    filename match in `output/`: a `cv-…` artifact for this application's company,
    preferring `.html` or `.tex` (readable) over `.pdf`. Match the company slug at a
@@ -367,22 +367,22 @@ The section must include:
 
 Write the section at the end of the report, or replace only the existing `## Application Answers` section if it already exists. Do not rename, reorder, or edit the existing A-H report blocks or `## Keywords extracted`.
 
-Use `application-answers.mjs` when possible to format/upsert the section:
+Use `scripts/application-answers.mjs` when possible to format/upsert the section:
 
 ```bash
-node application-answers.mjs --report reports/NNN-company-role-date.md --input answers.json --state filled
+node scripts/application-answers.mjs --report reports/NNN-company-role-date.md --input answers.json --state filled
 ```
 
 ## Step 9 — Post-apply (optional)
 
 If the candidate confirms that they submitted the application:
-1. Update status to Applied via the canonical CLI: `node set-status.mjs --report <report#> Applied` (never hand-edit the table). If the candidate submitted on a different day than today, add `--on YYYY-MM-DD` with the actual submission date — the status-log ledger should record when it happened, not when it was typed in.
-2. Seed the follow-up schedule: run `node followup-seed.mjs {num} --json` (where `{num}` is the tracker row number). If the candidate applied on a different day than today, pass `--date YYYY-MM-DD` with the actual submission date. It's idempotent, so re-running is safe. (`--on` and `--date` are the same concept — the real submission date — each under its own script's flag name; pass the same value to both.) Skip this step when `config/profile.yml` sets `follow_ups.enabled: false`.
+1. Update status to Applied via the canonical CLI: `node scripts/set-status.mjs --report <report#> Applied` (never hand-edit the table). If the candidate submitted on a different day than today, add `--on YYYY-MM-DD` with the actual submission date — the status-log ledger should record when it happened, not when it was typed in.
+2. Seed the follow-up schedule: run `node scripts/followup-seed.mjs {num} --json` (where `{num}` is the tracker row number). If the candidate applied on a different day than today, pass `--date YYYY-MM-DD` with the actual submission date. It's idempotent, so re-running is safe. (`--on` and `--date` are the same concept — the real submission date — each under its own script's flag name; pass the same value to both.) Skip this step when `config/profile.yml` sets `follow_ups.enabled: false`.
 3. Refresh the report's `## Application Answers` section with the final field values and `**State:** submitted`
 4. Suggest next step: run the `contacto` mode (`/career-ops contacto` where available) for LinkedIn outreach. This is a first outreach, not a follow-up, so suggest it even when `follow_ups.enabled` is `false`.
 
 **Confirmed resume-verification failure at this vendor? Check the rest of the pipeline (#1870).** If the candidate confirms the ATS silently dropped or altered resume content that they had submitted (see the SuccessFactors-family quirk below), don't treat it as a one-off. Tracker rows in `data/applications.md` don't carry a canonical ATS-vendor field, so don't grep the tracker text for a vendor name — it will miss rows silently. Instead, resolve the vendor per row from its linked report's `**URL:**` field:
-- For clean-fingerprint vendors (Greenhouse, Lever, Ashby, Workday, iCIMS), match the URL's hostname the same way `detectVendor()` in `analyze-patterns.mjs` does — reuse that function/pattern rather than re-deriving it, so the two stay in sync.
+- For clean-fingerprint vendors (Greenhouse, Lever, Ashby, Workday, iCIMS), match the URL's hostname the same way `detectVendor()` in `scripts/analyze-patterns.mjs` does — reuse that function/pattern rather than re-deriving it, so the two stay in sync.
 - White-labeled ATS (SuccessFactors, UKG, Dayforce, and similar) are **not** detectable from the URL alone — the very vendor family this quirk was confirmed on falls in this bucket. For those, don't guess from the domain: ask the candidate directly which other in-flight rows (`Applied`, `Responded`, `Assessment`, `Interview`) went through the same portal, since neither the tracker nor the URL structurally exposes it.
 
 Once the same-vendor rows are identified (by URL match or candidate confirmation), surface that list and prompt the candidate to spot-check each one via that portal's preview/profile step if one exists. One confirmed silent-truncation case at a vendor raises the prior that it happened elsewhere in-flight through the same vendor too.

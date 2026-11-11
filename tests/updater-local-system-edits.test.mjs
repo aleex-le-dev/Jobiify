@@ -13,7 +13,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { pass, fail } from './helpers.mjs';
-import { gitIn, locallyModifiedSystemFiles, pathFullyPreserved, checkoutErrorIsBenign, probeAbsentUpstream } from '../update-system.mjs';
+import { gitIn, locallyModifiedSystemFiles, pathFullyPreserved, checkoutErrorIsBenign, probeAbsentUpstream } from '../scripts/update-system.mjs';
 
 const fixtures = [];
 
@@ -57,7 +57,7 @@ function makeRepo() {
   mkdirSync(join(dir, 'modes'), { recursive: true });
   writeFileSync(join(dir, 'modes', 'pdf.md'), 'shipped pdf\n');
   writeFileSync(join(dir, 'modes', 'cover.md'), 'shipped cover\n');
-  writeFileSync(join(dir, 'generate-cover-letter.mjs'), 'shipped script\n');
+  writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/generate-cover-letter.mjs')), 'shipped script\n');
   g('add', '-A');
   g('commit', '-qm', 'base');
   g('branch', 'upstream');
@@ -102,20 +102,20 @@ function replayUpdatePreserving(repo, version, preserved) {
   repo.g('commit', '-qm', `chore: auto-update system files to v${version}`);
 }
 
-const PATHS = ['modes/', 'generate-cover-letter.mjs'];
+const PATHS = ['modes/', 'scripts/generate-cover-letter.mjs'];
 
 // ── 1. The reported case: a committed local fix upstream has not adopted ──
 {
   const repo = makeRepo();
   upstreamChange(repo, 'modes/pdf.md', 'shipped pdf v2\n');
-  writeFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'local linkedin fix\n');
+  writeFileSync((mkdirSync(join(repo.dir, 'scripts'), { recursive: true }), join(repo.dir, 'scripts/generate-cover-letter.mjs')), 'local linkedin fix\n');
   repo.g('commit', '-qam', 'local fix');
 
   const atRisk = locallyModifiedSystemFiles(PATHS, 'upstream', repo.ctx);
-  if (atRisk.length === 1 && atRisk[0] === 'generate-cover-letter.mjs') {
+  if (atRisk.length === 1 && atRisk[0] === 'scripts/generate-cover-letter.mjs') {
     pass('a committed local fix upstream has not adopted is reported (#2337)');
   } else {
-    fail(`#1 expected ['generate-cover-letter.mjs'], got ${JSON.stringify(atRisk)}`);
+    fail(`#1 expected ['scripts/generate-cover-letter.mjs'], got ${JSON.stringify(atRisk)}`);
   }
 }
 
@@ -123,13 +123,13 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
 {
   const repo = makeRepo();
   upstreamChange(repo, 'modes/pdf.md', 'shipped pdf v2\n');
-  writeFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'uncommitted fix\n');
+  writeFileSync((mkdirSync(join(repo.dir, 'scripts'), { recursive: true }), join(repo.dir, 'scripts/generate-cover-letter.mjs')), 'uncommitted fix\n');
 
   const atRisk = locallyModifiedSystemFiles(PATHS, 'upstream', repo.ctx);
-  if (atRisk.length === 1 && atRisk[0] === 'generate-cover-letter.mjs') {
+  if (atRisk.length === 1 && atRisk[0] === 'scripts/generate-cover-letter.mjs') {
     pass('an uncommitted local edit is reported too');
   } else {
-    fail(`#2 expected ['generate-cover-letter.mjs'], got ${JSON.stringify(atRisk)}`);
+    fail(`#2 expected ['scripts/generate-cover-letter.mjs'], got ${JSON.stringify(atRisk)}`);
   }
 }
 
@@ -152,8 +152,8 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
 //    the checkout costs nothing, so warning about it would be noise.
 {
   const repo = makeRepo();
-  upstreamChange(repo, 'generate-cover-letter.mjs', 'the same fix\n');
-  writeFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'the same fix\n');
+  upstreamChange(repo, 'scripts/generate-cover-letter.mjs', 'the same fix\n');
+  writeFileSync((mkdirSync(join(repo.dir, 'scripts'), { recursive: true }), join(repo.dir, 'scripts/generate-cover-letter.mjs')), 'the same fix\n');
   repo.g('commit', '-qam', 'local fix, same content');
 
   const atRisk = locallyModifiedSystemFiles(PATHS, 'upstream', repo.ctx);
@@ -285,17 +285,17 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
 //    erroring — or a refactor that drops the skip — is caught.
 {
   const repo = makeRepo();
-  upstreamChange(repo, 'generate-cover-letter.mjs', 'upstream script v2\n');
-  writeFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'local fix\n');
+  upstreamChange(repo, 'scripts/generate-cover-letter.mjs', 'upstream script v2\n');
+  writeFileSync((mkdirSync(join(repo.dir, 'scripts'), { recursive: true }), join(repo.dir, 'scripts/generate-cover-letter.mjs')), 'local fix\n');
   repo.g('commit', '-qam', 'local fix');
 
   let errored = false;
   try {
-    repo.g('checkout', 'upstream', '--', 'generate-cover-letter.mjs', ':(exclude)generate-cover-letter.mjs');
+    repo.g('checkout', 'upstream', '--', 'scripts/generate-cover-letter.mjs', ':(exclude)scripts/generate-cover-letter.mjs');
   } catch {
     errored = true;
   }
-  const content = readFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'utf-8');
+  const content = readFileSync(join(repo.dir, 'scripts/generate-cover-letter.mjs'), 'utf-8');
   if (errored && content === 'local fix\n') {
     pass('a fully-excluded pathspec errors — hence the skip in apply() (#2337)');
   } else {
@@ -525,7 +525,7 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
   upstreamChange(repo, 'modes/pdf.md', 'shipped pdf v2\n');
   rmSync(join(repo.dir, 'modes', 'cover.md'));
   // A genuine local edit alongside it — the deletion must not disturb it.
-  writeFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'local linkedin fix\n');
+  writeFileSync((mkdirSync(join(repo.dir, 'scripts'), { recursive: true }), join(repo.dir, 'scripts/generate-cover-letter.mjs')), 'local linkedin fix\n');
   repo.g('commit', '-qam', 'local fix');
 
   const atRisk = locallyModifiedSystemFiles(PATHS, 'upstream', repo.ctx);
@@ -533,7 +533,7 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
 
   const restored = existsSync(join(repo.dir, 'modes', 'cover.md'))
     && readFileSync(join(repo.dir, 'modes', 'cover.md'), 'utf-8') === 'shipped cover\n';
-  const localEdit = readFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'utf-8');
+  const localEdit = readFileSync(join(repo.dir, 'scripts/generate-cover-letter.mjs'), 'utf-8');
   if (restored && localEdit === 'local linkedin fix\n') {
     pass('the update restores a deleted system file and still keeps a real local edit');
   } else {
@@ -577,26 +577,26 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
   mkdirSync(join(dir, 'modes'), { recursive: true });
   // Base blobs committed with CRLF, standing in for a pre-`.gitattributes` tree.
   writeFileSync(join(dir, 'modes', 'pdf.md'), 'shipped pdf\r\nline two\r\n');
-  writeFileSync(join(dir, 'generate-cover-letter.mjs'), 'shipped script\n');
+  writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/generate-cover-letter.mjs')), 'shipped script\n');
   g('add', '-A');
   g('commit', '-qm', 'base (CRLF blobs)');
   g('branch', 'upstream');
   // Upstream changes the content of both files.
   g('checkout', '-q', 'upstream');
   writeFileSync(join(dir, 'modes', 'pdf.md'), 'shipped pdf v2\r\nline two\r\n');
-  writeFileSync(join(dir, 'generate-cover-letter.mjs'), 'shipped script v2\n');
+  writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/generate-cover-letter.mjs')), 'shipped script v2\n');
   g('commit', '-qam', 'upstream changes');
   g('checkout', '-q', 'main');
   // main: pdf.md renormalized to LF (a CR-only diff from the base); the script
   // carries a genuine local edit.
   writeFileSync(join(dir, 'modes', 'pdf.md'), 'shipped pdf\nline two\n');
-  writeFileSync(join(dir, 'generate-cover-letter.mjs'), 'local real fix\n');
+  writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/generate-cover-letter.mjs')), 'local real fix\n');
 
   const atRisk = locallyModifiedSystemFiles(PATHS, 'upstream', { git: g, root: dir });
-  if (atRisk.length === 1 && atRisk[0] === 'generate-cover-letter.mjs') {
+  if (atRisk.length === 1 && atRisk[0] === 'scripts/generate-cover-letter.mjs') {
     pass('a CRLF/LF-only difference from the baseline is not a local edit (#2817)');
   } else {
-    fail(`#13 expected ['generate-cover-letter.mjs'], got ${JSON.stringify(atRisk)}`);
+    fail(`#13 expected ['scripts/generate-cover-letter.mjs'], got ${JSON.stringify(atRisk)}`);
   }
   rmSync(dir, { recursive: true, force: true });
 }
@@ -635,14 +635,14 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
   upstreamChange(repo, 'modes/pdf.md', 'shipped pdf v2\n');
   replayUpdate(repo, '2');
   upstreamChange(repo, 'modes/pdf.md', 'shipped pdf v3\n');
-  writeFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'local linkedin fix\n');
+  writeFileSync((mkdirSync(join(repo.dir, 'scripts'), { recursive: true }), join(repo.dir, 'scripts/generate-cover-letter.mjs')), 'local linkedin fix\n');
   repo.g('commit', '-qam', 'local fix');
 
   const atRisk = locallyModifiedSystemFiles(PATHS, 'upstream', repo.ctx);
-  if (atRisk.length === 1 && atRisk[0] === 'generate-cover-letter.mjs') {
+  if (atRisk.length === 1 && atRisk[0] === 'scripts/generate-cover-letter.mjs') {
     pass('a real local fix is still reported after a second update (#2337)');
   } else {
-    fail(`#15 expected ['generate-cover-letter.mjs'], got ${JSON.stringify(atRisk)}`);
+    fail(`#15 expected ['scripts/generate-cover-letter.mjs'], got ${JSON.stringify(atRisk)}`);
   }
 }
 
@@ -654,7 +654,7 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
 {
   const repo = makeRepo();
   upstreamChange(repo, 'modes/pdf.md', 'shipped pdf v2\n');
-  writeFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'local linkedin fix\n');
+  writeFileSync((mkdirSync(join(repo.dir, 'scripts'), { recursive: true }), join(repo.dir, 'scripts/generate-cover-letter.mjs')), 'local linkedin fix\n');
   const blind = {
     root: repo.dir,
     git: (...args) => {
@@ -670,7 +670,7 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
   } catch {
     threw = true;
   }
-  if (!threw && Array.isArray(atRisk) && atRisk.includes('generate-cover-letter.mjs')) {
+  if (!threw && Array.isArray(atRisk) && atRisk.includes('scripts/generate-cover-letter.mjs')) {
     pass('unreadable upstream history degrades the filter, not the update');
   } else {
     fail(`#16 threw=${threw} atRisk=${JSON.stringify(atRisk)}`);
@@ -743,20 +743,20 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
 //    an update merely carried along must not.
 {
   const repo = makeRepo();
-  writeFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'local linkedin fix\n');
+  writeFileSync((mkdirSync(join(repo.dir, 'scripts'), { recursive: true }), join(repo.dir, 'scripts/generate-cover-letter.mjs')), 'local linkedin fix\n');
   repo.g('commit', '-qam', 'local fix');
   // Update 1 refreshes another file and preserves this one, so its commit now
   // contains the user's content.
   upstreamChange(repo, 'modes/pdf.md', 'shipped pdf v2\n');
-  replayUpdatePreserving(repo, '2', ['generate-cover-letter.mjs']);
+  replayUpdatePreserving(repo, '2', ['scripts/generate-cover-letter.mjs']);
   // Update 2 arrives.
   upstreamChange(repo, 'modes/pdf.md', 'shipped pdf v3\n');
 
   const atRisk = locallyModifiedSystemFiles(PATHS, 'upstream', repo.ctx);
-  if (atRisk.length === 1 && atRisk[0] === 'generate-cover-letter.mjs') {
+  if (atRisk.length === 1 && atRisk[0] === 'scripts/generate-cover-letter.mjs') {
     pass('a customization an earlier update preserved is still reported (#4170)');
   } else {
-    fail(`#19 expected ['generate-cover-letter.mjs'], got ${JSON.stringify(atRisk)}`);
+    fail(`#19 expected ['scripts/generate-cover-letter.mjs'], got ${JSON.stringify(atRisk)}`);
   }
 }
 
@@ -780,11 +780,11 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
 //    trying to keep at risk.
 {
   const repo = makeRepo();
-  writeFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'local linkedin fix\n');
+  writeFileSync((mkdirSync(join(repo.dir, 'scripts'), { recursive: true }), join(repo.dir, 'scripts/generate-cover-letter.mjs')), 'local linkedin fix\n');
   repo.g('commit', '-qam', 'local fix');
 
   repo.g('checkout', '-q', '--orphan', 'unreachable');
-  writeFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'shipped script v2\n');
+  writeFileSync((mkdirSync(join(repo.dir, 'scripts'), { recursive: true }), join(repo.dir, 'scripts/generate-cover-letter.mjs')), 'shipped script v2\n');
   writeFileSync(join(repo.dir, 'modes/pdf.md'), 'shipped pdf v2\n');
   writeFileSync(join(repo.dir, 'modes/cover.md'), 'shipped cover v2\n');
   repo.g('add', '-A');
@@ -799,7 +799,7 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
   }
 
   const atRisk = locallyModifiedSystemFiles(PATHS, 'unreachable', repo.ctx);
-  if (mergeBaseFailed && atRisk.includes('generate-cover-letter.mjs')) {
+  if (mergeBaseFailed && atRisk.includes('scripts/generate-cover-letter.mjs')) {
     pass('with no merge-base, a committed customization is still reported');
   } else if (!mergeBaseFailed) {
     fail('#20 the fixture did not break merge-base, so the fallback was never exercised');
@@ -824,7 +824,7 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
   const repo = makeRepo();
   repo.g('checkout', '-q', '--orphan', 'fetched');
   writeFileSync(join(repo.dir, 'modes', 'pdf.md'), 'shipped pdf v2\n');
-  writeFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'shipped script v2\n');
+  writeFileSync((mkdirSync(join(repo.dir, 'scripts'), { recursive: true }), join(repo.dir, 'scripts/generate-cover-letter.mjs')), 'shipped script v2\n');
   repo.g('add', '-A');
   repo.g('commit', '-qm', 'unrelated fetched history');
   repo.g('checkout', '-q', 'main');
@@ -857,14 +857,14 @@ const PATHS = ['modes/', 'generate-cover-letter.mjs'];
 //    compare: the update never changed the file.
 {
   const repo = makeRepo();
-  writeFileSync(join(repo.dir, 'generate-cover-letter.mjs'), 'local linkedin fix\n');
+  writeFileSync((mkdirSync(join(repo.dir, 'scripts'), { recursive: true }), join(repo.dir, 'scripts/generate-cover-letter.mjs')), 'local linkedin fix\n');
   repo.g('commit', '-qam', 'local fix');
-  upstreamChange(repo, 'generate-cover-letter.mjs', 'local linkedin fix\n');
+  upstreamChange(repo, 'scripts/generate-cover-letter.mjs', 'local linkedin fix\n');
   upstreamChange(repo, 'modes/pdf.md', 'shipped pdf v2\n');
   // The update to v2 checks the adopted file out byte-identically (no-op) and
   // installs pdf.md.
   replayUpdate(repo, '2');
-  upstreamChange(repo, 'generate-cover-letter.mjs', 'broader cover fix\n');
+  upstreamChange(repo, 'scripts/generate-cover-letter.mjs', 'broader cover fix\n');
 
   const atRisk = locallyModifiedSystemFiles(PATHS, 'upstream', repo.ctx);
   if (atRisk.length === 0) {

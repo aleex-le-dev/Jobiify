@@ -4,13 +4,13 @@
  * No Claude Code CLI required — uses OpenRouter free models with automatic fallback.
  *
  * Usage:
- *   node openrouter-runner.mjs scan              → Scan Greenhouse API companies for new listings
- *   node openrouter-runner.mjs evaluate <url>    → Evaluate a job by URL
- *   node openrouter-runner.mjs evaluate          → Paste job text interactively
- *   node openrouter-runner.mjs pipeline          → Process all pending URLs from pipeline.md
- *   node openrouter-runner.mjs apply <report_no> → Generate draft application form answers
- *   node openrouter-runner.mjs models            → List available free models
- *   node openrouter-runner.mjs help              → Show this help
+ *   node scripts/openrouter-runner.mjs scan              → Scan Greenhouse API companies for new listings
+ *   node scripts/openrouter-runner.mjs evaluate <url>    → Evaluate a job by URL
+ *   node scripts/openrouter-runner.mjs evaluate          → Paste job text interactively
+ *   node scripts/openrouter-runner.mjs pipeline          → Process all pending URLs from pipeline.md
+ *   node scripts/openrouter-runner.mjs apply <report_no> → Generate draft application form answers
+ *   node scripts/openrouter-runner.mjs models            → List available free models
+ *   node scripts/openrouter-runner.mjs help              → Show this help
  *
  * Setup:
  *   1. copy .env.example .env
@@ -25,19 +25,19 @@ import readline from 'node:readline';
 import * as yaml from 'js-yaml';
 import { outputLanguageInstruction, parseOutputLanguage } from './profile-language.mjs';
 import { TSV_ADDITION_HEADER } from './tracker-parse.mjs';
-import { normalizedTrackerScore } from './lib/tracker-addition.mjs';
+import { normalizedTrackerScore } from '../lib/tracker-addition.mjs';
 import {
   formatReportNumber, releaseReportNumbers, reserveReportNumbers,
 } from './reserve-report-num.mjs';
-import { TokenAccumulator, formatBreakdown, normalizeOpenAIUsage } from './utils/token-tracker.mjs';
+import { TokenAccumulator, formatBreakdown, normalizeOpenAIUsage } from '../utils/token-tracker.mjs';
 import { DEFAULT_USER_AGENT } from './user-agent.mjs';
 import { buildTitleFilter } from './title-keywords.mjs';
 import { appendToPipeline, appendToScanHistory } from './scan.mjs';
-import { localToday } from './lib/local-today.mjs';
+import { localToday } from '../lib/local-today.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const tracker = new TokenAccumulator();
 let activeModel = null;
 
@@ -45,8 +45,8 @@ let activeModel = null;
 // .env loader
 // ---------------------------------------------------------------------------
 // Lazy: only runs when this file is the CLI entry point (`node
-// openrouter-runner.mjs ...`). Importing the module (e.g. for buildSystemPrompt
-// in test-all.mjs) must NOT mutate process.env — a module-level loader here
+// scripts/openrouter-runner.mjs ...`). Importing the module (e.g. for buildSystemPrompt
+// in scripts/test-all.mjs) must NOT mutate process.env — a module-level loader here
 // leaked every .env key (including CAREER_OPS_CLI) into the importing process
 // and broke later CLI-resolution tests.
 function loadEnvFile() {
@@ -175,7 +175,7 @@ async function cmdModels() {
 // ---------------------------------------------------------------------------
 // File helpers
 // ---------------------------------------------------------------------------
-// Anchored to the career-ops data root, not to __dirname. scan.mjs resolves
+// Anchored to the career-ops data root, not to __dirname. scripts/scan.mjs resolves
 // every path it touches through getCareerOpsRoot(), so with CAREER_OPS_DATA_DIR
 // set this module was reading a DIFFERENT data/scan-history.tsv than the shared
 // writers it now delegates to — dedup would clear a URL the writer then found
@@ -187,8 +187,8 @@ const DATA_ROOT = getCareerOpsRoot();
 // root outside the checkout holds cv.md and modes/_profile.md, but no
 // modes/_shared.md or modes/oferta.md. Read through readFile() those came back
 // null, fell through to '', and the evaluation ran on a system prompt with no
-// shared rules and no evaluation mode (#5115). Same split as ollama-eval.mjs
-// and gemini-eval.mjs.
+// shared rules and no evaluation mode (#5115). Same split as scripts/ollama-eval.mjs
+// and scripts/gemini-eval.mjs.
 const CODE_ROOT = __dirname;
 
 function readFile(relPath) {
@@ -484,11 +484,11 @@ async function fetchJobPage(url) {
 
 // ---------------------------------------------------------------------------
 // portals.yml parser — reads the canonical schema with js-yaml (same library and
-// field names as scan.mjs: `title_filter.positive/negative` + `tracked_companies`),
+// field names as scripts/scan.mjs: `title_filter.positive/negative` + `tracked_companies`),
 // so it never drifts from the main scanner. The runner's no-CLI scan path covers
 // companies that expose a direct JSON `api:`; careers_url-only / Playwright /
 // search-query companies are handled by the full /career-ops scan pipeline.
-// `rawOverride` lets tests feed YAML text directly (see test-all.mjs drift guard).
+// `rawOverride` lets tests feed YAML text directly (see scripts/test-all.mjs drift guard).
 // ---------------------------------------------------------------------------
 export function parsePortals(rawOverride) {
   const raw = rawOverride ?? readFile('portals.yml');
@@ -497,12 +497,12 @@ export function parsePortals(rawOverride) {
 
   // The shared predicate rather than a second copy of the matching rules. This
   // path kept its own `includes` loop, and the two had drifted three ways: an
-  // empty positive list accepted every title in scan.mjs and rejected every
-  // title here, AND-groups worked only in scan.mjs, and a non-string YAML entry
+  // empty positive list accepted every title in scripts/scan.mjs and rejected every
+  // title here, AND-groups worked only in scripts/scan.mjs, and a non-string YAML entry
   // was dropped there but coerced into a live keyword here. A `word:` prefix
   // would have become the fourth — read as literal text, it would have matched
   // nothing, so the shipped `word:Intern` would stop rejecting "Operations
-  // Intern" here while still working in scan.mjs.
+  // Intern" here while still working in scripts/scan.mjs.
   //
   // Side effect worth naming, since it changes this path's verdicts rather than
   // just its structure: it now also gets the 2-3 char rule. Measured over 2324
@@ -550,8 +550,8 @@ function markPipelineDone(url) {
   writeFile('data/pipeline.md', content);
 }
 
-// Both writes go through the shared writers in scan.mjs rather than this
-// module's own read-modify-write. Those writers hold pipeline-lock.mjs on the
+// Both writes go through the shared writers in scripts/scan.mjs rather than this
+// module's own read-modify-write. Those writers hold scripts/pipeline-lock.mjs on the
 // file they touch, so this stops being a fourth, unlocked writer racing the
 // three appendToPipeline already names. The previous version read each file
 // whole, appended in memory, and wrote the whole thing back with a truncating
@@ -573,7 +573,7 @@ async function addToPipeline(entries) {
 
   const existingPipeline = readFile('data/pipeline.md') ?? '# Pipeline\n\n## Pending\n';
   const existingApps     = readFile('data/applications.md') ?? '';
-  // extract URLs already tracked in applications.md (mirrors scan.mjs dedup logic)
+  // extract URLs already tracked in applications.md (mirrors scripts/scan.mjs dedup logic)
   const appliedUrls = new Set(
     existingApps.split('\n')
       .map(l => l.match(/https?:\/\/[^\s|)]+/))
@@ -663,7 +663,7 @@ async function cmdScan() {
   const added = await addToPipeline(found);
   console.log(`\n✅ Scan complete. ${found.length} matches, ${added} new entries added to pipeline.md.`);
   if (added > 0) {
-    console.log('\n→  node openrouter-runner.mjs pipeline\n   to evaluate pending listings.\n');
+    console.log('\n→  node scripts/openrouter-runner.mjs pipeline\n   to evaluate pending listings.\n');
   }
 }
 
@@ -742,7 +742,7 @@ async function cmdEvaluate(input, ctx) {
     // only the numeric prefix, so `Score: 8/10` yielded `8` and the cell became
     // `8.0/5` -- a ten-point score reinterpreted as a five-point one. That
     // satisfies SCORE_CELL_RE, so it merged as a genuine score and fed
-    // stats.mjs's averages. normalizedTrackerScore refuses a denominator that
+    // scripts/stats.mjs's averages. normalizedTrackerScore refuses a denominator that
     // is not 5, but only if it is handed one (#3796).
     //
     // The capture runs to END OF LINE rather than stopping at a denominator
@@ -764,7 +764,7 @@ async function cmdEvaluate(input, ctx) {
     const reportLink  = `[${numStr}](reports/${numStr}-${slug}-${today}.md)`;
     const tsvLine     = `${num}\t${today}\t${companyName}\t(see report)\tEvaluated\t${scoreStr}\t❌\t${reportLink}\t\n`;
     const tsvFile     = `batch/tracker-additions/or-${numStr}-${slug}.tsv`;
-    // Header row, then the single data row. merge-tracker.mjs resolves the
+    // Header row, then the single data row. scripts/merge-tracker.mjs resolves the
     // fields by NAME when the header is present (#3517), so this row cannot be
     // read into the wrong columns. (Headerless files still work; they are the
     // legacy form, and they are the ones that can hit the undecidable
@@ -878,8 +878,8 @@ async function cmdApply(ref, ctx) {
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
-// Only run the CLI when invoked directly (`node openrouter-runner.mjs ...`), so the
-// module can be imported (e.g. by test-all.mjs) without executing a command.
+// Only run the CLI when invoked directly (`node scripts/openrouter-runner.mjs ...`), so the
+// module can be imported (e.g. by scripts/test-all.mjs) without executing a command.
 const invokedDirectly = isMainModule(import.meta.url);
 const [,, command, ...args] = invokedDirectly ? process.argv : [];
 if (invokedDirectly) loadEnvFile();
@@ -905,7 +905,7 @@ if (invokedDirectly) switch (command) {
     break;
 
   case 'apply':
-    if (!args[0]) { console.error('Usage: node openrouter-runner.mjs apply <report_num|report_path>'); break; }
+    if (!args[0]) { console.error('Usage: node scripts/openrouter-runner.mjs apply <report_num|report_path>'); break; }
     await cmdApply(args[0], ctx);
     break;
 
@@ -919,12 +919,12 @@ career-ops OpenRouter Runner
 Auto-fetches free models from OpenRouter API and rotates through them with fallback.
 
 COMMANDS:
-  node openrouter-runner.mjs scan              → Scan Greenhouse APIs for new matching listings
-  node openrouter-runner.mjs evaluate <url>    → Evaluate a listing by URL
-  node openrouter-runner.mjs evaluate          → Paste a job description interactively
-  node openrouter-runner.mjs pipeline          → Batch-evaluate all pending entries in pipeline.md
-  node openrouter-runner.mjs apply <report_no> → Generate application form answers from a report
-  node openrouter-runner.mjs models            → List available free models from OpenRouter
+  node scripts/openrouter-runner.mjs scan              → Scan Greenhouse APIs for new matching listings
+  node scripts/openrouter-runner.mjs evaluate <url>    → Evaluate a listing by URL
+  node scripts/openrouter-runner.mjs evaluate          → Paste a job description interactively
+  node scripts/openrouter-runner.mjs pipeline          → Batch-evaluate all pending entries in pipeline.md
+  node scripts/openrouter-runner.mjs apply <report_no> → Generate application form answers from a report
+  node scripts/openrouter-runner.mjs models            → List available free models from OpenRouter
 
 SETUP:
   1. Copy .env.example to .env
@@ -934,7 +934,7 @@ SETUP:
 MODEL SELECTION:
   - Free models are fetched automatically via the OpenRouter API at runtime.
   - They are tried in sequence; if one fails the next is used automatically.
-  - Pin a model:  CAREER_OPS_MODEL=deepseek/deepseek-r1:free node openrouter-runner.mjs eval <url>
+  - Pin a model:  CAREER_OPS_MODEL=deepseek/deepseek-r1:free node scripts/openrouter-runner.mjs eval <url>
 `);
 }
 

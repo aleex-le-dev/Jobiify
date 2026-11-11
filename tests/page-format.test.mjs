@@ -2,9 +2,9 @@
  * page-format.test.mjs — paper size has one owner (lib/page-format.mjs).
  *
  * The size a document is laid out at and the size of the sheet it prints on used
- * to be decided in five separate places, and they disagreed. build-cv-html.mjs
- * fell back to letter's 8.5in body width; generate-pdf.mjs and
- * generate-cover-letter.mjs each fell back to a4. A payload declaring
+ * to be decided in five separate places, and they disagreed. scripts/build-cv-html.mjs
+ * fell back to letter's 8.5in body width; scripts/generate-pdf.mjs and
+ * scripts/generate-cover-letter.mjs each fell back to a4. A payload declaring
  * `page_format: "letter"` therefore rendered a letter-width CV onto an A4 sheet,
  * and modes/pdf.md had to instruct the user to "Pass the SAME value" twice by
  * hand.
@@ -26,7 +26,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT, NODE, linkRepoPackage } from './helpers.mjs';
-import { injectPrintPageCss } from '../generate-pdf.mjs';
+import { injectPrintPageCss } from '../scripts/generate-pdf.mjs';
 import {
   DEFAULT_PAGE_FORMAT,
   PAGE_CSS_SIZE,
@@ -137,7 +137,7 @@ test('the web agrees with the CLI about the sheet', async (t) => {
 
 test('injectPrintPageCss: the flagless sheet comes from the profile', () => {
   // A child process, because injectPrintPageCss anchors the profile to
-  // workspaceRoot and generate-pdf.mjs fixes that at import. In-process the
+  // workspaceRoot and scripts/generate-pdf.mjs fixes that at import. In-process the
   // anchor is this checkout, so the assertion computed its expected value the
   // way the code does. It then agreed with itself: dropping the profilePath
   // option left it green on any machine carrying no config/profile.yml.
@@ -147,7 +147,7 @@ test('injectPrintPageCss: the flagless sheet comes from the profile', () => {
     const dir = workspace(declared);
     const probe = join(dir, 'probe.mjs');
     writeFileSync(probe, [
-      `import { injectPrintPageCss } from ${JSON.stringify(pathToFileURL(join(ROOT, 'generate-pdf.mjs')).href)};`,
+      `import { injectPrintPageCss } from ${JSON.stringify(pathToFileURL(join(ROOT, 'scripts/generate-pdf.mjs')).href)};`,
       "process.stdout.write(injectPrintPageCss('<html><head></head><body></body></html>'));",
       '',
     ].join('\n'));
@@ -167,7 +167,7 @@ test('build-cv-html: a payload with no page_format takes the profile width', () 
   const payloadPath = join(dir, 'payload.json');
   writeFileSync(payloadPath, JSON.stringify(PAYLOAD));
   const out = join(dir, 'output', 'cv.html');
-  const res = spawnSync(NODE, [join(ROOT, 'build-cv-html.mjs'), payloadPath, out], {
+  const res = spawnSync(NODE, [join(ROOT, 'scripts/build-cv-html.mjs'), payloadPath, out], {
     env: workspaceEnv(dir),
     encoding: 'utf-8',
   });
@@ -186,7 +186,7 @@ test('build-cv-html: a payload stating its own page_format outranks the profile'
   const payloadPath = join(dir, 'payload.json');
   writeFileSync(payloadPath, JSON.stringify({ ...PAYLOAD, page_format: 'letter' }));
   const out = join(dir, 'output', 'cv.html');
-  const res = spawnSync(NODE, [join(ROOT, 'build-cv-html.mjs'), payloadPath, out], {
+  const res = spawnSync(NODE, [join(ROOT, 'scripts/build-cv-html.mjs'), payloadPath, out], {
     env: workspaceEnv(dir),
     encoding: 'utf-8',
   });
@@ -201,7 +201,7 @@ test('generate-pdf: the flagless CLI takes the profile format', () => {
   // the old hardcoded `format = 'a4'` and prove nothing.
   for (const declared of ['letter', 'a4']) {
     const dir = workspace(declared);
-    const res = spawnSync(NODE, [join(ROOT, 'generate-pdf.mjs'), join(dir, 'absent.html'), join(dir, 'output', 'cv.pdf')], {
+    const res = spawnSync(NODE, [join(ROOT, 'scripts/generate-pdf.mjs'), join(dir, 'absent.html'), join(dir, 'output', 'cv.pdf')], {
       env: workspaceEnv(dir),
       encoding: 'utf-8',
     });
@@ -211,7 +211,7 @@ test('generate-pdf: the flagless CLI takes the profile format', () => {
 
 test('generate-pdf: an explicit --format still outranks the profile', () => {
   const dir = workspace('a4');
-  const res = spawnSync(NODE, [join(ROOT, 'generate-pdf.mjs'), join(dir, 'absent.html'), join(dir, 'output', 'cv.pdf'), '--format=letter'], {
+  const res = spawnSync(NODE, [join(ROOT, 'scripts/generate-pdf.mjs'), join(dir, 'absent.html'), join(dir, 'output', 'cv.pdf'), '--format=letter'], {
     env: workspaceEnv(dir),
     encoding: 'utf-8',
   });
@@ -220,7 +220,7 @@ test('generate-pdf: an explicit --format still outranks the profile', () => {
 
 test('generate-pdf: an unrecognized --format is still a hard error', () => {
   const dir = workspace(null);
-  const res = spawnSync(NODE, [join(ROOT, 'generate-pdf.mjs'), join(dir, 'absent.html'), join(dir, 'output', 'cv.pdf'), '--format=legal'], {
+  const res = spawnSync(NODE, [join(ROOT, 'scripts/generate-pdf.mjs'), join(dir, 'absent.html'), join(dir, 'output', 'cv.pdf'), '--format=legal'], {
     env: workspaceEnv(dir),
     encoding: 'utf-8',
   });
@@ -229,8 +229,8 @@ test('generate-pdf: an unrecognized --format is still a hard error', () => {
 });
 
 /**
- * A throwaway checkout of generate-cover-letter.mjs and its import closure,
- * with generate-pdf.mjs replaced by a recorder.
+ * A throwaway checkout of scripts/generate-cover-letter.mjs and its import closure,
+ * with scripts/generate-pdf.mjs replaced by a recorder.
  *
  * The cover letter imports the renderer lazily, and that import is the one seam
  * where its page-size decision becomes observable without Chromium. CI installs
@@ -246,16 +246,16 @@ function coverSandbox() {
   mkdirSync(join(dir, 'providers'), { recursive: true });
   mkdirSync(join(dir, 'templates'), { recursive: true });
   mkdirSync(join(dir, 'output'), { recursive: true });
-  for (const f of ['generate-cover-letter.mjs', 'verify-cv-facts.mjs', 'cv-templates.mjs', 'path-resolver.mjs']) {
-    copyFileSync(join(ROOT, f), join(dir, f));
+  for (const f of ['scripts/generate-cover-letter.mjs', 'scripts/verify-cv-facts.mjs', 'scripts/cv-templates.mjs', 'scripts/path-resolver.mjs']) {
+    (mkdirSync(join(dir, f, '..'), { recursive: true }), (mkdirSync(join(dir, f, '..'), { recursive: true }), (mkdirSync(join(dir, f, '..'), { recursive: true }), copyFileSync(join(ROOT, f), join(dir, f)))));
   }
   copyFileSync(join(ROOT, 'lib', 'is-main-module.mjs'), join(dir, 'lib', 'is-main-module.mjs'));
-  // cv-templates.mjs decodes HTML entities when it reads a template's meta
+  // scripts/cv-templates.mjs decodes HTML entities when it reads a template's meta
   // block, so the sandbox needs this too. Without it the copied script dies at
   // module load with ERR_MODULE_NOT_FOUND and the format assertion below never
   // runs. The module imports nothing, so it closes the graph on its own.
   copyFileSync(join(ROOT, 'providers', '_html-entities.mjs'), join(dir, 'providers', '_html-entities.mjs'));
-  // Same reason: cv-templates.mjs reads the template manifest block and the
+  // Same reason: scripts/cv-templates.mjs reads the template manifest block and the
   // section vocabulary from here, so the sandbox dies at module load without it.
   copyFileSync(join(ROOT, 'lib', 'template-manifest.mjs'), join(dir, 'lib', 'template-manifest.mjs'));
   // The resolver is here so a cover letter that starts calling it fails on the
@@ -267,16 +267,16 @@ function coverSandbox() {
     join(ROOT, 'templates', 'cover-letter-template.html'),
     join(dir, 'templates', 'cover-letter-template.html'),
   );
-  // cv-templates.mjs imports js-yaml, which resolves by walking up from the
+  // scripts/cv-templates.mjs imports js-yaml, which resolves by walking up from the
   // sandbox's realpath and never reaches the repo's node_modules.
   linkRepoPackage(dir, 'js-yaml');
-  writeFileSync(join(dir, 'generate-pdf.mjs'), [
+  writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/generate-pdf.mjs')), [
     "import { writeFileSync } from 'node:fs';",
     "import { dirname, join } from 'node:path';",
     "import { fileURLToPath } from 'node:url';",
     'export async function renderHtmlToPdf(html, outputPath, opts = {}) {',
     "  const here = dirname(fileURLToPath(import.meta.url));",
-    "  writeFileSync(join(here, 'render-opts.json'), JSON.stringify({ format: opts.format ?? null }));",
+    "  writeFileSync(join(here, '..', 'render-opts.json'), JSON.stringify({ format: opts.format ?? null }));",
     '  return { outputPath, pageCount: 1, size: 0 };',
     '}',
     '',
@@ -298,7 +298,7 @@ test('generate-cover-letter: the sheet is the renderer\'s to choose', () => {
   const run = (...extra) => {
     const res = spawnSync(
       NODE,
-      [join(dir, 'generate-cover-letter.mjs'), '--payload', join(dir, 'payload.json'), ...extra],
+      [join(dir, 'scripts/generate-cover-letter.mjs'), '--payload', join(dir, 'payload.json'), ...extra],
       { cwd: dir, encoding: 'utf-8' },
     );
     assert.equal(res.status, 0, res.stdout + res.stderr);
@@ -314,7 +314,7 @@ test('generate-cover-letter: the sheet is the renderer\'s to choose', () => {
 
 test('no renderer keeps a page-size fallback of its own', () => {
   const offenders = [];
-  for (const file of ['generate-pdf.mjs', 'generate-cover-letter.mjs', 'build-cv-html.mjs']) {
+  for (const file of ['scripts/generate-pdf.mjs', 'scripts/generate-cover-letter.mjs', 'scripts/build-cv-html.mjs']) {
     const src = readFileSync(join(ROOT, file), 'utf-8');
     for (const [i, line] of src.split('\n').entries()) {
       if (line.trimStart().startsWith('*') || line.trimStart().startsWith('//')) continue;

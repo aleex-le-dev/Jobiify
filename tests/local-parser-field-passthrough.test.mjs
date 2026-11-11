@@ -1,6 +1,6 @@
 // tests/local-parser-field-passthrough.test.mjs — #3438 provider contract.
 // normalizeParserJob() returns a closed object, so a jobs-json-v1 parser that
-// publishes an occupation code would have it dropped before scan.mjs sees it —
+// publishes an occupation code would have it dropped before scripts/scan.mjs sees it —
 // and a declared-field whitelist (#3438) could never read it on a local-parser
 // board, the transport Job Bank targets actually use.
 import { join } from 'path';

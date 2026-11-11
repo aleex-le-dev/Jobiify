@@ -6,10 +6,10 @@ import { dirname, join } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import * as yaml from 'js-yaml';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { acquirePipelineLock } from '../pipeline-lock.mjs';
+import { acquirePipelineLock } from '../scripts/pipeline-lock.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const CLI = join(ROOT, 'career-profile.mjs');
+const CLI = join(ROOT, 'scripts/career-profile.mjs');
 const CV = `# Candidate\n\n## Experience\n### Acme — Analyst\n- Built dashboards with SQL.\n\n## Skills\n- SQL, Excel\n`;
 
 function withProfileRoot(run) {

@@ -2,10 +2,10 @@
  * report-persist.mjs: persist a web evaluate run's report and tracker row.
  *
  * The evaluate agent used to hold Write and Bash so it could run
- * reserve-report-num.mjs, write reports/, write a TSV, and merge-tracker.mjs.
+ * scripts/reserve-report-num.mjs, write reports/, write a TSV, and scripts/merge-tracker.mjs.
  * Those tools are unscoped, so a posting in its context could aim them anywhere.
  * The agent now emits the report in a <<report-md>> envelope. This module
- * reserves a number, asks persist-evaluation-report.mjs to write the report
+ * reserves a number, asks scripts/persist-evaluation-report.mjs to write the report
  * and the headed addition, merges, then releases the sentinel.
  *
  * spawnFn / execPath / root are injected so tests substitute a fake child
@@ -126,11 +126,11 @@ export function reportSlug(company, via) {
 
 /**
  * Labels for the required-plus-notes prefix. Same spelling and order as
- * `TSV_ADDITION_HEADER` in tracker-parse.mjs. merge-tracker resolves a headed
+ * `TSV_ADDITION_HEADER` in scripts/tracker-parse.mjs. merge-tracker resolves a headed
  * addition by name, so a cell with no label is dropped and a cell under the
  * wrong label is stored as that column.
  *
- * The file bytes are written by persist-evaluation-report.mjs, which builds
+ * The file bytes are written by scripts/persist-evaluation-report.mjs, which builds
  * the same row from lib/tracker-addition.mjs. This copy stays here because
  * the Next bundle cannot import that file. The parity test locks them.
  */
@@ -194,18 +194,18 @@ export async function persistEvaluation({ spawnFn, execPath, root, markdown, url
   if (!meta.ok) return meta;
 
   const reserved = await spawnScript({
-    spawnFn, execPath, root, script: "reserve-report-num.mjs",
+    spawnFn, execPath, root, script: "scripts/reserve-report-num.mjs",
   });
   if (!reserved.ok) {
-    return { ok: false, error: `Could not reserve a report number: ${reserved.stderr || "reserve-report-num.mjs failed"}.` };
+    return { ok: false, error: `Could not reserve a report number: ${reserved.stderr || "scripts/reserve-report-num.mjs failed"}.` };
   }
   const num = reserved.stdout.trim();
   if (!/^\d{3,}$/.test(num)) {
-    return { ok: false, error: `reserve-report-num.mjs returned an unusable number: "${num}".` };
+    return { ok: false, error: `scripts/reserve-report-num.mjs returned an unusable number: "${num}".` };
   }
 
   const release = () => spawnScript({
-    spawnFn, execPath, root, script: "reserve-report-num.mjs", args: ["--release", num],
+    spawnFn, execPath, root, script: "scripts/reserve-report-num.mjs", args: ["--release", num],
   });
 
   // One release. A failed --release is not success: the sentinel would stay
@@ -218,7 +218,7 @@ export async function persistEvaluation({ spawnFn, execPath, root, markdown, url
       released = true;
       const releasedResult = await release();
       if (!releasedResult.ok) {
-        const releaseError = `The report reservation ${num} was not released: ${releasedResult.stderr || "reserve-report-num.mjs --release failed"}.`;
+        const releaseError = `The report reservation ${num} was not released: ${releasedResult.stderr || "scripts/reserve-report-num.mjs --release failed"}.`;
         if (error) return { ok: false, error: `${error} ${releaseError}` };
         return { ok: false, error: `The report was saved but the sentinel was not released. ${releaseError}` };
       }
@@ -255,7 +255,7 @@ export async function persistEvaluation({ spawnFn, execPath, root, markdown, url
 
   const written = await spawnScript({
     spawnFn, execPath, root,
-    script: "persist-evaluation-report.mjs",
+    script: "scripts/persist-evaluation-report.mjs",
     input: JSON.stringify({
       markdown,
       num,
@@ -270,14 +270,14 @@ export async function persistEvaluation({ spawnFn, execPath, root, markdown, url
     }),
   });
   if (!written.ok) {
-    return finish(written.stderr || "Could not save the evaluation report: persist-evaluation-report.mjs failed.");
+    return finish(written.stderr || "Could not save the evaluation report: scripts/persist-evaluation-report.mjs failed.");
   }
 
   const merged = await spawnScript({
-    spawnFn, execPath, root, script: "merge-tracker.mjs",
+    spawnFn, execPath, root, script: "scripts/merge-tracker.mjs",
   });
   if (!merged.ok) {
-    return finish(`The report was saved but merge-tracker.mjs failed: ${merged.stderr || "non-zero exit"}.`);
+    return finish(`The report was saved but scripts/merge-tracker.mjs failed: ${merged.stderr || "non-zero exit"}.`);
   }
   const held = await finish(null);
   if (held) return held;

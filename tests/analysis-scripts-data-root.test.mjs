@@ -71,7 +71,7 @@ const cleanup = (f) => {
 test('funnel-velocity reads the configured data root', () => {
   const f = fixture();
   try {
-    const r = run('funnel-velocity.mjs', ['--summary'], f);
+    const r = run('scripts/funnel-velocity.mjs', ['--summary'], f);
     assert.doesNotMatch(r.all, /No tracker found/i, `it looked in the checkout, not the data root:\n${r.all.slice(0, 400)}`);
     assert.match(r.all, /Funnel Calibration/i, `no report was produced:\n${r.all.slice(0, 400)}`);
   } finally { cleanup(f); }
@@ -80,7 +80,7 @@ test('funnel-velocity reads the configured data root', () => {
 test('calibrate reads the configured data root', () => {
   const f = fixture();
   try {
-    const r = run('calibrate.mjs', ['--summary'], f);
+    const r = run('scripts/calibrate.mjs', ['--summary'], f);
     assert.doesNotMatch(
       r.all,
       /No tracker found/i,
@@ -93,7 +93,7 @@ test('calibrate reads the configured data root', () => {
 test('weekly-digest reads the configured data root', () => {
   const f = fixture();
   try {
-    const r = run('weekly-digest.mjs', ['--summary', '--from', '2026-08-24', '--to', '2026-08-30'], f);
+    const r = run('scripts/weekly-digest.mjs', ['--summary', '--from', '2026-08-24', '--to', '2026-08-30'], f);
     assert.match(
       r.all,
       /Sessions:\s+1 in range/,
@@ -108,9 +108,9 @@ test('and none of them writes into the cwd it was launched from', () => {
   // writer, so the decoy must come back untouched.
   const f = fixture();
   try {
-    run('funnel-velocity.mjs', ['--summary'], f);
-    run('calibrate.mjs', ['--summary'], f);
-    run('weekly-digest.mjs', ['--summary'], f);
+    run('scripts/funnel-velocity.mjs', ['--summary'], f);
+    run('scripts/calibrate.mjs', ['--summary'], f);
+    run('scripts/weekly-digest.mjs', ['--summary'], f);
     assert.deepEqual(readdirSync(f.decoyCwd), [], 'a script wrote into the directory it was launched from');
   } finally { cleanup(f); }
 });
@@ -121,7 +121,7 @@ test('system files still resolve from the CODE root, not the data root', () => {
   // data root — pointing everything at DATA_ROOT would have broken those.
   const f = fixture();
   try {
-    const r = run('funnel-velocity.mjs', ['--summary'], f);
+    const r = run('scripts/funnel-velocity.mjs', ['--summary'], f);
     assert.doesNotMatch(r.all, /states\.yml|benchmarks\.yml/i, `a system template was reported missing:\n${r.all.slice(0, 400)}`);
     assert.equal(r.status, 0, `exited ${r.status}: ${r.all.slice(0, 400)}`);
   } finally { cleanup(f); }
@@ -133,7 +133,7 @@ test('no analysis script derives a data path from its own directory', () => {
   // and joins user-layer paths onto it, which reads as correct and is not.
   const offenders = [];
   const USER_LAYER = /join\(\s*(CAREER_OPS|CODE_ROOT)\s*,\s*'(data|interview-prep|reports|output|jds|documents)[/']/;
-  for (const file of ['funnel-velocity.mjs', 'calibrate.mjs', 'weekly-digest.mjs', 'stats.mjs', 'company-history.mjs']) {
+  for (const file of ['scripts/funnel-velocity.mjs', 'scripts/calibrate.mjs', 'scripts/weekly-digest.mjs', 'scripts/stats.mjs', 'scripts/company-history.mjs']) {
     const src = readFileSync(join(ROOT, file), 'utf-8');
     for (const line of src.split('\n')) {
       if (USER_LAYER.test(line)) offenders.push(`${file}: ${line.trim().slice(0, 80)}`);

@@ -3,7 +3,7 @@
 // the .mjs extension included.
 
 /**
- * Resolve the career-ops data root, matching the core's `path-resolver.mjs`
+ * Resolve the career-ops data root, matching the core's `scripts/path-resolver.mjs`
  * EXACTLY.
  *
  * WHY THIS EXISTS — the divergence it closes:
@@ -17,7 +17,7 @@
  *
  * THE SUBTLE HALF — the resolution BASE, not just the order:
  *
- * `path-resolver.mjs` resolves relative values against `__dirname`, i.e. the
+ * `scripts/path-resolver.mjs` resolves relative values against `__dirname`, i.e. the
  * CORE CHECKOUT. `web/` runs with `process.cwd() === <core>/web`, so resolving
  * a relative value against the cwd points one directory too deep. A marker
  * containing `../shared-data` would mean `<core>/../shared-data` to the CLI and
@@ -26,7 +26,7 @@
  * argument here: it is the one value that must agree with the core's
  * `__dirname`, and making it explicit keeps it from being silently re-derived.
  *
- * NOT IMPLEMENTED BY IMPORTING THE CORE, deliberately: `path-resolver.mjs`
+ * NOT IMPLEMENTED BY IMPORTING THE CORE, deliberately: `scripts/path-resolver.mjs`
  * derives `__dirname` from `import.meta.url`. Bundled into the Next server
  * output, that URL becomes the bundle's location rather than the checkout's, so
  * importing it would resolve relative values against `.next/server/...`. The

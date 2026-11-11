@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { makeHttpCtx } from '../providers/_http.mjs';
-import { computeConsecutiveFailures, emptyTargetStatus } from '../scan.mjs';
+import { computeConsecutiveFailures, emptyTargetStatus } from '../scripts/scan.mjs';
 
 function observedContext() {
   const observation = { requests: 0, successfulResponses: 0, lastStatus: null };
@@ -89,7 +89,7 @@ test('scan records a swallowed first-page HTTP failure as unverified_zero', () =
       `};`,
     ].join('\n'));
     const result = spawnSync(process.execPath, [
-      '--import', pathToFileURL(preload).href, fileURLToPath(new URL('../scan.mjs', import.meta.url)), '--json', '--quiet',
+      '--import', pathToFileURL(preload).href, fileURLToPath(new URL('../scripts/scan.mjs', import.meta.url)), '--json', '--quiet',
     ], {
       cwd: dataRoot,
       env: { ...process.env, CAREER_OPS_ROOT: dataRoot, CAREER_OPS_PORTALS: join(dataRoot, 'portals.yml') },

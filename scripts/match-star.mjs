@@ -1,29 +1,29 @@
 #!/usr/bin/env node
 
 /**
- * match-star.mjs — Zero-LLM, zero-browser ATS behavioural question matcher.
+ * scripts/match-star.mjs — Zero-LLM, zero-browser ATS behavioural question matcher.
  *
  * Parses interview-prep/story-bank.md, scores each STAR story against the
  * question text (and optionally a JD file), and returns the top match(es)
  * formatted to ATS paste length (250–500 words).
  *
  * Usage:
- *   node match-star.mjs "Tell me about a time you led a project under pressure"
- *   node match-star.mjs "Describe a conflict you resolved" --jd jds/acme.md
- *   node match-star.mjs "Give an example of handling ambiguity" --top 2
- *   node match-star.mjs --list    # list all stories with their tags
+ *   node scripts/match-star.mjs "Tell me about a time you led a project under pressure"
+ *   node scripts/match-star.mjs "Describe a conflict you resolved" --jd jds/acme.md
+ *   node scripts/match-star.mjs "Give an example of handling ambiguity" --top 2
+ *   node scripts/match-star.mjs --list    # list all stories with their tags
  */
 
 import { readFileSync, existsSync } from 'fs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { join } from 'path';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { parseStories, splitStoryBlocks, isValidStory } from './lib/story-bank.mjs';
+import { parseStories, splitStoryBlocks, isValidStory } from '../lib/story-bank.mjs';
 
 // ── Config ──────────────────────────────────────────────────────────
 
 // From the data root, not the cwd. interview-prep/ is USER_PATHS in
-// update-system.mjs, and a bare relative path resolves against wherever the
+// scripts/update-system.mjs, and a bare relative path resolves against wherever the
 // process was started — so this read the checkout's story bank (usually absent)
 // for anyone whose data lives elsewhere.
 const STORY_BANK_PATH = join(getCareerOpsRoot(), 'interview-prep', 'story-bank.md');
@@ -155,7 +155,7 @@ function formatAts(story, question) {
   ].filter(s => s !== null).join('\n');
 }
 
-// ── Exports (for test-all.mjs and other consumers) ───────────────────
+// ── Exports (for scripts/test-all.mjs and other consumers) ───────────────────
 export { parseStories, tokenize, score, STOPWORDS };
 
 // ── Main ─────────────────────────────────────────────────────────────
@@ -200,8 +200,8 @@ if (LIST_MODE) {
 }
 
 if (!question) {
-  console.error('Usage: node match-star.mjs "<behavioural question>" [--jd <file>] [--top <n>]');
-  console.error('       node match-star.mjs --list');
+  console.error('Usage: node scripts/match-star.mjs "<behavioural question>" [--jd <file>] [--top <n>]');
+  console.error('       node scripts/match-star.mjs --list');
   process.exit(1);
 }
 

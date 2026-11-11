@@ -1,9 +1,9 @@
 // @ts-check
 /**
- * calibrate.mjs — Does your evaluation scoring predict your real outcomes? (#3315, part of #1724)
+ * scripts/calibrate.mjs — Does your evaluation scoring predict your real outcomes? (#3315, part of #1724)
  *
  * Reads the tracker and the outcome journals under data/outcomes/ (written by
- * outcome.mjs) and answers the question the learning loop exists for: do your
+ * scripts/outcome.mjs) and answers the question the learning loop exists for: do your
  * higher-scored applications actually convert better FOR YOU?
  *
  * Strictly advisory. This script never edits scoring rules, thresholds,
@@ -12,10 +12,10 @@
  * how it performs on your search.
  *
  * Usage:
- *   node calibrate.mjs                  (human-readable report)
- *   node calibrate.mjs --json           (full JSON to stdout)
- *   node calibrate.mjs --min-band-n 5   (per-band sample floor, default 5)
- *   node calibrate.mjs --self-test
+ *   node scripts/calibrate.mjs                  (human-readable report)
+ *   node scripts/calibrate.mjs --json           (full JSON to stdout)
+ *   node scripts/calibrate.mjs --min-band-n 5   (per-band sample floor, default 5)
+ *   node scripts/calibrate.mjs --self-test
  *
  * Honesty rules, in order of importance:
  *   - An application still in flight (Applied/Responded with no recorded
@@ -26,8 +26,8 @@
  *     got interviews" is an anecdote wearing a rate's clothes.
  *   - Evidence precedence: the outcome journal (data/outcomes/) wins, then the
  *     transition ledger (data/status-log.tsv), then the tracker status. The
- *     journal records what actually happened (outcome.mjs); the ledger records
- *     the stages a row passed through (set-status.mjs), so a declined offer now
+ *     journal records what actually happened (scripts/outcome.mjs); the ledger records
+ *     the stages a row passed through (scripts/set-status.mjs), so a declined offer now
  *     sitting in Discarded still counts as an offer; the current status is only
  *     a workflow snapshot and loses that history.
  */
@@ -39,8 +39,8 @@ import { dirname } from 'path';
 import { parseTrackerRow, resolveColumns, isSeparatorRow, isHeaderRow } from './tracker-parse.mjs';
 import { resolveTrackerPath, resolveWorkspaceRoot } from './tracker-utils.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { canonicalOutcome } from './lib/outcome-types.mjs';
-import { outcomeDirsFor } from './lib/outcome-dir.mjs';
+import { canonicalOutcome } from '../lib/outcome-types.mjs';
+import { outcomeDirsFor } from '../lib/outcome-dir.mjs';
 
 // The USER's data root, not this file's directory. It was __dirname under the
 // name CAREER_OPS, so resolveTrackerPath() looked inside the checkout and a user
@@ -56,7 +56,7 @@ const DATA_ROOT = getCareerOpsRoot();
 // scoring picked a matchable role), and an offer is tier 2. `rejected` and
 // `no_response` are terminal negatives. `interview_only` means the process
 // ended after interviews with no offer — it still reached tier 1.
-// Keyed by CANONICAL type only. outcome.mjs accepts fourteen spellings and
+// Keyed by CANONICAL type only. scripts/outcome.mjs accepts fourteen spellings and
 // writes whichever one was typed straight into the journal, so every read goes
 // through canonicalOutcome() first — a private list of the seven canonical
 // names silently ignored the other seven (see lib/outcome-types.mjs).
@@ -91,7 +91,7 @@ const BANDS = [
 /**
  * Parse one outcome.md journal into its latest entry + all verbatim feedback.
  *
- * The journal is append-only (outcome.mjs), so the LAST `## Entry:` block is
+ * The journal is append-only (scripts/outcome.mjs), so the LAST `## Entry:` block is
  * the current truth — an application that went interview_progress and later
  * rejected must read as rejected, not as its happiest historical moment.
  *
@@ -114,7 +114,7 @@ export function parseOutcomeJournal(text) {
     // function's contract forbids.
     if (typeMatch) latestType = canonicalOutcome(typeMatch[1]);
     // Feedback is a blockquote under "Verbatim Feedback"; "None recorded" is
-    // the explicit empty marker outcome.mjs writes, not user content.
+    // the explicit empty marker scripts/outcome.mjs writes, not user content.
     const fbMatch = entry.match(/- \*\*Verbatim Feedback\*\*:\n((?:> .*\n?)+)/);
     if (fbMatch) {
       const fb = fbMatch[1].split('\n').map((l) => l.replace(/^> ?/, '').trim()).filter(Boolean).join(' ');
@@ -250,7 +250,7 @@ function loadJournals(workspaceRoot) {
   if (!existsSync(dir)) return journals;
 
   // Collect the tracker numbers present, then resolve each ONE directory.
-  // Directory shape is {num}_{company_slug}_{role_slug} (outcome.mjs), and a
+  // Directory shape is {num}_{company_slug}_{role_slug} (scripts/outcome.mjs), and a
   // row can have more than one: before the slug was pinned, editing the
   // tracker's Role cell between two recordings started a second directory and
   // split the append-only journal in half. Iterating entries and calling
@@ -425,21 +425,21 @@ function selfTest() {
     console.error(`❌ calibrate self-test: ${failures.length} failure(s):\n  - ${failures.join('\n  - ')}`);
     process.exit(1);
   }
-  console.log('✅ calibrate.mjs self-test: all checks passed');
+  console.log('✅ scripts/calibrate.mjs self-test: all checks passed');
   process.exit(0);
 }
 
 // --- CLI ------------------------------------------------------------------
 
-// Entry guard (repo convention, cf. outcome.mjs / linkedin-join.mjs): without
+// Entry guard (repo convention, cf. scripts/outcome.mjs / scripts/linkedin-join.mjs): without
 // it, importing this module to unit-test its exports would run the whole CLI
 // against the real tracker inside the test process.
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 // Derived from the flags this file actually accepts, so `--help` cannot
 // describe an option that does not exist.
 const USAGE = `Usage:
-  node calibrate.mjs [--json] [--min-band-n <n>] [--self-test]
+  node scripts/calibrate.mjs [--json] [--min-band-n <n>] [--self-test]
 
   --json           full JSON to stdout
   --min-band-n <n> per-band sample floor (default 5)

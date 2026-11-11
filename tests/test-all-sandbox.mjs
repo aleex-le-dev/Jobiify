@@ -1,10 +1,10 @@
-// tests/test-all-sandbox.mjs — a temp directory holding the real test-all.mjs
+// tests/test-all-sandbox.mjs — a temp directory holding the real scripts/test-all.mjs
 // and a `tests/` of fixture suites, for the suites that test the runner itself.
 //
 // The runner is driven the way a contributor drives it, through its CLI. A copy
-// of test-all.mjs and the modules it imports goes into a temp directory, so
+// of scripts/test-all.mjs and the modules it imports goes into a temp directory, so
 // discovery, flag parsing, the child runners and the summary are all the real
-// ones. The copy is built by following test-all.mjs's own static imports, so a
+// ones. The copy is built by following scripts/test-all.mjs's own static imports, so a
 // module added to them tomorrow is copied tomorrow.
 //
 // Shared by tests/test-all-jobs.test.mjs and
@@ -50,7 +50,7 @@ export function createRunnerSandbox(prefix) {
       mkdirSync(dirname(join(sandbox, rel)), { recursive: true });
       copyFileSync(from, join(sandbox, rel));
       if (!rel.endsWith('.mjs')) continue;
-      // Statements that start a line only: test-all.mjs also names modules
+      // Statements that start a line only: scripts/test-all.mjs also names modules
       // inside inline sections, and following those would copy most of the
       // repository.
       const src = readFileSync(from, 'utf-8');
@@ -61,7 +61,7 @@ export function createRunnerSandbox(prefix) {
   };
 
   try {
-    copyWithImports('test-all.mjs');
+    copyWithImports('scripts/test-all.mjs');
     copyWithImports('tests/run-discovered-child.mjs');
     linkRepoPackage(sandbox, 'js-yaml');
   } catch (err) {
@@ -82,7 +82,7 @@ export function createRunnerSandbox(prefix) {
 
     /** Run the sandboxed runner. CAREER_OPS_TEST_JOBS is blank unless a case sets it. */
     runner(args, env = {}) {
-      const r = spawnSync(NODE, [join(sandbox, 'test-all.mjs'), ...args], {
+      const r = spawnSync(NODE, [join(sandbox, 'scripts/test-all.mjs'), ...args], {
         cwd: sandbox,
         encoding: 'utf-8',
         timeout: 120_000,

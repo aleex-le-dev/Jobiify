@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-jd-archive.mjs — JD Archival Validator for career-ops
+ * scripts/check-jd-archive.mjs — JD Archival Validator for career-ops
  *
  * A report's `**URL:**` header is a live pointer, not an archive — it rots
  * the day a posting closes or gets taken down, which reliably happens
@@ -17,10 +17,10 @@
  *       modes/pdf.md) with substantive content, not an empty placeholder, or
  *   (b) a corresponding jds/ capture exists for it.
  *
- * (b) reuses jd-capture.mjs's findCaptureForReport — the same report-number
- * lookup outcome.mjs already relies on — rather than inventing a new slug
+ * (b) reuses scripts/jd-capture.mjs's findCaptureForReport — the same report-number
+ * lookup scripts/outcome.mjs already relies on — rather than inventing a new slug
  * matcher. That function only resolves captures written with a numeric
- * report-number prefix (archive-posting.mjs --report=N), which AGENTS.md's
+ * report-number prefix (scripts/archive-posting.mjs --report=N), which AGENTS.md's
  * "JD captures (jds/)" section already documents as the recommended writer;
  * the other jds/ naming conventions in play (date-prefixed, sha1-suffixed,
  * bare company-role slugs) have no report number to key on and are not
@@ -44,7 +44,7 @@
  *     Interview, Offer), OR the join can't resolve the row (no match,
  *     ambiguous match, or an unreadable/unparseable tracker) — a soft
  *     `jd-archive-review-due` finding, same severity shape as
- *     check-table-freshness.mjs's `review-due`: visible, never blocking CI.
+ *     scripts/check-table-freshness.mjs's `review-due`: visible, never blocking CI.
  *     santifer's ruling explicitly rejected a report-age/creation-date
  *     cutoff here — the risk this validator exists for (a posting dying
  *     before the JD is needed again) tracks whether the APPLICATION is
@@ -52,23 +52,23 @@
  *     gets the same soft-warning treatment as a report written yesterday.
  *
  * Terminal/live classification joins report numbers against
- * data/applications.md via tracker-parse.mjs's own extractTrackerReportNumbers
- * (the same report<->row lookup set-status.mjs already relies on) and
- * templates/states.yml via tracker-utils.mjs's loadCanonicalStates /
+ * data/applications.md via scripts/tracker-parse.mjs's own extractTrackerReportNumbers
+ * (the same report<->row lookup scripts/set-status.mjs already relies on) and
+ * templates/states.yml via scripts/tracker-utils.mjs's loadCanonicalStates /
  * resolveCanonicalState — no second tracker parser, read-only, fail-soft.
  *
- * Run: node check-jd-archive.mjs                        (JSON to stdout)
- *      node check-jd-archive.mjs --summary               (human-readable table)
- *      node check-jd-archive.mjs --reports-dir path/to    (override, for testing)
- *      node check-jd-archive.mjs --jds-dir path/to        (override, for testing)
- *      node check-jd-archive.mjs --tracker path/to        (override, for testing)
- *      node check-jd-archive.mjs --no-tracker             (skip the tracker join; legacy hard behavior)
- *      node check-jd-archive.mjs --self-test
- *      node check-jd-archive.mjs --help
+ * Run: node scripts/check-jd-archive.mjs                        (JSON to stdout)
+ *      node scripts/check-jd-archive.mjs --summary               (human-readable table)
+ *      node scripts/check-jd-archive.mjs --reports-dir path/to    (override, for testing)
+ *      node scripts/check-jd-archive.mjs --jds-dir path/to        (override, for testing)
+ *      node scripts/check-jd-archive.mjs --tracker path/to        (override, for testing)
+ *      node scripts/check-jd-archive.mjs --no-tracker             (skip the tracker join; legacy hard behavior)
+ *      node scripts/check-jd-archive.mjs --self-test
+ *      node scripts/check-jd-archive.mjs --help
  *
  * Exit codes: 1 if any hard `missing-jd-archive` finding, 0 otherwise —
  * `jd-archive-review-due` alone never fails the run (matches
- * check-table-freshness.mjs's `review-due`).
+ * scripts/check-table-freshness.mjs's `review-due`).
  *
  * Issue #2789 — github.com/santifer/career-ops
  */
@@ -77,14 +77,14 @@ import { readFileSync, readdirSync, existsSync, mkdtempSync, mkdirSync, writeFil
 import { join, dirname, basename, relative, isAbsolute } from 'path';
 import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
-import { flagValue } from './lib/cli-flags.mjs';
+import { flagValue } from '../lib/cli-flags.mjs';
 import { findCaptureForReport } from './jd-capture.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { resolveColumns, parseTrackerRow, extractTrackerReportNumbers } from './tracker-parse.mjs';
 import { loadCanonicalStates, resolveCanonicalState, resolveTrackerPath } from './tracker-utils.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
-const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
+const CAREER_OPS = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const DEFAULT_REPORTS_DIR = join(DATA_ROOT, 'reports');
 const DEFAULT_JDS_DIR = join(DATA_ROOT, 'jds');
@@ -95,7 +95,7 @@ const STATES_FILE = join(CAREER_OPS, 'templates/states.yml');
 // "build the state-based split you described" — Schlaflied 2026-08-16).
 // Confirmed against templates/states.yml's own canonical labels. "Offer" is
 // deliberately EXCLUDED even though states.yml marks it `terminal: true` for
-// lifecycle-ordering purposes (tracker-sync-check.mjs) — an offer in hand is
+// lifecycle-ordering purposes (scripts/tracker-sync-check.mjs) — an offer in hand is
 // still an active, undecided application, not a closed file, and the JD may
 // still be needed for negotiation or comparison.
 const RETROACTIVE_TERMINAL_LABELS = new Set(['Rejected', 'Discarded', 'SKIP', 'Hired']);
@@ -107,14 +107,14 @@ const RETROACTIVE_TERMINAL_LABELS = new Set(['Rejected', 'Discarded', 'SKIP', 'H
 const MIN_ARCHIVE_CHARS = 40;
 
 const USAGE = `Usage:
-  node check-jd-archive.mjs                      # full JSON findings to stdout
-  node check-jd-archive.mjs --summary             # human-readable table
-  node check-jd-archive.mjs --reports-dir <path>  # override reports/ (testing)
-  node check-jd-archive.mjs --jds-dir <path>      # override jds/ (testing)
-  node check-jd-archive.mjs --tracker <path>      # override data/applications.md (testing)
-  node check-jd-archive.mjs --no-tracker          # skip the tracker join (legacy hard-only behavior)
-  node check-jd-archive.mjs --self-test           # run the in-memory test suite
-  node check-jd-archive.mjs --help                # print this usage block and exit`;
+  node scripts/check-jd-archive.mjs                      # full JSON findings to stdout
+  node scripts/check-jd-archive.mjs --summary             # human-readable table
+  node scripts/check-jd-archive.mjs --reports-dir <path>  # override reports/ (testing)
+  node scripts/check-jd-archive.mjs --jds-dir <path>      # override jds/ (testing)
+  node scripts/check-jd-archive.mjs --tracker <path>      # override data/applications.md (testing)
+  node scripts/check-jd-archive.mjs --no-tracker          # skip the tracker join (legacy hard-only behavior)
+  node scripts/check-jd-archive.mjs --self-test           # run the in-memory test suite
+  node scripts/check-jd-archive.mjs --help                # print this usage block and exit`;
 
 // --- CLI args ---
 const args = process.argv.slice(2);
@@ -166,7 +166,7 @@ const UNFILLED_TEMPLATE_PLACEHOLDER =
 // modes/oferta.md documents a second legitimate shape for this section: a
 // pointer to a jds/ capture in place of the verbatim text, for a JD too long
 // to paste inline. A pointer sentence like "See jds/042-acme-2026-01-15.md
-// for the full archive (archive-posting.mjs --report=042)." easily clears
+// for the full archive (scripts/archive-posting.mjs --report=042)." easily clears
 // MIN_ARCHIVE_CHARS on length alone, which would let a WRONG or NONEXISTENT
 // path pass validation without ever being resolved (CodeRabbit, PR #2791
 // round 3).
@@ -185,7 +185,7 @@ const UNFILLED_TEMPLATE_PLACEHOLDER =
 const JDS_PATH_RE = /jds\/[^\s()<>]+?\.(?:pdf|txt|md)(?=$|[\s)\]`>]|[.,;:!?](?=\s|$))/i;
 const POSTED_LINE_RE = /^Posted:.*$/im;
 const POINTER_SENTENCE_RE =
-  /^See\s+jds\/[^\s()]+\.(?:md|pdf)\s+for the full archive(?:\s*\(archive-posting\.mjs\s+--report=\d+\))?\.?$/i;
+  /^See\s+jds\/[^\s()]+\.(?:md|pdf)\s+for the full archive(?:\s*\((?:scripts\/)?archive-posting\.mjs\s+--report=\d+\))?\.?$/i;
 
 function isPathOnlyPointer(strippedSection) {
   const withoutPostedLine = strippedSection.replace(POSTED_LINE_RE, '').trim();
@@ -330,9 +330,9 @@ export function hasEmbeddedJdArchive(content) {
  * for the retroactive-enforcement severity split (PR #2791 review). Read-only
  * — never writes, never touches applications.md's own lock.
  *
- * Reuses tracker-parse.mjs's own row parsing and report<->row lookup
- * (extractTrackerReportNumbers, the same one set-status.mjs's `--report N`
- * selector calls) and tracker-utils.mjs's loadCanonicalStates /
+ * Reuses scripts/tracker-parse.mjs's own row parsing and report<->row lookup
+ * (extractTrackerReportNumbers, the same one scripts/set-status.mjs's `--report N`
+ * selector calls) and scripts/tracker-utils.mjs's loadCanonicalStates /
  * resolveCanonicalState for states.yml — no second tracker parser, no second
  * alias table.
  *
@@ -678,7 +678,7 @@ function printUnarchivedApplications(rows) {
   }
   console.log('\n  These were applied to, so the posting had real consequences, but nothing');
   console.log('  on disk records what the role asked for. Capture one with:');
-  console.log('    node archive-posting.mjs --report=<N>   (live posting)');
+  console.log('    node scripts/archive-posting.mjs --report=<N>   (live posting)');
   console.log('  or save the original description to jds/ and link it from the tracker row.\n');
 }
 
@@ -717,7 +717,7 @@ function runSelfTest() {
     "## Job Description (archived verbatim)\n(the posting's full text, pasted verbatim — see requirement below)\n\n## Machine Summary"),
     'hasEmbeddedJdArchive rejects the unfilled modes/oferta.md template placeholder even though it exceeds MIN_ARCHIVE_CHARS by length alone (CodeRabbit, PR #2791)');
   check(!hasEmbeddedJdArchive(
-    '## Job Description (archived verbatim)\n\nSee jds/042-acme-corp-2026-01-15.md for the full archive (archive-posting.mjs --report=042).\n\n## Machine Summary'),
+    '## Job Description (archived verbatim)\n\nSee jds/042-acme-corp-2026-01-15.md for the full archive (scripts/archive-posting.mjs --report=042).\n\n## Machine Summary'),
     'hasEmbeddedJdArchive does not credit a path-only pointer sentence as embedded text, even though it clears MIN_ARCHIVE_CHARS by length alone — the pointer must resolve via findCaptureForReport instead (CodeRabbit, PR #2791)');
   check(hasEmbeddedJdArchive(
     '## Job Description (archived verbatim)\n\nThis role owns curriculum design end to end, including SCORM packaging and LMS rollout, across three regional teams and a portfolio of concurrent projects.\n\n## Machine Summary'),
@@ -858,7 +858,7 @@ function runSelfTest() {
   check(hasEmbeddedJdArchive(
     '## Job Description (archived verbatim)\n\nCandidates need not verbatim-copy source text. Survey answers are not literal quotes, and you will review them for tone across three regional teams.\n\n## Machine Summary'),
     'hasEmbeddedJdArchive does not false-positive on real JD prose that says "not literal" or "verbatim" as a duty (#5179 review)');
-  check(isPathOnlyPointer('See jds/042-2026-01-15_acme_director.pdf for the full archive (archive-posting.mjs --report=42).'),
+  check(isPathOnlyPointer('See jds/042-2026-01-15_acme_director.pdf for the full archive (scripts/archive-posting.mjs --report=42).'),
     'a PDF pointer sentence is read as a pointer, so its capture must resolve (#5179 review)');
 
   // --- Fixture directory tree (mkdtempSync, mirrors the repo's own test convention) ---
@@ -901,7 +901,7 @@ function runSelfTest() {
     ].join('\n'));
 
     // Fixture 3: no archive section, but a matching jds/ capture (report-number
-    // prefixed, per archive-posting.mjs --report=N) -> not flagged (either form counts).
+    // prefixed, per scripts/archive-posting.mjs --report=N) -> not flagged (either form counts).
     writeFileSync(join(reportsDir, '003-initech-2026-01-17.md'), [
       '# Evaluation: Initech — EdTech Specialist',
       '',
@@ -928,7 +928,7 @@ function runSelfTest() {
       '**URL:** https://example.com/jobs/umbrella-analyst',
       '',
       '## Job Description (archived verbatim)',
-      'See jds/005-umbrella-2026-01-20.md for the full archive (archive-posting.mjs --report=005).',
+      'See jds/005-umbrella-2026-01-20.md for the full archive (scripts/archive-posting.mjs --report=005).',
       '',
       '## Machine Summary',
       'score: 4.0',
@@ -944,7 +944,7 @@ function runSelfTest() {
       '',
       '## Job Description (archived verbatim)',
       'Posted: 2026-01-18',
-      'See jds/006-oscorp-2026-01-21.md for the full archive (archive-posting.mjs --report=006).',
+      'See jds/006-oscorp-2026-01-21.md for the full archive (scripts/archive-posting.mjs --report=006).',
       '',
       '## Machine Summary',
       'score: 4.0',

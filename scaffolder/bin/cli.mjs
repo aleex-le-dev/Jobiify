@@ -142,7 +142,7 @@ async function main() {
   } else {
     console.log(`\n! career-ops is cloned in ${display} but NOT ready: dependencies did not install.\n`);
     console.log("Next steps:");
-    console.log(`  1. cd ${target} && npm install   (then node doctor.mjs)`);
+    console.log(`  1. cd ${target} && npm install   (then node scripts/doctor.mjs)`);
     process.exitCode = 1;
   }
 

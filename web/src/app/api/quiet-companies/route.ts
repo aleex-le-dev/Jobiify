@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Companies still in Interview whose silence since the last round has passed a
-// courtesy threshold, from the core's rejection-latency.mjs.
+// courtesy threshold, from the core's scripts/rejection-latency.mjs.
 //
 // SUGGESTION-ONLY, and the script says so in its own header: it "never writes".
 // This route is read-only too — in particular it does not touch
@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 // auto-populated. The script hands back a ready-to-paste blacklist row; pasting
 // it stays the user's decision.
 //
-// No flags: rejection-latency.mjs prints JSON by default, like stats.mjs and
-// upskill.mjs. The argv is registered in tests/web-core-argv-contract.test.mjs.
+// No flags: scripts/rejection-latency.mjs prints JSON by default, like scripts/stats.mjs and
+// scripts/upskill.mjs. The argv is registered in tests/web-core-argv-contract.test.mjs.
 export async function GET() {
   const script = rootScript("rejection-latency");
   if (!fs.existsSync(script)) return Response.json({ available: false, reason: "no-script", data: null });

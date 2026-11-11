@@ -1,12 +1,12 @@
 // tests/plugins-data-root.test.mjs — Bugs 2 & 3 regression:
-//   Bug 2: plugins.mjs must derive APPLICATIONS_PATH and PIPELINE_PATH from
+//   Bug 2: scripts/plugins.mjs must derive APPLICATIONS_PATH and PIPELINE_PATH from
 //     the data root (CAREER_OPS_ROOT), not from the code directory.
 //   Bug 3: buildSnapshot() must parse pipeline.md checklist entries, not a table.
 //
-// Imports the REAL plugins.mjs with CAREER_OPS_ROOT set before the dynamic
+// Imports the REAL scripts/plugins.mjs with CAREER_OPS_ROOT set before the dynamic
 // import so the module-level constants are evaluated against the temp root.
 // Uses _testPaths and _testBuildSnapshot — the minimal named exports added to
-// plugins.mjs to make its internal constants and snapshot function inspectable
+// scripts/plugins.mjs to make its internal constants and snapshot function inspectable
 // without duplicating path-resolution logic in the test.
 import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
@@ -20,13 +20,13 @@ const dir = mkdtempSync(join(tmpdir(), 'career-ops-plugins-'));
 // test-all runs this file in a shared process: restore, don't just delete.
 const prevRoot = process.env.CAREER_OPS_ROOT;
 try {
-  // Set CAREER_OPS_ROOT BEFORE importing plugins.mjs. The module-level
+  // Set CAREER_OPS_ROOT BEFORE importing scripts/plugins.mjs. The module-level
   // constants DATA_ROOT / APPLICATIONS_PATH / PIPELINE_PATH are evaluated
   // once at import time, so the env must be in place before that happens.
   process.env.CAREER_OPS_ROOT = dir;
 
   // Write a real pipeline.md with checklist entries so buildSnapshot() reads
-  // real content. scan.mjs (imported transitively by plugins.mjs) also calls
+  // real content. scripts/scan.mjs (imported transitively by scripts/plugins.mjs) also calls
   // mkdirSync on data/, but runs after this and is idempotent.
   mkdirSync(join(dir, 'data'), { recursive: true });
   writeFileSync(
@@ -34,12 +34,12 @@ try {
     '# Pipeline\n- [ ] https://example.com/job/1\n- [x] https://example.com/job/2\n',
   );
 
-  // Import the REAL plugins.mjs. The '?root=...' query busts the ESM cache so
+  // Import the REAL scripts/plugins.mjs. The '?root=...' query busts the ESM cache so
   // the module is re-evaluated with the current CAREER_OPS_ROOT even if an
-  // earlier test in the same test-all.mjs process already imported it (or a
+  // earlier test in the same scripts/test-all.mjs process already imported it (or a
   // module that transitively imports it) without that env var set.
   const { _testPaths, _testBuildSnapshot } = await import(
-    pathToFileURL(join(ROOT, 'plugins.mjs')).href + '?root=' + Date.now()
+    pathToFileURL(join(ROOT, 'scripts/plugins.mjs')).href + '?root=' + Date.now()
   );
 
   // --- Bug 2: APPLICATIONS_PATH and PIPELINE_PATH must be rooted in DATA_ROOT ---

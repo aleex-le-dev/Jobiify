@@ -34,7 +34,7 @@ ${aggregator ? '    aggregator: true\n' : ''}    parser:
       command: node
       script: tests/fixtures/same-title-board.mjs
 `);
-    execFileSync(NODE, [join(ROOT, 'scan.mjs')], {
+    execFileSync(NODE, [join(ROOT, 'scripts/scan.mjs')], {
       cwd: dir,
       env: { ...process.env, CAREER_OPS_ROOT: dir, CAREER_OPS_PORTALS: portals },
       encoding: 'utf-8',

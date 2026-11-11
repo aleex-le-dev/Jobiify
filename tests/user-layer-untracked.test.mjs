@@ -11,25 +11,25 @@ import { join } from 'path';
 import { pass, fail, ROOT } from './helpers.mjs';
 
 /**
- * Parse repo-relative paths from DATA_CONTRACT.md's User Layer table.
+ * Parse repo-relative paths from docs/projet/DATA_CONTRACT.md's User Layer table.
  *
  * @param {string} markdown
  * @returns {string[]}
  */
 export function parseUserLayerPaths(markdown) {
   const section = markdown.match(/^## User Layer(?: \([^\n]*\))?\s*$([\s\S]*?)(?=^##?\s|(?![\s\S]))/m)?.[1];
-  if (!section) throw new Error('DATA_CONTRACT.md is missing the User Layer section');
+  if (!section) throw new Error('docs/projet/DATA_CONTRACT.md is missing the User Layer section');
 
   const paths = [];
   for (const line of section.split(/\r?\n/)) {
     const path = line.match(/^\|\s*`([^`]+)`/)?.[1];
     if (!path) continue;
     if (path.startsWith('/') || path.split('/').includes('..')) {
-      throw new Error(`unsafe User Layer path in DATA_CONTRACT.md: ${path}`);
+      throw new Error(`unsafe User Layer path in docs/projet/DATA_CONTRACT.md: ${path}`);
     }
     paths.push(path);
   }
-  if (paths.length === 0) throw new Error('DATA_CONTRACT.md User Layer table contains no paths');
+  if (paths.length === 0) throw new Error('docs/projet/DATA_CONTRACT.md User Layer table contains no paths');
   return [...new Set(paths)];
 }
 
@@ -71,9 +71,9 @@ export function trackedIgnoredUserLayerFiles(root, paths) {
 console.log('\n🔒 user-layer files are absent from the Git index');
 
 try {
-  const contract = readFileSync(join(ROOT, 'DATA_CONTRACT.md'), 'utf-8');
+  const contract = readFileSync(join(ROOT, 'docs/projet/DATA_CONTRACT.md'), 'utf-8');
   const paths = parseUserLayerPaths(contract);
-  pass(`parsed ${paths.length} user-layer paths from DATA_CONTRACT.md`);
+  pass(`parsed ${paths.length} user-layer paths from docs/projet/DATA_CONTRACT.md`);
 
   const shippedScaffolds = [
     'data/.gitkeep',
@@ -146,7 +146,7 @@ try {
 const fixture = mkdtempSync(join(tmpdir(), 'career-ops-user-layer-index-'));
 try {
   mkdirSync(join(fixture, 'documents'));
-  writeFileSync(join(fixture, 'DATA_CONTRACT.md'), `# Data Contract
+  writeFileSync((mkdirSync(join(fixture, 'docs/projet'), { recursive: true }), join(fixture, 'docs/projet/DATA_CONTRACT.md')), `# Data Contract
 
 ## User Layer (preserved by updates)
 
@@ -160,18 +160,18 @@ try {
 `);
   writeFileSync(join(fixture, 'cv.md'), 'private');
   writeFileSync(join(fixture, 'documents', 'README.md'), 'scaffold');
-  writeFileSync(join(fixture, '.gitignore'), '*.md\n!DATA_CONTRACT.md\ndocuments/*\n!documents/\n!documents/README.md\n');
+  writeFileSync(join(fixture, '.gitignore'), '*.md\n!docs/projet/DATA_CONTRACT.md\ndocuments/*\n!documents/\n!documents/README.md\n');
 
   for (const args of [
     ['init', '-q'],
-    ['add', '.gitignore', 'DATA_CONTRACT.md', 'documents/README.md'],
+    ['add', '.gitignore', 'docs/projet/DATA_CONTRACT.md', 'documents/README.md'],
     ['add', '-f', 'cv.md'],
   ]) {
     const result = spawnSync('git', args, { cwd: fixture, encoding: 'utf-8' });
     if (result.status !== 0) throw new Error((result.stderr || `git ${args[0]} failed`).trim());
   }
 
-  const paths = parseUserLayerPaths(readFileSync(join(fixture, 'DATA_CONTRACT.md'), 'utf-8'));
+  const paths = parseUserLayerPaths(readFileSync(join(fixture, 'docs/projet/DATA_CONTRACT.md'), 'utf-8'));
   const violations = trackedIgnoredUserLayerFiles(fixture, paths);
   if (violations.length === 1 && violations[0] === 'cv.md') {
     pass('root wildcard finds tracked personal files without flagging a negated scaffold');
@@ -192,7 +192,7 @@ try {
 const forkFixture = mkdtempSync(join(tmpdir(), 'career-ops-fork-local-paths-'));
 try {
   mkdirSync(join(forkFixture, 'config'));
-  writeFileSync(join(forkFixture, 'DATA_CONTRACT.md'), `# Data Contract
+  writeFileSync((mkdirSync(join(forkFixture, 'docs/projet'), { recursive: true }), join(forkFixture, 'docs/projet/DATA_CONTRACT.md')), `# Data Contract
 
 ## User Layer (preserved by updates)
 
@@ -206,12 +206,12 @@ try {
   // The upstream rule, then the fork's negation — order matters to Git.
   writeFileSync(join(forkFixture, '.gitignore'), 'config/local-paths.txt\n!config/local-paths.txt\n');
 
-  for (const args of [['init', '-q'], ['add', '.gitignore', 'DATA_CONTRACT.md', 'config/local-paths.txt']]) {
+  for (const args of [['init', '-q'], ['add', '.gitignore', 'docs/projet/DATA_CONTRACT.md', 'config/local-paths.txt']]) {
     const result = spawnSync('git', args, { cwd: forkFixture, encoding: 'utf-8' });
     if (result.status !== 0) throw new Error((result.stderr || `git ${args[0]} failed`).trim());
   }
 
-  const forkPaths = parseUserLayerPaths(readFileSync(join(forkFixture, 'DATA_CONTRACT.md'), 'utf-8'));
+  const forkPaths = parseUserLayerPaths(readFileSync(join(forkFixture, 'docs/projet/DATA_CONTRACT.md'), 'utf-8'));
   const forkViolations = trackedIgnoredUserLayerFiles(forkFixture, forkPaths);
   if (forkViolations.length === 0) {
     pass('a fork that un-ignores config/local-paths.txt may commit it (#4128)');

@@ -7,8 +7,8 @@ import { parseArgs } from 'node:util';
 import { load, JSON_SCHEMA } from 'js-yaml';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { acquireTrackerLock, trackerLockDirFor, renameSyncWithRetry } from './tracker-utils.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
 
 export const JOB_FACTS_TTL_MS = 24 * 60 * 60 * 1000;
 const LIVENESS_TTL_MS = 5 * 60 * 1000;
@@ -204,7 +204,7 @@ export async function invalidateJobFacts({ reportsDir = join(getCareerOpsRoot(),
   } finally { lock.release(); }
 }
 
-const USAGE = `Usage: node evaluation-cache.mjs --identity FILE --liveness FILE [--reports DIR] [--invalidate]
+const USAGE = `Usage: node scripts/evaluation-cache.mjs --identity FILE --liveness FILE [--reports DIR] [--invalidate]
 
 Read local reports and print strictly allowlisted public job facts as JSON.
 --identity FILE  #1030 listing-fingerprint record (JSON)

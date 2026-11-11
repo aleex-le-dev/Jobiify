@@ -1,4 +1,4 @@
-// tests/audit-portals-providers-root.test.mjs — audit-portals.mjs loads its
+// tests/audit-portals-providers-root.test.mjs — scripts/audit-portals.mjs loads its
 // provider registry from the CHECKOUT, not from the user's data root (#4171).
 //
 // `providers/` is system layer: it ships with the code and never travels to a
@@ -6,7 +6,7 @@
 // and the checkout were the same directory. Under the external-data-root layout
 // (CAREER_OPS_ROOT / CAREER_OPS_DATA_DIR, or a `.career-ops-data` marker),
 // loadProviders() read a directory that does not exist and returned an EMPTY
-// registry — so audit-portals.mjs, the script whose whole job is catching the
+// registry — so scripts/audit-portals.mjs, the script whose whole job is catching the
 // silent "enabled but nothing scans it" state, reported `0 audited` and exited
 // 0. A green run that audited nothing is the worst shape this failure can take.
 //
@@ -28,7 +28,7 @@ import { loadProviders } from '../providers/_registry.mjs';
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 /**
- * Import audit-portals.mjs with the data root pointed OUTSIDE the checkout.
+ * Import scripts/audit-portals.mjs with the data root pointed OUTSIDE the checkout.
  * The module resolves its anchors at import time, so the environment has to be
  * in place first; the query string keeps each call on its own module instance.
  */
@@ -42,7 +42,7 @@ async function importUnderDataRoot(dataRoot) {
   delete process.env.CAREER_OPS_DATA_DIR;
   delete process.env.CAREER_OPS_PORTALS;
   try {
-    const url = `${pathToFileURL(join(ROOT, 'audit-portals.mjs')).href}?data-root=${encodeURIComponent(dataRoot)}`;
+    const url = `${pathToFileURL(join(ROOT, 'scripts/audit-portals.mjs')).href}?data-root=${encodeURIComponent(dataRoot)}`;
     return await import(url);
   } finally {
     for (const [name, value] of [

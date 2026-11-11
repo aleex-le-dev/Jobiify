@@ -7,7 +7,7 @@ import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\nscan-ats-full — resume machinery');
 
-const mod = await import(pathToFileURL(join(ROOT, 'scan-ats-full.mjs')).href);
+const mod = await import(pathToFileURL(join(ROOT, 'scripts/scan-ats-full.mjs')).href);
 const { parallelEach, withTimeout, datasetFingerprint } = mod;
 
 // withTimeout: passes a fast promise through untouched.
@@ -234,7 +234,7 @@ const { loadCheckpoint, checkpointCompatible } = mod;
 {
   const { SOURCES } = mod;
   if (!SOURCES) {
-    fail('SOURCES not exported from scan-ats-full.mjs');
+    fail('SOURCES not exported from scripts/scan-ats-full.mjs');
   } else if (!SOURCES.icims) {
     fail('SOURCES.icims missing');
   } else {
@@ -258,12 +258,12 @@ const { loadCheckpoint, checkpointCompatible } = mod;
 // board that simply had nothing fresh. The counter is a local in main(), so
 // this asserts on the source of the payload literal rather than a run.
 {
-  const src = readFileSync(join(ROOT, 'scan-ats-full.mjs'), 'utf-8');
+  const src = readFileSync(join(ROOT, 'scripts/scan-ats-full.mjs'), 'utf-8');
   const start = src.indexOf('if (opts.json) {');
   const end = src.indexOf('offers: offers.map(', start);
 
   if (start === -1 || end === -1 || end <= start) {
-    fail('could not locate the --json payload literal in scan-ats-full.mjs');
+    fail('could not locate the --json payload literal in scripts/scan-ats-full.mjs');
   } else {
     const payload = src.slice(start, end);
     // Control arm: if the slice ever stops covering the payload, this sibling

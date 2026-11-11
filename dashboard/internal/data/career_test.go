@@ -213,7 +213,7 @@ func TestParseApplicationsResolvesTrackerRelativeReportLinks(t *testing.T) {
 	}
 
 	// Tracker links are written relative to the tracker file itself
-	// (merge-tracker.mjs normalization): ../reports/... when the tracker
+	// (scripts/merge-tracker.mjs normalization): ../reports/... when the tracker
 	// lives under data/. Legacy trackers may still carry root-relative
 	// links; both must resolve to the same on-disk report.
 	applications := `# Applications Tracker
@@ -461,7 +461,7 @@ func TestParseApplicationsRespectsCareerOpsTracker(t *testing.T) {
 }
 
 // A duplicated header name resolves to its LAST occurrence, matching
-// detectColumns in tracker-parse.mjs — the JS and Go readers must map an
+// detectColumns in scripts/tracker-parse.mjs — the JS and Go readers must map an
 // identical header row identically.
 func TestResolveTrackerColumnsDuplicateHeaderLastWins(t *testing.T) {
 	dup := strings.Split(`| # | Notes | Company | Role | Score | Status | PDF | Report | Notes |
@@ -470,7 +470,7 @@ func TestResolveTrackerColumnsDuplicateHeaderLastWins(t *testing.T) {
 	cols := resolveTrackerColumns(dup)
 	// Verify that the last "Notes" column wins
 	if cols["notes"] != 8 {
-		t.Fatalf("notes index = %d, expected 8 (tracker-parse.mjs parity)", cols["notes"])
+		t.Fatalf("notes index = %d, expected 8 (scripts/tracker-parse.mjs parity)", cols["notes"])
 	}
 }
 
@@ -563,7 +563,7 @@ func TestNormalizeStatus(t *testing.T) {
 	}
 }
 
-// Regression: when an external writer (set-status.mjs, merge-tracker.mjs,
+// Regression: when an external writer (scripts/set-status.mjs, scripts/merge-tracker.mjs,
 // another session) changes a row's status while the dashboard is open, the
 // in-memory "old" status no longer matches the file. The update must still
 // land in the Status column — identified via the header — rather than
@@ -720,7 +720,7 @@ func TestParseApplicationsReadsLinkedURLCells(t *testing.T) {
 }
 
 // The writer only links a href that survives a markdown destination byte for
-// byte (merge-tracker.mjs isLinkableDestination); everything else is written
+// byte (scripts/merge-tracker.mjs isLinkableDestination); everything else is written
 // bare. Both forms must read back whole HERE too — the Node parser and this
 // regex disagreeing about a row's URL is the drift the shared extractor exists
 // to prevent. TestExtractCellURLMatchesNodeReader pins the full parity table.

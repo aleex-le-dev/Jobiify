@@ -10,7 +10,7 @@
 // Checked from child processes that start the way a suite started from a
 // developer's shell does — WITH their data root in the environment, and
 // without the run's own sandbox variable, so each child owns a sandbox the way
-// test-all.mjs does. "Their" data root here is a temp directory.
+// scripts/test-all.mjs does. "Their" data root here is a temp directory.
 import { pass, fail, ROOT, NODE, rmSync } from './helpers.mjs';
 import { diffSnapshots, snapshotDataRoot } from './data-root-guard.mjs';
 import { spawnSync } from 'child_process';
@@ -72,7 +72,7 @@ try {
     }
   }
 
-  // The writer that leaked: assessment-log.mjs add, run from the checkout with
+  // The writer that leaked: scripts/assessment-log.mjs add, run from the checkout with
   // no env of its own.
   {
     const r = child({ CAREER_OPS_ROOT: theirs }, 'writer');
@@ -144,7 +144,7 @@ try {
     seed();
   }
 
-  // … and under test-all.mjs the summary itself is red, not green above a
+  // … and under scripts/test-all.mjs the summary itself is red, not green above a
   // complaint.
   {
     const r = child({ CAREER_OPS_ROOT: theirs }, 'write-real-finish');

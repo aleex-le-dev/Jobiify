@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * weekly-digest.mjs — Weekly Interview Digest for career-ops
+ * scripts/weekly-digest.mjs — Weekly Interview Digest for career-ops
  *
  * `interview/debrief` and `interview/practice` already write structured
  * session transcripts to `interview-prep/sessions/{company-slug}-{role-slug}-
@@ -25,14 +25,14 @@
  *     match, not a strict parser — absent or unmatched entries degrade
  *     silently rather than erroring.
  *
- * Run: node weekly-digest.mjs                       (JSON to stdout)
- *      node weekly-digest.mjs --summary              (human-readable digest)
- *      node weekly-digest.mjs --from 2026-07-13 --to 2026-07-19
- *      node weekly-digest.mjs --dir path/to/sessions  (override sessions dir; test isolation)
- *      node weekly-digest.mjs --self-test
+ * Run: node scripts/weekly-digest.mjs                       (JSON to stdout)
+ *      node scripts/weekly-digest.mjs --summary              (human-readable digest)
+ *      node scripts/weekly-digest.mjs --from 2026-07-13 --to 2026-07-19
+ *      node scripts/weekly-digest.mjs --dir path/to/sessions  (override sessions dir; test isolation)
+ *      node scripts/weekly-digest.mjs --self-test
  *
  * Default range: the current ISO week (Monday–Sunday), matching the
- * `isoWeek` convention already used by `stats.mjs`'s scan-run trends.
+ * `isoWeek` convention already used by `scripts/stats.mjs`'s scan-run trends.
  *
  * Issue #2129 — github.com/career-ops-hq/career-ops
  */
@@ -42,12 +42,12 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 
-import { validateFlags, flagValue } from './lib/cli-flags.mjs';
-import { localToday } from './lib/local-today.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { validateFlags, flagValue } from '../lib/cli-flags.mjs';
+import { localToday } from '../lib/local-today.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
-// The USER's data root. interview-prep/ is USER_PATHS in update-system.mjs, so
+// The USER's data root. interview-prep/ is USER_PATHS in scripts/update-system.mjs, so
 // resolving it from this file's directory meant that with a data root configured
 // the digest looked in the checkout, found nothing, and said "no session files
 // fall inside this range" — blaming the dates for a directory it never opened.
@@ -144,7 +144,7 @@ export function parseSessionFile(content) {
  * Load and parse every session file in `dir`. Non-.md files (README.md,
  * .gitkeep) and files that fail to parse are silently skipped — this
  * mirrors the "torn/malformed row never poisons the aggregate" convention
- * used throughout this codebase (e.g. detect-reposts.mjs, stats.mjs).
+ * used throughout this codebase (e.g. scripts/detect-reposts.mjs, scripts/stats.mjs).
  *
  * @param {string} dir - Sessions directory path.
  */
@@ -669,13 +669,13 @@ const KNOWN_FLAGS = ['--from', '--to', '--dir', '--summary', '--self-test', '--h
 const VALUE_FLAGS = ['--from', '--to', '--dir'];
 
 const USAGE = `Usage:
-  node weekly-digest.mjs                        # JSON digest for the current ISO week
-  node weekly-digest.mjs --summary              # human-readable roll-up
-  node weekly-digest.mjs --from <YYYY-MM-DD>    # start of the window
-  node weekly-digest.mjs --to <YYYY-MM-DD>      # end of the window
-  node weekly-digest.mjs --dir <path>           # a different interview-prep/sessions dir
-  node weekly-digest.mjs --self-test            # run the built-in fixtures
-  node weekly-digest.mjs --help                 # show this message
+  node scripts/weekly-digest.mjs                        # JSON digest for the current ISO week
+  node scripts/weekly-digest.mjs --summary              # human-readable roll-up
+  node scripts/weekly-digest.mjs --from <YYYY-MM-DD>    # start of the window
+  node scripts/weekly-digest.mjs --to <YYYY-MM-DD>      # end of the window
+  node scripts/weekly-digest.mjs --dir <path>           # a different interview-prep/sessions dir
+  node scripts/weekly-digest.mjs --self-test            # run the built-in fixtures
+  node scripts/weekly-digest.mjs --help                 # show this message
 
 Both bounds are optional; supplying one without the other is rejected rather
 than silently widened.`;

@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import { isReservedReportFile } from "../../src/lib/report-files.mjs";
 
 test("a numbered sentinel is reserved", () => {
-  // Given: what reserve-report-num.mjs actually writes to claim a number.
+  // Given: what scripts/reserve-report-num.mjs actually writes to claim a number.
   assert.equal(isReservedReportFile("041-RESERVED.md"), true);
   assert.equal(isReservedReportFile("7-RESERVED.md"), true);
 });

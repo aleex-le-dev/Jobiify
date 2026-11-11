@@ -2,7 +2,7 @@
 // NEW USER, not a failed command.
 //
 // Eleven analysis scripts read the same tracker. Ten reported "no data yet" and
-// exited 0; analyze-patterns.mjs exited 1 for the same condition, which breaks
+// exited 0; scripts/analyze-patterns.mjs exited 1 for the same condition, which breaks
 // `&&` chaining and makes the batch runners treat a fresh install as a broken
 // command.
 //
@@ -33,10 +33,10 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 // it reads the story bank rather than the tracker, so "empty tracker" is not a
 // condition it has an opinion about.
 const ANALYSIS_SCRIPTS = [
-  'stats.mjs', 'upskill.mjs', 'salary-gap.mjs', 'process-quality.mjs',
-  'rejection-latency.mjs', 'detect-reposts.mjs', 'company-history.mjs',
-  'calibrate.mjs', 'funnel-velocity.mjs', 'tracker-sync-check.mjs',
-  'analyze-patterns.mjs',
+  'scripts/stats.mjs', 'scripts/upskill.mjs', 'scripts/salary-gap.mjs', 'scripts/process-quality.mjs',
+  'scripts/rejection-latency.mjs', 'scripts/detect-reposts.mjs', 'scripts/company-history.mjs',
+  'scripts/calibrate.mjs', 'scripts/funnel-velocity.mjs', 'scripts/tracker-sync-check.mjs',
+  'scripts/analyze-patterns.mjs',
 ];
 
 function emptyButValid() {
@@ -108,7 +108,7 @@ test('a real failure still exits non-zero', () => {
     mkdirSync(join(dir, 'data'), { recursive: true });
     // A directory where the tracker file belongs: unreadable, not empty.
     mkdirSync(join(dir, 'data', 'applications.md'), { recursive: true });
-    const r = spawnSync(process.execPath, [join(ROOT, 'analyze-patterns.mjs'), '--summary'], {
+    const r = spawnSync(process.execPath, [join(ROOT, 'scripts/analyze-patterns.mjs'), '--summary'], {
       cwd: dir, encoding: 'utf-8', timeout: 60_000,
       env: { ...process.env, CAREER_OPS_ROOT: dir, CAREER_OPS_DATA_DIR: '' },
     });

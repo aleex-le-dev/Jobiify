@@ -1,14 +1,14 @@
-// tests/portals-default-data-root.test.mjs — fix-slugs.mjs and
-// validate-portals.mjs default to the DATA ROOT's portals.yml, not the cwd's.
+// tests/portals-default-data-root.test.mjs — scripts/fix-slugs.mjs and
+// scripts/validate-portals.mjs default to the DATA ROOT's portals.yml, not the cwd's.
 //
 // Both defaulted to the bare string 'portals.yml', which resolves against
-// process.cwd(). scan.mjs, audit-portals.mjs and verify-portals.mjs resolve the
+// process.cwd(). scripts/scan.mjs, scripts/audit-portals.mjs and scripts/verify-portals.mjs resolve the
 // same default against the data root (CAREER_OPS_ROOT / CAREER_OPS_DATA_DIR /
 // .career-ops-data), so once the data lived outside the checkout these two
 // worked on a different file than the scanner: `npm run validate:portals`,
 // which npm always runs from the checkout, failed with "file not found" or
-// validated a stale copy, and fix-slugs.mjs reported "nothing to fix" for the
-// file verify-portals.mjs had just flagged.
+// validated a stale copy, and scripts/fix-slugs.mjs reported "nothing to fix" for the
+// file scripts/verify-portals.mjs had just flagged.
 //
 // Each run points the data root and the cwd at DIFFERENT directories, so a
 // default that follows the shell is caught. Offline: no config here has an
@@ -55,7 +55,7 @@ function runWithDefaultPath(script, { dataRoot, cwd }) {
   return { status: res.status, out: `${res.stdout ?? ''}${res.stderr ?? ''}` };
 }
 
-test('validate-portals.mjs validates the data root portals.yml, not the copy in the cwd', () => {
+test('scripts/validate-portals.mjs validates the data root portals.yml, not the copy in the cwd', () => {
   const dirs = makeDirs();
   try {
     // The user's file has a mistake the validator exists to catch. The copy in
@@ -71,7 +71,7 @@ test('validate-portals.mjs validates the data root portals.yml, not the copy in 
     ].join('\n'), 'utf-8');
     writeFileSync(join(dirs.cwd, 'portals.yml'), NO_ENTRIES, 'utf-8');
 
-    const { status, out } = runWithDefaultPath('validate-portals.mjs', dirs);
+    const { status, out } = runWithDefaultPath('scripts/validate-portals.mjs', dirs);
 
     assert.ok(
       out.includes(`validate-portals: ${join(dirs.dataRoot, 'portals.yml')}`),
@@ -84,14 +84,14 @@ test('validate-portals.mjs validates the data root portals.yml, not the copy in 
   }
 });
 
-test('fix-slugs.mjs reads the data root portals.yml when the cwd has none', () => {
+test('scripts/fix-slugs.mjs reads the data root portals.yml when the cwd has none', () => {
   const dirs = makeDirs();
   try {
     // A fresh checkout with the data kept elsewhere: the cwd holds no
     // portals.yml at all, which a cwd-relative default reports as nothing to do.
     writeFileSync(join(dirs.dataRoot, 'portals.yml'), NO_ENTRIES, 'utf-8');
 
-    const { status, out } = runWithDefaultPath('fix-slugs.mjs', dirs);
+    const { status, out } = runWithDefaultPath('scripts/fix-slugs.mjs', dirs);
 
     assert.equal(status, 0, out);
     assert.doesNotMatch(out, /no portals file/, `fix-slugs looked for portals.yml in the cwd:\n${out}`);

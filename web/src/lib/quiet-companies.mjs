@@ -4,7 +4,7 @@
 //
 // ── The line this panel must not cross ──────────────────────────────────────
 //
-// rejection-latency.mjs measures ELAPSED TIME and nothing else. Its own payload
+// scripts/rejection-latency.mjs measures ELAPSED TIME and nothing else. Its own payload
 // carries the sentence that says so:
 //
 //   "Elapsed-time observation only — not legal advice or a claim that the

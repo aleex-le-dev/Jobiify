@@ -1,5 +1,5 @@
 import { pass, fail } from './helpers.mjs';
-import { metricClaims, stripMarkup } from '../verify-cv-facts.mjs';
+import { metricClaims, stripMarkup } from '../scripts/verify-cv-facts.mjs';
 
 console.log('\nBolded metrics are not invisible to the fact gate (#4085)');
 

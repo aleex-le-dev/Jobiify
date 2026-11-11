@@ -1,15 +1,15 @@
 // tests/cv-sync-check.test.mjs — the setup validator has to reach its checks.
 //
-// cv-sync-check.mjs threw a ReferenceError at module scope (#3440): the
+// scripts/cv-sync-check.mjs threw a ReferenceError at module scope (#3440): the
 // CODE_ROOT/DATA_ROOT split left three `join(projectRoot, …)` call sites naming
 // an identifier that no longer existed, so `npm run sync-check` died before the
 // first check and printed a stack instead of a report.
 //
 // It sat because a crash and a correct run look identical from outside. The
 // script exits 1 when cv.md is missing — which is normal in this repo — and
-// exits 1 on a ReferenceError too. test-all.mjs's own entry says as much:
+// exits 1 on a ReferenceError too. scripts/test-all.mjs's own entry says as much:
 //
-//   { name: 'cv-sync-check.mjs', expectExit: 1, allowFail: true }
+//   { name: 'scripts/cv-sync-check.mjs', expectExit: 1, allowFail: true }
 //
 // (`expectExit` is not read by the runner at all; `allowFail` was doing the
 // work, and it excused everything.) So this asserts what an exit code cannot:
@@ -29,7 +29,7 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 /** Run the validator against a throwaway DATA root, leaving the repo alone. */
 function runAgainst(dataRoot) {
-  const r = spawnSync(process.execPath, [join(ROOT, 'cv-sync-check.mjs')], {
+  const r = spawnSync(process.execPath, [join(ROOT, 'scripts/cv-sync-check.mjs')], {
     cwd: ROOT,
     encoding: 'utf-8',
     timeout: 30_000,

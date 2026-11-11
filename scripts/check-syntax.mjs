@@ -15,7 +15,7 @@ import { checkSyntax } from '../lib/syntax-check.mjs';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // The walk (and the list of directories it skips) lives in lib/mjs-files.mjs
-// so that this linter and test-all.mjs's syntax gate cannot disagree about
+// so that this linter and scripts/test-all.mjs's syntax gate cannot disagree about
 // which files exist — see that module's header for what happened when they
 // did (#3419). The check itself is shared for the same reason
 // (lib/syntax-check.mjs): one process parses every file, and `node --check`

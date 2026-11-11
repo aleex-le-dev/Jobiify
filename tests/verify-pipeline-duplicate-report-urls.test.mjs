@@ -1,8 +1,8 @@
 // tests/verify-pipeline-duplicate-report-urls.test.mjs: Check 9 (duplicate
 // reports for the same company+role) tells two openings apart by their posting
-// URL (#4588), end to end through the real verify-pipeline.mjs process.
+// URL (#4588), end to end through the real scripts/verify-pipeline.mjs process.
 //
-// The fixture is the one test-all.mjs builds for its #1425 duplicate/orphan
+// The fixture is the one scripts/test-all.mjs builds for its #1425 duplicate/orphan
 // report checks, rebuilt here in a temp dir. Only the tracker and reports dir
 // are fixtures; CAREER_OPS_ROOT stays the checkout, as in
 // tests/verify-pipeline-via-skip.test.mjs.
@@ -43,7 +43,7 @@ try {
   // every report carries a URL key and no two share one is exempt; a missing
   // or placeholder URL proves nothing, so those groups are still flagged.
   const vpDupFlagged = () => {
-    const o = run(NODE, ['verify-pipeline.mjs'], { env: vpEnv, stdio: ['pipe', 'pipe', 'pipe'] });
+    const o = run(NODE, ['scripts/verify-pipeline.mjs'], { env: vpEnv, stdio: ['pipe', 'pipe', 'pipe'] });
     return o === null ? null : /Duplicate reports[^\n]*001-acme[^\n]*003-acme/.test(o);
   };
   // AGENTS.md documents the URL INLINE in the Score line; other writers put it

@@ -8,7 +8,7 @@ import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\nscan-ats-full — cheap listing pre-check');
 
-const { listingMayMatch, undatedInListing } = await import(pathToFileURL(join(ROOT, 'scan-ats-full.mjs')).href);
+const { listingMayMatch, undatedInListing } = await import(pathToFileURL(join(ROOT, 'scripts/scan-ats-full.mjs')).href);
 const greenhouse = (await import(pathToFileURL(join(ROOT, 'providers/greenhouse.mjs')).href)).default;
 
 const check = (ok, msg) => (ok ? pass(msg) : fail(msg));

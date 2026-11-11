@@ -1,34 +1,34 @@
 #!/usr/bin/env node
 
 /**
- * update-system.mjs — Safe auto-updater for career-ops
+ * scripts/update-system.mjs — Safe auto-updater for career-ops
  *
  * Updates system-layer files (modes, scripts, dashboard, templates) plus the
- * exact system-owned `.gitkeep` scaffolds listed in DATA_CONTRACT.md. It never
+ * exact system-owned `.gitkeep` scaffolds listed in docs/projet/DATA_CONTRACT.md. It never
  * touches user-owned data (cv.md, profile.yml, _profile.md, or user files in
  * data/, reports/, output/, and jds/).
  *
  * Usage:
- *   node update-system.mjs check      # Check if a newer release is published
+ *   node scripts/update-system.mjs check      # Check if a newer release is published
  *                                     # (merges to main between releases
  *                                     # never prompt; see checkStatus())
- *   node update-system.mjs status     # Print installed version (with short SHA)
- *   node update-system.mjs check --force
+ *   node scripts/update-system.mjs status     # Print installed version (with short SHA)
+ *   node scripts/update-system.mjs check --force
  *                                     # …even for a release the user dismissed
- *   node update-system.mjs apply --confirm
+ *   node scripts/update-system.mjs apply --confirm
  *                                     # Apply update after explicit confirmation.
  *                                     # Default channel: the newest published
  *                                     # release tag, not main's current tip.
- *   node update-system.mjs apply --force --confirm
+ *   node scripts/update-system.mjs apply --force --confirm
  *                                     # …and overwrite system files this
  *                                     # install edited locally (#2337). Without
  *                                     # it those files are kept and listed.
- *   node update-system.mjs apply --channel main --confirm
+ *   node scripts/update-system.mjs apply --channel main --confirm
  *                                     # …track main instead: every merge,
  *                                     # including whatever's mid-flight
  *                                     # between a bad one and its fix.
- *   node update-system.mjs rollback   # Rollback last update
- *   node update-system.mjs dismiss [--version X.Y.Z]
+ *   node scripts/update-system.mjs rollback   # Rollback last update
+ *   node scripts/update-system.mjs dismiss [--version X.Y.Z]
  *                                     # Don't ask again about this release;
  *                                     # a newer one asks again
  *
@@ -37,7 +37,7 @@
  * update lands on main rather than the worktree's branch. Set
  * CAREER_OPS_UPDATE_IN_WORKTREE=1 to update the worktree's branch instead.
  *
- * See DATA_CONTRACT.md for the full system/user layer definitions.
+ * See docs/projet/DATA_CONTRACT.md for the full system/user layer definitions.
  */
 
 import { execFile, execFileSync, execSync, spawnSync } from 'child_process';
@@ -49,7 +49,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 
 // NOTE: this file must stay *self-loading* — no static (top-level) relative
 // imports. A pre-#1245 client's apply() self-reexec checks out ONLY
-// update-system.mjs before re-execing the target updater, so a static top-level
+// scripts/update-system.mjs before re-execing the target updater, so a static top-level
 // relative import here crashes that re-exec with ERR_MODULE_NOT_FOUND on the
 // old→new jump, before the fuller checkout that would materialize the imported
 // module ever runs (#1706). Local modules (e.g. the skill-entrypoints helper
@@ -57,7 +57,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 // which time the full update stage has already checked them out. The
 // updater-migration and test-all suites enforce this invariant.
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(dirname(fileURLToPath(import.meta.url)));
 const ROOT = __dirname;
 
 export function createReexecMarker() {
@@ -179,7 +179,7 @@ const SYSTEM_PATHS = [
   // on an existing install, silently (once text=auto is live, git status stays
   // clean and only a second update would repair it).
   '.gitattributes',
-  'dead-boards.mjs',
+  'scripts/dead-boards.mjs',
   'modes/README.md',
   'modes/_shared.md',
   'modes/_writing.md',
@@ -281,18 +281,17 @@ const SYSTEM_PATHS = [
   'AGENTS.md',
   'GEMINI.md',
   'KIMI.md',
-  'build-dashboard.mjs',
-  'clean-markers.mjs',
-  'cv-experience-order.mjs',
-  'generate-pdf.mjs',
-  'hired-share.mjs',
-  'hired-wall-build.mjs',
-  'HIRED.md',
-  'theme-style.mjs',
-  'generate-latex.mjs',
-  'install-latex-engine.mjs',
-  'extract-latex-content.mjs',
-  'patch-latex-content.mjs',
+  'scripts/build-dashboard.mjs',
+  'scripts/clean-markers.mjs',
+  'scripts/cv-experience-order.mjs',
+  'scripts/generate-pdf.mjs',
+  'scripts/hired-share.mjs',
+  'scripts/hired-wall-build.mjs',
+  'scripts/theme-style.mjs',
+  'scripts/generate-latex.mjs',
+  'scripts/install-latex-engine.mjs',
+  'scripts/extract-latex-content.mjs',
+  'scripts/patch-latex-content.mjs',
   'lib/ascii-fold.mjs',
   'lib/cli-flags.mjs',
   'lib/failure-excerpt.mjs',
@@ -325,72 +324,72 @@ const SYSTEM_PATHS = [
   'scripts/check-syntax.mjs',
   'scripts/export-ats-text.mjs',
   'scripts/followup-sweep.sh',
-  'story-provenance-check.mjs',
+  'scripts/story-provenance-check.mjs',
   'lib/latex-content.mjs',
   'lib/context-budget.mjs',
-  // Ships alongside doctor.mjs, which imports it: an upgraded install whose
+  // Ships alongside scripts/doctor.mjs, which imports it: an upgraded install whose
   // updater had no entry for it would check out a doctor that cannot load.
   'lib/title-filter-conflicts.mjs',
-  // Ships alongside liveness-api.mjs, which imports it.
+  // Ships alongside scripts/liveness-api.mjs, which imports it.
   'lib/linkedin-url.mjs',
   // Retired 2026-09-05: the suite moved to tests/context-budget.test.mjs. The
   // entry stays so staleSystemFiles() prunes the orphan on an upgraded install;
   // drop it once a release has shipped past that move.
   'lib/context-budget.test.mjs',
   'lib/golden-budget-analysis.mjs',
-  'img-to-pdf.mjs',
-  'archive-posting.mjs',
-  'jd-capture.mjs',
-  'application-answers.mjs',
-  'generate-cover-letter.mjs',
-  'merge-tracker.mjs',
-  'persist-evaluation-report.mjs',
-  'url-key.mjs',
-  'sync-pdf-flags.mjs',
-  'tracker-links.mjs',
-  'tracker.mjs',
-  'find.mjs',
-  'verify-pipeline.mjs',
-  'discard-analytics.mjs',
-  'reconcile-pipeline.mjs',
-  'dedup-tracker.mjs',
-  'add-entry.mjs',
-  'role-matcher.mjs',
-  'tracker-utils.mjs',
-  'tracker-parse.mjs',
+  'scripts/img-to-pdf.mjs',
+  'scripts/archive-posting.mjs',
+  'scripts/jd-capture.mjs',
+  'scripts/application-answers.mjs',
+  'scripts/generate-cover-letter.mjs',
+  'scripts/merge-tracker.mjs',
+  'scripts/persist-evaluation-report.mjs',
+  'scripts/url-key.mjs',
+  'scripts/sync-pdf-flags.mjs',
+  'scripts/tracker-links.mjs',
+  'scripts/tracker.mjs',
+  'scripts/find.mjs',
+  'scripts/verify-pipeline.mjs',
+  'scripts/discard-analytics.mjs',
+  'scripts/reconcile-pipeline.mjs',
+  'scripts/dedup-tracker.mjs',
+  'scripts/add-entry.mjs',
+  'scripts/role-matcher.mjs',
+  'scripts/tracker-utils.mjs',
+  'scripts/tracker-parse.mjs',
   'tracker-aliases.json',
-  'session-activity.mjs',
-  'set-status.mjs',
-  'mark-pdf-ready.mjs',
-  'normalize-statuses.mjs',
-  'fix-report-links.mjs',
-  'cv-sync-check.mjs',
-  'i18n-drift.mjs',
-  'verify-cv-facts.mjs',
-  'verify-cv-structure.mjs',
-  'verify-ats.mjs',
-  'ats-payload.mjs',
-  'update-system.mjs',
-  'path-resolver.mjs',
-  'ats-vendor.mjs',
-  'history-ats-seeds.mjs',
+  'scripts/session-activity.mjs',
+  'scripts/set-status.mjs',
+  'scripts/mark-pdf-ready.mjs',
+  'scripts/normalize-statuses.mjs',
+  'scripts/fix-report-links.mjs',
+  'scripts/cv-sync-check.mjs',
+  'scripts/i18n-drift.mjs',
+  'scripts/verify-cv-facts.mjs',
+  'scripts/verify-cv-structure.mjs',
+  'scripts/verify-ats.mjs',
+  'scripts/ats-payload.mjs',
+  'scripts/update-system.mjs',
+  'scripts/path-resolver.mjs',
+  'scripts/ats-vendor.mjs',
+  'scripts/history-ats-seeds.mjs',
 
-  'reserve-report-num.mjs',
-  'scan.mjs',
-  'migrate-scan-runs.mjs',
-  'pipeline-lock.mjs',
-  'portal-health-lock.mjs',
-  'classify-tier.mjs',
-  'scan-ats-full.mjs',
-  'company-funded.mjs',
-  'match-star.mjs',
-  'jd-skill-gap.mjs',
-  'career-profile.mjs',
-  'cv-title-check.mjs',
-  'prepare-application.mjs',
-  'application-artifacts.mjs',
-  'evaluation-cache.mjs',
-  'batch-evaluate-gemini.mjs',
+  'scripts/reserve-report-num.mjs',
+  'scripts/scan.mjs',
+  'scripts/migrate-scan-runs.mjs',
+  'scripts/pipeline-lock.mjs',
+  'scripts/portal-health-lock.mjs',
+  'scripts/classify-tier.mjs',
+  'scripts/scan-ats-full.mjs',
+  'scripts/company-funded.mjs',
+  'scripts/match-star.mjs',
+  'scripts/jd-skill-gap.mjs',
+  'scripts/career-profile.mjs',
+  'scripts/cv-title-check.mjs',
+  'scripts/prepare-application.mjs',
+  'scripts/application-artifacts.mjs',
+  'scripts/evaluation-cache.mjs',
+  'scripts/batch-evaluate-gemini.mjs',
   'providers/',
   'data-static/',
   'seeds/',
@@ -405,21 +404,21 @@ const SYSTEM_PATHS = [
   // file that is gone from the remote tree AND matches an entry here. Drop the
   // entry and an upgrading install keeps its copy of the old root file forever,
   // where tests/root-tests-registration.test.mjs then reports it as an
-  // unregistered suite and turns `node test-all.mjs` red on a healthy install.
+  // unregistered suite and turns `node scripts/test-all.mjs` red on a healthy install.
   //
   // Probe on this list vs. the pre-#3765 one, with a local tree holding the
   // four and a remote tree without them: without these entries the prune
   // returns nothing at all; with them it returns all four.
   //
   // NB: keep square brackets out of every comment in this array. Several
-  // assertions in test-all.mjs extract the manifest with a NON-GREEDY regex
+  // assertions in scripts/test-all.mjs extract the manifest with a NON-GREEDY regex
   // that ends at the first closing bracket, so one inside a comment truncates
   // the parsed list and every entry below it reads as missing. That is not
   // hypothetical: the first draft of this block wrote the probe result as an
   // empty-array literal and turned the check-table-freshness assertion red.
   //
   // They are therefore expected to be ABSENT from the working tree, which is
-  // why updater-migration-tests.mjs lists them in ALLOWED_MISSING_ENTRIES.
+  // why scripts/updater-migration-tests.mjs lists them in ALLOWED_MISSING_ENTRIES.
   // Safe to delete once no supported install can still be carrying them.
   'agent-inbox-tests.mjs',
   'followup-seed-tests.mjs',
@@ -427,88 +426,88 @@ const SYSTEM_PATHS = [
   'set-status-tests.mjs',
   'tracker-columns-tests.mjs',
   // ── end retired paths ─────────────────────────────────────────────────────
-  'user-agent.mjs',
-  'doctor.mjs',
-  'jsonc-parse.mjs',
-  'check-liveness.mjs',
-  'liveness-core.mjs',
-  'liveness-api.mjs',
-  'liveness-browser.mjs',
-  'browser-extract.mjs',
-  'fetch-jd.mjs',
-  'analyze-patterns.mjs',
-  'keyword-match.mjs',
-  'calibrate.mjs',
-  'upskill.mjs',
-  'skill-extract.mjs',
-  'skip-blockers.mjs',
-  'intake.mjs',
-  'stats.mjs',
-  'funnel-stages.mjs',
-  'detect-reposts.mjs',
-  'rank-pipeline.mjs',
-  'discover-ats.mjs',
-  'discover-new-companies.mjs',
-  'check-table-freshness.mjs',
-  'check-jd-archive.mjs',
-  'fingerprint-core.mjs',
-  'listing-fingerprint.mjs',
-  'process-quality.mjs',
-  'company-history.mjs',
-  'rejection-latency.mjs',
-  'salary-gap.mjs',
-  'negotiation-roi.mjs',
-  'funnel-velocity.mjs',
-  'assessment-log.mjs',
-  'contacts.mjs',
-  'contact-lookup.mjs',
-  'linkedin-join.mjs',
-  'weekly-digest.mjs',
-  'tracker-sync-check.mjs',
-  'followup-cadence.mjs',
-  'invite-match.mjs',
-  'coverage-check.mjs',
-  'agent-inbox.mjs',
-  'followup-seed.mjs',
-  'profile-language.mjs',
-  'title-keywords.mjs',
-  'gemini-eval.mjs',
-  'ollama-eval.mjs',
-  'openai-eval.mjs',
-  'openai-tailor.mjs',
-  'eval-golden.mjs',
+  'scripts/user-agent.mjs',
+  'scripts/doctor.mjs',
+  'scripts/jsonc-parse.mjs',
+  'scripts/check-liveness.mjs',
+  'scripts/liveness-core.mjs',
+  'scripts/liveness-api.mjs',
+  'scripts/liveness-browser.mjs',
+  'scripts/browser-extract.mjs',
+  'scripts/fetch-jd.mjs',
+  'scripts/analyze-patterns.mjs',
+  'scripts/keyword-match.mjs',
+  'scripts/calibrate.mjs',
+  'scripts/upskill.mjs',
+  'scripts/skill-extract.mjs',
+  'scripts/skip-blockers.mjs',
+  'scripts/intake.mjs',
+  'scripts/stats.mjs',
+  'scripts/funnel-stages.mjs',
+  'scripts/detect-reposts.mjs',
+  'scripts/rank-pipeline.mjs',
+  'scripts/discover-ats.mjs',
+  'scripts/discover-new-companies.mjs',
+  'scripts/check-table-freshness.mjs',
+  'scripts/check-jd-archive.mjs',
+  'scripts/fingerprint-core.mjs',
+  'scripts/listing-fingerprint.mjs',
+  'scripts/process-quality.mjs',
+  'scripts/company-history.mjs',
+  'scripts/rejection-latency.mjs',
+  'scripts/salary-gap.mjs',
+  'scripts/negotiation-roi.mjs',
+  'scripts/funnel-velocity.mjs',
+  'scripts/assessment-log.mjs',
+  'scripts/contacts.mjs',
+  'scripts/contact-lookup.mjs',
+  'scripts/linkedin-join.mjs',
+  'scripts/weekly-digest.mjs',
+  'scripts/tracker-sync-check.mjs',
+  'scripts/followup-cadence.mjs',
+  'scripts/invite-match.mjs',
+  'scripts/coverage-check.mjs',
+  'scripts/agent-inbox.mjs',
+  'scripts/followup-seed.mjs',
+  'scripts/profile-language.mjs',
+  'scripts/title-keywords.mjs',
+  'scripts/gemini-eval.mjs',
+  'scripts/ollama-eval.mjs',
+  'scripts/openai-eval.mjs',
+  'scripts/openai-tailor.mjs',
+  'scripts/eval-golden.mjs',
   'evals/',
-  'openrouter-runner.mjs',
-  'jd-similarity.mjs',
-  'test-all.mjs',
+  'scripts/openrouter-runner.mjs',
+  'scripts/jd-similarity.mjs',
+  'scripts/test-all.mjs',
   // Retired 2026-10-04: the suite moved to tests/tracker-writer-lock.test.mjs
   // (#4759). The entry stays so staleSystemFiles() prunes the orphan on an
   // upgraded install; drop it once a release has shipped past that move.
   'tracker-writer-lock-tests.mjs',
-  'validate-portals.mjs',
-  'validate-profile.mjs',
-  'verify-portals.mjs',
-  'audit-portals.mjs',
-  'portal-live.mjs',
-  'fix-slugs.mjs',
-  'updater-migration-tests.mjs',
-  'validate-system-paths-coverage.mjs',
-  'validate-untrusted-content-coverage.mjs',
-  'reply-matcher.mjs',
-  'reply-watch.mjs',
-  'paste-reply.mjs',
-  'contact-extract.mjs',
+  'scripts/validate-portals.mjs',
+  'scripts/validate-profile.mjs',
+  'scripts/verify-portals.mjs',
+  'scripts/audit-portals.mjs',
+  'scripts/portal-live.mjs',
+  'scripts/fix-slugs.mjs',
+  'scripts/updater-migration-tests.mjs',
+  'scripts/validate-system-paths-coverage.mjs',
+  'scripts/validate-untrusted-content-coverage.mjs',
+  'scripts/reply-matcher.mjs',
+  'scripts/reply-watch.mjs',
+  'scripts/paste-reply.mjs',
+  'scripts/contact-extract.mjs',
   // Retired 2026-10-04: the suite moved to tests/contact-extract.test.mjs. The
   // entry stays so staleSystemFiles() prunes the orphan on an upgraded install;
   // drop it once a release has shipped past that move.
   'contact-extract-tests.mjs',
-  'outcome.mjs',
+  'scripts/outcome.mjs',
   'batch/batch-prompt.md',
   'batch/batch-runner.sh',
   'batch/aggregate-tokens.mjs',
   'batch/README.md',
   'utils/token-tracker.mjs',
-  'batch-tailor.mjs',
+  'scripts/batch-tailor.mjs',
   'dashboard/',
   'templates/',
   'config/cv-facts.example.json',
@@ -531,14 +530,12 @@ const SYSTEM_PATHS = [
   'docs/',
   'writing-samples/README.md',
   'VERSION',
-  'DATA_CONTRACT.md',
-  'MANIFESTO.md',
-  'manifesto.mjs',
+  'scripts/manifesto.mjs',
   // SIGNATURES.md cannot join SYSTEM_PATHS: unlike every other system file it
   // is a pure append-only ledger of who signed the manifesto, and it churns
   // far faster than the code it would ship beside (49 commits in the 30 days
-  // before this was written). Nothing on an install reads it — manifesto.mjs
-  // parses MANIFESTO.md and never opens it — so shipping it buys an install
+  // before this was written). Nothing on an install reads it — scripts/manifesto.mjs
+  // parses docs/projet/MANIFESTO.md and never opens it — so shipping it buys an install
   // nothing, while listing it here puts it in the pathspec check() diffs via
   // systemTreeDiffers, which turns every new signature into a
   // system-files-changed report on every install in the world that no apply
@@ -551,24 +548,14 @@ const SYSTEM_PATHS = [
   // ensureSkillEntrypoints only refreshes an entry that still holds the
   // pointer, so an entrypoint dropped from the manifest silently freezes.
   // The SIGNATURES.md repo-only coverage is declared in
-  // validate-system-paths-coverage.mjs, and the behaviour is pinned by
+  // scripts/validate-system-paths-coverage.mjs, and the behaviour is pinned by
   // tests/updater-signature-ledger-drift.test.mjs.
   //
-  // Keep this comment free of straight quotes: updater-migration-tests.mjs
+  // Keep this comment free of straight quotes: scripts/updater-migration-tests.mjs
   // parses this array with a comment-blind regex, so an apostrophe here
   // becomes a phantom manifest entry.
-  'CONTRIBUTING.md',
-  'MAINTAINERS.md',
-  'ARCHITECTURE.md',
   'CHANGELOG.md',
-  'CODE_OF_CONDUCT.md',
-  'CONTRIBUTORS.md',
   '.all-contributorsrc',
-  'GOVERNANCE.md',
-  'LEGAL_DISCLAIMER.md',
-  'SECURITY.md',
-  'SUPPORT.md',
-  'TRADEMARK.md',
   'LICENSE',
   'CITATION.cff',
   'funding.json',
@@ -576,28 +563,27 @@ const SYSTEM_PATHS = [
   '.editorconfig',
   '.github/',
   'package.json',
-  'build-cv-latex.mjs',
-  'build-cv-html.mjs',
-  'cv-sections-core.mjs',
-  'cv-templates.mjs',
-  'playwright.cv.config.mjs',
+  'scripts/build-cv-latex.mjs',
+  'scripts/build-cv-html.mjs',
+  'scripts/cv-sections-core.mjs',
+  'scripts/cv-templates.mjs',
+  'scripts/playwright.cv.config.mjs',
   'scaffolder/',
   'Dockerfile',
   'docker-compose.yml',
   '.dockerignore',
   'cops',
-  'DOCKER.md',
   'plugins/',
-  'plugins.mjs',
+  'scripts/plugins.mjs',
   'plugins-registry/',
-  'plugin-install.mjs',
-  'plugin-audit.mjs',
-  'validate-plugin-registry.mjs',
+  'scripts/plugin-install.mjs',
+  'scripts/plugin-audit.mjs',
+  'scripts/validate-plugin-registry.mjs',
   'config/plugins.example.yml',
   'opencode.example.json',
-  'seed-fixture.mjs',
+  'scripts/seed-fixture.mjs',
   'test-fixtures/',
-  'upgrade-tests.mjs',
+  'scripts/upgrade-tests.mjs',
 ];
 
 const BOOTSTRAP_PATHS = [
@@ -607,24 +593,24 @@ const BOOTSTRAP_PATHS = [
   '.grok/skills/',
   '.kimi/skills/',
   'providers/',
-  'liveness-browser.mjs',
-  'tracker-links.mjs',
-  'role-matcher.mjs',
-  'tracker-utils.mjs',
-  'tracker-parse.mjs',
+  'scripts/liveness-browser.mjs',
+  'scripts/tracker-links.mjs',
+  'scripts/role-matcher.mjs',
+  'scripts/tracker-utils.mjs',
+  'scripts/tracker-parse.mjs',
   'tracker-aliases.json',
   'scaffolder/',
-  'reserve-report-num.mjs',
-  'updater-migration-tests.mjs',
-  'validate-portals.mjs',
+  'scripts/reserve-report-num.mjs',
+  'scripts/updater-migration-tests.mjs',
+  'scripts/validate-portals.mjs',
   'plugins/',
-  'plugins.mjs',
+  'scripts/plugins.mjs',
   'plugins-registry/',
-  'plugin-install.mjs',
-  'plugin-audit.mjs',
-  'validate-plugin-registry.mjs',
+  'scripts/plugin-install.mjs',
+  'scripts/plugin-audit.mjs',
+  'scripts/validate-plugin-registry.mjs',
   'config/plugins.example.yml',
-  'agent-inbox.mjs',
+  'scripts/agent-inbox.mjs',
   'tests/agent-inbox.test.mjs',
 ];
 
@@ -745,7 +731,7 @@ export function localUserPaths(root = ROOT) {
       reject(path, 'paths must not contain an empty segment (a repeated separator)');
     }
     if (segments.includes('.')) {
-      reject(path, 'paths must be written plainly, with no "." segment (use "merge-tracker.mjs", not "./merge-tracker.mjs")');
+      reject(path, 'paths must be written plainly, with no "." segment (use "scripts/merge-tracker.mjs", not "./merge-tracker.mjs")');
     }
     const pathSegments = manifestPathSegments(path);
     // A declaration from an older install may repeat a built-in USER_PATHS
@@ -1042,7 +1028,7 @@ function isCanonicalManifestPath(path) {
  * overwritten". Refusing the entry up front is what keeps that sequence from starting.
  *
  * Apply this to the MERGED manifest, never to the fetched half alone. apply()
- * self-bootstraps — it checks the fetched update-system.mjs out and re-execs it — so
+ * self-bootstraps — it checks the fetched scripts/update-system.mjs out and re-execs it — so
  * by the time the merge runs, the SYSTEM_PATHS constant in this file IS upstream's
  * list. There is no local half left to trust, and filtering only `remoteSystemPaths`
  * lets the identical entry back in through the "local" one.
@@ -1367,11 +1353,11 @@ export function targetIdentityRefusal(targetSha, authoritativeSha, refspec, ctx 
  */
 export function refusalMessage(targetSha, reason, isReexec) {
   const state = isReexec
-    ? 'The self-bootstrap files (update-system.mjs and its import closure) were already\n' +
+    ? 'The self-bootstrap files (scripts/update-system.mjs and its import closure) were already\n' +
       '    checked out from this target before the refusal; no other system file was changed.\n' +
-      '    `node update-system.mjs rollback` restores them along with the rest of the tree.'
+      '    `node scripts/update-system.mjs rollback` restores them along with the rest of the tree.'
     : 'No system files were changed. To go back to an earlier state deliberately,\n' +
-      '    use `node update-system.mjs rollback`, which restores the backup branch\n' +
+      '    use `node scripts/update-system.mjs rollback`, which restores the backup branch\n' +
       '    this installation made rather than overwriting it with an older upstream tree.';
   return `Refusing to update from ${targetSha.slice(0, 12)}: ${reason}.\n    ${state}`;
 }
@@ -1608,7 +1594,7 @@ function assertOwnGitToplevel() {
   const foreignToplevel = gitToplevelMismatch();
   if (foreignToplevel) {
     throw new Error(
-      `career-ops at ${ROOT} is not a git checkout of its own, so git operations would land in the enclosing repository at ${foreignToplevel} — this happens when the install was unpacked from a ZIP or copied without its .git directory. Nothing was changed. To make updates work, clone career-ops fresh (git clone ${CANONICAL_REPO}) and move your user-layer files (cv.md, config/, data/, reports/ — see DATA_CONTRACT.md) into the new clone.`,
+      `career-ops at ${ROOT} is not a git checkout of its own, so git operations would land in the enclosing repository at ${foreignToplevel} — this happens when the install was unpacked from a ZIP or copied without its .git directory. Nothing was changed. To make updates work, clone career-ops fresh (git clone ${CANONICAL_REPO}) and move your user-layer files (cv.md, config/, data/, reports/ — see docs/projet/DATA_CONTRACT.md) into the new clone.`,
     );
   }
 }
@@ -1717,10 +1703,10 @@ export function worktreeUpdateTarget(root = ROOT, run = (...args) => gitIn(root,
       error: `This is a linked git worktree on branch '${branch}', and no checkout has '${UPDATE_BRANCH}' checked out, so there is no main checkout to update. Nothing was changed. Check out ${UPDATE_BRANCH} in your main checkout${primary ? ` (git -C "${primary}" checkout ${UPDATE_BRANCH})` : ''} and re-run, or ${override}.`,
     };
   }
-  if (!existsSync(join(target.path, 'update-system.mjs'))) {
+  if (!existsSync(join(target.path, 'scripts/update-system.mjs'))) {
     return {
       branch,
-      error: `This is a linked git worktree on branch '${branch}'. The checkout with '${UPDATE_BRANCH}' (${target.path}) has no update-system.mjs, so it cannot be updated from here. Nothing was changed. Run the update from that checkout, or ${override}.`,
+      error: `This is a linked git worktree on branch '${branch}'. The checkout with '${UPDATE_BRANCH}' (${target.path}) has no scripts/update-system.mjs, so it cannot be updated from here. Nothing was changed. Run the update from that checkout, or ${override}.`,
     };
   }
   return { path: target.path, branch };
@@ -1730,7 +1716,7 @@ export function worktreeUpdateTarget(root = ROOT, run = (...args) => gitIn(root,
  * Re-run this command in the checkout that has `main`, when started from a
  * linked worktree (see worktreeUpdateTarget()).
  *
- * The child is that checkout's own update-system.mjs, so every ROOT-bound path
+ * The child is that checkout's own scripts/update-system.mjs, so every ROOT-bound path
  * in it — lock file, backup branch, VERSION, dismiss marker — resolves there
  * with no changes to the rest of this file. That copy may be an older release
  * without this redirect; it still runs against its own checkout, which is the
@@ -1779,7 +1765,7 @@ function redirectToMainCheckout(cmd, argv = process.argv, env = process.env) {
   if (chatty) {
     console.log(`This is a linked git worktree on branch '${target.branch}'. Running ${cmd} in the ${UPDATE_BRANCH} checkout at ${target.path} instead.`);
   }
-  const res = spawnSync(process.execPath, ['update-system.mjs', ...argv.slice(2)], {
+  const res = spawnSync(process.execPath, ['scripts/update-system.mjs', ...argv.slice(2)], {
     cwd: target.path,
     stdio: 'inherit',
     env: { ...env, CAREER_OPS_UPDATE_REDIRECTED: '1' },
@@ -1945,12 +1931,12 @@ export function isGeneratedTemplateArtifact(file) {
   return GENERATED_CV_ARTIFACT_RE.test(normalized) || GENERATED_COVER_ARTIFACT_RE.test(normalized);
 }
 
-// A user-authored named template variant, per cv-templates.mjs's own naming
+// A user-authored named template variant, per scripts/cv-templates.mjs's own naming
 // convention (KINDS.cv.prefix = 'cv-template', KINDS.cover.prefix =
 // 'cover-letter-template'; parseFilename() there recognizes exactly this
 // `<prefix>.<name>.<html|tex>` shape).
 // Variants may be flat or live one level down in a template pack (#3202).
-// Deliberately do not recurse further: cv-templates.mjs discovers packs only
+// Deliberately do not recurse further: scripts/cv-templates.mjs discovers packs only
 // one level deep, and pack sections must not be classified as templates.
 const TEMPLATE_VARIANT_RE = /^templates\/(?:[^/]+\/)?(cv-template|cover-letter-template)\.([a-z0-9-]+)\.(html|tex)$/;
 const TEMPLATE_VARIANT_KIND = { 'cv-template': 'cv', 'cover-letter-template': 'cover' };
@@ -2092,15 +2078,15 @@ export async function loadConfiguredTemplateVariants({ profilePath } = {}) {
   } catch (err) {
     const expectedUrl = new URL('./cv-templates.mjs', import.meta.url).href;
     if (err?.code === 'ERR_MODULE_NOT_FOUND' && err?.url === expectedUrl) {
-      // Very old targets may not ship cv-templates.mjs. Preserve the historical
+      // Very old targets may not ship scripts/cv-templates.mjs. Preserve the historical
       // no-exemption behavior only for that exact compatibility case.
       return configuredVariants;
     }
-    // A local module cv-templates.mjs imports can be missing too. The re-exec
+    // A local module scripts/cv-templates.mjs imports can be missing too. The re-exec
     // checkout list is built by the CLIENT updater, and one released before the
-    // fallback-closure walk (#4999) checks out the new cv-templates.mjs without
+    // fallback-closure walk (#4999) checks out the new scripts/cv-templates.mjs without
     // the files it newly imports. The normal checkout supplies them, so read
-    // the profile without cv-templates.mjs for this pass.
+    // the profile without scripts/cv-templates.mjs for this pass.
     const missingLocalModule = err?.code === 'ERR_MODULE_NOT_FOUND'
       && String(err?.url || '').startsWith('file:');
     if (missingLocalModule || (err?.code === 'ERR_MODULE_NOT_FOUND'
@@ -2309,16 +2295,16 @@ export function wasEverShippedUpstream(candidatePath, ref = 'FETCH_HEAD', revLis
   }
 }
 
-// Files the self-reexec stage must check out so the TARGET update-system.mjs
+// Files the self-reexec stage must check out so the TARGET scripts/update-system.mjs
 // and its pre-checkout dynamic imports can load. resolveReexecCheckout derives
 // static imports from the fetched source; this list covers literal dynamic
 // imports and their local dependencies because the parser cannot see them.
 export const REEXEC_FALLBACK_FILES = [
-  'update-system.mjs',
+  'scripts/update-system.mjs',
   'scaffolder/bin/skill-entrypoints.mjs',
-  'cv-templates.mjs',
+  'scripts/cv-templates.mjs',
   'lib/is-main-module.mjs',
-  'path-resolver.mjs',
+  'scripts/path-resolver.mjs',
 ];
 
 // Extracts static relative import/export specifiers ('./x.mjs', '../y.mjs')
@@ -2343,8 +2329,8 @@ export function relativeImportSpecifiers(source) {
 //
 // The fallback files are WALKED, not just appended: they are loaded by the target
 // updater too, so their own static imports must be on disk before the re-exec.
-// Appending them unwalked crashed the v1.35.0 → v1.36.0 jump, when cv-templates.mjs
-// gained `import … from './lib/template-manifest.mjs'` (#4999).
+// Appending them unwalked crashed the v1.35.0 → v1.36.0 jump, when scripts/cv-templates.mjs
+// gained `import … from '../lib/template-manifest.mjs'` (#4999).
 //
 // `readAt(file)` returns the file's source in `ref` and throws when it is absent;
 // it is a seam so the closure rule is unit-testable without a repo.
@@ -3278,7 +3264,7 @@ export function stagingFileList(pathsToStage, preserved = [], ref = 'FETCH_HEAD'
 export function stagedPathsOutside(owned, preserved = [], run = (...args) => gitRawIn(ROOT, ...args)) {
   // -z, and no trimming. Without it git quotes any path holding a space, quote
   // or newline, and trimming would additionally rewrite a legitimate name: a
-  // staged ` scan.mjs` (leading space) becomes `scan.mjs`, matches an owned
+  // staged ` scripts/scan.mjs` (leading space) becomes `scripts/scan.mjs`, matches an owned
   // entry, and is silently treated as the update's own file — sweeping a user's
   // work into the commit, which is the exact #915 bug 2 regression this guard
   // exists to prevent. NUL-delimited output is unambiguous and unquoted.
@@ -3785,12 +3771,12 @@ async function checkMainChannel(local, marker, runCurlGet, localSha) {
       // auto-follow a tag into FETCH_HEAD, and the diff below reads FETCH_HEAD
       // — the drift answer would then be about the wrong tree (#3052).
       gitQuiet('fetch', '--quiet', '--no-tags', CANONICAL_REPO, 'refs/heads/main');
-      // Lazy import: keep update-system.mjs self-loading (see apply()'s note
+      // Lazy import: keep scripts/update-system.mjs self-loading (see apply()'s note
       // on the same import). Exclude the materialized CLI skill entrypoints
       // from the drift diff — see driftPathspecExcludingSkillEntrypoints()
       // for why (#3149, second cause: permanent false drift on a
       // core.symlinks=false install).
-      const { SKILL_ENTRYPOINTS } = await import('./scaffolder/bin/skill-entrypoints.mjs');
+      const { SKILL_ENTRYPOINTS } = await import('../scaffolder/bin/skill-entrypoints.mjs');
       systemTreeDrift = systemTreeDiffers(
         driftPathspecExcludingSkillEntrypoints(SYSTEM_PATHS, SKILL_ENTRYPOINTS),
         'FETCH_HEAD',
@@ -3843,7 +3829,7 @@ async function check() {
 // reconciler keys off pattern presence, never off this marker, so a user who
 // deletes or moves it loses nothing.
 const GITIGNORE_BLOCK_HEADER = [
-  '# Added by career-ops update-system.mjs.',
+  '# Added by career-ops scripts/update-system.mjs.',
   '# System-owned ignore rules that were missing from this file. Your own rules',
   '# are never modified, reordered or removed: the updater only appends patterns',
   '# it cannot already find somewhere in this file. Reordering these lines, or',
@@ -3888,10 +3874,10 @@ function gitShowRaw(spec) {
  * leaves the file empty or half-written. For most files that is an annoyance.
  * For this one it un-ignores everything the truncated portion covered, turning
  * a failed update into exactly the exposure the file exists to prevent, and
- * doing it silently. Mirrors discover-ats.mjs and followup-seed.mjs.
+ * doing it silently. Mirrors scripts/discover-ats.mjs and scripts/followup-seed.mjs.
  *
  * Lazy-imports `renameSyncWithRetry` (see the top-of-file self-loading note —
- * a static import of tracker-utils.mjs here would crash a pre-#1245 client's
+ * a static import of scripts/tracker-utils.mjs here would crash a pre-#1245 client's
  * old→new re-exec the same way a static scaffolder/ import would, #1706).
  *
  * @param {string} filePath - Absolute path to write.
@@ -3919,7 +3905,7 @@ async function writeGitignoreAtomic(filePath, content) {
  * co-owned. Users add their own rules to it, and the raw `git checkout` the
  * update stage performs would delete those silently, which is a worse bug than
  * the one this fixes. So it gets the append-if-missing treatment
- * agent-inbox.mjs:ensureGitignored() already applies to its own single rule,
+ * scripts/agent-inbox.mjs:ensureGitignored() already applies to its own single rule,
  * generalized to the whole upstream rule set.
  *
  * Deliberately append-only. An upstream rule that was REMOVED or REWRITTEN
@@ -4067,7 +4053,7 @@ async function apply() {
   if (!updateConfirmed) {
     throw new Error(
       `Installation requires explicit confirmation. Re-run with ` +
-      `\`node update-system.mjs apply${updateForce ? ' --force' : ''} --confirm\`. ` +
+      `\`node scripts/update-system.mjs apply${updateForce ? ' --force' : ''} --confirm\`. ` +
       'A scheduled update check never installs files.',
     );
   }
@@ -4094,7 +4080,7 @@ async function apply() {
   const olderTarget = newerThanTarget(local, targetRef);
   if (olderTarget) {
     console.log(`Installed v${local} is newer than the latest release v${olderTarget}. Nothing to install.`);
-    console.log('To follow every merge on main instead: node update-system.mjs apply --channel main --confirm');
+    console.log('To follow every merge on main instead: node scripts/update-system.mjs apply --channel main --confirm');
     return;
   }
 
@@ -4239,7 +4225,7 @@ async function apply() {
     const manifestUserPaths = effectiveUserPaths();
     let remoteUpdaterSource;
     try {
-      remoteUpdaterSource = git('show', `${targetCommit}:update-system.mjs`);
+      remoteUpdaterSource = git('show', `${targetCommit}:scripts/update-system.mjs`);
     } catch (err) {
       throw new Error(`Target updater is unreadable; refusing to update (${err.message})`);
     }
@@ -4254,11 +4240,11 @@ async function apply() {
       const timeout = reexecTimeoutMs();
       try {
         // The re-exec runs the TARGET updater, so every local module it imports
-        // at load time must exist first. Resolve the fetched update-system.mjs's
+        // at load time must exist first. Resolve the fetched scripts/update-system.mjs's
         // relative-import closure and check out exactly those files, so a future
         // new top-level import can't reintroduce the self-reexec crash (#1245).
         const reexecFiles = assertCanonicalManifestPaths(
-          resolveReexecCheckout(targetCommit, 'update-system.mjs'),
+          resolveReexecCheckout(targetCommit, 'scripts/update-system.mjs'),
           'Target updater import closure',
         );
         const uncoveredReexecFiles = reexecFiles.filter(
@@ -4304,7 +4290,7 @@ async function apply() {
         git('--literal-pathspecs', 'checkout', targetCommit, '--', ...reexecFiles);
         const marker = createReexecMarker();
         execFileSync(process.execPath, [
-          'update-system.mjs',
+          'scripts/update-system.mjs',
           'apply',
           '--confirm',
           ...(updateForce ? ['--force'] : []),
@@ -4404,7 +4390,7 @@ async function apply() {
       } else {
         preservedPaths.push(...atRisk);
         console.log('Keeping your versions. They will NOT receive upstream changes.');
-        console.log('Re-run with `node update-system.mjs apply --force --confirm` to take the upstream version instead.');
+        console.log('Re-run with `node scripts/update-system.mjs apply --force --confirm` to take the upstream version instead.');
       }
       console.log('');
     }
@@ -4417,7 +4403,7 @@ async function apply() {
       const { getCareerOpsRoot } = await import('./path-resolver.mjs');
       dataRoot = getCareerOpsRoot();
     } catch {
-      // Very old targets may not have path-resolver.mjs yet; ROOT is the
+      // Very old targets may not have scripts/path-resolver.mjs yet; ROOT is the
       // historical data root and remains the safe compatibility fallback.
     }
     let configuredVariantRemoteFiles = [];
@@ -4553,7 +4539,7 @@ async function apply() {
       const gitignorePath = join(ROOT, '.gitignore');
       const upstreamGitignore = gitShowRaw(`${targetCommit}:.gitignore`);
       // Uncommitted local edits to .gitignore are the user's, and that is a
-      // routine state rather than an exotic one: agent-inbox.mjs's own
+      // routine state rather than an exotic one: scripts/agent-inbox.mjs's own
       // ensureGitignored() appends a rule without committing it. Such a file
       // must stay OUT of `updated`, for the two reasons #2337 established for
       // system files. `updated` is the rollback pathspec, and revertPaths()
@@ -4597,10 +4583,10 @@ async function apply() {
       console.error(`Your own rules were left untouched. Compare manually with: git diff ${targetCommit} -- .gitignore`);
     }
 
-    // Lazy import: keep update-system.mjs self-loading (see the top-of-file
+    // Lazy import: keep scripts/update-system.mjs self-loading (see the top-of-file
     // note). scaffolder/ was just checked out by the update stage above, so the
     // module resolves here even on a pre-#1245 old→new re-exec.
-    const { ensureSkillEntrypoints } = await import('./scaffolder/bin/skill-entrypoints.mjs');
+    const { ensureSkillEntrypoints } = await import('../scaffolder/bin/skill-entrypoints.mjs');
     const materializedSkillEntrypoints = ensureSkillEntrypoints(ROOT);
     if (materializedSkillEntrypoints.length > 0) {
       for (const path of materializedSkillEntrypoints) {
@@ -4821,7 +4807,7 @@ async function apply() {
     // success. A client whose local manifest predates the target checks out
     // only the paths ITS OWN manifest lists, so everything added upstream since
     // is silently absent and the next script dies with ERR_MODULE_NOT_FOUND.
-    // Re-running apply fixes it (the first pass did update update-system.mjs
+    // Re-running apply fixes it (the first pass did update scripts/update-system.mjs
     // itself, so the second pass uses the target manifest) — but only if the
     // user is told, instead of being shown "Update complete" (#1998).
     // Refused entries were never checked out, so verifying them would report a
@@ -4838,7 +4824,7 @@ async function apply() {
       console.error(`${unmaterialized.length} path(s) from the target manifest were not checked out:`);
       for (const path of unmaterialized) console.error(`  ${path}`);
       console.error('\nThis happens when the installed updater predates the paths the target adds.');
-      console.error('Run `node update-system.mjs apply --confirm` again — the updater itself is now current,');
+      console.error('Run `node scripts/update-system.mjs apply --confirm` again — the updater itself is now current,');
       console.error('so the second pass uses the target manifest and picks up what this one missed.');
       process.exit(1);
     }
@@ -4849,7 +4835,7 @@ async function apply() {
       console.log(`\nUpdate complete: v${local} → v${remote}`);
     }
     console.log(`Updated ${updated.length} system paths.`);
-    console.log(`Rollback available: node update-system.mjs rollback`);
+    console.log(`Rollback available: node scripts/update-system.mjs rollback`);
 
     console.log('\n-- The CareerOps Manifesto ------------------------------');
     console.log('A new way of job searching is taking shape. You are');
@@ -4934,7 +4920,7 @@ function rollback() {
     // current+bootstrap coverage still gives a conservative restore set.
     let backupManifestPaths = [];
     try {
-      const backupSource = git('show', `${latest}:update-system.mjs`);
+      const backupSource = git('show', `${latest}:scripts/update-system.mjs`);
       const backupSystemPaths = extractArrayFromSource(backupSource, 'SYSTEM_PATHS');
       const backupBootstrapPaths = extractArrayFromSource(backupSource, 'BOOTSTRAP_PATHS');
       if (backupSystemPaths.length === 0) throw new Error('SYSTEM_PATHS is missing or empty');
@@ -4962,7 +4948,7 @@ function rollback() {
     try {
       targetRef = targetRefForBackup(latest);
       git('show-ref', '--verify', '--quiet', targetRef);
-      const targetSource = git('show', `${targetRef}:update-system.mjs`);
+      const targetSource = git('show', `${targetRef}:scripts/update-system.mjs`);
       const targetSystemPaths = extractArrayFromSource(targetSource, 'SYSTEM_PATHS');
       const targetBootstrapPaths = extractArrayFromSource(targetSource, 'BOOTSTRAP_PATHS');
       if (targetSystemPaths.length === 0) throw new Error('target SYSTEM_PATHS is missing or empty');
@@ -5167,19 +5153,19 @@ export async function dismiss(argv = process.argv, ctx = {}) {
   const at = (ctx.now ? ctx.now() : new Date()).toISOString();
   writeFileSync(join(ctx.root || ROOT, DISMISS_FILE), JSON.stringify(version ? { version, at } : { at }) + '\n');
   console.log(version
-    ? `Update to v${version} dismissed. You will be asked again when a newer release is out; run "node update-system.mjs check --force" or say "check for updates" to see it anyway.`
-    : 'Update dismissed. You will be asked again when a newer release is out; run "node update-system.mjs check --force" or say "check for updates" to see it anyway.');
+    ? `Update to v${version} dismissed. You will be asked again when a newer release is out; run "node scripts/update-system.mjs check --force" or say "check for updates" to see it anyway.`
+    : 'Update dismissed. You will be asked again when a newer release is out; run "node scripts/update-system.mjs check --force" or say "check for updates" to see it anyway.');
 }
 
 // ── MAIN ────────────────────────────────────────────────────────
 
 // Only run the CLI when executed directly, so importing this module
-// (e.g. from test-all.mjs to exercise SEMVER_RE) does not trigger a
+// (e.g. from scripts/test-all.mjs to exercise SEMVER_RE) does not trigger a
 // live update check.
 //
 // This is the ONE place that inlines lib/is-main-module.mjs instead of importing
 // it (#3170). #1706 requires this file to be SELF-LOADING: a pre-#1245 client's
-// apply() checks out only update-system.mjs and re-execs it, so any static
+// apply() checks out only scripts/update-system.mjs and re-execs it, so any static
 // relative import crashes the old→new jump with ERR_MODULE_NOT_FOUND. The
 // semantics must still match the helper exactly — realpath BOTH sides, because
 // `import.meta.url` is realpath-resolved by Node while argv[1] keeps whatever
@@ -5218,7 +5204,7 @@ if (isCli) {
       case 'rollback': rollback(); break;
       case 'dismiss': await dismiss(); break;
       default:
-        console.log('Usage: node update-system.mjs [check [--force] [--channel main]|status|apply --confirm [--force] [--channel main]|rollback|dismiss [--version X.Y.Z]]');
+        console.log('Usage: node scripts/update-system.mjs [check [--force] [--channel main]|status|apply --confirm [--force] [--channel main]|rollback|dismiss [--version X.Y.Z]]');
         process.exit(1);
     }
   } catch (err) {

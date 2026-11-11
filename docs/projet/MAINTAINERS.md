@@ -20,7 +20,7 @@ A blocking gate whose owner is away is worse than no gate, and it fails invisibl
 
 ## The contributor ladder
 
-How each rung of the ladder is earned lives in [GOVERNANCE.md](GOVERNANCE.md#contributor-ladder), so there is only one version of it. Good first contributions: a new open-API scanner provider (`providers/`), a translation, a docs fix, or a [good first issue](https://github.com/career-ops-hq/career-ops/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). See [CONTRIBUTING.md](CONTRIBUTING.md).
+How each rung of the ladder is earned lives in [docs/projet/GOVERNANCE.md](GOVERNANCE.md#contributor-ladder), so there is only one version of it. Good first contributions: a new open-API scanner provider (`providers/`), a translation, a docs fix, or a [good first issue](https://github.com/career-ops-hq/career-ops/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). See [docs/projet/CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Trust & access
 
@@ -33,7 +33,7 @@ Because career-ops handles people's personal career data, access is granted care
 ## Decision-making
 
 - Day-to-day: lowest-friction path — a maintainer reviews and merges.
-- Significant or breaking changes: an [RFC](https://github.com/career-ops-hq/career-ops/discussions/categories/rfc) first (see [CONTRIBUTING.md](CONTRIBUTING.md) → "Proposing big changes").
+- Significant or breaking changes: an [RFC](https://github.com/career-ops-hq/career-ops/discussions/categories/rfc) first (see [docs/projet/CONTRIBUTING.md](CONTRIBUTING.md) → "Proposing big changes").
 - Architecture, scoring rules, and the data contract: lead maintainer has final say, informed by RFC discussion.
 
 ## Want to help maintain?

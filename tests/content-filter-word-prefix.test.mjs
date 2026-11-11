@@ -16,7 +16,7 @@
 // Section 3 pins that difference directly.
 
 import { pass, fail, ROOT } from './helpers.mjs';
-import { buildContentFilter, compileContentKeyword } from '../scan.mjs';
+import { buildContentFilter, compileContentKeyword } from '../scripts/scan.mjs';
 
 console.log('\ncontent filter — `word:` / `stem:` prefixes (#3274)');
 
@@ -136,7 +136,7 @@ if (scoped('Laravel with some JavaScript on the side', ['Backend Engineer']) ===
 // ── 5. Shared plumbing: a bare prefix, and regex metacharacters ──────
 // A stray `word:` / `stem:` with nothing after it matches nothing — the safe
 // half of "a silent drop of one entry over a silent flood", same as
-// title-keywords.mjs.
+// scripts/title-keywords.mjs.
 const bare = buildContentFilter({ negative: ['word:', 'stem:'] });
 if (bare('any description text at all') === true) {
   pass('a bare word:/stem: negative is a no-op, not a veto');

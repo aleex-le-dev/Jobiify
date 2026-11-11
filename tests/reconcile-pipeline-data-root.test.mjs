@@ -22,7 +22,7 @@ function fixture(t, mode = 'CAREER_OPS_ROOT') {
   mkdirSync(code); mkdirSync(data);
   // Copy the actual entry's relative import closure, so its code root differs
   // from both the data root and cwd. No installed CLI or network is involved.
-  const stack = [join(ROOT, 'reconcile-pipeline.mjs')], seen = new Set();
+  const stack = [join(ROOT, 'scripts/reconcile-pipeline.mjs')], seen = new Set();
   const imports = /(?:import|export)\s[^'"]*?from\s*['"](\.[^'"]+)['"]|import\(\s*['"](\.[^'"]+)['"]\s*\)|^import\s*['"](\.[^'"]+)['"]/gm;
   while (stack.length) {
     const file = stack.pop();
@@ -50,7 +50,7 @@ function fixture(t, mode = 'CAREER_OPS_ROOT') {
   delete env.CAREER_OPS_ROOT; delete env.CAREER_OPS_DATA_DIR;
   if (mode === 'marker') write(join(code, '.career-ops-data'), data);
   else env[mode] = data;
-  const run = (...args) => spawnSync(process.execPath, [join(code, 'reconcile-pipeline.mjs'), ...args], {
+  const run = (...args) => spawnSync(process.execPath, [join(code, 'scripts/reconcile-pipeline.mjs'), ...args], {
     env, cwd: root, encoding: 'utf8', timeout: 15_000,
   });
   return { root, code, data, pipeline, state, run };

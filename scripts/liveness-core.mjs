@@ -102,7 +102,7 @@ const LISTING_PAGE_PATTERNS = [
 // expired?", and — before the closed-loop guard on the closed pattern above —
 // "This role is closed-loop control of the platform" prose. liveness-browser
 // hands classifyLiveness the whole page innerText plus same-origin iframe
-// text (`readPage` in liveness-browser.mjs), so those elements are in scope.
+// text (`readPage` in scripts/liveness-browser.mjs), so those elements are in scope.
 //
 // Moved down here so the same phrase in a dead-page scenario (nodesk.co's
 // bare "JOB EXPIRED" banner, no apply control, per #4175) still fires. The
@@ -309,7 +309,7 @@ export function classifyLiveness({ status = 0, requestedUrl = '', finalUrl = '',
 }
 
 // A scan-history status that already carries a death certificate for its row:
-// `skipped_expired` (what scan.mjs writes) and the legacy `added (expired)`
+// `skipped_expired` (what scripts/scan.mjs writes) and the legacy `added (expired)`
 // suffix older histories carry. Deliberately NOT the other `skipped_*` states —
 // skipped_dup / skipped_title / skipped_no_apply_control say "this row is not a
 // fresh match", which is a different claim from "this posting is gone".
@@ -328,7 +328,7 @@ const EXPIRED_HISTORY_STATUS = /expired/i;
  *     characters with no closure notice and no apply control as
  *     `insufficient_content`, which is mostly a page that had not rendered yet.
  *     AGENTS.md calls a loading placeholder unconfirmed, not closed, and
- *     batch-evaluate-gemini.mjs skips the same code. A dead posting that reads
+ *     scripts/batch-evaluate-gemini.mjs skips the same code. A dead posting that reads
  *     this way gets no row, as it did before this recorder existed.
  *   - **Only URLs the history already knows.** A liveness sweep is not a
  *     discovery channel: a URL scan-history never saw has no row to retire, and
@@ -341,7 +341,7 @@ const EXPIRED_HISTORY_STATUS = /expired/i;
  * written under a different spelling would not line up with the `added` row it
  * exists to retire. Matching is done through the injected `normalizeUrl` (the
  * scanner's `normalizeUrlForDedup`) rather than an import, so this module stays
- * free of scan.mjs — liveness-browser.mjs imports it.
+ * free of scripts/scan.mjs — scripts/liveness-browser.mjs imports it.
  *
  * @param {string} scanHistoryText - Raw data/scan-history.tsv contents ('' when absent).
  * @param {{url: string, result: string, code?: string}[]} verdicts - One entry per checked URL.

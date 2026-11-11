@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { resolveTrackerPath as coreResolve } from "../../../path-resolver.mjs";
+import { resolveTrackerPath as coreResolve } from "../../../scripts/path-resolver.mjs";
 import { resolveTrackerPath, readTrackerFile } from "../../src/lib/core/tracker-files.mjs";
 
 test("web tracker and ledger follow the core resolver across supported layouts", (t) => {

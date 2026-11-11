@@ -1,4 +1,4 @@
-// The decisions /api/status makes around its set-status.mjs child, kept here so
+// The decisions /api/status makes around its scripts/set-status.mjs child, kept here so
 // they are testable without spawning anything.
 
 // What the caller is told when the CLI supplied no usable message of its own.
@@ -18,7 +18,7 @@ const GENERIC_FAILURE = "status update failed";
  * it, because the result is printed last.
  *
  * One line is not the only shape the document takes, though, and assuming it was
- * made this parser blind on the path that matters most. set-status.mjs prints
+ * made this parser blind on the path that matters most. scripts/set-status.mjs prints
  * its FAILURE object compactly (`JSON.stringify({error, code})`) but its SUCCESS
  * object pretty, `JSON.stringify(result, null, 2)` — so a run that actually
  * wrote the tracker produced a multi-line document, no single line parsed, and

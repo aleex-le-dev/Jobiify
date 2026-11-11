@@ -547,7 +547,7 @@ try {
     // only where dependencies are absent, so no ordinary run would notice it
     // going missing.
     {
-      const callSite = stripJsComments(readFileSync(join(ROOT, 'test-all.mjs'), 'utf-8'));
+      const callSite = stripJsComments(readFileSync(join(ROOT, 'scripts/test-all.mjs'), 'utf-8'));
       const bound = callSite.match(/(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*linkNodeModules\s*\(/);
       // The name comes out of a file this check reads, so every regex
       // metacharacter gets escaped. A partial escape is the incomplete-escaping
@@ -577,13 +577,13 @@ try {
       };
       const EXITS_BLOCK = /\b(?:break\s+[A-Za-z_$][\w$]*|return)\s*;/;
       if (!bound) {
-        fail('test-all.mjs calls linkNodeModules() without binding the reason, so it cannot skip on one');
+        fail('scripts/test-all.mjs calls linkNodeModules() without binding the reason, so it cannot skip on one');
       } else if (guardAt === -1) {
-        fail(`test-all.mjs binds linkNodeModules() to ${bound[1]} and never branches on it; an absent tree would sandbox dangling again`);
+        fail(`scripts/test-all.mjs binds linkNodeModules() to ${bound[1]} and never branches on it; an absent tree would sandbox dangling again`);
       } else if (!EXITS_BLOCK.test(guardBody())) {
-        fail(`test-all.mjs branches on ${bound[1]}, but that branch never breaks or returns, so an absent tree falls through into the sandboxed run anyway`);
+        fail(`scripts/test-all.mjs branches on ${bound[1]}, but that branch never breaks or returns, so an absent tree falls through into the sandboxed run anyway`);
       } else {
-        pass('test-all.mjs branches on the reason linkNodeModules returns, and that branch leaves the block');
+        pass('scripts/test-all.mjs branches on the reason linkNodeModules returns, and that branch leaves the block');
       }
     }
   }
@@ -655,7 +655,7 @@ try {
         // site back where the raw symlinkSync sites were: a sandbox with no
         // dependency tree, and assertions that report on a run that never
         // happened. Checked at EVERY call site rather than at the one in
-        // test-all.mjs, which is the enumeration this section exists to replace.
+        // scripts/test-all.mjs, which is the enumeration this section exists to replace.
         bareCalls: [...src.matchAll(/\blinkNodeModules\s*\(/g)]
           .filter((m) => isCode[m.index] && isBareStatement(src, isCode, m.index))
           .map((m) => src.slice(0, m.index).split('\n').length),
@@ -731,7 +731,7 @@ try {
       .filter(([, got, want]) => got !== want)
       .map(([what, got, want]) => `${what}: ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`);
 
-    const tracked = run('git', ['ls-files', 'tests/*.mjs', 'test-all.mjs']).split('\n').filter(Boolean);
+    const tracked = run('git', ['ls-files', 'tests/*.mjs', 'scripts/test-all.mjs']).split('\n').filter(Boolean);
     if (tracked.length < 50) {
       fail(`the raw-link scan enumerated only ${tracked.length} tracked files, so a clean result would mean nothing`);
     } else if (misread.length) {

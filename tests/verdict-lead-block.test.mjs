@@ -1,7 +1,7 @@
 // tests/verdict-lead-block.test.mjs: the `## Verdict (lead)` block is part of the
 // report contract, in every evaluation mode and in the batch worker prompt.
 //
-// Moved out of test-all.mjs: new tests belong in their own auto-discovered
+// Moved out of scripts/test-all.mjs: new tests belong in their own auto-discovered
 // file, not as a section of the harness (CONTRIBUTING.md, tests/README.md).
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
@@ -41,7 +41,7 @@ const leadHeadings = (text) => {
 // and a `(verdict)` heading are promoted by the parser and rejected here on
 // purpose, because the `(lead)` marker is the contract.
 //
-// web/ is not in update-system.mjs's SYSTEM_PATHS but tests/ is, so this file
+// web/ is not in scripts/update-system.mjs's SYSTEM_PATHS but tests/ is, so this file
 // reaches checkouts with no web/ at all, where a static import would fail the
 // whole file (#1675 / #1677). Only this check needs the parser, so only this
 // check is skipped; a parser missing under a present web/ is a move and fails.
@@ -71,7 +71,7 @@ if (!existsSync(join(ROOT, 'web', 'src'))) {
 
 // ── Verdict (lead) block presence across evaluation modes ──
 // The lead block is a report-contract element, so the contract guard has to
-// assert it. It cannot join REQUIRED_HEADINGS in test-all.mjs's localized
+// assert it. It cannot join REQUIRED_HEADINGS in scripts/test-all.mjs's localized
 // oferta.md parity check. That list matches literal substrings, the heading
 // noun is translated per locale, and every translated mode quotes the English
 // form in prose as an example of the convention, so a
@@ -89,7 +89,7 @@ if (!existsSync(join(ROOT, 'web', 'src'))) {
 // sit ~140 lines apart and swallow the document.
 // Keyed on the report skeleton instead of the filename: a locale whose
 // evaluation mode is not named oferta.md (tr/is-ilani.md, ja/kyujin.md,
-// ar/fursah.md) is invisible to the oferta.md walk in test-all.mjs. A file
+// ar/fursah.md) is invisible to the oferta.md walk in scripts/test-all.mjs. A file
 // still at the pre-Block-G shape has no Block G for the lead block to follow,
 // so it drops out by carrying no `## H)` and no `## Risk Summary`, with no
 // allowlist to maintain.

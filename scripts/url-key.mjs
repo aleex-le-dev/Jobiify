@@ -1,8 +1,8 @@
 /**
- * url-key.mjs — canonical posting-URL key for deterministic tracker dedup.
+ * scripts/url-key.mjs — canonical posting-URL key for deterministic tracker dedup.
  *
  * Two URLs that point to the same job posting must produce the same key so the
- * merge can upsert on it (the stable natural key — see merge-tracker.mjs Pass 0).
+ * merge can upsert on it (the stable natural key — see scripts/merge-tracker.mjs Pass 0).
  *
  * UNDER-STRIP ON PURPOSE. The two failure modes are asymmetric:
  *   - over-normalizing collapses two genuinely different postings into one key
@@ -32,7 +32,7 @@
  * is UNKNOWN rather than true. Returning s.toLowerCase() gave every "N/A" row
  * one shared key, so unrelated employers compared equal on it.
  *
- * The tracker scripts compare posting URLs through it, and scan.mjs takes its
+ * The tracker scripts compare posting URLs through it, and scripts/scan.mjs takes its
  * fragment and language-param handling from it, so the scanner and the tracker
  * do not keep two copies that can drift apart.
  */
@@ -40,7 +40,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { linkedInPathJobId } from './lib/linkedin-url.mjs';
+import { linkedInPathJobId } from '../lib/linkedin-url.mjs';
 
 // Query params that identify a click/campaign, never the posting itself. Keep
 // this list literal and board-specific; see the RFC note above on why generic
@@ -57,13 +57,13 @@ const TRACKING_PARAMS = [
 // list literal and conservative, for the same reason TRACKING_PARAMS is. Adding
 // an employer-controlled host here would let a fuzzy title collision merge two
 // genuinely distinct requisitions, which is the silent failure direction.
-// The scraper list is shared with scan.mjs (data-static/aggregator-domains.txt,
+// The scraper list is shared with scripts/scan.mjs (data-static/aggregator-domains.txt,
 // #4263) so a newly discovered reposter is added in ONE place.
 //
 // It does not answer this module's question on its own. That file lists hosts
 // that SCRAPE AND REPOST, and deliberately omits the big job boards because
 // companies post to them directly as a primary board — its header says exactly
-// that about indeed.com. url-key.mjs asks something broader: is this URL
+// that about indeed.com. scripts/url-key.mjs asks something broader: is this URL
 // EMPLOYER-CONTROLLED? For a board that carries a company's own posting under
 // its own URL the answer is still no, because the same requisition also lives
 // on the employer's ATS, which is the duplicate this module exists to collapse.
@@ -85,7 +85,7 @@ const AGGREGATOR_SUPPLEMENT = [
   //
   // They belong here rather than in the shared file for the same reason
   // indeed.com does, and the cost of getting it wrong is concrete: the shared
-  // file also drives the "Possible aggregator reposts" warning in scan.mjs,
+  // file also drives the "Possible aggregator reposts" warning in scripts/scan.mjs,
   // which prints a line per offer whose host it lists. Listing a board the
   // scanner itself reads there would flag EVERY offer that board returns as a
   // suspected repost of itself, on every run. A warning that fires on its own
@@ -102,17 +102,17 @@ const AGGREGATOR_SUPPLEMENT = [
   'echojobs.io',        // multi-employer board; providers/echojobs.mjs is retired (#2976), so historical rows only
 ];
 
-/** Path to the shared scraper list, overridable the same way scan.mjs allows. */
+/** Path to the shared scraper list, overridable the same way scripts/scan.mjs allows. */
 const AGGREGATOR_DOMAINS_PATH = process.env.CAREER_OPS_AGGREGATOR_DOMAINS
-  || join(dirname(fileURLToPath(import.meta.url)), 'data-static/aggregator-domains.txt');
+  || join(dirname(dirname(fileURLToPath(import.meta.url))), 'data-static/aggregator-domains.txt');
 
-// Read once, lazily: this module is imported by merge-tracker.mjs and scan.mjs
+// Read once, lazily: this module is imported by scripts/merge-tracker.mjs and scripts/scan.mjs
 // on every run, and it stays a pure function module until something actually
 // asks about an aggregator.
 //
-// Read directly rather than importing scan.mjs's loader: scan.mjs already
+// Read directly rather than importing scripts/scan.mjs's loader: scripts/scan.mjs already
 // imports THIS module, so depending on it back would be a cycle and would pull
-// scan.mjs's whole import graph into merge-tracker's path.
+// scripts/scan.mjs's whole import graph into merge-tracker's path.
 let aggregatorDomainsCache = null;
 function aggregatorDomains() {
   if (aggregatorDomainsCache) return aggregatorDomainsCache;
@@ -190,7 +190,7 @@ function foldHostname(host) {
 // posting into two rows, which is the failure direction this file exists to
 // avoid; a missing extractor merely leaves the pair UNKNOWN, i.e. exactly the
 // behaviour shipped for #3652. The two below are the shapes this repo already
-// resolves in liveness-api.mjs (see its `linkedin` provider) and exercises in
+// resolves in scripts/liveness-api.mjs (see its `linkedin` provider) and exercises in
 // tests/liveness-api-linkedin.test.mjs — not inferred from the URLs' looks.
 //
 // Extractors are keyed on the DOMAIN, never on the path: `/jobs/view/{id}` is
@@ -337,7 +337,7 @@ export function normalizeUrl(raw) {
 
 // Query params naming the language a posting page renders in. An ATS that
 // serves every language version of one posting at one URL tells the versions
-// apart by one of these (Personio `?language=`, Recruitee `?lang=`). scan.mjs
+// apart by one of these (Personio `?language=`, Recruitee `?lang=`). scripts/scan.mjs
 // imports this list for its own dedup key, so the scanner and the tracker read
 // the same names.
 export const LANGUAGE_PARAMS = ['language', 'lang', 'locale'];
@@ -380,7 +380,7 @@ export function postingLanguageKey(raw) {
  * name like `German` parses as a (non-standard) tag and comes back lowercased.
  * The two postings being compared come from one employer, and almost always
  * one provider, so the value only has to be consistent within a source, not
- * standard across sources. scan.mjs's languageFormsForDedup is built on it.
+ * standard across sources. scripts/scan.mjs's languageFormsForDedup is built on it.
  *
  * @param {unknown} value - A language param value, `Job.language`, or a
  *   scan-history `language` cell.

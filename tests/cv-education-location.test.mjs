@@ -4,7 +4,7 @@
 // HTML one did not, so a payload with education[].location was dropped and the
 // #3523 key validator warned "unrecognised key location" on every render.
 //
-// End-to-end through the real builder because build-cv-html.mjs exports nothing.
+// End-to-end through the real builder because scripts/build-cv-html.mjs exports nothing.
 // Covers both render paths: the shipped section partial (templates/sections/) and
 // the built-in builder (a template copy with no sections/ dir beside it).
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, cpSync } from 'fs';
@@ -37,16 +37,16 @@ function build(label, payload, templateArg) {
   const input = join(dir, `${label}.json`);
   const output = join(dir, `${label}.html`);
   writeFileSync(input, JSON.stringify(payload));
-  const args = [join(ROOT, 'build-cv-html.mjs'), input, output];
+  const args = [join(ROOT, 'scripts/build-cv-html.mjs'), input, output];
   if (templateArg) args.push(templateArg);
   const stdout = run(NODE, args);
   if (stdout === null) {
     const f = lastRunFailure();
-    fail(`${label}: build-cv-html.mjs crashed (exit ${f?.status}) - ${(f?.stderr || '').trim().split('\n').pop()}`);
+    fail(`${label}: scripts/build-cv-html.mjs crashed (exit ${f?.status}) - ${(f?.stderr || '').trim().split('\n').pop()}`);
     return null;
   }
   if (!existsSync(output)) {
-    fail(`${label}: build-cv-html.mjs exited 0 but wrote no output file`);
+    fail(`${label}: scripts/build-cv-html.mjs exited 0 but wrote no output file`);
     return null;
   }
   return { html: readFileSync(output, 'utf-8'), stdout };

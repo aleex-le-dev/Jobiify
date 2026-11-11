@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * doctor.mjs — Setup validation for career-ops
+ * scripts/doctor.mjs — Setup validation for career-ops
  * Checks all prerequisites and prints a pass/fail checklist.
  */
 
@@ -12,20 +12,20 @@ import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 import dotenv from 'dotenv';
-import { findTitleFilterConflicts } from './lib/title-filter-conflicts.mjs';
-import { sectionState, scanHeadings, SECTIONS } from './lib/personalization.mjs';
-import { discoverPlugins, pluginRoots, pluginStatus } from './plugins/_engine.mjs';
+import { findTitleFilterConflicts } from '../lib/title-filter-conflicts.mjs';
+import { sectionState, scanHeadings, SECTIONS } from '../lib/personalization.mjs';
+import { discoverPlugins, pluginRoots, pluginStatus } from '../plugins/_engine.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { validateProfile, EXAMPLE_PATH } from './validate-profile.mjs';
 import { resolveExtractorMode } from './browser-extract.mjs';
 import { parseConfigByExtension } from './jsonc-parse.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
-import { geminiNodeFloor } from './lib/gemini-node-floor.mjs';
-import { SKILL_ENTRYPOINTS } from './scaffolder/bin/skill-entrypoints.mjs';
-import { nodeFloor } from './lib/node-floor.mjs';
-import { findExperienceSections, parseCompanyHeading, EXPERIENCE_HEADING_NAMES } from './lib/cv-markdown.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { geminiNodeFloor } from '../lib/gemini-node-floor.mjs';
+import { SKILL_ENTRYPOINTS } from '../scaffolder/bin/skill-entrypoints.mjs';
+import { nodeFloor } from '../lib/node-floor.mjs';
+import { findExperienceSections, parseCompanyHeading, EXPERIENCE_HEADING_NAMES } from '../lib/cv-markdown.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(dirname(fileURLToPath(import.meta.url)));
 const argv = process.argv.slice(2);
 
 // CLIs the doctor recognises.
@@ -42,13 +42,13 @@ const KNOWN_FLAGS = ['--target', '--json', '--init-templates', '--strict', '--cl
 const VALUE_FLAGS = ['--target', '--cli'];
 
 const USAGE = `Usage:
-  node doctor.mjs                    # run the setup diagnostic
-  node doctor.mjs --json             # read-only machine-readable onboarding state
-  node doctor.mjs --json --init-templates # create missing personalization files for onboarding
-  node doctor.mjs --strict           # also probe portals.yml entries (network)
-  node doctor.mjs --target <path>    # diagnose another career-ops checkout
-  node doctor.mjs --cli <name>       # check a specific CLI's integration
-  node doctor.mjs --help             # show this message
+  node scripts/doctor.mjs                    # run the setup diagnostic
+  node scripts/doctor.mjs --json             # read-only machine-readable onboarding state
+  node scripts/doctor.mjs --json --init-templates # create missing personalization files for onboarding
+  node scripts/doctor.mjs --strict           # also probe portals.yml entries (network)
+  node scripts/doctor.mjs --target <path>    # diagnose another career-ops checkout
+  node scripts/doctor.mjs --cli <name>       # check a specific CLI's integration
+  node scripts/doctor.mjs --help             # show this message
 
 CLIs: ${VALID_CLIS.join(', ')}`;
 
@@ -107,8 +107,8 @@ function checkBillingSource() {
   // off — and mere presence would then report "requests bill to your cloud
   // account" at exactly the user who just said they don't. A billing check that
   // misreads an explicit opt-out causes the confusion it exists to remove.
-  // Matches the repo's own env-flag convention (=== '1' in merge-tracker.mjs
-  // and update-system.mjs), while also accepting `true` since these are
+  // Matches the repo's own env-flag convention (=== '1' in scripts/merge-tracker.mjs
+  // and scripts/update-system.mjs), while also accepting `true` since these are
   // third-party switches users copy from assorted docs.
   const cloud = ['CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX', 'CLAUDE_CODE_USE_FOUNDRY']
     .filter((v) => /^(1|true|yes|on)$/i.test(String(process.env[v] ?? '').trim()));
@@ -187,7 +187,7 @@ function checkDependencies() {
   };
 }
 
-// update-system.mjs versions before #2857 could commit cascading .bak backups
+// scripts/update-system.mjs versions before #2857 could commit cascading .bak backups
 // when a checkout write failed. #2857 stops that for NEW installs, but an
 // install that already `git add`ed one is stuck: nothing in the update path
 // untracks a path git already has, so the .bak files persist forever and the
@@ -233,7 +233,7 @@ function checkTrackedBakFiles(root) {
   const rest = paths.length - preview.length;
   return {
     warn: true,
-    label: `${paths.length} tracked .bak backup file${paths.length === 1 ? '' : 's'} found — an old update-system.mjs bug committed these, and no update untracks them on its own`,
+    label: `${paths.length} tracked .bak backup file${paths.length === 1 ? '' : 's'} found — an old scripts/update-system.mjs bug committed these, and no update untracks them on its own`,
     fix: [
       ...preview,
       ...(rest > 0 ? [`...and ${rest} more`] : []),
@@ -247,7 +247,7 @@ function checkTrackedBakFiles(root) {
 // A checkout made without symlink support (Windows without Developer Mode,
 // core.symlinks=false) writes each per-CLI skill entrypoint as a regular file
 // holding only the symlink target text, so that CLI loads a ~43-byte skill with
-// no router in it (career-ops#4589). update-system.mjs apply repairs these via
+// no router in it (career-ops#4589). scripts/update-system.mjs apply repairs these via
 // ensureSkillEntrypoints, but apply returns early on an install that is already
 // up to date, so a fresh clone never reaches it and nothing else says why
 // /career-ops does nothing. Read-only on purpose (doctor must not write): it
@@ -274,7 +274,7 @@ const quoteCmd = (v) => `"${v}"`;
 
 function repairCommands(root) {
   const mod = join(root, 'scaffolder', 'bin', 'skill-entrypoints.mjs');
-  const updater = join(root, 'update-system.mjs');
+  const updater = join(root, 'scripts', 'update-system.mjs');
   const forms = (quote) => ({
     materialize: `node -e ${quote(MATERIALIZE_SCRIPT)} ${quote(mod)} ${quote(root)}`,
     update: `node ${quote(updater)} apply --confirm`,
@@ -660,19 +660,19 @@ function checkPlaywrightMcp(root, activeCli) {
 }
 
 // Report which scan/JD extractor is active (config/profile.yml → scan.extractor).
-// `mcp` (default) uses the browser MCP; `cli` uses browser-extract.mjs. When cli
+// `mcp` (default) uses the browser MCP; `cli` uses scripts/browser-extract.mjs. When cli
 // is selected but the helper is missing, the modes fall back to MCP — surface
 // that as a warning, never a failure.
 function checkScanExtractor(root) {
   const mode = resolveExtractorMode(join(root, 'config', 'profile.yml'));
   if (mode === 'cli') {
-    if (existsSync(join(__dirname, 'browser-extract.mjs'))) {
-      return { pass: true, label: 'Scan extractor: cli (browser-extract.mjs)' };
+    if (existsSync(join(__dirname, 'scripts/browser-extract.mjs'))) {
+      return { pass: true, label: 'Scan extractor: cli (scripts/browser-extract.mjs)' };
     }
     return {
       warn: true,
-      label: 'Scan extractor: cli set, but browser-extract.mjs is missing — falls back to MCP',
-      fix: ['Restore browser-extract.mjs, or set `scan.extractor: mcp` in config/profile.yml.'],
+      label: 'Scan extractor: cli set, but scripts/browser-extract.mjs is missing — falls back to MCP',
+      fix: ['Restore scripts/browser-extract.mjs, or set `scan.extractor: mcp` in config/profile.yml.'],
     };
   }
   return { pass: true, label: 'Scan extractor: mcp (default)' };
@@ -717,7 +717,7 @@ const USER_LAYER_PREREQS = [
 const CLI_NAMES = 'claude, codex, gemini, opencode, qwen, agy or grok';
 
 // The lane variables (CAREER_OPS_PORTALS, CAREER_OPS_PIPELINE) move one file
-// out of the data root, and the scanner reads them (path-resolver.mjs), so
+// out of the data root, and the scanner reads them (scripts/path-resolver.mjs), so
 // doctor has to look where a scan would.
 const PORTALS_PREREQ = USER_LAYER_PREREQS.find(({ path }) => path === 'portals.yml');
 
@@ -785,7 +785,7 @@ function checkAutoDir(name) {
 // --strict only: probe every portals.yml entry (tracked_companies and job_boards)
 // so a typo'd slug or a dead board — either of which 404s silently on scans —
 // surfaces here. Skipped gracefully when portals.yml is absent. Delegates to
-// verify-portals.mjs so there is one probing implementation. Network-bound,
+// scripts/verify-portals.mjs so there is one probing implementation. Network-bound,
 // hence opt-in.
 async function checkPortalSlugs(root) {
   const portalsPath = prereqFile(root, PORTALS_PREREQ);
@@ -794,8 +794,8 @@ async function checkPortalSlugs(root) {
   }
   try {
     const { verifyPortalsFile } = await import('./verify-portals.mjs');
-    const { loadProviders } = await import('./providers/_registry.mjs');
-    const { makeHttpCtx } = await import('./providers/_http.mjs');
+    const { loadProviders } = await import('../providers/_registry.mjs');
+    const { makeHttpCtx } = await import('../providers/_http.mjs');
     // Load the same provider plugins the scanner uses so tier 2 runs: without
     // them every non-ATS entry (all job_boards, plus any Workday/Avature/…
     // tracked_companies) resolves to an un-actionable "skipped" and a broken
@@ -824,7 +824,7 @@ async function checkPortalSlugs(root) {
           if (r.suggested) line += ` → try ${r.suggested.ats}/${r.suggested.slug}`;
           return line;
         }),
-        'Probe variants with: node verify-portals.mjs --add "<company>"',
+        'Probe variants with: node scripts/verify-portals.mjs --add "<company>"',
       ],
     };
   } catch (err) {
@@ -894,7 +894,7 @@ function checkPlugins(root) {
     return {
       warn: true,
       label: `Plugins: config/plugins.yml did not parse (${cfgError}) — every plugin below reads as off`,
-      fix: ['Fix the YAML in config/plugins.yml. Until then `plugins.mjs enable/disable` will refuse to write to it.'],
+      fix: ['Fix the YAML in config/plugins.yml. Until then `scripts/plugins.mjs enable/disable` will refuse to write to it.'],
     };
   }
   const lines = [];
@@ -918,8 +918,8 @@ function checkPlugins(root) {
 // not a broken install, and refusing to run would be a worse answer than naming
 // it.
 // cv.md exists but in a shape the CV checks cannot read (#4879). The prereq
-// check only proves the file is there; cv-title-check.mjs and
-// verify-cv-structure.mjs locate jobs through lib/cv-markdown.mjs, and a cv.md
+// check only proves the file is there; scripts/cv-title-check.mjs and
+// scripts/verify-cv-structure.mjs locate jobs through lib/cv-markdown.mjs, and a cv.md
 // whose Experience section they cannot find makes both run against nothing.
 // They do say so per run, but only once a tailored CV is already being built;
 // this says it at setup time. A warning, never a failure: cv.md is the user's
@@ -934,7 +934,7 @@ function checkCvShape(root) {
     return { warn: true, label: `cv.md could not be read (${err.message})` };
   }
   const sections = findExperienceSections(text);
-  // Same entry rule verify-cv-structure.mjs parses with, so a stray
+  // Same entry rule scripts/verify-cv-structure.mjs parses with, so a stray
   // "### Notes" under Experience is not counted as a job.
   const entries = sections.flat().filter((line) => parseCompanyHeading(line) !== null).length;
   if (entries > 0) {
@@ -1187,7 +1187,7 @@ function checkPersonalization(root) {
 // a deterministic mechanism the agent runs (instead of re-deriving it from prose),
 // and `--target <dir>` lets the test suite point it at a simulated virgin env.
 function titleFilterConflicts(root) {
-  // Same override the scanner honours (scan.mjs PORTALS_PATH), so a diagnosis
+  // Same override the scanner honours (scripts/scan.mjs PORTALS_PATH), so a diagnosis
   // describes the file a scan would actually read, not the default one.
   const portalsPath = prereqFile(root, PORTALS_PREREQ);
   if (!existsSync(portalsPath)) return null;
@@ -1316,7 +1316,7 @@ if (JSON_OUT) {
   process.exit(0);
 } else {
   main().catch((err) => {
-    console.error('doctor.mjs failed:', err.message);
+    console.error('scripts/doctor.mjs failed:', err.message);
     process.exit(1);
   });
 }

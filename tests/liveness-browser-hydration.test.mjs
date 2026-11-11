@@ -6,7 +6,7 @@
 // script what each read sees and count the waits spent, so the poll's stop
 // conditions are pinned without launching a browser.
 import { pass, fail } from './helpers.mjs';
-import { checkUrlLiveness } from '../liveness-browser.mjs';
+import { checkUrlLiveness } from '../scripts/liveness-browser.mjs';
 
 console.log('\nliveness-browser — hydration poll');
 

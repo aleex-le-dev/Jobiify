@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * upskill.mjs — Aggregate skill-gap analyzer for career-ops (#1520, phase 1)
+ * scripts/upskill.mjs — Aggregate skill-gap analyzer for career-ops (#1520, phase 1)
  *
  * Reads the tracker + every linked evaluation report, extracts skill tokens
  * from each report's gaps (Machine Summary hard_stops/soft_gaps + Gap table),
@@ -16,10 +16,10 @@
  * (score < 4.0) reports naming the gap — NOT quantiles, which are noise at
  * the 5–20 report sample sizes this tool sees.
  *
- * Run: node upskill.mjs            (JSON to stdout)
- *      node upskill.mjs --summary  (human-readable table)
- *      node upskill.mjs --min-reports 3
- *      node upskill.mjs --self-test
+ * Run: node scripts/upskill.mjs            (JSON to stdout)
+ *      node scripts/upskill.mjs --summary  (human-readable table)
+ *      node scripts/upskill.mjs --min-reports 3
+ *      node scripts/upskill.mjs --self-test
  */
 
 import { readFileSync, existsSync, statSync, realpathSync, writeFileSync, symlinkSync, rmSync } from 'fs';
@@ -27,13 +27,13 @@ import { join, dirname, relative, sep } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { load as yamlLoad } from 'js-yaml';
 import { resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
 import { loadCanonicalStates, resolveCanonicalStateId } from './tracker-utils.mjs';
 import { rankSkipBlockers, parseRequirementImportance } from './skip-blockers.mjs';
 
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const CAREER_OPS = getCareerOpsRoot();
 const APPS_FILE = resolveTrackerPath(CAREER_OPS);
 const CV_FILE = join(CAREER_OPS, 'cv.md');
@@ -51,7 +51,7 @@ const STATES_FILE = join(ROOT, 'templates/states.yml');
 // to the downstream read (which returns null, preserving prior semantics), a
 // missing root means there are simply no reports. Only genuinely unexpected
 // errors rethrow, matching readTextIfExists. Identical to the guard in
-// analyze-patterns.mjs so both sites behave the same.
+// scripts/analyze-patterns.mjs so both sites behave the same.
 function withinReports(candidate) {
   const repoRelative = relative(CAREER_OPS, candidate).split(sep).join('/');
   if (!repoRelative.startsWith('reports/') || repoRelative.includes('..')) return false;
@@ -89,7 +89,7 @@ function readTextIfExists(path) {
 // older runs non-comparable. The upskill mode's diff-vs-previous section only
 // compares reports with the same schema_version, so a regex change can't
 // masquerade as "gap closed".
-// v2 (2026-08-30): the marketing/GTM vocabulary block in skill-extract.mjs and
+// v2 (2026-08-30): the marketing/GTM vocabulary block in scripts/skill-extract.mjs and
 // the company-name exclusion below both change WHICH skills a report yields, so
 // a v1 gap list and a v2 one are not comparable — a gap "appearing" in v2 may
 // simply be a word the v1 vocabulary could not see, and a gap "closing" may be
@@ -100,11 +100,11 @@ export const SCHEMA_VERSION = 2;
 // gaps matter most. Matches the apply threshold in Ethical Use (CLAUDE.md).
 const LOW_FIT_SCORE = 4.0;
 
-// Skill vocabulary + canonical extractor moved to skill-extract.mjs (#1896) so
+// Skill vocabulary + canonical extractor moved to scripts/skill-extract.mjs (#1896) so
 // upskill, jd-skill-gap, and analyze-patterns share ONE source of truth. Re-
 // exported here so existing importers of extractSkills keep working unchanged.
 import { extractSkills } from './skill-extract.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 export { extractSkills };
 
 // --- Known-skills text assembly ---
@@ -256,7 +256,7 @@ export function readOptionalText(filePath) {
 }
 
 // --- Machine Summary + Gap table parsing ---
-// Mirrors analyze-patterns.mjs (duplicated by design, see header comment).
+// Mirrors scripts/analyze-patterns.mjs (duplicated by design, see header comment).
 function parseMachineSummary(content) {
   const fenceMatch = content.match(/##\s*Machine Summary\s*\n+```(?:yaml|yml|json)?\s*\n([\s\S]*?)\n```/i);
   if (!fenceMatch) return null;
@@ -464,7 +464,7 @@ function analyze(minReports) {
     if (!linkMatch) continue;
     reportsLinked += 1;
     // Tracker links are normalized relative to the tracker file's directory
-    // (see merge-tracker.mjs); resolve against it, with a root-relative fallback.
+    // (see scripts/merge-tracker.mjs); resolve against it, with a root-relative fallback.
     // The read is attempted directly instead of probing with existsSync first,
     // which costs a full stat per report and races with the read (#2385).
     const candidates = new Set([join(dirname(APPS_FILE), linkMatch[1]), join(CAREER_OPS, linkMatch[1])]);
@@ -686,7 +686,7 @@ soft_gaps:
     }
     const selfSrc = readFileSync(fileURLToPath(import.meta.url), 'utf-8');
     if (/normalizeJd\(\s*targetText/.test(selfSrc)) {
-      failures.push('url-text: upskill.mjs still passes the raw fetched string to normalizeJd (regression, #1894)');
+      failures.push('url-text: scripts/upskill.mjs still passes the raw fetched string to normalizeJd (regression, #1894)');
     }
     if (!/compactText\(targetText\)/.test(selfSrc)) {
       failures.push('url-text: fetched text should be normalized with compactText (string->string), #1894');
@@ -795,7 +795,7 @@ async function validateUrlSecurity(urlString) {
 }
 
 // --- CLI ---
-// Everything below runs ONLY when upskill.mjs is the process entry point.
+// Everything below runs ONLY when scripts/upskill.mjs is the process entry point.
 //
 // Without this guard the module tail was unconditional, so `import
 // { knownSkillsText } from './upskill.mjs'` re-parsed the IMPORTER's argv and ran
@@ -803,7 +803,7 @@ async function validateUrlSecurity(urlString) {
 // their "exported for unit testing" docblocks — every assertion about them had to
 // live inside --self-test.
 //
-// Under tests/ it also broke the harness, because test-all.mjs imports discovered
+// Under tests/ it also broke the harness, because scripts/test-all.mjs imports discovered
 // suites IN-PROCESS and they therefore share its argv. Both branches were
 // reachable, and both were measured by pinning isMain to true:
 //   - ordinary argv → the aggregate branch walked the tracker and every linked
@@ -814,8 +814,8 @@ async function validateUrlSecurity(urlString) {
 //     skipped: a forged green, which is the exact failure its own source guard
 //     rejects a discovered suite for.
 //
-// Same shape as the other CLIs in this repo (add-entry.mjs, detect-reposts.mjs,
-// contacts.mjs, check-table-freshness.mjs, ...), and now literally the same code:
+// Same shape as the other CLIs in this repo (scripts/add-entry.mjs, scripts/detect-reposts.mjs,
+// scripts/contacts.mjs, scripts/check-table-freshness.mjs, ...), and now literally the same code:
 // lib/is-main-module.mjs. The hand-rolled comparison this comment used to describe
 // accepted a real defect — reached through a SYMLINK the two sides never matched,
 // so the CLI printed nothing and exited 0 — on the premise that every caller uses
@@ -827,7 +827,7 @@ const isMain = isMainModule(import.meta.url);
 // used to fall through silently: the aggregate branch just ran with its
 // default MIN_REPORTS, reporting a gap map for a threshold nobody asked for.
 // Handled via lib/cli-flags.mjs's validateFlags() (#2775), same shape as
-// doctor.mjs (#2874) — checked before --self-test/--url-text/--min-reports
+// scripts/doctor.mjs (#2874) — checked before --self-test/--url-text/--min-reports
 // are read, and before --help, so `--help --bogus` still errors.
 const KNOWN_FLAGS = ['--min-reports', '--summary', '--url-text', '--self-test', '--help', '-h'];
 
@@ -835,13 +835,13 @@ const KNOWN_FLAGS = ['--min-reports', '--summary', '--url-text', '--self-test', 
 const VALUE_FLAGS = ['--min-reports', '--url-text'];
 
 const USAGE = `Usage:
-  node upskill.mjs                        # aggregate skill-gap map (JSON)
-  node upskill.mjs --summary              # human-readable table
-  node upskill.mjs --min-reports <n>      # minimum scored reports required (default 5)
-  node upskill.mjs --url-text <url|path>  # targeted gap analysis vs one JD (URL or local file)
-  node upskill.mjs <url>                  # same as --url-text <url>
-  node upskill.mjs --self-test            # run the pure-function self-tests
-  node upskill.mjs --help                 # show this message`;
+  node scripts/upskill.mjs                        # aggregate skill-gap map (JSON)
+  node scripts/upskill.mjs --summary              # human-readable table
+  node scripts/upskill.mjs --min-reports <n>      # minimum scored reports required (default 5)
+  node scripts/upskill.mjs --url-text <url|path>  # targeted gap analysis vs one JD (URL or local file)
+  node scripts/upskill.mjs <url>                  # same as --url-text <url>
+  node scripts/upskill.mjs --self-test            # run the pure-function self-tests
+  node scripts/upskill.mjs --help                 # show this message`;
 
 if (isMain) {
   const args = process.argv.slice(2);

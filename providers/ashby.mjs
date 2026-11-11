@@ -298,7 +298,7 @@ function toEpochMs(value) {
 // Ashby's posting-api puts extra hiring regions in `secondaryLocations[]`
 // (each with a region label + a postalAddress). Using only `j.location` drops
 // them, so an EU-eligible role whose PRIMARY label is e.g. "Canada" reads as
-// Canada-only and gets wrongly removed by scan.mjs's location_filter. We fold
+// Canada-only and gets wrongly removed by scripts/scan.mjs's location_filter. We fold
 // in each secondary's region, locality, and country so the filter can match
 // (e.g. "Europe", "Berlin", "Germany"). Deduped, joined with " · ".
 // Remote work model: Ashby's posting-api exposes `workplaceType`
@@ -307,7 +307,7 @@ function toEpochMs(value) {
 // remote role. Folding only the location strings therefore renders a remote
 // posting as e.g. "San Francisco", and a `location_filter` that blocks that
 // city drops a role the candidate could actually take. Appending "Remote"
-// makes the work model visible to scan.mjs's string matching without
+// makes the work model visible to scripts/scan.mjs's string matching without
 // discarding the city, so both `allow: ["Remote"]` and city-based filters keep
 // working.
 //
@@ -417,7 +417,7 @@ async function fetchFromEmbed(entry, ctx) {
     if (id === undefined) return null;
     // Same location rendering as the posting API path, so a board reads the
     // same whichever source served it — in particular the "Remote" marker:
-    // scan.mjs's location_filter sees only this string, so a remote posting
+    // scripts/scan.mjs's location_filter sees only this string, so a remote posting
     // whose locationName is a city would otherwise fail `allow: ["Remote"]`
     // (CodeRabbit, #4298). The embed payload names places `locationName`
     // where the API says `location`; nothing else differs.
@@ -528,7 +528,7 @@ export default {
       externalId: coerceId(j.id),
       location: formatLocation(j),
       // Ashby's posting-api list ships `descriptionPlain` for free (same
-      // payload, no per-job request) — mirrors lever. Enables scan.mjs's
+      // payload, no per-job request) — mirrors lever. Enables scripts/scan.mjs's
       // content_filter / visa_filter.
       description: typeof j.descriptionPlain === 'string' ? j.descriptionPlain : '',
       salary: parseCompensation(j),

@@ -1,7 +1,7 @@
 # career-ops Trademark Policy
 
 This document explains how the "career-ops" name and brand may be used.
-It complements — not replaces — the MIT [LICENSE](LICENSE) that governs
+It complements — not replaces — the MIT [LICENSE](../../LICENSE) that governs
 the source code.
 
 ## TL;DR
@@ -70,7 +70,7 @@ opt-in shared service. Running them takes infrastructure the project does
 not run itself, so the maintainer may license an operating entity to run
 one. These conditions are part of that licence, not a courtesy:
 
-- The operator is bound by the nine rights in MANIFESTO.md.
+- The operator is bound by the nine rights in docs/projet/MANIFESTO.md.
 - It may not charge candidates for anything, and may not paywall or
   degrade what the open core already does.
 - It is disclosed by name wherever it operates, for as long as it does.
@@ -116,7 +116,7 @@ and the [GitLab Trademark Guidelines](https://about.gitlab.com/handbook/marketin
 ## Updates
 
 This policy may be updated as the project evolves. Material changes
-will be announced in [CHANGELOG.md](CHANGELOG.md).
+will be announced in [CHANGELOG.md](../../CHANGELOG.md).
 
 ---
 

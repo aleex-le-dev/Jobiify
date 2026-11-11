@@ -520,7 +520,7 @@ test("completedReportNames uses the shared predicate, so an unnumbered file is a
 });
 
 test("replacing a reservation with a report counts as persistence", () => {
-  // Given: reserve-report-num.mjs wrote 021-RESERVED.md, which the finished report
+  // Given: scripts/reserve-report-num.mjs wrote 021-RESERVED.md, which the finished report
   // then REPLACED — so the .md count never changed and a count-delta gate reported
   // "didn't save a report" for an evaluation that saved fine (#2085).
   const before = ["020-existing.md", "021-RESERVED.md"];

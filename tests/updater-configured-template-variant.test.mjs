@@ -1,6 +1,6 @@
 /**
  * updater-configured-template-variant.test.mjs — a user-authored named CV/
- * cover-letter template variant, created per cv-templates.mjs's own naming
+ * cover-letter template variant, created per scripts/cv-templates.mjs's own naming
  * convention (`templates/cv-template.{name}.html`, `templates/cover-letter-
  * template.{name}.html` — see its KINDS/parseFilename) and pointed at from
  * config/profile.yml (`cv.template` / `cover_letter.template`), must survive
@@ -12,7 +12,7 @@
  * real shipped variant (`cv-template.zh-minimal.html`) on shape alone. The
  * only signal that separates "my personal variant" from "a shipped variant
  * upstream has since removed, prune it" is whether config/profile.yml itself
- * names this variant as the active default — exactly what cv-templates.mjs's
+ * names this variant as the active default — exactly what scripts/cv-templates.mjs's
  * resolveTemplate() already relies on to pick it for CV generation.
  *
  * Also pins the two-cycle failure mode that makes this a genuinely distinct
@@ -42,7 +42,7 @@ import {
   configuredTemplateVariantsFromProfileSource,
   snapshotConfiguredTemplateVariants,
   REEXEC_FALLBACK_FILES,
-} from '../update-system.mjs';
+} from '../scripts/update-system.mjs';
 
 console.log('\n🧪 Testing user-configured template-variant carve-out...');
 
@@ -85,9 +85,9 @@ for (const section of ['cv', 'cover_letter']) {
   }
 }
 
-if (REEXEC_FALLBACK_FILES.includes('cv-templates.mjs')
+if (REEXEC_FALLBACK_FILES.includes('scripts/cv-templates.mjs')
     && REEXEC_FALLBACK_FILES.includes('lib/is-main-module.mjs')
-    && REEXEC_FALLBACK_FILES.includes('path-resolver.mjs')) {
+    && REEXEC_FALLBACK_FILES.includes('scripts/path-resolver.mjs')) {
   pass('self-reexec checks out configured-template loading and data-root dependencies before apply');
 } else {
   fail('self-reexec fallback omits a configured-template dependency needed before normal checkout');
@@ -153,7 +153,7 @@ if (REEXEC_FALLBACK_FILES.includes('cv-templates.mjs')
   try {
     const configured = await loadConfiguredTemplateVariants({ profilePath: profile });
     if (configured.cv === 'bw' && configured.cover === 'concise') {
-      pass('apply helper resolves configured variants through cv-templates.mjs lazy wiring');
+      pass('apply helper resolves configured variants through scripts/cv-templates.mjs lazy wiring');
     } else {
       fail(`lazy wiring returned ${JSON.stringify(configured)}`);
     }

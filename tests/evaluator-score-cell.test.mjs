@@ -10,13 +10,13 @@
 // The discovery half stays, inverted: rather than sweeping for copies to test,
 // it now asserts there are none. A fifth evaluator that grows its own
 // normalizedTrackerScore is caught the day it lands, which is what kept
-// `gemini-eval.mjs`'s concatenating version alive next to a sibling that had
+// `scripts/gemini-eval.mjs`'s concatenating version alive next to a sibling that had
 // been immune to the same input the whole time.
 import { readdirSync, readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { pass, fail } from './helpers.mjs';
-import { looksLikeScoreCell } from '../tracker-parse.mjs';
+import { looksLikeScoreCell } from '../scripts/tracker-parse.mjs';
 import { normalizedTrackerScore } from '../lib/tracker-addition.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');

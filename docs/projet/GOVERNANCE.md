@@ -17,7 +17,7 @@ The goal is to build a self-sustaining community where the project thrives even 
 
 Anyone can grow their role in the project. Roles are earned through sustained, quality contributions — not requested or assigned.
 
-This is the one place the ladder and its criteria are written down: [MAINTAINERS.md](MAINTAINERS.md) lists who holds each role today, and [CONTRIBUTING.md](CONTRIBUTING.md) and announcements link here instead of keeping their own copy.
+This is the one place the ladder and its criteria are written down: [docs/projet/MAINTAINERS.md](MAINTAINERS.md) lists who holds each role today, and [docs/projet/CONTRIBUTING.md](CONTRIBUTING.md) and announcements link here instead of keeping their own copy.
 
 ### Participant
 
@@ -50,9 +50,9 @@ This is the one place the ladder and its criteria are written down: [MAINTAINERS
 
 - Triage permissions on the repository; can submit reviews. A maintainer still approves and merges: branch protection only counts approvals from write access
 - Identity is verified before this access is granted (see [Trust & access](MAINTAINERS.md#trust--access))
-- Reviews carry the decision **inside the reviewer's area** (listed in [MAINTAINERS.md](MAINTAINERS.md)); outside it, an approval is a valued signal on code quality, not the routing decision
+- Reviews carry the decision **inside the reviewer's area** (listed in [docs/projet/MAINTAINERS.md](MAINTAINERS.md)); outside it, an approval is a valued signal on code quality, not the routing decision
 - Routing (core vs. plugin vs. separate project, see CONTRIBUTING "Scope") and the critical files in `.github/CODEOWNERS` stay with the maintainers, before code review
-- Listed in CONTRIBUTORS.md
+- Listed in docs/projet/CONTRIBUTORS.md
 - Invited to architectural discussions before major changes
 
 ### Maintainer
@@ -72,7 +72,7 @@ You don't apply for roles. They emerge naturally:
 1. **Start contributing** — fix a bug, translate a mode, improve docs
 2. **Be consistent** — one quality PR per month beats ten rushed ones
 3. **Help others** — answer questions in Discord, review PRs, triage issues
-4. **Understand the project** — read CLAUDE.md, DATA_CONTRACT.md, the architecture docs
+4. **Understand the project** — read CLAUDE.md, docs/projet/DATA_CONTRACT.md, the architecture docs
 5. **The maintainer will notice** — and reach out when the time is right
 
 ## Values

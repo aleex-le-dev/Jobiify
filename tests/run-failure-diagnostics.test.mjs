@@ -4,7 +4,7 @@
 // run() reports failure by returning null. execFileSync attaches the child's
 // stdout, stderr, exit status, and signal to the error it throws, and the catch
 // block discarded all of it. Every caller could therefore only report the fact
-// of a crash, which is what `❌ <name> crashed` in test-all.mjs is: one line, no
+// of a crash, which is what `❌ <name> crashed` in scripts/test-all.mjs is: one line, no
 // stack, no assertion text, no exit code.
 //
 // That is not merely unhelpful, it is the difference between reading a CI
@@ -68,7 +68,7 @@ const OK_CHILD = 'console.log("OK");';
   else fail(`a successful run must clear the record, got ${JSON.stringify(lastRunFailure())}`);
 }
 
-// Guard the format helper too: it is what test-all.mjs interpolates, so an
+// Guard the format helper too: it is what scripts/test-all.mjs interpolates, so an
 // empty string on success is what keeps a passing line unchanged.
 {
   const { formatRunFailure } = await import('./helpers.mjs');
@@ -104,7 +104,7 @@ const OK_CHILD = 'console.log("OK");';
 
 // The helper existing is not the same as the call sites using it. Below the
 // per-file node:test path — which runDiscovered() already fixed, and which #4164
-// is refining — test-all.mjs spawns ONE child for every suite under
+// is refining — scripts/test-all.mjs spawns ONE child for every suite under
 // web/tests/lib. That site reported the fact of failure and nothing else: just a
 // rerun command naming ~100 files. Observed twice on 2026-10-04 on
 // windows-latest, on two unrelated PRs, and neither log could say which of the
@@ -123,13 +123,13 @@ const OK_CHILD = 'console.log("OK");';
   const { readFileSync } = await import('node:fs');
   const { join } = await import('node:path');
   const { ROOT } = await import('./helpers.mjs');
-  const src = readFileSync(join(ROOT, 'test-all.mjs'), 'utf8');
+  const src = readFileSync(join(ROOT, 'scripts/test-all.mjs'), 'utf8');
 
   // The site, found by the thing that makes it distinctive: it is the only
   // fail() whose message interpolates the discovered web-unit list.
   const site = src.split('\n').find((l) => l.includes('fail(') && l.includes('webUnits.join('));
   if (site) pass('the web-unit batch failure site is still findable');
-  else fail('no fail() in test-all.mjs interpolates webUnits.join() — this check has lost its subject');
+  else fail('no fail() in scripts/test-all.mjs interpolates webUnits.join() — this check has lost its subject');
 
   const CARRIERS = [/formatRunFailure\s*\(/, /failureExcerpt\s*\(/, /\.(stdout|stderr)\b/];
   if (site && CARRIERS.some((re) => re.test(site))) {

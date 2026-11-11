@@ -1,4 +1,4 @@
-// persist-evaluation-report.mjs writes the report and the headed addition.
+// scripts/persist-evaluation-report.mjs writes the report and the headed addition.
 // It does not reserve a number and it does not merge the tracker.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -8,10 +8,10 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { trackerTsvLine as coreLine } from "../lib/tracker-addition.mjs";
-import { writeEvaluationArtifacts } from "../persist-evaluation-report.mjs";
+import { writeEvaluationArtifacts } from "../scripts/persist-evaluation-report.mjs";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const SCRIPT = join(ROOT, "persist-evaluation-report.mjs");
+const SCRIPT = join(ROOT, "scripts/persist-evaluation-report.mjs");
 
 const ROW = {
   num: "035",

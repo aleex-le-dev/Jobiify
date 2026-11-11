@@ -4,8 +4,8 @@ import { careerOpsRoot } from "@/lib/career-ops";
 import { normalizeTextKey as fallbackKey } from "./normalize-text-key.mjs";
 
 /**
- * ACL for the core's `normalizeTextKey` (tracker-parse.mjs) — the shared
- * matching/dedup key helper that scan.mjs and tracker-parse.mjs use (#2569).
+ * ACL for the core's `normalizeTextKey` (scripts/tracker-parse.mjs) — the shared
+ * matching/dedup key helper that scripts/scan.mjs and scripts/tracker-parse.mjs use (#2569).
  *
  * DERIVED, NOT COPIED (#2369, #2666). The web used to reimplement this with
  * `[^a-z0-9]`, which deletes every non-ASCII letter: "Nestlé" keyed to "nestl",
@@ -36,7 +36,7 @@ let warned = false;
 
 /** Resolve the core's normalizeTextKey for the current root, or the fallback. */
 export async function getNormalizeTextKey(): Promise<NormalizeTextKey> {
-  const file = path.join(careerOpsRoot(), "tracker-parse.mjs");
+  const file = path.join(careerOpsRoot(), "scripts/tracker-parse.mjs");
   const hit = modCache.get(file);
   if (hit) return hit;
   try {

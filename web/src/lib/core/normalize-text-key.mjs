@@ -1,6 +1,6 @@
 /**
  * Unicode-safe company/role matching key — algorithm mirror of the core's
- * `normalizeTextKey` in tracker-parse.mjs (#2569 / #2666).
+ * `normalizeTextKey` in scripts/tracker-parse.mjs (#2569 / #2666).
  *
  * Plain .mjs (same pattern as clean-chips.mjs) so node:test and client bundles
  * can import it without a TS runner or Node-only deps.
@@ -11,7 +11,7 @@
  * in text-key.ts; this file is for (a) client components and (b) the last-resort
  * fallback when the core module can't be loaded.
  *
- * Keep the body byte-for-byte aligned with tracker-parse.mjs `normalizeTextKey`
+ * Keep the body byte-for-byte aligned with scripts/tracker-parse.mjs `normalizeTextKey`
  * (nullish → '', NFKC, lower, \p{L}\p{M}\p{N}, separator). The parity test in
  * tests/lib/normalize-text-key.test.mjs fails the build if they drift.
  *
@@ -34,7 +34,7 @@ export function normalizeTextKey(value, separator = "") {
     // NO `NFD`: NFKC leaves ż/ė/ġ as single precomposed code points the strip
     // cannot reach, while `i` + U+0307 has no precomposed form. Decomposing
     // first would collapse Żubr/Zubr and Ėmė/Eme.
-    // Kept byte-for-byte in step with tracker-parse.mjs — test-all §55.7
+    // Kept byte-for-byte in step with scripts/tracker-parse.mjs — test-all §55.7
     // compares the two and fails on any divergence.
     .replace(/̇/gu, "")
     .replace(/[^\p{L}\p{M}\p{N}]+/gu, separator)

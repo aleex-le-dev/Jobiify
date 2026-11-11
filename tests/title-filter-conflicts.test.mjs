@@ -2,7 +2,7 @@
 // title as both a positive and a negative can never keep it.
 //
 // buildTitleFilter() requires `hasPositive && !hasNegative`
-// (title-keywords.mjs), so the positive entry looks like a target and is
+// (scripts/title-keywords.mjs), so the positive entry looks like a target and is
 // silently a no-op. The shipped example warns about this in prose; these
 // assertions are what tell a reader whether THEIR list has the problem, and
 // they run against the matcher the scanner itself uses rather than a copy.
@@ -16,18 +16,18 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import * as yaml from 'js-yaml';
 import { pass, fail, warn, ROOT } from './helpers.mjs';
-import { buildTitleFilter } from '../scan.mjs';
-import { compileKeyword, foldAccents } from '../title-keywords.mjs';
+import { buildTitleFilter } from '../scripts/scan.mjs';
+import { compileKeyword, foldAccents } from '../scripts/title-keywords.mjs';
 import { findTitleFilterConflicts, representativeTitle } from '../lib/title-filter-conflicts.mjs';
 
 console.log('\ntitle_filter conflicts — a positive the negatives veto');
 
 // ── the updater ships the module doctor now imports ─────────────────
-// doctor.mjs is a SYSTEM_PATHS file, so an upgrade checks out the new doctor
+// scripts/doctor.mjs is a SYSTEM_PATHS file, so an upgrade checks out the new doctor
 // over an install whose updater has no entry for lib/title-filter-conflicts.mjs
 // -- and the install is left with a doctor that cannot load. Same shape as the
-// check tests/jd-archive-wiring.test.mjs makes for check-jd-archive.mjs.
-const updaterSrc = readFileSync(join(ROOT, 'update-system.mjs'), 'utf-8');
+// check tests/jd-archive-wiring.test.mjs makes for scripts/check-jd-archive.mjs.
+const updaterSrc = readFileSync(join(ROOT, 'scripts/update-system.mjs'), 'utf-8');
 const systemBlock = (updaterSrc.match(/SYSTEM_PATHS\s*=\s*\[([\s\S]*?)\]/) || [, ''])[1];
 if (systemBlock.includes("'lib/title-filter-conflicts.mjs'")) {
   pass('lib/title-filter-conflicts.mjs is in SYSTEM_PATHS (shipped + updatable)');
@@ -206,11 +206,11 @@ if (
 }
 
 // ── doctor --json surfaces the same verdict ─────────────────────────
-// The unit tests above would still all pass if the wiring in doctor.mjs were
+// The unit tests above would still all pass if the wiring in scripts/doctor.mjs were
 // deleted, so drive the real CLI and assert the key it emits. spawnSync keeps
 // this honest: it is the doctor a user actually runs, not a re-import.
 function doctorOn(dir, { json = true, env = {} } = {}) {
-  const args = [join(ROOT, 'doctor.mjs'), '--target', dir];
+  const args = [join(ROOT, 'scripts/doctor.mjs'), '--target', dir];
   if (json) args.push('--json');
   const res = spawnSync(process.execPath, args, {
     cwd: dir,

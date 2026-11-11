@@ -15,10 +15,10 @@ import { tmpdir } from 'os';
 import { pass, fail, ROOT } from './helpers.mjs';
 import {
   parseScanHistory, detectReposts, loadAggregatorCompanies, companyKey,
-} from '../detect-reposts.mjs';
+} from '../scripts/detect-reposts.mjs';
 import {
   computePostingChurn, buildCompanyCards, isAggregatorCompany,
-} from '../company-history.mjs';
+} from '../scripts/company-history.mjs';
 
 console.log('\naggregator companies — skipped, and visibly skipped');
 

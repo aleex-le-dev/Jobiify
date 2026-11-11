@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * company-history.mjs — Per-Company Evidence-Card Aggregator for career-ops
+ * scripts/company-history.mjs — Per-Company Evidence-Card Aggregator for career-ops
  *
  * READ-ONLY. Never writes a file. Joins the tracker (data/applications.md),
  * follow-ups (data/follow-ups.md), and scan-history (data/scan-history.tsv)
@@ -11,10 +11,10 @@
  *     on an Applied row past the silence window? A rejection counts as a
  *     response — it is an answer, not silence.
  *   - postingChurn: does this company repost the same role repeatedly
- *     (evergreen requisition / re-opened search), per detect-reposts.mjs?
+ *     (evergreen requisition / re-opened search), per scripts/detect-reposts.mjs?
  *     "The same role, later" is the whole claim: a company running several
  *     openings side by side — one per city, country, language or segment — is
- *     not reposting, and detect-reposts.mjs enforces that with a minimum span
+ *     not reposting, and scripts/detect-reposts.mjs enforces that with a minimum span
  *     and a title-identity rule. Before it did, this axis reported
  *     `reposts-detected` for companies that had never reposted anything.
  *
@@ -38,12 +38,12 @@
  *                     than expected: every extraction from it is guarded by
  *                     `typeof x === 'function'`.
  *
- * Run: node company-history.mjs                    (JSON to stdout)
- *      node company-history.mjs --summary           (human-readable cards)
- *      node company-history.mjs --company "Acme"    (single-card lookup)
- *      node company-history.mjs --silence-window 21 (override default window)
- *      node company-history.mjs --include-stale     (include >365d-old facts in labels)
- *      node company-history.mjs --self-test
+ * Run: node scripts/company-history.mjs                    (JSON to stdout)
+ *      node scripts/company-history.mjs --summary           (human-readable cards)
+ *      node scripts/company-history.mjs --company "Acme"    (single-card lookup)
+ *      node scripts/company-history.mjs --silence-window 21 (override default window)
+ *      node scripts/company-history.mjs --include-stale     (include >365d-old facts in labels)
+ *      node scripts/company-history.mjs --self-test
  */
 
 import { readFileSync, existsSync, writeFileSync, mkdtempSync, rmSync } from 'fs';
@@ -57,8 +57,8 @@ import { parseScanHistory, detectReposts, loadAggregatorCompanies, isKeyLookup }
 import { normalizeCompanyName } from './invite-match.mjs';
 import { normalizeCompany, resolveTrackerPath } from './tracker-utils.mjs';
 import { resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
-import { localToday } from './lib/local-today.mjs';
-import { validateFlags, flagValue } from './lib/cli-flags.mjs';
+import { localToday } from '../lib/local-today.mjs';
+import { validateFlags, flagValue } from '../lib/cli-flags.mjs';
 import {
   parseFollowups,
   parseAppliedDate,
@@ -67,10 +67,10 @@ import {
   addDays,
   normalizeStatus,
 } from './followup-cadence.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
-const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
+const CAREER_OPS = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const PROFILE_FILE = process.env.CAREER_OPS_PROFILE || join(DATA_ROOT, 'config/profile.yml');
 const PACKAGE_JSON = join(CAREER_OPS, 'package.json');
@@ -106,20 +106,20 @@ const KNOWN_FLAGS = ['--summary', '--self-test', '--company', '--silence-window'
 const VALUE_FLAGS = ['--company', '--silence-window', '--scan-history', '--followups'];
 
 const USAGE = `Usage:
-  node company-history.mjs                       # full JSON evidence cards to stdout
-  node company-history.mjs --summary              # human-readable cards
-  node company-history.mjs --company "Acme"       # single-card lookup
-  node company-history.mjs --silence-window 21    # override the default silence window (days)
-  node company-history.mjs --include-stale        # include facts older than 365d in label computation
-  node company-history.mjs --self-test            # run the in-memory test suite
-  node company-history.mjs --summary --emit-signal  # human-readable cards, then RFC #1506 schema-v1 no-response-friction
+  node scripts/company-history.mjs                       # full JSON evidence cards to stdout
+  node scripts/company-history.mjs --summary              # human-readable cards
+  node scripts/company-history.mjs --company "Acme"       # single-card lookup
+  node scripts/company-history.mjs --silence-window 21    # override the default silence window (days)
+  node scripts/company-history.mjs --include-stale        # include facts older than 365d in label computation
+  node scripts/company-history.mjs --self-test            # run the in-memory test suite
+  node scripts/company-history.mjs --summary --emit-signal  # human-readable cards, then RFC #1506 schema-v1 no-response-friction
                                                    # records as JSON Lines (one record per line) on stdout. --emit-signal
                                                    # REQUIRES --summary: without it, default/--company mode already prints
                                                    # a single parsable JSON document, and appending JSON Lines after it
                                                    # would make stdout un-parsable as one JSON value. --summary's output is
                                                    # not JSON to begin with, so appending JSON Lines after it stays clean —
                                                    # bare --emit-signal (no --summary) exits 1 with this same explanation.
-  node company-history.mjs --help                 # print this usage block and exit`;
+  node scripts/company-history.mjs --help                 # print this usage block and exit`;
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -169,7 +169,7 @@ function parseArgs(argv) {
   // so `--company --summary --emit-signal` would otherwise still print a bare
   // JSON object followed by JSON Lines; reject that combination too.
   if (emitSignal && (!summaryMode || company)) {
-    console.error('Error: --emit-signal requires --summary and cannot be combined with --company (default and --company mode already print a single JSON document; appending JSON Lines after it would break JSON parsing of stdout). Use: node company-history.mjs --summary --emit-signal');
+    console.error('Error: --emit-signal requires --summary and cannot be combined with --company (default and --company mode already print a single JSON document; appending JSON Lines after it would break JSON parsing of stdout). Use: node scripts/company-history.mjs --summary --emit-signal');
     console.error(USAGE);
     process.exit(1);
   }
@@ -250,7 +250,7 @@ export function loadFollowupRows(rootDir = DATA_ROOT, overridePath) {
 // negative result from a check that never ran.
 export function loadRepostClusters(rootDir = DATA_ROOT, overridePath, portalsPath) {
   const path = overridePath || join(rootDir, 'data/scan-history.tsv');
-  // Same override scan.mjs and detect-reposts.mjs honour, so a sandboxed run
+  // Same override scripts/scan.mjs and scripts/detect-reposts.mjs honour, so a sandboxed run
   // points all three at one config instead of silently reading the real one.
   const aggregators = loadAggregatorCompanies(
     portalsPath || process.env.CAREER_OPS_PORTALS || join(rootDir, 'portals.yml'),
@@ -260,7 +260,7 @@ export function loadRepostClusters(rootDir = DATA_ROOT, overridePath, portalsPat
   return { clusters: detectReposts(rows, undefined, undefined, aggregators), aggregators, loaded: true };
 }
 
-// Dynamic-only dependency: funnel-velocity.mjs ships on main, but the
+// Dynamic-only dependency: scripts/funnel-velocity.mjs ships on main, but the
 // applied-date/median helpers probed below are not part of its export surface.
 // Loaded exclusively through a try/catch'd dynamic import so a missing (or
 // differently-shaped) module never crashes this script. Every extraction
@@ -278,7 +278,7 @@ export async function loadStatusLogSource() {
   }
 
   // `loaded` reports whether this source can actually PRODUCE data, not merely
-  // whether the import resolved. The merged funnel-velocity.mjs exports neither
+  // whether the import resolved. The merged scripts/funnel-velocity.mjs exports neither
   // optional helper, so when no usable helper is present the source is inert and
   // must report absent — otherwise callers treat empty enrichment as loaded.
   const hasAppliedHelper = typeof mod.getAppliedDateObservations === 'function';
@@ -385,15 +385,15 @@ export function computeResponsiveness(rows, followupCountsByAppNum, opts = {}) {
         // for "no data", not a guessed value.
         via: row.via ?? null,
         dateBasis,
-        // Real set-status.mjs syntax (it rejects unknown flags, so the
+        // Real scripts/set-status.mjs syntax (it rejects unknown flags, so the
         // instruction must only use flags that exist): --on records the real
-        // response date in the status ledger — the file funnel-velocity.mjs
+        // response date in the status ledger — the file scripts/funnel-velocity.mjs
         // reads dates back from. A *response* date buried in --note free text
         // is parsed by nothing. (Applied dates are a different story: this same
         // file falls back to parseAppliedDate(row.notes) forty lines up, which
         // is why the qualifier matters — dropping it reads as "dates in notes
         // are dead", and that fallback is load-bearing.)
-        clearInstruction: `if they actually responded, node set-status.mjs --row ${row.num} <state> --on <response-date> clears this`,
+        clearInstruction: `if they actually responded, node scripts/set-status.mjs --row ${row.num} <state> --on <response-date> clears this`,
       });
     } else if (RESPONDED_STATUSES.has(normalized)) {
       // row.date is the EVALUATION date, not the date the company replied. Use
@@ -626,7 +626,7 @@ export function getCompanyCard(result, companyName, aggregators) {
 // --- no-response-friction signal emission (RFC #1506 schema v1, --emit-signal only) ---
 //
 // Opt-in, local-only. Reuses the `silent-on-you` responsiveness fact
-// company-history.mjs already computes above (computeResponsiveness()) rather
+// scripts/company-history.mjs already computes above (computeResponsiveness()) rather
 // than deriving a second silence detector: the 28-day DEFAULT_SILENCE_WINDOW_DAYS
 // (or its --silence-window override) IS this signal's threshold. RFC #1506's
 // original discussion floated a 14-day baseline before this script's 28-day
@@ -650,7 +650,7 @@ export function getCompanyCard(result, companyName, aggregators) {
 // `sourceDetector: 'interview-redflag'` — the TOOL name, not any one signal
 // name. sourceDetector identifies the producing script, not the specific
 // signal type it happened to emit. This also future-proofs the value:
-// company-history.mjs already computes two independent axes
+// scripts/company-history.mjs already computes two independent axes
 // (responsiveness and postingChurn); only responsiveness feeds a signal
 // today (no-response-friction), but if postingChurn ever feeds a second
 // signal type later, a value scoped to this one signal would be wrong for
@@ -720,7 +720,7 @@ function slugify(value) {
     .replace(/^-+|-+$/g, '');
 }
 
-// Reads config/profile.yml -> location.country the same way followup-cadence.mjs
+// Reads config/profile.yml -> location.country the same way scripts/followup-cadence.mjs
 // reads config/profile.yml (existsSync guard, try/catch parse, silent
 // degradation — a missing or unparsable profile must never crash signal
 // emission). Returns null when a region genuinely cannot be resolved (no
@@ -845,7 +845,7 @@ function silentFactObservedAt(fact) {
 // rode in on.
 //
 // Returns { records, warnings } (matching this repo's established
-// discover-ats.mjs / check-table-freshness.mjs shape), not a bare array.
+// scripts/discover-ats.mjs / scripts/check-table-freshness.mjs shape), not a bare array.
 // region is resolved once per run (it is a property of the candidate's own
 // profile, not of any individual company) — when it cannot be resolved,
 // per artemtrofymenko's PR #2788 review, this "says nothing" rather than
@@ -946,7 +946,7 @@ export function renderSummary(result) {
 
   const aged = result.hygiene?.agedApplied || [];
   if (aged.length > 0) {
-    lines.push(`  ${aged.length} aged-Applied row(s) look silent — confirm real or update (node set-status.mjs --row <num> <state> --on <response-date>).`);
+    lines.push(`  ${aged.length} aged-Applied row(s) look silent — confirm real or update (node scripts/set-status.mjs --row <num> <state> --on <response-date>).`);
     lines.push('');
   }
 
@@ -1168,7 +1168,7 @@ async function runSelfTest() {
 
   // --- funnel-velocity loader is honestly inert against the merged module ---
   {
-    // The merged funnel-velocity.mjs imports fine but exports neither optional
+    // The merged scripts/funnel-velocity.mjs imports fine but exports neither optional
     // helper (getAppliedDateObservations / computeMedianResponseDays), so the
     // loader must report the statusLog source ABSENT — no applied-date
     // observations, null median — rather than claiming loaded just because the
@@ -1348,7 +1348,7 @@ async function runSelfTest() {
     const result = computeResponsiveness([row(120, 'ClearCo', 'Applied', '2026-01-01')], new Map(), { now: NOW, silenceWindowDays: 28 });
     const fact = result.facts[0];
     check(!!fact.appliedDate, 'silent fact carries an appliedDate');
-    check(typeof fact.clearInstruction === 'string' && fact.clearInstruction.includes('set-status'), 'silent fact clearInstruction references set-status.mjs');
+    check(typeof fact.clearInstruction === 'string' && fact.clearInstruction.includes('set-status'), 'silent fact clearInstruction references scripts/set-status.mjs');
     check(fact.clearInstruction.includes('--row'), 'silent fact clearInstruction selects the tracker row explicitly via --row');
     check(fact.clearInstruction.includes('--on'), 'silent fact clearInstruction records the response date via --on, not --note free text');
     check(!fact.clearInstruction.includes('--note'), 'silent fact clearInstruction does not smuggle the response date into --note free text');
@@ -1368,7 +1368,7 @@ async function runSelfTest() {
     check(singleSignals.length === 1, 'exactly one no-response-friction record emitted for a single silent-on-you card');
     check(singleSignals[0]?.severity === 'single', 'one silent fact on the card -> severity single');
     check(singleSignals[0]?.signalType === 'no-response-friction', 'emitted record carries signalType no-response-friction');
-    check(singleSignals[0]?.companyKey === singleResult.companies[0].key, 'emitted companyKey reuses company-history.mjs\'s own normalized key, not a new format');
+    check(singleSignals[0]?.companyKey === singleResult.companies[0].key, 'emitted companyKey reuses scripts/company-history.mjs\'s own normalized key, not a new format');
     check(singleSignals[0]?.region === 'north-america/canada', 'emitted region matches the resolved region');
     check(singleSignals[0]?.emittedBy === 'career-ops vTEST', 'emitted emittedBy matches the resolved version string');
     check(/^\d{4}-\d{2}$/.test(singleSignals[0]?.observedAt || ''), 'observedAt is strictly month-only (YYYY-MM, no day)');
@@ -1700,7 +1700,7 @@ if (isMainModule(import.meta.url)) {
 
   if (selfTestMode) {
     runSelfTest().catch(err => {
-      console.error(`company-history.mjs: self-test error: ${err?.message || err}`);
+      console.error(`scripts/company-history.mjs: self-test error: ${err?.message || err}`);
       process.exit(1);
     });
   } else {
@@ -1759,7 +1759,7 @@ if (isMainModule(import.meta.url)) {
       if (emitSignal) {
         const { records: signals, warnings } = buildNoResponseFrictionSignals(result, { includeStale });
         for (const warning of warnings) {
-          console.error(`company-history.mjs: ${warning}`);
+          console.error(`scripts/company-history.mjs: ${warning}`);
         }
         for (const record of signals) {
           console.log(JSON.stringify(record));
@@ -1768,7 +1768,7 @@ if (isMainModule(import.meta.url)) {
     };
 
     run().catch(err => {
-      console.error(`company-history.mjs: unexpected error: ${err?.message || err}`);
+      console.error(`scripts/company-history.mjs: unexpected error: ${err?.message || err}`);
       process.exit(1);
     });
   }

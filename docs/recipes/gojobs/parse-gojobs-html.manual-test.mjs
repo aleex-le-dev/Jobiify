@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import { parseFiles, parseSavedHtml } from './parse-gojobs-html.mjs';
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/gojobs-search-results.html', import.meta.url));
-const RECIPE_ROOT = fileURLToPath(new URL('.', import.meta.url));
+const RECIPE_ROOT = fileURLToPath(new URL('./', import.meta.url));
 
 test('parses English rows from legacy and current ASP.NET control prefixes', () => {
   const previousRoot = process.env.CAREER_OPS_ROOT;

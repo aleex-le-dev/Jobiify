@@ -6,7 +6,7 @@
  * Two classes of bug are pinned here.
  *
  * 1. WHAT A COVER LETTER IS CALLED. The writers name covers by SUFFIX —
- *    generate-cover-letter.mjs's default is `{company}-{role}-cover.pdf` and
+ *    scripts/generate-cover-letter.mjs's default is `{company}-{role}-cover.pdf` and
  *    modes/cover.md's payload is `output/{company-slug}-{role-slug}-cover.pdf`.
  *    A `cover-` PREFIX filter (the shape this resolver was first written with)
  *    matches none of them, so the link would never appear for a real user.
@@ -25,7 +25,7 @@
  *    rather than guessing.
  *
  * Lives under web/tests/ so the web CI collects it and the core runner never
- * has to know it exists — no test-all.mjs hook, no update-system.mjs
+ * has to know it exists — no scripts/test-all.mjs hook, no scripts/update-system.mjs
  * registration, and no core-only-install skip guard, because web/ is always
  * present when this suite runs. Same reasoning as apply-cv-resolver.test.mjs;
  * see that file's header.
@@ -225,7 +225,7 @@ test('resolveTailoredCover: an application number naming no tracker row resolves
   );
 });
 
-test('resolveTailoredCover: matches the role slug generate-cover-letter.mjs truncated to 30 chars when building the default filename', async () => {
+test('resolveTailoredCover: matches the role slug scripts/generate-cover-letter.mjs truncated to 30 chars when building the default filename', async () => {
   // "senior-director-of-product-marketing" is 36 chars; the writer's
   // `.slice(0, 30)` emits "senior-director-of-product-mar".
   await withFixture(

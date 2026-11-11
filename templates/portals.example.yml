@@ -254,7 +254,7 @@
 #   max: 0
 #   currency: "USD"
 
-# Read-only portal housekeeping: `node stats.mjs --prune --summary`.
+# Read-only portal housekeeping: `node scripts/stats.mjs --prune --summary`.
 # Uses exact-lowercase company names, scan history and recent health evidence.
 # First health observation is a lower bound, not the date config was added.
 # No configuration is removed automatically; review filters/names before pruning.
@@ -276,7 +276,7 @@
 #
 # Need an ABSOLUTE date window instead (e.g. "only postings from the 17th to
 # the 20th") rather than a relative "N days old" cutoff? Use the CLI flags
-# instead of a portals.yml key: `node scan.mjs --posted-after 2026-07-17
+# instead of a portals.yml key: `node scripts/scan.mjs --posted-after 2026-07-17
 # --posted-before 2026-07-20`. Same "don't penalize missing data" rule.
 
 # -- Trust filter (optional) --
@@ -635,8 +635,8 @@ title_filter:
     - "Head"
     - "Director"
 
-# -- Title filter overrides (optional, scan-ats-full.mjs only) --
-# The reverse ATS sweep (scan-ats-full.mjs) applies ONE global title_filter
+# -- Title filter overrides (optional, scripts/scan-ats-full.mjs only) --
+# The reverse ATS sweep (scripts/scan-ats-full.mjs) applies ONE global title_filter
 # to every company in the public dataset it walks. Some employers legitimately
 # deserve a WIDER title net than everyone else, without loosening the global
 # filter for the rest of the sweep. title_filter_overrides lets specific
@@ -646,7 +646,7 @@ title_filter:
 # `companies` matches the company/tenant slug the scanner already derives
 # from the job-board-aggregator dataset entry (e.g. for a Workday tenant at
 # https://uwaterloo.wd3.myworkdayjobs.com/..., the slug is "uwaterloo" — the
-# same value scan-ats-full.mjs logs as the board name on fetch errors).
+# same value scripts/scan-ats-full.mjs logs as the board name on fetch errors).
 # `positive_extra` keywords are ADDITIVE to (never a replacement for)
 # title_filter.positive above, and the global `negative` list still applies.
 #
@@ -669,7 +669,7 @@ title_filter:
 #       - "Student Services"
 
 # -- Domain filter (reverse sweep only, opt-in) --
-# Read ONLY by `scan-ats-full.mjs` (npm run scan:full), the reverse sweep that
+# Read ONLY by `scripts/scan-ats-full.mjs` (npm run scan:full), the reverse sweep that
 # walks every public ATS board instead of your tracked_companies. Commented out
 # on purpose: absent, the sweep behaves exactly as it always has.
 #
@@ -677,7 +677,7 @@ title_filter:
 # title to answer both "is this the right role" and "is this employer in my
 # industry", and a title cannot answer the second one — "Senior Backend
 # Engineer" is identical at a Solana infrastructure company and at a supermarket
-# chain. scan.mjs never has that problem, because tracked_companies settles the
+# chain. scripts/scan.mjs never has that problem, because tracked_companies settles the
 # employer before any title is read.
 #
 # So this gates the BOARD before any title is tested: if no posting anywhere on
@@ -740,7 +740,7 @@ title_filter:
 #   - "crypto"
 #   - "cryptocurrency"
 
-# -- Declared-field whitelists (optional, scan.mjs) --
+# -- Declared-field whitelists (optional, scripts/scan.mjs) --
 # title_filter judges a posting by its TITLE. Some boards publish a better
 # discriminator as a field of its own — an occupation code, a department —
 # which no title list can stand in for: one title spans several occupations,
@@ -1116,7 +1116,7 @@ search_queries:
 # scan_method: playwright (default), websearch, local_parser
 # For Greenhouse companies, add api: field for faster structured JSON access.
 #
-# Provider routing (scan.mjs):
+# Provider routing (scripts/scan.mjs):
 #   By default each entry is auto-detected from `careers_url` against the
 #   loaded providers in providers/*.mjs (local-parser, ashby, greenhouse, lever).
 #   local-parser runs first when parser.command + parser.script are set.
@@ -1160,7 +1160,7 @@ search_queries:
 #   enabled: true
 
 # ── Provider auto-detection ───────────────────────────────────────
-# scan.mjs auto-loads everything in providers/*.mjs and tries each
+# scripts/scan.mjs auto-loads everything in providers/*.mjs and tries each
 # provider's detect() in order. URL patterns recognized:
 #
 #   greenhouse      (job-)?boards(.eu)?.greenhouse.io/<slug>  (or api: field)
@@ -1996,7 +1996,7 @@ search_queries:
 # unaffected. Combined with title normalization, this suppresses URL-new
 # duplicates caused by requisition URL changes and per-location title splits
 # ("Engineer (Berlin)" vs "Engineer"). It does not classify repost patterns or
-# produce `postingChurn` evidence; detect-reposts.mjs and company-history.mjs own
+# produce `postingChurn` evidence; scripts/detect-reposts.mjs and scripts/company-history.mjs own
 # that post-tracking layer.
 #
 # company_aliases:
@@ -2009,8 +2009,8 @@ search_queries:
 #
 # Everything in the post-tracking layer assumes "same company + same title = the
 # same opening". On such a board that assumption is false: two identical titles
-# are two different employers' jobs. detect-reposts.mjs therefore skips flagged
-# companies entirely, and company-history.mjs reports
+# are two different employers' jobs. scripts/detect-reposts.mjs therefore skips flagged
+# companies entirely, and scripts/company-history.mjs reports
 # `postingChurn: aggregator-not-evaluated` for them — deliberately NOT
 # `none-detected`, which would claim a clean result from a check that never ran.
 #
@@ -2861,7 +2861,7 @@ tracked_companies:
   #
   # NOTE on scanning: Most Turkish companies below do NOT expose a
   # public ATS API (Greenhouse / Lever / Ashby) on their careers_url,
-  # so `scan.mjs` will filter them out automatically (it requires a
+  # so `scripts/scan.mjs` will filter them out automatically (it requires a
   # detectable ATS). They are listed here as discovery aids — paste
   # the URL of any specific role into `data/pipeline.md` and run
   # `/career-ops pipeline`, which uses Playwright/WebFetch instead.

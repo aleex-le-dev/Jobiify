@@ -1,5 +1,5 @@
 /**
- * jd-capture.mjs — Look up an archived job posting by report number.
+ * scripts/jd-capture.mjs — Look up an archived job posting by report number.
  *
  * Captures in jds/ used to be findable only by reconstructing the filename that
  * wrote them, from today's date plus a freshly scraped company and role. Those
@@ -18,7 +18,7 @@
 import { readdirSync, statSync } from 'fs';
 import { join, extname } from 'path';
 
-/** Slug grammar used by archive-posting.mjs for capture name fields. */
+/** Slug grammar used by scripts/archive-posting.mjs for capture name fields. */
 export function captureSlug(text) {
   return String(text ?? '')
     .toLowerCase()
@@ -39,7 +39,7 @@ export function reportPrefix(num) {
  * Both grammars written here put the company first, after the report prefix and
  * an optional capture date:
  *
- *   {NNN}-{YYYY-MM-DD}_{company}_{role}.pdf   archive-posting.mjs
+ *   {NNN}-{YYYY-MM-DD}_{company}_{role}.pdf   scripts/archive-posting.mjs
  *   {NNN}-{company}-{role}.{ext}              hand-named and plugin captures
  *
  * So the slug is anchored to that position and must end on a field boundary.
@@ -108,7 +108,7 @@ export function findCaptureForReport(jdsDir, reportNum, { companySlug } = {}) {
   // A companySlug that matches nothing means every candidate belongs to some
   // other company: the number matched, the posting did not. Falling back to a
   // mismatch would hand the caller another company's JD, and the caller cannot
-  // tell it apart from a real hit — outcome.mjs copies it in as the permanent
+  // tell it apart from a real hit — scripts/outcome.mjs copies it in as the permanent
   // posting record and, counting the lookup as a success, never archives the
   // real one. Report nothing found instead. The cost of being wrong the other
   // way is only a re-archive from the live URL.

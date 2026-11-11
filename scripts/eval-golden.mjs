@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * eval-golden.mjs — golden-set eval harness for cheap-model routing (#1354)
+ * scripts/eval-golden.mjs — golden-set eval harness for cheap-model routing (#1354)
  *
  * The *mechanism* in this file is design-invariant: load labeled golden cases,
  * obtain each candidate model's `---SCORE_SUMMARY---` block (replayed from a
- * recorded fixture for $0 deterministic CI, or live via openai-eval.mjs),
+ * recorded fixture for $0 deterministic CI, or live via scripts/openai-eval.mjs),
  * compare it to the reference label, and exit 0/1 on an aggregate threshold.
  *
  * Labels are frozen reference (Claude-tier) verdicts — the metric is
@@ -18,8 +18,8 @@
  *   - per-model $/run      → COST_PER_RUN_USD (empty until routing rates agreed)
  *
  * Usage:
- *   node eval-golden.mjs --replay --model cheap-stub     # offline, deterministic ($0)
- *   node eval-golden.mjs --live   --model gpt-4o-mini    # calls openai-eval.mjs (needs key + cv.md)
+ *   node scripts/eval-golden.mjs --replay --model cheap-stub     # offline, deterministic ($0)
+ *   node scripts/eval-golden.mjs --live   --model gpt-4o-mini    # calls scripts/openai-eval.mjs (needs key + cv.md)
  *   npm run eval:golden -- --replay --model cheap-stub
  */
 
@@ -29,7 +29,7 @@ import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const GOLDEN_DIR = join(ROOT, 'evals', 'golden');
 
 // ---------------------------------------------------------------------------
@@ -54,10 +54,10 @@ const COST_PER_RUN_USD = {};
 // ---------------------------------------------------------------------------
 const args = process.argv.slice(2);
 if (args.includes('--help') || args.includes('-h')) {
-  console.log(`eval-golden.mjs — golden-set eval harness (#1354)
+  console.log(`scripts/eval-golden.mjs — golden-set eval harness (#1354)
 
   --replay         Replay recorded fixtures (default; offline, $0, deterministic)
-  --live           Call the model live via openai-eval.mjs (needs key + cv.md)
+  --live           Call the model live via scripts/openai-eval.mjs (needs key + cv.md)
   --model <id>     Candidate model id to evaluate (default: cheap-stub)
   --golden <dir>   Golden-set directory (default: evals/golden)
   --fixtures <dir> Replay fixtures directory (default: sibling of --golden)
@@ -129,7 +129,7 @@ function parseSummary(text) {
  * Return the candidate model's raw evaluation text for one golden case.
  *
  * In replay mode this reads a recorded fixture so the gate is offline and
- * deterministic; in live mode it shells out to openai-eval.mjs, reusing the
+ * deterministic; in live mode it shells out to scripts/openai-eval.mjs, reusing the
  * real prompt-assembly path rather than duplicating it here.
  *
  * @param {{id: string, jd: string}} testCase - The golden case being run.
@@ -153,10 +153,10 @@ function getCompletion(testCase) {
     const jdFile = join(dir, 'jd.txt');
     writeFileSync(jdFile, testCase.jd);
     const res = spawnSync(process.execPath,
-      [join(ROOT, 'openai-eval.mjs'), '--file', jdFile, '--model', model, '--no-save'],
+      [join(ROOT, 'scripts/openai-eval.mjs'), '--file', jdFile, '--model', model, '--no-save'],
       { encoding: 'utf8', env: process.env, timeout: 360000 });
     if (res.status !== 0) {
-      throw new Error(`openai-eval.mjs exited ${res.status}: ${(res.stderr || '').slice(0, 200)}`);
+      throw new Error(`scripts/openai-eval.mjs exited ${res.status}: ${(res.stderr || '').slice(0, 200)}`);
     }
     return res.stdout || '';
   } finally {

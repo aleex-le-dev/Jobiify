@@ -440,7 +440,7 @@ try {
     fail(`radancy.fetch() probe-cap handling: jobs=${probeCapJobs?.length} pages=${probeCapPage} warnings=${JSON.stringify(probeCapWarnings)}`);
   }
 
-  // A ctx.fetch* rejection while probing — the shape of verify-portals.mjs's
+  // A ctx.fetch* rejection while probing — the shape of scripts/verify-portals.mjs's
   // budget-exhaustion sentinel — must propagate unwrapped, not be absorbed
   // into a normal stopReason/partial-result path: a swallowed sentinel reads
   // to verify-portals as "board is down" instead of "live, partial".

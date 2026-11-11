@@ -29,11 +29,11 @@ import { appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFil
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { acquirePipelineLock } from '../pipeline-lock.mjs';
+import { acquirePipelineLock } from '../scripts/pipeline-lock.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
-// scan.mjs resolves CAREER_OPS_SCAN_HISTORY ONCE, at module evaluation, so the
+// scripts/scan.mjs resolves CAREER_OPS_SCAN_HISTORY ONCE, at module evaluation, so the
 // sandbox has to be pointed at before the import below — not after. Getting
 // this backwards is how a module ends up reading the developer's real
 // data/scan-history.tsv while the test believes it is hermetic.
@@ -41,8 +41,8 @@ const sandbox = mkdtempSync(join(tmpdir(), 'liveness-record-'));
 const historyPath = join(sandbox, 'scan-history.tsv');
 process.env.CAREER_OPS_SCAN_HISTORY = historyPath;
 
-const { planExpiredHistoryRows } = await import('../liveness-core.mjs');
-const { normalizeUrlForDedup, shouldDedupScanHistoryRow } = await import('../scan.mjs');
+const { planExpiredHistoryRows } = await import('../scripts/liveness-core.mjs');
+const { normalizeUrlForDedup, shouldDedupScanHistoryRow } = await import('../scripts/scan.mjs');
 // web/ is not in every checkout, and an unguarded import of it crashes the whole
 // suite there rather than skipping one case (#3269). The core half of this file
 // does not need web/ at all; only the end-to-end feed assertion does.
@@ -52,7 +52,7 @@ const HAS_WEB = existsSync(WEB_SRC);
 const { collectWhatsNew } = HAS_WEB
   ? await import(pathToFileURL(WEB_WHATS_NEW).href)
   : { collectWhatsNew: null };
-const { recordingEnabled, recordExpiredVerdicts } = await import('../check-liveness.mjs');
+const { recordingEnabled, recordExpiredVerdicts } = await import('../scripts/check-liveness.mjs');
 
 const HEADER = 'url\tfirst_seen\tportal\ttitle\tcompany\tstatus\tlocation';
 const DEAD = 'https://boards.example.com/acme/jobs/1';
@@ -79,7 +79,7 @@ test('--no-record is parsed as a flag, not as a URL to check', () => {
   // and a read-only spot check turns into a live fetch of the string
   // "--no-record". With no real URLs left the script must print usage and
   // exit 1, touching nothing.
-  const out = spawnSync(process.execPath, [join(ROOT, 'check-liveness.mjs'), '--no-record'], {
+  const out = spawnSync(process.execPath, [join(ROOT, 'scripts/check-liveness.mjs'), '--no-record'], {
     encoding: 'utf-8',
     timeout: 20000,
   });
@@ -94,7 +94,7 @@ test('main() calls the recorder, and does not gate it behind an opt-in flag', ()
   // tests/local-today-gates.test.mjs does — because a recorder that works and
   // is never called is precisely the bug being fixed, and deleting the call
   // site otherwise leaves this suite green (verified).
-  const src = readFileSync(join(ROOT, 'check-liveness.mjs'), 'utf-8');
+  const src = readFileSync(join(ROOT, 'scripts/check-liveness.mjs'), 'utf-8');
   // main() is defined after the recorder, so this slice is the CALL, never the
   // definition.
   const body = src.slice(src.indexOf('async function main('));
@@ -107,7 +107,7 @@ test('main() hands the verdict code to the recorder, from both rungs', () => {
   // nothing if the CLI drops `code` before the verdict gets there. Same
   // source-level check as the call-site test above, for the same reason:
   // driving main() needs a live fetch or a browser launch.
-  const src = readFileSync(join(ROOT, 'check-liveness.mjs'), 'utf-8');
+  const src = readFileSync(join(ROOT, 'scripts/check-liveness.mjs'), 'utf-8');
   const body = src.slice(src.indexOf('async function main('));
   assert.match(body, /verdicts\.push\(\{[^}]*\bcode\b[^}]*\}\)/, 'the pushed verdict drops its code');
   assert.match(body, /\(\{ result, reason, code \} = api\)/, 'the API rung drops the verdict code');
@@ -115,7 +115,7 @@ test('main() hands the verdict code to the recorder, from both rungs', () => {
 });
 
 test('--help documents the opt-out', () => {
-  const out = spawnSync(process.execPath, [join(ROOT, 'check-liveness.mjs'), '--help'], {
+  const out = spawnSync(process.execPath, [join(ROOT, 'scripts/check-liveness.mjs'), '--help'], {
     encoding: 'utf-8',
     timeout: 20000,
   });
@@ -320,7 +320,7 @@ test('the history read happens inside the lock, so a concurrent scan cannot caus
   try {
     const proc = execFile(
       process.execPath,
-      ['--input-type=module', '-e', child, pathToFileURL(join(ROOT, 'check-liveness.mjs')).href, marker],
+      ['--input-type=module', '-e', child, pathToFileURL(join(ROOT, 'scripts/check-liveness.mjs')).href, marker],
       { env: { ...process.env, CAREER_OPS_SCAN_HISTORY: historyFixture }, encoding: 'utf-8' },
     );
     const finished = new Promise((resolve, reject) => {

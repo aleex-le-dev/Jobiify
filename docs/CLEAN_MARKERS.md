@@ -2,7 +2,7 @@
 
 Job postings, forms, recruiter emails, and copied web text are untrusted data. They can carry invisible
 Unicode that an agent may copy into a CV, cover letter, or application answer without the user ever
-seeing it. `clean-markers.mjs` is a dependency-free audit/clean gate for generated text files.
+seeing it. `scripts/clean-markers.mjs` is a dependency-free audit/clean gate for generated text files.
 
 It removes characters the user never intentionally typed: zero-width marks, bidi controls, tag
 characters, variation selectors, soft hyphens, and similar invisible controls. It does not edit PDF
@@ -11,10 +11,10 @@ metadata and does not install packages at runtime.
 ## Usage
 
 ```bash
-node clean-markers.mjs audit  output/acme-cv.html              # report only, never modifies
-node clean-markers.mjs clean  output/acme-cover-letter.md
-node clean-markers.mjs clean  --ascii output/cover-letter.txt  # also normalize smart quotes / dashes
-node clean-markers.mjs audit  output/*.html output/*.md        # globs OK
+node scripts/clean-markers.mjs audit  output/acme-cv.html              # report only, never modifies
+node scripts/clean-markers.mjs clean  output/acme-cover-letter.md
+node scripts/clean-markers.mjs clean  --ascii output/cover-letter.txt  # also normalize smart quotes / dashes
+node scripts/clean-markers.mjs audit  output/*.html output/*.md        # globs OK
 ```
 
 - **`audit`** never modifies a file — use it to *prove* a document is clean. Exit code `1` if any file
@@ -29,8 +29,8 @@ node clean-markers.mjs audit  output/*.html output/*.md        # globs OK
 Before generated text leaves your machine or before rendering HTML/Markdown into a final document:
 
 ```bash
-node clean-markers.mjs audit output/acme-cv.html output/acme-cover-letter.md
-node clean-markers.mjs clean output/acme-cv.html output/acme-cover-letter.md
+node scripts/clean-markers.mjs audit output/acme-cv.html output/acme-cover-letter.md
+node scripts/clean-markers.mjs clean output/acme-cv.html output/acme-cover-letter.md
 ```
 
 ## Dependencies

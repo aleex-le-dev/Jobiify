@@ -7,7 +7,7 @@
  * and it read cv.md for the section-order guard and nothing else: a manifest
  * whose CV said "40 engineers" against a cv.md that says 4 rendered and exited 0.
  *
- * Runs a copy of generate-pdf.mjs in a sandbox workspace with a stubbed
+ * Runs a copy of scripts/generate-pdf.mjs in a sandbox workspace with a stubbed
  * Chromium (same arrangement as generate-pdf-batch.test.mjs), so a blocked
  * entry is observed the way a caller sees it: no PDF, a failed row in
  * <manifest>.results.json and a non-zero exit, with the other entries rendered.
@@ -24,16 +24,17 @@ mkdirSync(outputRoot, { recursive: true });
 // realpathSync for the reason generate-pdf-batch.test.mjs documents (#3165):
 // the main-module guard compares realpaths.
 const sandbox = realpathSync(mkdtempSync(join(outputRoot, 'batch-fact-gate-test-')));
-const script = join(sandbox, 'generate-pdf.mjs');
+const script = join(sandbox, 'scripts/generate-pdf.mjs');
+mkdirSync(join(sandbox, 'scripts'), { recursive: true });
 
-// generate-pdf.mjs, its static imports, and verify-cv-facts.mjs — the gate is
+// scripts/generate-pdf.mjs, its static imports, and scripts/verify-cv-facts.mjs — the gate is
 // imported lazily, so a sandbox without it would pass every entry unchecked
 // only if the gate were never reached. Here it must be reached.
 for (const file of [
-  'generate-pdf.mjs', 'verify-cv-facts.mjs', 'theme-style.mjs', 'cv-experience-order.mjs',
-  'tracker-utils.mjs', 'tracker-parse.mjs', 'tracker-aliases.json', 'pipeline-lock.mjs',
-  'cv-sections-core.mjs', 'path-resolver.mjs',
-]) copyFileSync(join(ROOT, file), join(sandbox, file));
+  'scripts/generate-pdf.mjs', 'scripts/verify-cv-facts.mjs', 'scripts/theme-style.mjs', 'scripts/cv-experience-order.mjs',
+  'scripts/tracker-utils.mjs', 'scripts/tracker-parse.mjs', 'tracker-aliases.json', 'scripts/pipeline-lock.mjs',
+  'scripts/cv-sections-core.mjs', 'scripts/path-resolver.mjs',
+]) (mkdirSync(join(sandbox, file, '..'), { recursive: true }), (mkdirSync(join(sandbox, file, '..'), { recursive: true }), (mkdirSync(join(sandbox, file, '..'), { recursive: true }), copyFileSync(join(ROOT, file), join(sandbox, file)))));
 mkdirSync(join(sandbox, 'lib'), { recursive: true });
 for (const file of ['is-main-module.mjs', 'page-format.mjs']) {
   copyFileSync(join(ROOT, 'lib', file), join(sandbox, 'lib', file));

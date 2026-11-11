@@ -2,7 +2,7 @@
  * ascii-fold.mjs — algorithm mirror of the core's `lib/ascii-fold.mjs`.
  *
  * WHY A COPY EXISTS AT ALL: the same reason normalize-text-key.mjs and
- * url-key.mjs carry one. The core lives in the user's career-ops checkout and
+ * scripts/url-key.mjs carry one. The core lives in the user's career-ops checkout and
  * is resolved at runtime via careerOpsRoot(), which the web bundle cannot
  * import from; and an install predating a given core file would not have it at
  * all. Keep the body byte-for-byte aligned with `lib/ascii-fold.mjs` — the

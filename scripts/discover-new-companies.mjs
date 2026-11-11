@@ -1,29 +1,29 @@
 #!/usr/bin/env node
 /**
- * discover-new-companies.mjs — propose scanner-discovered companies for discovery
+ * scripts/discover-new-companies.mjs — propose scanner-discovered companies for discovery
  *
- * The missing hop between the scanners and discover-ats.mjs. See modes/discover.md.
+ * The missing hop between the scanners and scripts/discover-ats.mjs. See modes/discover.md.
  *
  * ── The gap this closes ────────────────────────────────────────────────────
- * The zero-token scanners (scan.mjs, scan-ats-full.mjs) record every company
+ * The zero-token scanners (scripts/scan.mjs, scripts/scan-ats-full.mjs) record every company
  * they touch in data/scan-history.tsv, including companies that are NOT in
  * portals.yml — the Gupy provider in particular sweeps that whole platform by
  * keyword, so it constantly surfaces employers nobody configured.
  *
  * Nothing ever fed those names back. They stayed in the history file, and each
- * run rediscovered them from scratch. discover-ats.mjs can resolve a company to
+ * run rediscovered them from scratch. scripts/discover-ats.mjs can resolve a company to
  * a scannable Greenhouse/Ashby/Lever/Workday board, but it takes a hand-written
  * list as input and does not read scan-history.tsv.
  *
  * This script is that missing hop:
  *
- *   scan-history.tsv → [this script] → companies.yml → discover-ats.mjs → portals.yml
+ *   scan-history.tsv → [this script] → companies.yml → scripts/discover-ats.mjs → portals.yml
  *
  * It only ever WRITES a candidate list. portals.yml is user-layer and is
- * touched exclusively by `discover-ats.mjs --write`, after you review the
+ * touched exclusively by `scripts/discover-ats.mjs --write`, after you review the
  * preview. Zero LLM tokens; the only I/O is reading two local files.
  *
- * company-history.mjs also reads scan-history.tsv, but it is read-only and
+ * scripts/company-history.mjs also reads scan-history.tsv, but it is read-only and
  * renders per-company evidence cards; it never emits a discover-ats input, so
  * the two are complementary rather than overlapping.
  *
@@ -35,7 +35,7 @@ import { join } from 'node:path';
 import * as yaml from 'js-yaml';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { buildCompanyCanonicalizer, findBlacklistEntry, loadBlacklist } from './scan.mjs';
-import { parseScanHistoryLine, scanHistoryLineHasColumn } from './lib/scan-history-columns.mjs';
+import { parseScanHistoryLine, scanHistoryLineHasColumn } from '../lib/scan-history-columns.mjs';
 
 const DATA_ROOT = getCareerOpsRoot();
 const HISTORY_PATH = process.env.CAREER_OPS_SCAN_HISTORY || join(DATA_ROOT, 'data', 'scan-history.tsv');
@@ -59,11 +59,11 @@ const val = (f, d = null) => {
 };
 
 if (has('--help')) {
-  console.log(`Usage: node discover-new-companies.mjs [options]
+  console.log(`Usage: node scripts/discover-new-companies.mjs [options]
 
 Reads data/scan-history.tsv, subtracts every company already tracked in
 portals.yml or on data/blacklist.md, and emits the remainder as a
-discover-ats.mjs input file.
+scripts/discover-ats.mjs input file.
 
 Options:
   --since <n>       Only companies first seen in the last N days (default: 30)
@@ -76,9 +76,9 @@ Options:
   --help            This message
 
 Typical loop:
-  node discover-new-companies.mjs --out /tmp/new.yml
-  node discover-ats.mjs --in /tmp/new.yml --summary     # preview, writes nothing
-  node discover-ats.mjs --in /tmp/new.yml --write       # only after you review
+  node scripts/discover-new-companies.mjs --out /tmp/new.yml
+  node scripts/discover-ats.mjs --in /tmp/new.yml --summary     # preview, writes nothing
+  node scripts/discover-ats.mjs --in /tmp/new.yml --write       # only after you review
 `);
   process.exit(0);
 }
@@ -117,7 +117,7 @@ for (const entry of portalsRaw.tracked_companies || []) {
 }
 
 // ── Do-not-apply list ───────────────────────────────────────────────────────
-// A blacklisted employer is never worth resolving to a board: scan.mjs would
+// A blacklisted employer is never worth resolving to a board: scripts/scan.mjs would
 // drop every posting from it anyway. Matched per row with the scanner's own
 // findBlacklistEntry (company name, or an opt-in domain-scope host suffix), and
 // one matching row excludes the whole company — a name-only row and a
@@ -127,8 +127,8 @@ const blacklisted = new Set();
 
 // ── Walk the history ────────────────────────────────────────────────────────
 // Legacy headerless scan-history.tsv files exist and are never rewritten (see
-// appendToScanHistory in scan.mjs), so detect the header instead of assuming
-// row 0 is one — the same guard parseScanHistory (detect-reposts.mjs) uses.
+// appendToScanHistory in scripts/scan.mjs), so detect the header instead of assuming
+// row 0 is one — the same guard parseScanHistory (scripts/detect-reposts.mjs) uses.
 // An unconditional skip would silently drop the first company in a headerless
 // file. Columns are read by name through lib/scan-history-columns.mjs, whose
 // order is fixed whatever header (if any) the file carries.
@@ -197,8 +197,8 @@ if (has('--summary')) {
     if (c.titles.size) console.log(`    e.g. ${[...c.titles][0]}`);
   }
   if (!candidates.length) console.log('  (nothing new — every scanned company is already tracked)');
-  console.log('\nNext: node discover-new-companies.mjs --out /tmp/new.yml');
-  console.log('      node discover-ats.mjs --in /tmp/new.yml --summary');
+  console.log('\nNext: node scripts/discover-new-companies.mjs --out /tmp/new.yml');
+  console.log('      node scripts/discover-ats.mjs --in /tmp/new.yml --summary');
   process.exit(0);
 }
 
@@ -214,9 +214,9 @@ if (has('--json')) {
 }
 
 const doc = yaml.dump({ companies: candidates.map((c) => ({ name: c.name })) });
-const banner = `# Generated by discover-new-companies.mjs — ${new Date().toISOString().slice(0, 10)}\n`
+const banner = `# Generated by scripts/discover-new-companies.mjs — ${new Date().toISOString().slice(0, 10)}\n`
   + `# ${totalBeforeLimit} candidate(s) found, ${candidates.length} emitted (window ${SINCE_DAYS}d, min-rows ${MIN_ROWS}); ${blacklisted.size} blacklisted company/companies skipped.\n`
-  + `# Feed to: node discover-ats.mjs --in <this file> --summary\n`;
+  + `# Feed to: node scripts/discover-ats.mjs --in <this file> --summary\n`;
 
 if (OUT_FILE) {
   writeFileSync(OUT_FILE, banner + doc);

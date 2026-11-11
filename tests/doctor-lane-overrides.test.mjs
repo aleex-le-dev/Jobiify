@@ -7,10 +7,10 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { rmSync } from './helpers.mjs';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
+const root = fileURLToPath(new URL('../', import.meta.url));
 
 function runDoctor(env, args = []) {
-  const result = spawnSync(process.execPath, [join(root, 'doctor.mjs'), ...args], {
+  const result = spawnSync(process.execPath, [join(root, 'scripts/doctor.mjs'), ...args], {
     cwd: root,
     encoding: 'utf8',
     env: { ...process.env, ...env },

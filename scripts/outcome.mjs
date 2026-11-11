@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * outcome.mjs — Record application outcomes, archive artifacts, and sync tracker (#1722).
+ * scripts/outcome.mjs — Record application outcomes, archive artifacts, and sync tracker (#1722).
  *
  * Usage:
- *   node outcome.mjs <report#|company> <outcome_type> [--stage "..."] [--feedback "..."] [--note "..."] [--role "..."] [--cv "..."] [--cover "..."] [--dry-run] [--json]
+ *   node scripts/outcome.mjs <report#|company> <outcome_type> [--stage "..."] [--feedback "..."] [--note "..."] [--role "..."] [--cv "..."] [--cover "..."] [--dry-run] [--json]
  *
  * Outcomes:
  *   interview_progress | offer_received | hired | offer_declined | rejected | no_response | interview_only
@@ -15,7 +15,7 @@
  *   - posting.pdf or posting_missing.md (explicit stub)
  *   - outcome.md (append-only outcome journal)
  *
- * Synchronizes tracker status using set-status.mjs under shared tracker lock.
+ * Synchronizes tracker status using scripts/set-status.mjs under shared tracker lock.
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, rmSync } from 'fs';
@@ -24,10 +24,10 @@ import { fileURLToPath } from 'url';
 import { execFileSync } from 'child_process';
 import { createHash } from 'crypto';
 import { parseTrackerRow, resolveColumns, extractTrackerReportNumbers } from './tracker-parse.mjs';
-// The vocabulary this CLI accepts is also READ by calibrate.mjs, which cannot
+// The vocabulary this CLI accepts is also READ by scripts/calibrate.mjs, which cannot
 // import this file (top-level CLI, exits on load). Shared so the two cannot
 // drift — they already had (#3315 shipped a 7-entry copy of these 14).
-import { OUTCOME_MAP } from './lib/outcome-types.mjs';
+import { OUTCOME_MAP } from '../lib/outcome-types.mjs';
 import { roleFuzzyMatch } from './role-matcher.mjs';
 import {
   normalizeCompany,
@@ -37,22 +37,22 @@ import {
   resolveWorkspaceRoot,
 } from './tracker-utils.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { localToday } from './lib/local-today.mjs';
-import { resolveOutcomeDir } from './lib/outcome-dir.mjs';
+import { localToday } from '../lib/local-today.mjs';
+import { resolveOutcomeDir } from '../lib/outcome-dir.mjs';
 import { parsePdfIndex } from './find.mjs';
 import { findCaptureForReport } from './jd-capture.mjs';
 
 // Two roots. CODE_ROOT locates the sibling scripts this file shells out to and
 // is the cwd it runs them from; DATA_ROOT is where the user's tracker and
 // outcome journals live. One constant named CAREER_OPS did both, so
-// resolveTrackerPath() looked inside the checkout and `outcome.mjs 1 rejected`
+// resolveTrackerPath() looked inside the checkout and `scripts/outcome.mjs 1 rejected`
 // answered "Tracker not found at <CHECKOUT>/applications.md" — a path the user
 // never configured.
-const CODE_ROOT = dirname(fileURLToPath(import.meta.url));
+const CODE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const NODE = process.execPath;
-const SET_STATUS_SCRIPT = join(CODE_ROOT, 'set-status.mjs');
-const ARCHIVE_POSTING_SCRIPT = join(CODE_ROOT, 'archive-posting.mjs');
+const SET_STATUS_SCRIPT = join(CODE_ROOT, 'scripts/set-status.mjs');
+const ARCHIVE_POSTING_SCRIPT = join(CODE_ROOT, 'scripts/archive-posting.mjs');
 
 const EXIT_OK = 0;
 const EXIT_USAGE = 1;
@@ -70,9 +70,9 @@ function slugify(text) {
 
 // LOCAL calendar day, not the UTC one (#3070). This stamps the outcome journal
 // under data/outcomes/ — the `## Entry:` header and `**Date**:` — which
-// calibrate.mjs and funnel-velocity.mjs then read.
+// scripts/calibrate.mjs and scripts/funnel-velocity.mjs then read.
 //
-// tests/local-today-gates.test.mjs already covers assessment-log.mjs for
+// tests/local-today-gates.test.mjs already covers scripts/assessment-log.mjs for
 // exactly this reason ("the date written into a user's assessments.tsv row").
 // This is the same kind of date, in an append-only file, and it was the UTC
 // one: an outcome recorded on a Sunday evening anywhere in the Americas was
@@ -82,7 +82,7 @@ function today() {
 }
 
 
-const USAGE = `Usage: node outcome.mjs <report#|company> <outcome_type> [options]
+const USAGE = `Usage: node scripts/outcome.mjs <report#|company> <outcome_type> [options]
 
   <report#|company>  Tracker selector (# or company name)
   <outcome_type>     interview_progress | offer_received | hired | offer_declined | rejected | no_response | interview_only
@@ -292,7 +292,7 @@ if (flags.cv) {
 // not which case found it, is what keeps deletion scoped to generated CVs. An
 // explicit --cv pointing outside output/ (e.g. into the user's home directory)
 // is never a candidate, and neither is the cv.md fallback (Case D), since it
-// never sets isPdf. pathIsInsideCanonical() (tracker-utils.mjs) is applied to
+// never sets isPdf. pathIsInsideCanonical() (scripts/tracker-utils.mjs) is applied to
 // BOTH the PDF and its manifest-sourced HTML companion — the manifest is
 // host-writable data, so a malformed or manipulated html column must never be
 // trusted to point outside output/ without being re-checked here too.
@@ -505,7 +505,7 @@ ${newEntry}`;
   writeFileSync(outcomeLogPath, initialLog);
 }
 
-// 5. Update tracker via set-status.mjs
+// 5. Update tracker via scripts/set-status.mjs
 const setStatusArgs = [
   SET_STATUS_SCRIPT,
   String(matchedRow.num),
@@ -524,7 +524,7 @@ try {
   const statusOutput = execFileSync(NODE, setStatusArgs, { cwd: CODE_ROOT, env: process.env, encoding: 'utf-8' });
   setStatusResult = JSON.parse(statusOutput);
 } catch (err) {
-  failExit(`Tracker update via set-status.mjs failed: ${err.message}`, 'tracker-update-failed', 1);
+  failExit(`Tracker update via scripts/set-status.mjs failed: ${err.message}`, 'tracker-update-failed', 1);
 }
 
 // 6. Clean up output/ — only ever removes a file whose archived copy in
@@ -532,7 +532,7 @@ try {
 // original. Never a bare unlink: archiving comes first, deletion is refused
 // if it can't be confirmed the only copy would survive. Size alone isn't
 // enough here — two renders of the same CV can coincidentally match in size,
-// so this hashes the same way tracker.mjs and seed-fixture.mjs do.
+// so this hashes the same way scripts/tracker.mjs and scripts/seed-fixture.mjs do.
 function sha256(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }

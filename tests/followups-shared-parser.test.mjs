@@ -6,8 +6,8 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ROOT, NODE } from './helpers.mjs';
 
-const REPLY_WATCH = join(ROOT, 'reply-watch.mjs');
-const CONTACT_EXTRACT = join(ROOT, 'contact-extract.mjs');
+const REPLY_WATCH = join(ROOT, 'scripts/reply-watch.mjs');
+const CONTACT_EXTRACT = join(ROOT, 'scripts/contact-extract.mjs');
 
 const HEADER = '| # | Date | Company | Role | Score | Status | PDF | Report | Notes |\n|---|---|---|---|---|---|---|---|---|';
 const TRACKER_ROW = '| 42 | 2026-06-01 | Acme Corp | Backend Engineer | 4.0/5 | Applied | ❌ | - | |';

@@ -11,7 +11,7 @@ import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\nscan-ats-full — dedupTokenFor (#3439)');
 
-const mod = await import(pathToFileURL(join(ROOT, 'scan-ats-full.mjs')).href);
+const mod = await import(pathToFileURL(join(ROOT, 'scripts/scan-ats-full.mjs')).href);
 const { dedupTokenFor, SOURCES, providerForSource } = mod;
 const workdayModule = await import(pathToFileURL(join(ROOT, 'providers/workday.mjs')).href);
 
@@ -22,7 +22,7 @@ const workdayOtherTenant = { url: 'https://other.wd5.myworkdayjobs.com/External/
 // The bug, reproduced directly: URL normalization alone treats the two sites
 // as different postings.
 {
-  const { normalizeUrlForDedup } = await import(pathToFileURL(join(ROOT, 'scan.mjs')).href);
+  const { normalizeUrlForDedup } = await import(pathToFileURL(join(ROOT, 'scripts/scan.mjs')).href);
   if (normalizeUrlForDedup(workdaySiteA.url) !== normalizeUrlForDedup(workdaySiteB.url)) {
     pass('reproduces the bug: normalizeUrlForDedup alone does NOT collapse the two sites');
   } else {
@@ -56,7 +56,7 @@ const workdayOtherTenant = { url: 'https://other.wd5.myworkdayjobs.com/External/
 // unchanged from before #3439.
 {
   const greenhouseModule = await import(pathToFileURL(join(ROOT, 'providers/greenhouse.mjs')).href);
-  const { normalizeUrlForDedup } = await import(pathToFileURL(join(ROOT, 'scan.mjs')).href);
+  const { normalizeUrlForDedup } = await import(pathToFileURL(join(ROOT, 'scripts/scan.mjs')).href);
   const job = { url: 'https://boards.greenhouse.io/acme/jobs/12345?gh_src=abc' };
   const token = dedupTokenFor(job, greenhouseModule.default);
   if (token === normalizeUrlForDedup(job.url)) {
@@ -69,7 +69,7 @@ const workdayOtherTenant = { url: 'https://other.wd5.myworkdayjobs.com/External/
 // No provider at all (e.g. a seed-pass job whose SOURCES lookup misses) — must
 // not throw, must fall back to URL normalization.
 {
-  const { normalizeUrlForDedup } = await import(pathToFileURL(join(ROOT, 'scan.mjs')).href);
+  const { normalizeUrlForDedup } = await import(pathToFileURL(join(ROOT, 'scripts/scan.mjs')).href);
   const job = { url: 'https://jobs.lever.co/acme/abc-123?lever-source=Indeed' };
   let token;
   try {
@@ -101,11 +101,11 @@ if (SOURCES.workday.provider === workdayModule.default) {
 // scan-history.tsv records the URL it was first seen on and
 // normalizeUrlForDedup never equates two different sites' URLs.
 {
-  const { collectSeenUrls } = await import(pathToFileURL(join(ROOT, 'scan.mjs')).href);
+  const { collectSeenUrls } = await import(pathToFileURL(join(ROOT, 'scripts/scan.mjs')).href);
 
   // A legacy scan-history.tsv row: this requisition was recorded under
   // site A ("External") on a previous run, tagged with the portal/source
-  // scan-ats-full.mjs actually writes (offer.source, "{ats}-full").
+  // scripts/scan-ats-full.mjs actually writes (offer.source, "{ats}-full").
   const scanHistoryText = [
     'url\tfirst_seen\tportal\ttitle\tcompany\tstatus\tlocation',
     `${workdaySiteA.url}\t2020-01-01\tworkday-full\tStaff Engineer\tAcme\tadded\tRemote`,

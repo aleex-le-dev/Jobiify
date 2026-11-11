@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tracker-sync-check.mjs — applications.md <-> active-interviews.md status
+ * scripts/tracker-sync-check.mjs — applications.md <-> active-interviews.md status
  * sync checker for career-ops
  *
  * The project's own rule ("any interview status change must touch both
@@ -12,10 +12,10 @@
  * Matching (see matchInterviewRow):
  *   1. Hard match — a `#N in tracker` reference in the active-interviews.md
  *      Notes column, looked up directly against applications.md's row number.
- *   2. Fallback fuzzy match — Company + Role text, using invite-match.mjs's
+ *   2. Fallback fuzzy match — Company + Role text, using scripts/invite-match.mjs's
  *      normalizeCompanyName/companySimilarity (imported directly, not
- *      copied) plus role-matcher.mjs's roleFuzzyMatch (already shared with
- *      detect-reposts.mjs/dedup-tracker.mjs).
+ *      copied) plus scripts/role-matcher.mjs's roleFuzzyMatch (already shared with
+ *      scripts/detect-reposts.mjs/dedup-tracker.mjs).
  *   Rows that can't be confidently paired land in their own "unmatched"
  *   bucket rather than being silently guessed.
  *
@@ -40,14 +40,14 @@
  * does not write to applications.md — it reports the mismatch and the
  * suggested fix. Auto-write is a reasonable fast-follow once the reporting
  * mode has been used and trusted; unattended status writes on a script's very
- * first run is unnecessary risk (career-ops's `merge-tracker.mjs` gate on
+ * first run is unnecessary risk (career-ops's `scripts/merge-tracker.mjs` gate on
  * tracker additions follows the same caution).
  *
- * Run: node tracker-sync-check.mjs              (JSON to stdout)
- *      node tracker-sync-check.mjs --summary    (human-readable table)
- *      node tracker-sync-check.mjs --apps-file path/to/applications.md
- *      node tracker-sync-check.mjs --interviews-file path/to/active-interviews.md
- *      node tracker-sync-check.mjs --self-test
+ * Run: node scripts/tracker-sync-check.mjs              (JSON to stdout)
+ *      node scripts/tracker-sync-check.mjs --summary    (human-readable table)
+ *      node scripts/tracker-sync-check.mjs --apps-file path/to/applications.md
+ *      node scripts/tracker-sync-check.mjs --interviews-file path/to/active-interviews.md
+ *      node scripts/tracker-sync-check.mjs --self-test
  *
  * Issue #1504 — github.com/career-ops-hq/career-ops
  */
@@ -62,11 +62,11 @@ import { resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
 import { findColumn } from './process-quality.mjs';
 import { roleFuzzyMatch } from './role-matcher.mjs';
 import { normalizeCompanyName, companySimilarity } from './invite-match.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
 import { loadCanonicalStates, resolveCanonicalStateId, foldStatusInput } from './tracker-utils.mjs';
 
-const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
+const CAREER_OPS = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const DEFAULT_APPS_FILE = resolveTrackerPath(DATA_ROOT);
 const DEFAULT_INTERVIEWS_FILE = existsSync(join(DATA_ROOT, 'data/active-interviews.md'))
@@ -208,12 +208,12 @@ export function compareLifecycle(a, b) {
 
 // --- Company/role fuzzy matching ---
 // normalizeCompanyName and companySimilarity are imported directly from
-// invite-match.mjs (issue #1495 / PR #1497), which is now on main — see the
+// scripts/invite-match.mjs (issue #1495 / PR #1497), which is now on main — see the
 // import at the top of this file.
 
 // A candidate needs at least this much company-name overlap (post
 // normalization) to be considered a confident fuzzy match, on top of
-// role-matcher.mjs's roleFuzzyMatch agreeing on the role text.
+// scripts/role-matcher.mjs's roleFuzzyMatch agreeing on the role text.
 const FUZZY_COMPANY_THRESHOLD = 0.5;
 
 // --- Notes-column tracker reference ---
@@ -246,7 +246,7 @@ function loadTrackerWithLines(appsFile) {
 
 // --- active-interviews.md loader (line-number aware, for git blame) ---
 //
-// Mirrors the table-scan in process-quality.mjs's parseActiveInterviews
+// Mirrors the table-scan in scripts/process-quality.mjs's parseActiveInterviews
 // (only the first contiguous pipe-table block is parsed; malformed rows are
 // dropped). Kept local — rather than calling that function and trying to
 // re-derive line numbers afterward — because this checker needs the
@@ -330,7 +330,7 @@ export function gitBlameTimestamp(filePath, lineNum, cwd = CAREER_OPS) {
  * Tries the `#N in tracker` Notes reference first (hard match). Falls back
  * to fuzzy Company+Role matching when absent: a candidate is a confident
  * fuzzy match only when company-name overlap clears FUZZY_COMPANY_THRESHOLD
- * AND role-matcher.mjs's roleFuzzyMatch agrees, and exactly one such
+ * AND scripts/role-matcher.mjs's roleFuzzyMatch agrees, and exactly one such
  * candidate exists. Any ambiguity — a duplicate tracker number, or more than
  * one fuzzy candidate regardless of whether their scores tie — is treated as
  * no match, not a guess (CodeRabbit review on PR #1505: silently taking
@@ -492,7 +492,7 @@ export function buildSyncReport(trackerEntries, interviewRows, opts = {}) {
 
 /**
  * End-to-end: load both files from disk and build the sync report. This is
- * the function verify-pipeline.mjs imports rather than shelling out, so the
+ * the function scripts/verify-pipeline.mjs imports rather than shelling out, so the
  * matching/resolution logic lives in exactly one place.
  * @param {object} [opts]
  * @param {string} [opts.appsFile]
@@ -581,7 +581,7 @@ function runSelfTest() {
   check(compareLifecycle('interview', 'hired').comparable && compareLifecycle('interview', 'hired').cmp === -1, 'hired (states.yml-derived terminal) supersedes a non-terminal stage');
   check(!compareLifecycle('hired', 'rejected').comparable, 'hired vs. a different terminal status is ambiguous (tier 2), same as the pre-existing terminal states');
 
-  // --- normalizeCompanyName / companySimilarity (imported from invite-match.mjs) ---
+  // --- normalizeCompanyName / companySimilarity (imported from scripts/invite-match.mjs) ---
   check(normalizeCompanyName('Acme Corp.') === 'acme', 'strips "Corp." suffix');
   check(normalizeCompanyName('Acme Technologies Inc.') === 'acme', 'strips chained suffixes');
   check(companySimilarity('acme', 'acme') === 1, 'identical strings score 1');
@@ -591,7 +591,7 @@ function runSelfTest() {
   // Latin-only character class ([^a-z0-9 ]) that stripped every non-Latin
   // character, collapsing names like "Яндекс" or "アクメ株式会社" to an empty
   // string and sending matchInterviewRow() straight to unmatched. The real
-  // invite-match.mjs implementation uses \p{L}\p{M}\p{N} (any script) instead,
+  // scripts/invite-match.mjs implementation uses \p{L}\p{M}\p{N} (any script) instead,
   // so the normalized key survives and a same-company match succeeds.
   check(normalizeCompanyName('Яндекс') === 'яндекс', 'non-ASCII (Cyrillic) company name survives normalization instead of collapsing to empty');
   check(companySimilarity(normalizeCompanyName('Яндекс'), normalizeCompanyName('Яндекс')) === 1, 'identical non-ASCII company names still score a perfect match');
@@ -679,7 +679,7 @@ function runSelfTest() {
 
   // Row C — matched via fuzzy Company+Role fallback (no tracker reference;
   // company spelled slightly differently ["Inc" suffix], role phrased
-  // slightly differently but role-matcher.mjs's roleFuzzyMatch still agrees
+  // slightly differently but scripts/role-matcher.mjs's roleFuzzyMatch still agrees
   // on 2+ discriminating tokens — "(Hybrid)" tokenizes to a stopword, unlike
   // a real specialization suffix, so it doesn't split the titles apart).
   // Also doubles as a tier-1 case: the tracker still shows "Applied" but the
@@ -751,7 +751,7 @@ function runSelfTest() {
 // Derived from the flags this file actually accepts, so `--help` cannot
 // describe an option that does not exist.
 const USAGE = `Usage:
-  node tracker-sync-check.mjs [--summary] [--porcelain] [--apps-file <path>] [--interviews-file <path>] [--self-test]
+  node scripts/tracker-sync-check.mjs [--summary] [--porcelain] [--apps-file <path>] [--interviews-file <path>] [--self-test]
 
   --summary                 human-readable table instead of JSON
   --porcelain               machine-readable lines

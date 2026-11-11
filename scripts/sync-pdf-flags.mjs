@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * sync-pdf-flags.mjs — Reconciles the tracker PDF column against data/pdf-index.tsv.
+ * scripts/sync-pdf-flags.mjs — Reconciles the tracker PDF column against data/pdf-index.tsv.
  *
  * When a PDF is generated AFTER the initial evaluation, the tracker's PDF column
  * might still show ❌ (or '—'). This script reads the canonical pdf manifest and
@@ -16,8 +16,8 @@
  * at a missing file. It is a dry run by default — add --write to commit changes.
  *
  * Usage:
- *   node sync-pdf-flags.mjs [--dry-run] [--json]
- *   node sync-pdf-flags.mjs --prune [--write] [--json]
+ *   node scripts/sync-pdf-flags.mjs [--dry-run] [--json]
+ *   node scripts/sync-pdf-flags.mjs --prune [--write] [--json]
  */
 
 import { readFileSync, existsSync } from 'fs';
@@ -25,17 +25,17 @@ import { join, resolve, dirname } from 'path';
 import { extractTrackerReportNumbers, resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
 import { rebuildRow, resolveTrackerPath, resolvePdfIndexPath, openTrackerTransaction, writeFileAtomic, resolveWorkspaceRoot, pathIsInsideCanonical } from './tracker-utils.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { parsePdfIndex, livePdfIndex } from './find.mjs';
 
-const USAGE = 'Usage: node sync-pdf-flags.mjs [--dry-run] [--json]\n       node sync-pdf-flags.mjs --prune [--write] [--json]';
+const USAGE = 'Usage: node scripts/sync-pdf-flags.mjs [--dry-run] [--json]\n       node scripts/sync-pdf-flags.mjs --prune [--write] [--json]';
 
 /**
  * Reconcile one tracker's PDF column against one PDF manifest, or prune that
  * manifest (`flags.prune`), against the paths given.
  *
  * The paths used to be module-scope constants resolved from the environment,
- * so the only way to run a sync was a fresh node process. merge-tracker.mjs
+ * so the only way to run a sync was a fresh node process. scripts/merge-tracker.mjs
  * did exactly that after every real merge — one more cold start per merge,
  * and in an importer (a test merging a sandbox) a child that resolved its
  * tracker from the ambient env rather than the one just merged (#4758). The
@@ -45,8 +45,8 @@ const USAGE = 'Usage: node sync-pdf-flags.mjs [--dry-run] [--json]\n       node 
  * @param {string} options.appsFile - Tracker to reconcile (canonical path).
  * @param {string} options.pdfManifest - PDF manifest (data/pdf-index.tsv).
  * @param {string} [options.dataRoot] - Root the manifest's PDF paths resolve
- *   against, as generate-pdf.mjs writes them (#3169). Defaults to the
- *   tracker's workspace, the same default merge-tracker.mjs uses.
+ *   against, as scripts/generate-pdf.mjs writes them (#3169). Defaults to the
+ *   tracker's workspace, the same default scripts/merge-tracker.mjs uses.
  * @param {{dryRun?: boolean, json?: boolean, prune?: boolean, write?: boolean}} [options.flags]
  * @param {string} [options.lockDir] - Tracker lock; defaults to the one derived from appsFile.
  * @param {{timeoutMs?: number, retryMs?: number, staleMs?: number}} [options.lock] - Lock timing.
@@ -174,7 +174,7 @@ export async function syncTrackerPdfFlags(options = {}) {
       const verb = flags.write ? 'pruned' : 'would prune (dry run — pass --write to commit)';
       console.log(`\n📊 Summary: ${pruned} row(s) ${verb}, ${kept} kept`);
       if (pruned > 0 && !flags.write) {
-        console.log('ℹ️  Re-run with --write to remove stale rows, then run sync-pdf-flags.mjs to reconcile tracker flags.');
+        console.log('ℹ️  Re-run with --write to remove stale rows, then run scripts/sync-pdf-flags.mjs to reconcile tracker flags.');
       }
     }
     return 0;
@@ -198,7 +198,7 @@ export async function syncTrackerPdfFlags(options = {}) {
       return 2;
     }
     // A manifest row only means PDF-ready when a CV PDF it names is still on
-    // disk. merge-tracker.mjs asks the same question the same way (#4777).
+    // disk. scripts/merge-tracker.mjs asks the same question the same way (#4777).
     const live = livePdfIndex(parsePdfIndex(content), DATA_ROOT, (message) => console.warn(`⚠️  ${message}`));
     for (const report of live.keys()) {
       if (/^\d+$/.test(report) && Number(report) > 0) manifestReports.add(Number(report));

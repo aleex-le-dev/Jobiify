@@ -11,7 +11,7 @@
  * web/src/lib/apply/cv-match.mjs — see that file's header comment.
  *
  * Lives under web/tests/ so the web CI collects it and the core runner never
- * has to know it exists — no test-all.mjs hook, no update-system.mjs
+ * has to know it exists — no scripts/test-all.mjs hook, no scripts/update-system.mjs
  * registration, and no core-only-install skip guard, because web/ is always
  * present when this suite runs.
  *
@@ -131,7 +131,7 @@ test('generated CV uses the linked report identity when its application number d
     // Supply only this fixture's path endpoints. Web CI installs web dependencies
     // alone; importing the full core here would require its separate packages.
     // The application, report and manifest lookups still use the real web code.
-    writeFileSync(join(root, 'tracker-utils.mjs'), [
+    writeFileSync((mkdirSync(join(root, 'scripts'), { recursive: true }), join(root, 'scripts/tracker-utils.mjs')), [
       `export const resolveTrackerPath = () => ${JSON.stringify(join(root, 'data', 'applications.md'))};`,
       `export const resolvePdfIndexPath = () => ${JSON.stringify(join(root, 'data', 'pdf-index.tsv'))};`,
     ].join('\n'));

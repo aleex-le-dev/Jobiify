@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { extractHeadings, compareStructure, discoverLangs, checkLang, formatReport, toJSON } from '../i18n-drift.mjs';
+import { extractHeadings, compareStructure, discoverLangs, checkLang, formatReport, toJSON } from '../scripts/i18n-drift.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -31,7 +31,7 @@ function linkForTest(t, target, path, directory = false) {
 }
 
 function installCLI(root) {
-  copyFileSync(join(ROOT, 'i18n-drift.mjs'), join(root, 'i18n-drift.mjs'));
+  copyFileSync(join(ROOT, 'scripts/i18n-drift.mjs'), (mkdirSync(join(root, 'scripts'), { recursive: true }), join(root, 'scripts/i18n-drift.mjs')));
   mkdirSync(join(root, 'lib'), { recursive: true });
   for (const name of ['is-main-module.mjs', 'mjs-files.mjs', 'scratch-dirs.mjs', 'walk-tree.mjs']) {
     const source = join(ROOT, 'lib', name);
@@ -40,7 +40,7 @@ function installCLI(root) {
 }
 
 function runCLI(root, args, cwd = root) {
-  const result = spawnSync(process.execPath, [join(root, 'i18n-drift.mjs'), ...args], {
+  const result = spawnSync(process.execPath, [join(root, 'scripts/i18n-drift.mjs'), ...args], {
     cwd, encoding: 'utf8', timeout: 15_000,
   });
   assert.equal(result.error, undefined, result.error?.message);

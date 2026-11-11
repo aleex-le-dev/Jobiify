@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-// Apply-session SSRF guard. Reuses liveness-browser.mjs (rejectPrivateOrInvalid +
+// Apply-session SSRF guard. Reuses scripts/liveness-browser.mjs (rejectPrivateOrInvalid +
 // validateUrlSecurity) rather than forking a second allowlist.
 //
 // Loaded at runtime with turbopackIgnore: a static specifier of
@@ -52,7 +52,7 @@ function coreGuardHref() {
     cwd = parent;
   }
   for (const root of candidates) {
-    const file = join(/* turbopackIgnore: true */ root, `${script}.mjs`);
+    const file = join(/* turbopackIgnore: true */ root, "scripts", `${script}.mjs`);
     if (existsSync(/* turbopackIgnore: true */ file)) return pathToFileURL(file).href;
   }
   throw new Error("could not load URL guard");
@@ -122,7 +122,7 @@ function httpUrlForGuard(url) {
 
 /**
  * Context-wide route interceptor (main document, redirect hops, subresources,
- * and WebSockets). Same host check as archive-posting.mjs / liveness-browser.mjs.
+ * and WebSockets). Same host check as scripts/archive-posting.mjs / scripts/liveness-browser.mjs.
  *
  * Playwright does not send WebSocket handshakes through `context.route()`.
  * Close without `connectToServer` when the guard refuses the host. An allowed

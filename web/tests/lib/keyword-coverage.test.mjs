@@ -1,11 +1,11 @@
-// The ATS coverage panel presents keyword-match.mjs's verdict without
+// The ATS coverage panel presents scripts/keyword-match.mjs's verdict without
 // double-counting it or turning a diagnostic into a grade.
 
 import test from "node:test";
 import assert from "node:assert/strict";
 import { splitTiers, coverageModel, coverageBand } from "../../src/lib/keyword-coverage.mjs";
 
-// The shape keyword-match.mjs actually emits, taken from a real run:
+// The shape scripts/keyword-match.mjs actually emits, taken from a real run:
 // `thin` is a SUBSET of `present`, and coverage counts thin as present.
 const REAL = {
   total: 9,
@@ -83,7 +83,7 @@ test("the band is coarse on purpose and never a pass/fail", () => {
   assert.equal(coverageBand(0), "low");
   assert.equal(coverageBand(null), "unknown");
   assert.equal(coverageBand(NaN), "unknown");
-  // Three bands, not a threshold: keyword-match.mjs is diagnostic, and a red
+  // Three bands, not a threshold: scripts/keyword-match.mjs is diagnostic, and a red
   // "fail" would push the reader toward stuffing the CV with terms — the exact
   // behaviour "keywords get reformulated, never fabricated" forbids.
   assert.equal(new Set([coverageBand(10), coverageBand(60), coverageBand(90)]).size, 3);

@@ -10,7 +10,7 @@
  */
 
 import * as yaml from 'js-yaml';
-import { splitCompanyBlocks, computeFixes } from '../fix-slugs.mjs';
+import { splitCompanyBlocks, computeFixes } from '../scripts/fix-slugs.mjs';
 import { pass, fail } from './helpers.mjs';
 
 console.log('\nfix-slugs.mjs — company names written with quotes or a trailing comment');

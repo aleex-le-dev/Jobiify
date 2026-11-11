@@ -5,7 +5,7 @@ import { careerOpsRoot, rootScript } from "@/lib/career-ops";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// One company's evidence card from the core's company-history.mjs, which joins
+// One company's evidence card from the core's scripts/company-history.mjs, which joins
 // the tracker, follow-ups, scan history and status log. Read-only by contract —
 // the script's header says it never writes a file.
 //

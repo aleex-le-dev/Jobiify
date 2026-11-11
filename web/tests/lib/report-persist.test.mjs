@@ -1,5 +1,5 @@
 // Tests for report-persist.mjs. spawnFn is a fake EventEmitter-based child
-// process — no real reserve-report-num.mjs / merge-tracker.mjs is spawned.
+// process — no real scripts/reserve-report-num.mjs / scripts/merge-tracker.mjs is spawned.
 //
 // Run:  node --test tests/lib/report-persist.test.mjs
 
@@ -18,8 +18,8 @@ import {
   trackerTsvLine,
   persistEvaluation,
 } from "../../src/lib/report-persist.mjs";
-import { writeEvaluationArtifacts } from "../../../persist-evaluation-report.mjs";
-import { resolveTsvColumns, TSV_ADDITION_HEADER } from "../../../tracker-parse.mjs";
+import { writeEvaluationArtifacts } from "../../../scripts/persist-evaluation-report.mjs";
+import { resolveTsvColumns, TSV_ADDITION_HEADER } from "../../../scripts/tracker-parse.mjs";
 
 function fakeChild({ stdout = "", stderr = "", exitCode = 0, spawnError = null, onStdin = null } = {}) {
   const child = new EventEmitter();
@@ -66,7 +66,7 @@ function makeRouterSpawn(routes) {
     const call = { execPath, args, opts, stdin: "" };
     calls.push(call);
     const scriptPath = args[0];
-    const route = Object.entries(routes).find(([suffix]) => scriptPath.endsWith(suffix));
+    const route = Object.entries(routes).find(([suffix]) => scriptPath.split("\\").join("/").endsWith(suffix));
     if (!route) throw new Error(`no fake route for ${scriptPath}`);
     const spec = typeof route[1] === "function" ? route[1](args, opts) : route[1];
     const child = fakeChild(spec);
@@ -247,11 +247,11 @@ test("trackerTsvLine: header names sit on the same cells merge-tracker reads", (
 test("persistEvaluation: writes report + TSV, reserves, merges, releases", async () => {
   const root = mkdtempSync(join(tmpdir(), "co-evalpersist-"));
   const { spawnFn, calls } = makeRouterSpawn({
-    "reserve-report-num.mjs": (args) => args.includes("--release")
+    "scripts/reserve-report-num.mjs": (args) => args.includes("--release")
       ? { exitCode: 0 }
       : { exitCode: 0, stdout: "035\n" },
-    "persist-evaluation-report.mjs": writerSpec(),
-    "merge-tracker.mjs": { exitCode: 0 },
+    "scripts/persist-evaluation-report.mjs": writerSpec(),
+    "scripts/merge-tracker.mjs": { exitCode: 0 },
   });
 
   try {
@@ -295,8 +295,8 @@ test("persistEvaluation: writes report + TSV, reserves, merges, releases", async
 test("persistEvaluation: tab in company does not reserve or write a TSV", async () => {
   const root = mkdtempSync(join(tmpdir(), "co-evalpersist-"));
   const { spawnFn, calls } = makeRouterSpawn({
-    "reserve-report-num.mjs": { exitCode: 0, stdout: "035\n" },
-    "merge-tracker.mjs": { exitCode: 0 },
+    "scripts/reserve-report-num.mjs": { exitCode: 0, stdout: "035\n" },
+    "scripts/merge-tracker.mjs": { exitCode: 0 },
   });
   const hostile = REPORT.replace('company: "Acme AI"', 'company: "Acme\tInjected"');
   try {
@@ -317,7 +317,7 @@ test("persistEvaluation: tab in company does not reserve or write a TSV", async 
 test("persistEvaluation: reserve failure does not write files", async () => {
   const root = mkdtempSync(join(tmpdir(), "co-evalpersist-"));
   const { spawnFn } = makeRouterSpawn({
-    "reserve-report-num.mjs": { exitCode: 1, stderr: "lock timeout" },
+    "scripts/reserve-report-num.mjs": { exitCode: 1, stderr: "lock timeout" },
   });
   try {
     const result = await persistEvaluation({
@@ -335,11 +335,11 @@ test("persistEvaluation: reserve failure does not write files", async () => {
 test("persistEvaluation: merge failure still releases the sentinel", async () => {
   const root = mkdtempSync(join(tmpdir(), "co-evalpersist-"));
   const { spawnFn, calls } = makeRouterSpawn({
-    "reserve-report-num.mjs": (args) => args.includes("--release")
+    "scripts/reserve-report-num.mjs": (args) => args.includes("--release")
       ? { exitCode: 0 }
       : { exitCode: 0, stdout: "036\n" },
-    "persist-evaluation-report.mjs": writerSpec(),
-    "merge-tracker.mjs": { exitCode: 1, stderr: "status not canonical" },
+    "scripts/persist-evaluation-report.mjs": writerSpec(),
+    "scripts/merge-tracker.mjs": { exitCode: 1, stderr: "status not canonical" },
   });
   try {
     const result = await persistEvaluation({
@@ -357,11 +357,11 @@ test("persistEvaluation: merge failure still releases the sentinel", async () =>
 test("persistEvaluation: a failed release after a saved report is not success", async () => {
   const root = mkdtempSync(join(tmpdir(), "co-evalpersist-"));
   const { spawnFn } = makeRouterSpawn({
-    "reserve-report-num.mjs": (args) => args.includes("--release")
+    "scripts/reserve-report-num.mjs": (args) => args.includes("--release")
       ? { exitCode: 1, stderr: "sentinel stuck" }
       : { exitCode: 0, stdout: "035\n" },
-    "persist-evaluation-report.mjs": writerSpec(),
-    "merge-tracker.mjs": { exitCode: 0 },
+    "scripts/persist-evaluation-report.mjs": writerSpec(),
+    "scripts/merge-tracker.mjs": { exitCode: 0 },
   });
   try {
     const result = await persistEvaluation({
@@ -379,11 +379,11 @@ test("persistEvaluation: a failed release after a saved report is not success", 
 test("persistEvaluation: merge failure and release failure are both reported", async () => {
   const root = mkdtempSync(join(tmpdir(), "co-evalpersist-"));
   const { spawnFn } = makeRouterSpawn({
-    "reserve-report-num.mjs": (args) => args.includes("--release")
+    "scripts/reserve-report-num.mjs": (args) => args.includes("--release")
       ? { exitCode: 1, stderr: "sentinel stuck" }
       : { exitCode: 0, stdout: "036\n" },
-    "persist-evaluation-report.mjs": writerSpec(),
-    "merge-tracker.mjs": { exitCode: 1, stderr: "status not canonical" },
+    "scripts/persist-evaluation-report.mjs": writerSpec(),
+    "scripts/merge-tracker.mjs": { exitCode: 1, stderr: "status not canonical" },
   });
   try {
     const result = await persistEvaluation({
@@ -401,10 +401,10 @@ test("persistEvaluation: merge failure and release failure are both reported", a
 test("persistEvaluation: a tab in the posting URL releases the number and writes nothing", async () => {
   const root = mkdtempSync(join(tmpdir(), "co-evalpersist-"));
   const { spawnFn, calls } = makeRouterSpawn({
-    "reserve-report-num.mjs": (args) => args.includes("--release")
+    "scripts/reserve-report-num.mjs": (args) => args.includes("--release")
       ? { exitCode: 0 }
       : { exitCode: 0, stdout: "037\n" },
-    "merge-tracker.mjs": { exitCode: 0 },
+    "scripts/merge-tracker.mjs": { exitCode: 0 },
   });
   try {
     const result = await persistEvaluation({
@@ -439,11 +439,11 @@ test("persistEvaluation: a failed addition write removes the new report and rele
     },
   };
   const { spawnFn, calls } = makeRouterSpawn({
-    "reserve-report-num.mjs": (args) => args.includes("--release")
+    "scripts/reserve-report-num.mjs": (args) => args.includes("--release")
       ? { exitCode: 0 }
       : { exitCode: 0, stdout: "035\n" },
-    "persist-evaluation-report.mjs": writerSpec(fsImpl),
-    "merge-tracker.mjs": { exitCode: 0 },
+    "scripts/persist-evaluation-report.mjs": writerSpec(fsImpl),
+    "scripts/merge-tracker.mjs": { exitCode: 0 },
   });
   try {
     const result = await persistEvaluation({

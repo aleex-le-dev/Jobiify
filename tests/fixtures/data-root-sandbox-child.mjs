@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { run, finish, exitOnInterrupt, NODE, ROOT, REAL_DATA_ROOT, SANDBOX_DATA_ROOT } from '../helpers.mjs';
-import { getCareerOpsRoot } from '../../path-resolver.mjs';
+import { getCareerOpsRoot } from '../../scripts/path-resolver.mjs';
 
 const [mode, arg] = process.argv.slice(2);
 
@@ -27,7 +27,7 @@ if (mode === 'report') {
 } else if (mode === 'writer') {
   // A real writer, run from the checkout through run() with no env of its own:
   // the shape of the smoke test that appended to the developer's assessments.
-  const out = run(NODE, [join(ROOT, 'assessment-log.mjs'), 'add', '--company', 'Acme-Co',
+  const out = run(NODE, [join(ROOT, 'scripts/assessment-log.mjs'), 'add', '--company', 'Acme-Co',
     '--platform', 'eSkill', '--subject', 'Data-Analysis', '--threshold', '70', '--score', '85']);
   console.log(`ADDED=${out !== null && JSON.parse(out).added === true}`);
   report();

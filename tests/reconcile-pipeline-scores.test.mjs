@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const SCRIPT = join(dirname(dirname(fileURLToPath(import.meta.url))), 'reconcile-pipeline.mjs');
+const SCRIPT = join(dirname(dirname(fileURLToPath(import.meta.url))), 'scripts/reconcile-pipeline.mjs');
 const URL = 'https://jobs.example.test/4521';
 
 function fixture(t, { report, stateScore = '-', stateStatus = 'completed', language = 'en' }) {

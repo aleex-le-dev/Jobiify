@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { ROOT } from './helpers.mjs';
-import { describeCliFailure } from '../rank-pipeline.mjs';
+import { describeCliFailure } from '../scripts/rank-pipeline.mjs';
 
 test('a CLI that fails every batch exits 1 with a one-line reason and no prompt echo', t => {
   const root = mkdtempSync(join(tmpdir(), 'rank-fail-'));
@@ -17,7 +17,7 @@ test('a CLI that fails every batch exits 1 with a one-line reason and no prompt 
   writeFileSync(pipeline, original);
   // `node -p <prompt>` evaluates the prompt as JavaScript and fails with a
   // SyntaxError, an offline stand-in for a CLI whose login has expired.
-  const result = spawnSync(process.execPath, [join(ROOT, 'rank-pipeline.mjs'), '--cli', process.execPath], {
+  const result = spawnSync(process.execPath, [join(ROOT, 'scripts/rank-pipeline.mjs'), '--cli', process.execPath], {
     env: { ...process.env, CAREER_OPS_ROOT: root, CAREER_OPS_DATA_DIR: root },
     encoding: 'utf8', timeout: 30_000,
   });

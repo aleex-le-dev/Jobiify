@@ -16,7 +16,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.join(HERE, "..", "..", "src", "lib", "inbox-skip.mjs");
 const CORE = process.env.CAREER_OPS_ROOT || path.join(HERE, "..", "..", "..");
-const LOCK = path.join(CORE, "pipeline-lock.mjs");
+const LOCK = path.join(CORE, "scripts/pipeline-lock.mjs");
 const HAS_LOCK = fs.existsSync(LOCK);
 
 const { postingUrl, applyInboxSkip, setInboxSkip } = await import(pathToFileURL(SRC).href);
@@ -165,7 +165,7 @@ test("a URL that only appears under Processed does not match as inbox Skip", () 
   assert.equal(result.error, "unmatched");
 });
 
-test("setInboxSkip writes the fixture file, then undo restores it", { skip: HAS_LOCK ? false : "pipeline-lock.mjs not resolvable" }, async () => {
+test("setInboxSkip writes the fixture file, then undo restores it", { skip: HAS_LOCK ? false : "scripts/pipeline-lock.mjs not resolvable" }, async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "inbox-skip-"));
   const file = path.join(dir, "pipeline.md");
   fs.writeFileSync(file, FIXTURE);

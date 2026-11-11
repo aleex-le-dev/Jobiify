@@ -11,7 +11,7 @@
  * near entry, both missing daysUntilNext, must still yield the near one.
  *
  * Lives under web/tests/ so the web CI collects it and the core runner never
- * has to know it exists -- no test-all.mjs hook, no update-system.mjs
+ * has to know it exists -- no scripts/test-all.mjs hook, no scripts/update-system.mjs
  * registration, and no core-only-install skip guard, because web/ is always
  * present when this suite runs.
  *

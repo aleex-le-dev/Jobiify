@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * ats-payload.mjs — ATS payload transform: one safe fold, three lints (#3251).
+ * scripts/ats-payload.mjs — ATS payload transform: one safe fold, three lints (#3251).
  *
  * Follows from #3202, whose conclusion was that an ATS variant is not a template
  * swap. A template owns the DOM; it does not own what is IN the payload, and some
@@ -10,7 +10,7 @@
  *
  * THE FOLD (applied — pure data movement, no text invented, fully reversible)
  *
- *   `build-cv-html.mjs` renders competencies as bare tag spans into a container
+ *   `scripts/build-cv-html.mjs` renders competencies as bare tag spans into a container
  *   whose separation is entirely visual (`.competencies-grid { gap: 8px }`).
  *   There is no delimiter CHARACTER between one competency and the next — the gap
  *   is CSS. Extract the text layer and adjacent competencies run together into a
@@ -49,15 +49,15 @@
  * CONTRACT: payload JSON in, payload JSON out on stdout, findings on stderr.
  * Zero-LLM, deterministic, offline, and read-only with respect to user-layer
  * files — it consumes a payload and emits a new one, and never writes back to
- * `cv.md` or `config/profile.yml`. Same family as `jd-skill-gap.mjs` and
- * `verify-cv-facts.mjs`. The input object is never mutated.
+ * `cv.md` or `config/profile.yml`. Same family as `scripts/jd-skill-gap.mjs` and
+ * `scripts/verify-cv-facts.mjs`. The input object is never mutated.
  *
  * Usage:
- *   node ats-payload.mjs cv.json > cv-ats.json
- *   node ats-payload.mjs cv.json --summary > cv-ats.json
- *   cat cv.json | node ats-payload.mjs - > cv-ats.json
- *   node build-cv-html.mjs cv-ats.json out.html templates/ats/cv-template.ats.html
- *   node ats-payload.mjs --self-test
+ *   node scripts/ats-payload.mjs cv.json > cv-ats.json
+ *   node scripts/ats-payload.mjs cv.json --summary > cv-ats.json
+ *   cat cv.json | node scripts/ats-payload.mjs - > cv-ats.json
+ *   node scripts/build-cv-html.mjs cv-ats.json out.html templates/ats/cv-template.ats.html
+ *   node scripts/ats-payload.mjs --self-test
  *
  * Exit 0 whenever the transform succeeded, findings or not: the lints are
  * advisory by design and the payload on stdout is always usable. Exit 1 only for
@@ -65,10 +65,10 @@
  */
 
 import { readFileSync } from 'fs';
-import { validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
-// Mirrors DEFAULT_SECTION_TITLES.competencies in build-cv-html.mjs. Used only
+// Mirrors DEFAULT_SECTION_TITLES.competencies in scripts/build-cv-html.mjs. Used only
 // when the payload carries no `sections.competencies` of its own — a localized
 // payload keeps its own label, because relabelling the user's section title
 // would be inventing text rather than moving it.
@@ -115,7 +115,7 @@ function resolveCompetenciesCategory(payload) {
  * The line is drawn at what is actually lost, not at what is not a string.
  * `toItemList()` passes every scalar through `String()`, so a numeric or boolean
  * member survives with its value intact — and that is a deliberate, tested
- * position in this repo, not an accident: `build-cv-html.mjs`'s `escapeHtml()`
+ * position in this repo, not an accident: `scripts/build-cv-html.mjs`'s `escapeHtml()`
  * used to `return ''` for anything non-string, which silently dropped numeric
  * years and dates from shipped CVs (see tests/cv-numeric-scalars.test.mjs), and
  * `buildCompetencies()` renders `escapeHtml(String(tag))` for exactly that
@@ -156,7 +156,7 @@ function lostMembers(list) {
  *
  *   `experience` non-array — `lintPayload()` iterates `[]` and reports nothing,
  *   which prints as "✅ No lint findings" and reads exactly like a clean
- *   payload. That is the same shape `jd-skill-gap.mjs` added diagnoseExtraction()
+ *   payload. That is the same shape `scripts/jd-skill-gap.mjs` added diagnoseExtraction()
  *   for: an empty result is indistinguishable from a clean bill of health, and
  *   the caller acts on the wrong one.
  *
@@ -322,7 +322,7 @@ export function foldCompetencies(payload) {
   }
 
   return {
-    // `competencies: []` rather than a deleted key: build-cv-html.mjs and
+    // `competencies: []` rather than a deleted key: scripts/build-cv-html.mjs and
     // stripEmptySections() both already treat an empty array as "drop the whole
     // block, header included", and keeping the key makes the fold obvious to a
     // human diffing the two payloads.
@@ -610,7 +610,7 @@ function runSelfTest() {
     validatePayloadShape({ competencies: ['AWS', ['GCP']] }).length, 1);
 
   // The line is at what is LOST, not at what is non-string. A numeric scalar
-  // survives String() with its value intact, and build-cv-html.mjs renders it
+  // survives String() with its value intact, and scripts/build-cv-html.mjs renders it
   // (tests/cv-numeric-scalars.test.mjs) — rejecting it here would make this
   // script stricter than the builder it feeds.
   eq('a numeric competency is accepted, not refused',
@@ -734,10 +734,10 @@ function runSelfTest() {
 
 // ── CLI ─────────────────────────────────────────────────────────────────────
 
-const USAGE = `Usage: node ats-payload.mjs <payload.json|-> [--summary] > payload-ats.json
-       node ats-payload.mjs --self-test
+const USAGE = `Usage: node scripts/ats-payload.mjs <payload.json|-> [--summary] > payload-ats.json
+       node scripts/ats-payload.mjs --self-test
 
-Applies ONE safe transform and reports THREE lints on a build-cv-html.mjs payload.
+Applies ONE safe transform and reports THREE lints on a scripts/build-cv-html.mjs payload.
 
   transform  fold competencies[] into skills[] as one comma-delimited category
              under a header ATS parsers recognise (idempotent, reversible)

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { findStaleScanQueries } from '../audit-portals.mjs';
+import { findStaleScanQueries } from '../scripts/audit-portals.mjs';
 
 const entry = (scan_query, extra = {}) => ({ name: 'Example', scan_method: 'websearch', scan_query, ...extra });
 
@@ -82,7 +82,7 @@ test('CLI is offline, advisory, data-root aware, filterable and read-only', () =
     delete env.CAREER_OPS_PORTALS;
     const run = (...args) => spawnSync(process.execPath, [
       '--require', guard,
-      fileURLToPath(new URL('../audit-portals.mjs', import.meta.url)), '--queries', ...args,
+      fileURLToPath(new URL('../scripts/audit-portals.mjs', import.meta.url)), '--queries', ...args,
     ], { cwd: tmpdir(), encoding: 'utf8', timeout: 10000, env });
     const result = run('--json', '--strict');
     assert.equal(result.status, 0, result.stderr);

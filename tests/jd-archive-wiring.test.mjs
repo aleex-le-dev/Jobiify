@@ -2,19 +2,19 @@
  * tests/jd-archive-wiring.test.mjs — JD-archive validator wiring + read-only
  * boundary (#2789).
  *
- * check-jd-archive.mjs's own --self-test (invoked via test-all.mjs's CLI-check
+ * scripts/check-jd-archive.mjs's own --self-test (invoked via scripts/test-all.mjs's CLI-check
  * table) covers the finding logic on synthetic fixtures. This suite pins the
  * wiring: the script ships, updates, is documented, the mode files state the
  * archival step as required (not conditional), and the checker stays strictly
  * read-only — it reports missing archives; it must never be able to "fix" one
  * itself by writing a report or a jds/ file.
  *
- * Moved out of test-all.mjs (was section 75) per this repo's own path
+ * Moved out of scripts/test-all.mjs (was section 75) per this repo's own path
  * instructions (.coderabbit.yaml: new numbered sections belong in tests/
  * files, not the central harness) and its precedent (#3863 moved the
  * context-budget suite the same way) — #3935.
  *
- * Run: node test-all.mjs --only jd-archive-wiring
+ * Run: node scripts/test-all.mjs --only jd-archive-wiring
  */
 
 import { pass, fail, ROOT } from './helpers.mjs';
@@ -28,18 +28,18 @@ function readFile(path) {
 console.log('\nJD-archive validator wiring + read-only boundary (#2789)');
 
 try {
-  const jdArchiveSrc = readFile('check-jd-archive.mjs');
+  const jdArchiveSrc = readFile('scripts/check-jd-archive.mjs');
 
-  const updaterSrc = readFile('update-system.mjs');
+  const updaterSrc = readFile('scripts/update-system.mjs');
   const jdArchiveSysBlock = (updaterSrc.match(/SYSTEM_PATHS\s*=\s*\[([\s\S]*?)\]/) || [, ''])[1];
-  if (jdArchiveSysBlock.includes("'check-jd-archive.mjs'")) {
-    pass('check-jd-archive.mjs is in update-system.mjs SYSTEM_PATHS (shipped + updatable)');
+  if (jdArchiveSysBlock.includes("'scripts/check-jd-archive.mjs'")) {
+    pass('scripts/check-jd-archive.mjs is in scripts/update-system.mjs SYSTEM_PATHS (shipped + updatable)');
   } else {
-    fail('check-jd-archive.mjs is NOT in SYSTEM_PATHS — updates would never deliver it');
+    fail('scripts/check-jd-archive.mjs is NOT in SYSTEM_PATHS — updates would never deliver it');
   }
 
   const pkg = JSON.parse(readFile('package.json'));
-  if (pkg.scripts && pkg.scripts['jd-archive'] === 'node check-jd-archive.mjs') {
+  if (pkg.scripts && pkg.scripts['jd-archive'] === 'node scripts/check-jd-archive.mjs') {
     pass('package.json exposes npm run jd-archive');
   } else {
     fail('package.json missing the jd-archive script entry');
@@ -53,10 +53,10 @@ try {
   }
 
   const agentsDoc = readFile('AGENTS.md');
-  if (agentsDoc.includes('`check-jd-archive.mjs`')) {
-    pass('AGENTS.md Main Files table lists check-jd-archive.mjs');
+  if (agentsDoc.includes('`scripts/check-jd-archive.mjs`')) {
+    pass('AGENTS.md Main Files table lists scripts/check-jd-archive.mjs');
   } else {
-    fail('AGENTS.md Main Files table missing check-jd-archive.mjs');
+    fail('AGENTS.md Main Files table missing scripts/check-jd-archive.mjs');
   }
   if (/REQUIRED.*Job Description \(archived verbatim\)|Job Description \(archived verbatim\).*REQUIRED/.test(agentsDoc)) {
     pass('AGENTS.md states the JD-archive section as required, not conditional');
@@ -88,7 +88,7 @@ try {
     fail('modes/pdf.md does not state JD archival as a required step');
   }
 
-  // Read-only import boundary: the ONLY fs capabilities check-jd-archive.mjs
+  // Read-only import boundary: the ONLY fs capabilities scripts/check-jd-archive.mjs
   // may hold for scanning reports/jds are readFileSync/readdirSync/existsSync.
   // It also imports mkdtempSync/mkdirSync/writeFileSync/rmSync — but ONLY for
   // building its own self-test fixtures in a temp dir, never for reports/ or
@@ -100,9 +100,9 @@ try {
   const fsNames = fsImportMatch ? fsImportMatch[1].split(',').map(s => s.trim()).filter(Boolean) : [];
   const unexpected = fsNames.filter(n => !READ_ONLY_FS.has(n) && !SELF_TEST_ONLY_FS.has(n));
   if (fsNames.length > 0 && unexpected.length === 0) {
-    pass('check-jd-archive.mjs fs imports are limited to read-only scanning APIs plus self-test-fixture builders');
+    pass('scripts/check-jd-archive.mjs fs imports are limited to read-only scanning APIs plus self-test-fixture builders');
   } else {
-    fail(`check-jd-archive.mjs fs import boundary violated: ${unexpected.join(', ') || 'no fs import matched'}`);
+    fail(`scripts/check-jd-archive.mjs fs import boundary violated: ${unexpected.join(', ') || 'no fs import matched'}`);
   }
 
   // The self-test-only write APIs must never be called from checkJdArchive,
@@ -136,9 +136,9 @@ try {
     .split('\n')
     .filter(line => [...SELF_TEST_ONLY_FS].some(fn => line.includes(`${fn}(`)) && !/^\s*import\b/.test(line));
   if (outsideSelfTest.length === 0) {
-    pass('check-jd-archive.mjs never calls a write-capable fs API outside its own self-test fixtures');
+    pass('scripts/check-jd-archive.mjs never calls a write-capable fs API outside its own self-test fixtures');
   } else {
-    fail(`check-jd-archive.mjs calls a write-capable fs API outside runSelfTest: ${outsideSelfTest.join(' | ')}`);
+    fail(`scripts/check-jd-archive.mjs calls a write-capable fs API outside runSelfTest: ${outsideSelfTest.join(' | ')}`);
   }
 
   // The by-name call scan above is blind to a local re-binding — `const write
@@ -193,9 +193,9 @@ try {
   const REBIND_RE = /\b(?:const|let|var)\s+[$_\p{ID_Start}][$_\u200C\u200D\p{ID_Continue}]*\s*=\s*\(*\s*(mkdtempSync|mkdirSync|writeFileSync|rmSync)(?![$_\u200C\u200D\p{ID_Continue}])\s*\)*/gu;
   const rebindings = [...codeOutsideSelfTest.matchAll(REBIND_RE)].map((m) => m[0].trim());
   if (rebindings.length === 0) {
-    pass('check-jd-archive.mjs never locally re-binds a write-capable fs API outside its own self-test fixtures');
+    pass('scripts/check-jd-archive.mjs never locally re-binds a write-capable fs API outside its own self-test fixtures');
   } else {
-    fail(`check-jd-archive.mjs re-binds a write-capable fs API outside runSelfTest: ${rebindings.join(' | ')}`);
+    fail(`scripts/check-jd-archive.mjs re-binds a write-capable fs API outside runSelfTest: ${rebindings.join(' | ')}`);
   }
 
   // REBIND_RE itself, against literal fixtures — the real file has no
@@ -232,14 +232,14 @@ try {
   }
 
   if (!/from\s*['"](?:node:)?fs\/promises['"]/.test(jdArchiveSrc)) {
-    pass('check-jd-archive.mjs does not import fs/promises');
+    pass('scripts/check-jd-archive.mjs does not import fs/promises');
   } else {
-    fail('check-jd-archive.mjs imports fs/promises — write-capable API surface');
+    fail('scripts/check-jd-archive.mjs imports fs/promises — write-capable API surface');
   }
   if (!/\brequire\s*\(/.test(jdArchiveSrc)) {
-    pass('check-jd-archive.mjs has no require() escape hatch');
+    pass('scripts/check-jd-archive.mjs has no require() escape hatch');
   } else {
-    fail('check-jd-archive.mjs uses require() — bypasses the import whitelist');
+    fail('scripts/check-jd-archive.mjs uses require() — bypasses the import whitelist');
   }
 } catch (e) {
   fail(`jd-archive wiring check: ${e.message}`);

@@ -52,10 +52,10 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { pass, fail } from './helpers.mjs';
-import { trustsEnvTargetRef } from '../update-system.mjs';
+import { trustsEnvTargetRef } from '../scripts/update-system.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const UPDATE_SYSTEM_SRC = readFileSync(join(__dirname, '..', 'update-system.mjs'), 'utf-8');
+const UPDATE_SYSTEM_SRC = readFileSync(join(__dirname, '..', 'scripts/update-system.mjs'), 'utf-8');
 
 console.log('\n🧪 Testing that CAREER_OPS_UPDATE_REEXEC=1 alone cannot bypass channel resolution...');
 

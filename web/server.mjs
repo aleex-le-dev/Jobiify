@@ -7,7 +7,7 @@
 // origin-guard.mjs's header for why the bind is the access control.
 //
 // Imports nothing outside web/: this tree is excluded from the core's packaging
-// and coverage contracts (validate-system-paths-coverage.mjs EXCLUDE_PREFIXES),
+// and coverage contracts (scripts/validate-system-paths-coverage.mjs EXCLUDE_PREFIXES),
 // so lib/cli-flags.mjs and lib/is-main-module.mjs are out of reach by design.
 
 import { spawnSync } from "node:child_process";

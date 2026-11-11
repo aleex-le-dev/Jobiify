@@ -15,7 +15,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { DEFAULT_SCRIPT_TIMEOUT_MS, pass, fail, rmSync, ROOT } from './helpers.mjs';
-import { reconcileGitignore } from '../update-system.mjs';
+import { reconcileGitignore } from '../scripts/update-system.mjs';
 
 console.log('\n🔁 .gitignore reconcile (append-if-missing)');
 
@@ -241,14 +241,14 @@ const ok = (cond, msg) => (cond ? pass(msg) : fail(msg));
 // still pass with a trimming read, so this is a source-level guard, matching
 // tests/js-yaml-import-form.test.mjs and tests/source-no-nul-bytes.test.mjs.
 {
-  const src = readFileSync(join(ROOT, 'update-system.mjs'), 'utf-8');
+  const src = readFileSync(join(ROOT, 'scripts/update-system.mjs'), 'utf-8');
 
   const readCall = src.match(/const upstreamGitignore = (\w+)\(/);
-  if (!readCall) fail('could not find the upstreamGitignore read in update-system.mjs — update this test');
+  if (!readCall) fail('could not find the upstreamGitignore read in scripts/update-system.mjs — update this test');
   else eq(readCall[1], 'gitShowRaw', 'the upstream .gitignore is read with gitShowRaw, not a trimming helper');
 
   const body = src.match(/function gitShowRaw\([^)]*\) \{[\s\S]*?\n\}/);
-  if (!body) fail('could not find gitShowRaw() in update-system.mjs — update this test');
+  if (!body) fail('could not find gitShowRaw() in scripts/update-system.mjs — update this test');
   else ok(!/\.trim\(\)/.test(body[0]), 'gitShowRaw() does not trim, so the blob reaches the reconciler byte-exact');
 }
 

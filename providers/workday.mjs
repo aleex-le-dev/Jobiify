@@ -28,7 +28,7 @@ const STOP_REASON = {
 // TRANSIENT is a fetch failure that a plain retry can plausibly clear;
 // STRUCTURAL is a fixed bound (facet-split depth/slice/page budget, or a
 // split facet that materially under-covers the board) that a repeat run
-// reaches again for the same result. Exported so scan-ats-full.mjs's retry
+// reaches again for the same result. Exported so scripts/scan-ats-full.mjs's retry
 // gate reads the same values rather than its own copy of the strings.
 export const WORKDAY_TRUNCATED_REASON = {
   TRANSIENT: 'transient',
@@ -58,7 +58,7 @@ const MAX_PAGES_CAP = 1500;
 const RETRY_POLICY = { retries: 3 };
 
 // Delay between successive pages *within one tenant's own pagination loop*
-// (not between tenants — that's scan-ats-full.mjs's concurrency, a separate
+// (not between tenants — that's scripts/scan-ats-full.mjs's concurrency, a separate
 // knob). A burst of same-host requests with zero delay risks Workday's
 // WAF-level rate limiting on any tenant that paginates several pages deep
 // (large boards like rollsroyce, sec, roche). Only tenants that loop past
@@ -113,7 +113,7 @@ function resolveMaxPages(entry) {
 // The CXS API's 422/401/403 bodies carry no marker of their own (a bare
 // `{"errorCode":"HTTP_422",...}`, identical whether the board is genuinely
 // gone or just hit a transient WAF blip), so raw status alone isn't safe to
-// hand to dead-boards.mjs — a spread sample of 1200 tenants (2026-09) found
+// hand to scripts/dead-boards.mjs — a spread sample of 1200 tenants (2026-09) found
 // HTTP 500 failures whose careers page loads fine (live tenant, unrelated
 // hiccup), and even 2 of 614 raw-422 tenants with a clean careers page.
 // Two signals held across a repeat pass days later, always the same result:
@@ -136,7 +136,7 @@ const CONFIRMED_DEAD_API_STATUSES = new Set([422, 401, 403]);
  * careers-page fetch to check for Workday's own dead-board signals. Errors
  * are swallowed here (a failed probe proves nothing) — the caller rethrows
  * the original error either way, this only decides whether to relabel it as
- * a synthetic 404 so dead-boards.mjs's existing 404 path (shared with every
+ * a synthetic 404 so scripts/dead-boards.mjs's existing 404 path (shared with every
  * other provider) picks it up.
  */
 async function confirmDeadViaCareersPage(ep, ctx) {
@@ -322,8 +322,8 @@ export function chooseSplitFacet(facets, { exclude = [], locationHints } = {}) {
  * Undated postings are invisible here. A page of nothing but undated postings
  * never stops pagination (the `dated.length === 0` guard), but a page that
  * mixes stale dated postings with undated ones does — and the undated ones on
- * later pages are then never fetched, even though scan.mjs's date filters
- * would have accepted them. Exported for test-all.mjs, which pins that
+ * later pages are then never fetched, even though scripts/scan.mjs's date filters
+ * would have accepted them. Exported for scripts/test-all.mjs, which pins that
  * behaviour so it can't drift without the docs drifting too.
  */
 export function pageIsPastWindow(pageJobs, sinceMs) {
@@ -526,7 +526,7 @@ function locationFromPath(externalPath) {
  * exactly the rule they had, so no key they produced before moves (scan
  * history is re-keyed through workdayDedupKey).
  *
- * Shared with scan.mjs's `requisitionIdForDedup` so that a tracker note which
+ * Shared with scripts/scan.mjs's `requisitionIdForDedup` so that a tracker note which
  * copied the URL tail (`req JR25919-1`) and the URL itself name the same
  * requisition: without one rule for both, the note read as `259191` while the
  * URL read as `25919`, and the already-applied posting was re-queued as a new
@@ -592,7 +592,7 @@ export function workdayDedupKey(job) {
   let scope = parsed.hostname.toLowerCase();
   // One myworkdaysite.com host serves many tenants (/recruiting/{tenant}/{site}):
   // scope by the path tenant but not {site}, so one tenant's cross-site reposts
-  // still collapse. Colon-free: scan.mjs reads the ID after the second colon.
+  // still collapse. Colon-free: scripts/scan.mjs reads the ID after the second colon.
   if (scope.endsWith('.myworkdaysite.com')) {
     const tenant = parsed.pathname.match(/^\/recruiting\/([\w-]+)\//)?.[1];
     if (!tenant) return null;
@@ -653,7 +653,7 @@ const MAX_DETAIL_REQUESTS = 200;
  *
  * Joined with `' · '` — the separator greenhouse/ashby/eightfold/gem/ibm/
  * echojobs already use for exactly this, and the one
- * `normalizeLocationForDedup` (scan.mjs) splits back into a sorted SET, so the
+ * `normalizeLocationForDedup` (scripts/scan.mjs) splits back into a sorted SET, so the
  * order Workday happens to return does not reach a dedupe key.
  *
  * @param {unknown} detail - Parsed detail document.
@@ -694,7 +694,7 @@ export function locationsFromDetail(detail) {
  * "Posted Today": `Date.now()` becomes that day's UTC midnight, i.e. slightly
  * EARLIER. That cannot cost a posting its place in a `--since` window —
  * `resolveEffectiveAfter` truncates the cutoff to a date and
- * `buildPostedDateFilter` parses it as UTC midnight too (scan.mjs), so both
+ * `buildPostedDateFilter` parses it as UTC midnight too (scripts/scan.mjs), so both
  * sides of the comparison are day-aligned.
  *
  * A second direction applies to the "Posted 30+ Days Ago" bucket.
@@ -966,7 +966,7 @@ export default {
     // Distinguishes the two ways a split can stay incomplete: a fixed bound
     // (slice/depth/facet budget) versus a transient fetch failure. Retrying a
     // structural exhaustion just re-runs the same slices into the same wall —
-    // only a transient one is worth scan-ats-full.mjs's sequential retry pass.
+    // only a transient one is worth scripts/scan-ats-full.mjs's sequential retry pass.
     let splitStructural = false;
     let slicesSpent = 0;
     let jobs = root.jobs;
@@ -1204,22 +1204,22 @@ export default {
     // (a full-directory scan can hit this on dozens of tenants).
     //
     // "raise max_pages" only applies when `entry` is a real portals.yml
-    // tracked_companies entry — there is something to edit. scan-ats-full.mjs's
+    // tracked_companies entry — there is something to edit. scripts/scan-ats-full.mjs's
     // reverse scan synthesizes entries from the external dataset, so there's no
     // portal entry to point at, and no fixed cap can guarantee full coverage of
     // an unbounded company directory anyway; nothing else to suggest there.
     //
     // The branch below used to key on `sinceMs === null` as a proxy for that
-    // distinction, which held only because scan-ats-full.mjs was the sole
-    // caller setting it. #2418 broke the proxy — `scan.mjs --since` sets
+    // distinction, which held only because scripts/scan-ats-full.mjs was the sole
+    // caller setting it. #2418 broke the proxy — `scripts/scan.mjs --since` sets
     // ctx.sinceMs too, so a tracked entry lost the actionable half of the
     // message on every --since run (#2495). Provenance is now stated by the
     // caller instead of inferred from an unrelated flag, so a future caller
     // that starts setting sinceMs cannot re-couple the two concerns.
     //
-    // Absence means "tracked": scan-ats-full.mjs is the only caller that
-    // synthesizes entries AND can reach the cap (discover-ats.mjs and
-    // verify-portals.mjs both probe with ctx.maxPages: 1, which never sets
+    // Absence means "tracked": scripts/scan-ats-full.mjs is the only caller that
+    // synthesizes entries AND can reach the cap (scripts/discover-ats.mjs and
+    // scripts/verify-portals.mjs both probe with ctx.maxPages: 1, which never sets
     // stopReason to 'cap'), so it is the one place that opts out.
     const syntheticEntries = ctx?.syntheticEntries === true;
     if (stopReason === STOP_REASON.CAP && !root.clamped) {
@@ -1240,11 +1240,11 @@ export default {
     // 'no-date-skip' hits many tenants in a full-directory scan (a company
     // with several Workday sites, like a1group or ashealthnet, triggers it
     // once per site) — a console.error per hit would repeat thousands of
-    // times, so tag the array instead; scan-ats-full.mjs aggregates it into
+    // times, so tag the array instead; scripts/scan-ats-full.mjs aggregates it into
     // one summary line.
     if (stopReason === STOP_REASON.NO_DATE_SKIP) jobs.workdayNoDateSkip = true;
     // 'fetch-error' means retries were exhausted mid-pagination while 19
-    // other tenants were hammering the same uplink. scan-ats-full.mjs
+    // other tenants were hammering the same uplink. scripts/scan-ats-full.mjs
     // collects tenants tagged 'transient' and retries them sequentially after
     // the parallel sweep, when the line is quiet — same array-tag pattern as
     // workdayNoDateSkip (no extra per-tenant logging here).
@@ -1253,7 +1253,7 @@ export default {
     // result. Structural causes (slice/depth/facet/page budget exhausted) win
     // over a transient one in the mix — a board that hit MAX_SPLIT_SLICES
     // *and* had one slice die mid-fetch is still a wall a retry can't clear,
-    // so scan-ats-full.mjs must not spend a second full split on it.
+    // so scripts/scan-ats-full.mjs must not spend a second full split on it.
     if (splitIncomplete || budgetExhausted) {
       jobs.workdayTruncated = (splitStructural || budgetExhausted)
         ? WORKDAY_TRUNCATED_REASON.STRUCTURAL

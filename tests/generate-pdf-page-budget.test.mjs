@@ -23,13 +23,14 @@ mkdirSync(outputRoot, { recursive: true });
 // realpathSync, not the raw mkdtemp path: Node resolves both `import.meta.url`
 // and a module's node_modules walk from a file's REALPATH, while
 // `process.argv[1]` keeps whatever spelling the caller used. On a checkout with
-// a symlinked output/ the two disagree, so generate-pdf.mjs's `isMain` guard is
+// a symlinked output/ the two disagree, so scripts/generate-pdf.mjs's `isMain` guard is
 // false and the spawned script exits 0 having done nothing at all -- assertions
 // then fail against empty output rather than against behaviour (#3165).
 const sandbox = realpathSync(mkdtempSync(join(outputRoot, 'page-budget-test-')));
 const externalOutput = realpathSync(mkdtempSync(join(outputRoot, 'page-budget-external-')));
 const externalInputRoot = mkdtempSync(join(tmpdir(), 'career-ops-pdf-external-input-'));
-const script = join(sandbox, 'generate-pdf.mjs');
+const script = join(sandbox, 'scripts/generate-pdf.mjs');
+mkdirSync(join(sandbox, 'scripts'), { recursive: true });
 const input = join(sandbox, 'two-pages.html');
 const defaultOverflowInput = join(sandbox, 'three-pages.html');
 const manifest = join(sandbox, 'data', 'pdf-index.tsv');
@@ -37,37 +38,38 @@ mkdirSync(join(sandbox, 'data'), { recursive: true });
 writeFileSync(manifest, '', 'utf-8');
 const playwrightStub = join(sandbox, 'node_modules', 'playwright');
 
-copyFileSync(join(ROOT, 'generate-pdf.mjs'), script);
-// generate-pdf.mjs imports its local sibling ./theme-style.mjs (dynamic PDF
+mkdirSync(join(script, '..'), { recursive: true });
+copyFileSync(join(ROOT, 'scripts/generate-pdf.mjs'), script);
+// scripts/generate-pdf.mjs imports its local sibling ./theme-style.mjs (dynamic PDF
 // theming, #1837); copy it into the sandbox too or the isolated script fails
 // to load with ERR_MODULE_NOT_FOUND before it can parse any --max-pages arg.
-copyFileSync(join(ROOT, 'theme-style.mjs'), join(sandbox, 'theme-style.mjs'));
+copyFileSync(join(ROOT, 'scripts/theme-style.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/theme-style.mjs')));
 // Same reason for ./cv-experience-order.mjs (reverse-chronological guard): it is a
-// local sibling import of generate-pdf.mjs, so the sandbox needs its own copy.
-copyFileSync(join(ROOT, 'cv-experience-order.mjs'), join(sandbox, 'cv-experience-order.mjs'));
+// local sibling import of scripts/generate-pdf.mjs, so the sandbox needs its own copy.
+copyFileSync(join(ROOT, 'scripts/cv-experience-order.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/cv-experience-order.mjs')));
 // generate-pdf resolves output and manifest paths from the tracker-owned
 // workspace. Copy the shared resolver and its local parser dependency so this
 // remains a genuinely isolated CLI test.
-copyFileSync(join(ROOT, 'tracker-utils.mjs'), join(sandbox, 'tracker-utils.mjs'));
-copyFileSync(join(ROOT, 'tracker-parse.mjs'), join(sandbox, 'tracker-parse.mjs'));
+copyFileSync(join(ROOT, 'scripts/tracker-utils.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/tracker-utils.mjs')));
+copyFileSync(join(ROOT, 'scripts/tracker-parse.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/tracker-parse.mjs')));
 copyFileSync(join(ROOT, 'tracker-aliases.json'), join(sandbox, 'tracker-aliases.json'));
-copyFileSync(join(ROOT, 'pipeline-lock.mjs'), join(sandbox, 'pipeline-lock.mjs'));
+copyFileSync(join(ROOT, 'scripts/pipeline-lock.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/pipeline-lock.mjs')));
 // ...and it strips the optional sections that rendered as a bare header via
 // ./cv-sections-core.mjs (#3986), another local sibling this sandbox needs.
-copyFileSync(join(ROOT, 'cv-sections-core.mjs'), join(sandbox, 'cv-sections-core.mjs'));
-// ...and generate-pdf resolves user-layer paths via path-resolver.mjs
+copyFileSync(join(ROOT, 'scripts/cv-sections-core.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/cv-sections-core.mjs')));
+// ...and generate-pdf resolves user-layer paths via scripts/path-resolver.mjs
 // (CAREER_OPS_ROOT), so the fixture carries that too.
-copyFileSync(join(ROOT, 'path-resolver.mjs'), join(sandbox, 'path-resolver.mjs'));
-// generate-pdf.mjs's main-guard lives in lib/is-main-module.mjs (#3170). Without
+copyFileSync(join(ROOT, 'scripts/path-resolver.mjs'), (mkdirSync(join(sandbox, 'scripts'), { recursive: true }), join(sandbox, 'scripts/path-resolver.mjs')));
+// scripts/generate-pdf.mjs's main-guard lives in lib/is-main-module.mjs (#3170). Without
 // it the copy dies with ERR_MODULE_NOT_FOUND before parsing an argument.
 // lib/page-format.mjs owns the paper size the @page rule is built from, and
-// generate-pdf.mjs imports it at module scope — same ERR_MODULE_NOT_FOUND
+// scripts/generate-pdf.mjs imports it at module scope — same ERR_MODULE_NOT_FOUND
 // without it.
 mkdirSync(join(sandbox, 'lib'), { recursive: true });
 copyFileSync(join(ROOT, 'lib', 'is-main-module.mjs'), join(sandbox, 'lib', 'is-main-module.mjs'));
 copyFileSync(join(ROOT, 'lib', 'page-format.mjs'), join(sandbox, 'lib', 'page-format.mjs'));
 
-// theme-style.mjs and tracker-utils.mjs both `import * as yaml from 'js-yaml'`,
+// scripts/theme-style.mjs and scripts/tracker-utils.mjs both `import * as yaml from 'js-yaml'`,
 // which resolves by walking up into the repo's node_modules -- from the
 // sandbox's REALPATH, so a checkout with a symlinked output/ never reaches it
 // and every spawned generate-pdf dies before parsing argv (#3165). Link the
@@ -130,7 +132,7 @@ export const chromium = {
           async goto(url) {
             const html = await readFile(new URL(url), 'utf-8');
             // Keep the document that actually reached the renderer, after every
-            // transform generate-pdf.mjs applies to it. Written to the sandbox
+            // transform scripts/generate-pdf.mjs applies to it. Written to the sandbox
             // (the spawned script's cwd) so a case can assert on it.
             await writeFile('.rendered.html', html, 'utf-8');
             renderedPdf = html.includes('THREE_PAGE_FIXTURE') ? threePagePdf : twoPagePdf;
@@ -393,7 +395,7 @@ try {
   // neither builder runs on the web pdf path: the agent emits finished HTML,
   // which reaches this script with the empty wrappers intact. Assert on the
   // document the renderer actually received, so removing the call in
-  // generate-pdf.mjs fails here and not only in the unit suite for the module.
+  // scripts/generate-pdf.mjs fails here and not only in the unit suite for the module.
   const bareHeaderInput = join(sandbox, 'bare-header-sections.html');
   writeFileSync(bareHeaderInput, `<!doctype html>
 <html>

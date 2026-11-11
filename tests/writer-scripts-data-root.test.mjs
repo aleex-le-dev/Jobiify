@@ -5,12 +5,12 @@
 // Those covered readers. These two write, and each had its own spelling of the
 // bug:
 //
-//   set-status.mjs    `const CAREER_OPS = dirname(fileURLToPath(...))` then
+//   scripts/set-status.mjs    `const CAREER_OPS = dirname(fileURLToPath(...))` then
 //                     `resolveTrackerPath(CAREER_OPS)` — the exact constant the
 //                     sibling suite's header calls out, still present in a writer.
 //                     Failed with "No tracker found at <CHECKOUT>/applications.md".
 //
-//   generate-pdf.mjs  disagreed with ITSELF: line 49 derived the tracker from
+//   scripts/generate-pdf.mjs  disagreed with ITSELF: line 49 derived the tracker from
 //                     getCareerOpsRoot(), while refreshRootCache() derived the
 //                     containment boundary from __dirname. Every path under the
 //                     real data root then read as an escape and the PDF was
@@ -34,7 +34,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 function fixture() {
-  // realpathSync because generate-pdf.mjs compares a canonical workspace root
+  // realpathSync because scripts/generate-pdf.mjs compares a canonical workspace root
   // against the paths it is handed. On macOS the temp dir is reached through a
   // symlink (/tmp -> /private/tmp), so a lexical fixture path would be reported
   // as outside its own workspace and the test would fail for a reason that has
@@ -81,7 +81,7 @@ const cleanup = (f) => {
 test('set-status finds the tracker under the configured data root', () => {
   const f = fixture();
   try {
-    const r = run('set-status.mjs', ['1', 'Interview', '--note', 'data-root check'], f);
+    const r = run('scripts/set-status.mjs', ['1', 'Interview', '--note', 'data-root check'], f);
     assert.doesNotMatch(r.all, /No tracker found/i,
       `it looked in the checkout, not the data root:\n${r.all.slice(0, 400)}`);
   } finally { cleanup(f); }
@@ -90,7 +90,7 @@ test('set-status finds the tracker under the configured data root', () => {
 test('set-status writes the new status into the data-root tracker', () => {
   const f = fixture();
   try {
-    run('set-status.mjs', ['1', 'Interview', '--note', 'data-root check'], f);
+    run('scripts/set-status.mjs', ['1', 'Interview', '--note', 'data-root check'], f);
     const tracker = readFileSync(join(f.dataRoot, 'data', 'applications.md'), 'utf-8');
     assert.match(tracker, /\|\s*Interview\s*\|/,
       `the status never reached the data-root tracker:\n${tracker}`);
@@ -101,7 +101,7 @@ test('set-status writes the new status into the data-root tracker', () => {
 test('set-status does not create a tracker in the checkout or the cwd', () => {
   const f = fixture();
   try {
-    run('set-status.mjs', ['1', 'Interview'], f);
+    run('scripts/set-status.mjs', ['1', 'Interview'], f);
     assert.ok(!existsSync(join(f.decoyCwd, 'applications.md')), 'wrote a tracker into the cwd');
     assert.ok(!existsSync(join(f.decoyCwd, 'data', 'applications.md')), 'wrote data/ into the cwd');
   } finally { cleanup(f); }
@@ -110,16 +110,16 @@ test('set-status does not create a tracker in the checkout or the cwd', () => {
 test('generate-pdf does not treat the data root as outside its workspace', () => {
   const f = fixture();
   try {
-    const r = run('generate-pdf.mjs', [join(f.dataRoot, 'output', 'cv.html'), join(f.dataRoot, 'output', 'cv.pdf')], f);
+    const r = run('scripts/generate-pdf.mjs', [join(f.dataRoot, 'output', 'cv.html'), join(f.dataRoot, 'output', 'cv.pdf')], f);
     assert.doesNotMatch(r.all, /Refusing to write the PDF outside the tracker workspace/i,
       `the containment boundary came from the code directory, not the data root:\n${r.all.slice(0, 500)}`);
     assert.doesNotMatch(r.all, /escapes the tracker workspace/i,
       `a path inside the data root was reported as an escape:\n${r.all.slice(0, 500)}`);
 
     // Positive proof that the containment checks actually RAN and passed, not
-    // merely that their message is absent: generate-pdf.mjs prints this line
+    // merely that their message is absent: scripts/generate-pdf.mjs prints this line
     // only after assertInsideWorkspace() has cleared the input and the output
-    // (generate-pdf.mjs:1325-1335). Without it a child that died earlier would
+    // (scripts/generate-pdf.mjs:1325-1335). Without it a child that died earlier would
     // satisfy both doesNotMatch assertions vacuously. (CodeRabbit, PR #4486.)
     assert.match(r.all, /\u{1F4C4} Input:/u,
       `validation never got far enough to report its input, so the assertions above prove `
@@ -150,24 +150,24 @@ test('generate-pdf does not treat the data root as outside its workspace', () =>
 // specifiers. Small enough to copy; kept explicit so a new import that is not
 // copied fails loudly here instead of silently resolving to the checkout.
 const CLOSURE = {
-  'set-status.mjs': [
-    'set-status.mjs', 'path-resolver.mjs', 'tracker-utils.mjs', 'pipeline-lock.mjs',
-    'tracker-parse.mjs', 'lib/local-today.mjs', 'role-matcher.mjs', 'templates/states.yml',
-    // session-activity.mjs (#4532): advisory in-progress claim taken before
+  'scripts/set-status.mjs': [
+    'scripts/set-status.mjs', 'scripts/path-resolver.mjs', 'scripts/tracker-utils.mjs', 'scripts/pipeline-lock.mjs',
+    'scripts/tracker-parse.mjs', 'lib/local-today.mjs', 'scripts/role-matcher.mjs', 'templates/states.yml',
+    // scripts/session-activity.mjs (#4532): advisory in-progress claim taken before
     // the write below.
-    'session-activity.mjs',
-    // check-jd-archive.mjs / jd-capture.mjs: the transition into Interview
+    'scripts/session-activity.mjs',
+    // scripts/check-jd-archive.mjs / scripts/jd-capture.mjs: the transition into Interview
     // triggers a JD-archive check via these two (#4523), which in turn need
     // their own two lib/ helpers.
-    'check-jd-archive.mjs', 'jd-capture.mjs', 'lib/cli-flags.mjs', 'lib/is-main-module.mjs',
+    'scripts/check-jd-archive.mjs', 'scripts/jd-capture.mjs', 'lib/cli-flags.mjs', 'lib/is-main-module.mjs',
     // Runtime assets, not imports: an import scan does not see these and each
     // one only announces itself by crashing the child.
     'tracker-aliases.json',
   ],
-  'generate-pdf.mjs': [
-    'generate-pdf.mjs', 'path-resolver.mjs', 'tracker-utils.mjs', 'pipeline-lock.mjs',
-    'tracker-parse.mjs', 'theme-style.mjs', 'lib/page-format.mjs', 'lib/is-main-module.mjs',
-    'cv-sections-core.mjs', 'cv-experience-order.mjs',
+  'scripts/generate-pdf.mjs': [
+    'scripts/generate-pdf.mjs', 'scripts/path-resolver.mjs', 'scripts/tracker-utils.mjs', 'scripts/pipeline-lock.mjs',
+    'scripts/tracker-parse.mjs', 'scripts/theme-style.mjs', 'lib/page-format.mjs', 'lib/is-main-module.mjs',
+    'scripts/cv-sections-core.mjs', 'scripts/cv-experience-order.mjs',
     'tracker-aliases.json',
   ],
 };
@@ -180,8 +180,8 @@ function markerFixture(script) {
   mkdirSync(join(dataRoot, 'data'), { recursive: true });
   mkdirSync(join(dataRoot, 'output'), { recursive: true });
 
-  for (const file of CLOSURE[script]) copyFileSync(join(ROOT, file), join(codeRoot, file));
-  // generate-pdf.mjs imports playwright at module scope and tracker-utils.mjs
+  for (const file of CLOSURE[script]) (mkdirSync(join(codeRoot, file, '..'), { recursive: true }), (mkdirSync(join(codeRoot, file, '..'), { recursive: true }), (mkdirSync(join(codeRoot, file, '..'), { recursive: true }), copyFileSync(join(ROOT, file), join(codeRoot, file)))));
+  // scripts/generate-pdf.mjs imports playwright at module scope and scripts/tracker-utils.mjs
   // imports js-yaml, so without this the child dies before it can print anything
   // and the assertions say nothing. linkNodeModules() rather than a raw
   // symlinkSync: it uses a junction on Windows, where a 'dir' link needs a
@@ -227,12 +227,12 @@ function runFromCodeRoot(f, script, args) {
 const markerCleanup = (f) => rmSync(f.dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 
 test('set-status honours a .career-ops-data marker, not just CAREER_OPS_ROOT', (t) => {
-  const f = markerFixture('set-status.mjs');
-  // set-status reaches js-yaml through tracker-utils.mjs, so with no linked tree
+  const f = markerFixture('scripts/set-status.mjs');
+  // set-status reaches js-yaml through scripts/tracker-utils.mjs, so with no linked tree
   // the child dies at module load and every assertion below passes vacuously.
   if (f.depsReason) { markerCleanup(f); return t.skip(f.depsReason); }
   try {
-    const r = runFromCodeRoot(f, 'set-status.mjs', ['1', 'Interview', '--note', 'marker check']);
+    const r = runFromCodeRoot(f, 'scripts/set-status.mjs', ['1', 'Interview', '--note', 'marker check']);
     // Positive first. Every assertion below is an ABSENCE, and a child that
     // died at module load satisfies all of them while proving nothing -- the
     // same vacuity CodeRabbit caught in the generate-pdf case on #4486.
@@ -245,11 +245,11 @@ test('set-status honours a .career-ops-data marker, not just CAREER_OPS_ROOT', (
 });
 
 test('generate-pdf honours a .career-ops-data marker for its workspace boundary', (t) => {
-  const f = markerFixture('generate-pdf.mjs');
+  const f = markerFixture('scripts/generate-pdf.mjs');
   // generate-pdf imports playwright at module scope, same vacuity.
   if (f.depsReason) { markerCleanup(f); return t.skip(f.depsReason); }
   try {
-    const r = runFromCodeRoot(f, 'generate-pdf.mjs',
+    const r = runFromCodeRoot(f, 'scripts/generate-pdf.mjs',
       [join(f.dataRoot, 'output', 'cv.html'), join(f.dataRoot, 'output', 'cv.pdf')]);
     assert.doesNotMatch(r.all, /escapes the tracker workspace/i,
       `a path inside the marked data root was reported as an escape:\n${r.all.slice(0, 500)}`);
@@ -263,9 +263,9 @@ test('generate-pdf honours a .career-ops-data marker for its workspace boundary'
 // CAREER_OPS_* variable stays the same. An env-only key kept serving the first
 // data root to every later call in the same process.
 test('generate-pdf follows a .career-ops-data marker that changes mid-process', (t) => {
-  const f = markerFixture('generate-pdf.mjs');
+  const f = markerFixture('scripts/generate-pdf.mjs');
   // Same vacuity as the two above, one step further in: the probe imports
-  // generate-pdf.mjs from the copied code root, so playwright at module scope
+  // scripts/generate-pdf.mjs from the copied code root, so playwright at module scope
   // kills it before it prints RESULT and the assertion reports a missing line
   // rather than the absent dependency tree.
   if (f.depsReason) { markerCleanup(f); return t.skip(f.depsReason); }
@@ -277,7 +277,7 @@ test('generate-pdf follows a .career-ops-data marker that changes mid-process', 
       import { join } from 'node:path';
       import { pathToFileURL } from 'node:url';
       const [codeRoot, first, moved] = process.argv.slice(1);
-      const { isWorkspaceOutputPath } = await import(pathToFileURL(join(codeRoot, 'generate-pdf.mjs')).href);
+      const { isWorkspaceOutputPath } = await import(pathToFileURL(join(codeRoot, 'scripts/generate-pdf.mjs')).href);
       const before = isWorkspaceOutputPath(join(first, 'output', 'cv.pdf'));
       writeFileSync(join(codeRoot, '.career-ops-data'), moved + '\\n');
       const after = isWorkspaceOutputPath(join(moved, 'output', 'cv.pdf'));

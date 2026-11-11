@@ -1,5 +1,5 @@
 // tests/providers/ashby.test.mjs — direct provider-contract tests (#1499).
-// Covers the id/detect/fetch contract scan.mjs calls plus the exported
+// Covers the id/detect/fetch contract scripts/scan.mjs calls plus the exported
 // parseCompensation() normalizer: careers_url detection, the posting-api
 // request shape (includeCompensation, 30s timeout, redirect:'error'),
 // secondary-location folding, salary annualization, and the retry loop's
@@ -457,7 +457,7 @@ try {
   }
 
   // The embed path renders location exactly as the posting API path does,
-  // including the "Remote" marker scan.mjs's location_filter matches on: a
+  // including the "Remote" marker scripts/scan.mjs's location_filter matches on: a
   // remote posting whose locationName is a city must not fail allow: ["Remote"].
   {
     const postings = [
@@ -597,7 +597,7 @@ try {
   // are live on the embed page, so the 404 says "API off for this org", never
   // "posting gone". Reading it as authoritative marked live roles expired.
   {
-    const { checkLivenessViaApi, resolveAtsApi } = await import(pathToFileURL(join(ROOT, 'liveness-api.mjs')).href);
+    const { checkLivenessViaApi, resolveAtsApi } = await import(pathToFileURL(join(ROOT, 'scripts/liveness-api.mjs')).href);
     const url = 'https://jobs.ashbyhq.com/whatnot/cf5ce9e0-d595-46f8-981e-c7f95778e6fa';
     const realFetch = globalThis.fetch;
     globalThis.fetch = async () => new Response('Not Found', { status: 404 });
@@ -613,7 +613,7 @@ try {
   // --strict). An entry that opts into the embed source must be verified
   // through the provider, which reads the embed page.
   {
-    const { verifyCompanies } = await import(pathToFileURL(join(ROOT, 'verify-portals.mjs')).href);
+    const { verifyCompanies } = await import(pathToFileURL(join(ROOT, 'scripts/verify-portals.mjs')).href);
     const apiCalls = [];
     const fetchJson = async (url) => { apiCalls.push(url); throw Object.assign(new Error('HTTP 404'), { status: 404 }); };
     const fetchText = async () => '';

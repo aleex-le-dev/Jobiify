@@ -14,7 +14,7 @@ const {
   DEFAULT_USER_AGENT,
   BROWSER_LIKE_USER_AGENT,
   MACOS_BROWSER_LIKE_USER_AGENT,
-} = await import(pathToFileURL(join(ROOT, 'user-agent.mjs')).href);
+} = await import(pathToFileURL(join(ROOT, 'scripts/user-agent.mjs')).href);
 const { fetchJson } = await import(pathToFileURL(join(ROOT, 'providers/_http.mjs')).href);
 
 // 1. Pinned to a literal, not derived from package.json — the exact

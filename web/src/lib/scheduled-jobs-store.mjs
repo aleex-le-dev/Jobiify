@@ -152,7 +152,7 @@ function takeOverStaleLock(lockDir) {
 // Windows says EPERM/EACCES while another process is removing that directory
 // (pending delete), which is exactly what a releasing holder does. That is the
 // contention these loops exist for, not a failure. Same classification as the
-// core's isMkdirContention (pipeline-lock.mjs), which this module cannot
+// core's isMkdirContention (scripts/pipeline-lock.mjs), which this module cannot
 // import: Next bundles it with the Turbopack root pinned to web/. Scoped to
 // win32 so a POSIX permission failure still throws at once; on Windows a
 // genuine one surfaces when the deadline passes.

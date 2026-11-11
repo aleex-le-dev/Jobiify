@@ -6,13 +6,13 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { ROOT } from './helpers.mjs';
-import { discardExpiredRows } from '../check-liveness.mjs';
+import { discardExpiredRows } from '../scripts/check-liveness.mjs';
 import {
   trackerLivenessTargets,
   planExpiredDiscards,
   postingClosedNote,
   DEFAULT_DISCARD_STATUSES,
-} from '../liveness-core.mjs';
+} from '../scripts/liveness-core.mjs';
 
 const tracker = [
   '| # | Date | Company | Role | Score | Status | PDF | Report | Notes |',
@@ -57,7 +57,7 @@ test('--status picks which rows are swept', (t) => {
 test('--tracker without a tracker file says so and exits 1', (t) => {
   const root = mkdtempSync(join(tmpdir(), 'liveness-tracker-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const result = spawnSync(process.execPath, [join(ROOT, 'check-liveness.mjs'), '--tracker', '--no-record'], {
+  const result = spawnSync(process.execPath, [join(ROOT, 'scripts/check-liveness.mjs'), '--tracker', '--no-record'], {
     env: { ...process.env, CAREER_OPS_ROOT: root, CAREER_OPS_DATA_DIR: root }, encoding: 'utf8', timeout: 20_000,
   });
   assert.equal(result.status, 1, result.stdout + result.stderr);
@@ -88,7 +88,7 @@ test('postingClosedNote stamps the calendar day', () => {
 });
 
 test('--discard-expired without --tracker exits 1', () => {
-  const result = spawnSync(process.execPath, [join(ROOT, 'check-liveness.mjs'), '--discard-expired', '--no-record'], {
+  const result = spawnSync(process.execPath, [join(ROOT, 'scripts/check-liveness.mjs'), '--discard-expired', '--no-record'], {
     encoding: 'utf8', timeout: 20_000,
   });
   assert.equal(result.status, 1, result.stdout + result.stderr);
@@ -121,7 +121,7 @@ function discardSandbox(t, rows, reportUrls) {
   ].join('\n'));
   const run = (...flags) => spawnSync(
     process.execPath,
-    ['--import', pathToFileURL(stub).href, join(ROOT, 'check-liveness.mjs'), '--tracker', '--discard-expired', '--no-record', '--no-fallback', ...flags],
+    ['--import', pathToFileURL(stub).href, join(ROOT, 'scripts/check-liveness.mjs'), '--tracker', '--discard-expired', '--no-record', '--no-fallback', ...flags],
     { env: { ...process.env, CAREER_OPS_ROOT: root, CAREER_OPS_DATA_DIR: data }, encoding: 'utf8', timeout: 60_000 },
   );
   return { trackerPath, reportsDir, run };

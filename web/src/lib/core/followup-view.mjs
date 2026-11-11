@@ -1,8 +1,8 @@
 // Shared urgency-selection logic for the DEMAND-loop home dashboard (#86).
 //
-// followup-cadence.mjs is the single source of truth for cadence: it already
+// scripts/followup-cadence.mjs is the single source of truth for cadence: it already
 // classifies every actionable application into an `urgency` of 'urgent',
-// 'overdue', 'waiting', or 'cold' (see computeUrgency in followup-cadence.mjs,
+// 'overdue', 'waiting', or 'cold' (see computeUrgency in scripts/followup-cadence.mjs,
 // and its own --overdue-only filter, which treats 'urgent'/'overdue' as due).
 // The web route used to filter on `e.status` (the tracker status —
 // applied/responded/interview — never "overdue"/"urgent") instead of
@@ -11,11 +11,11 @@
 // place that decision is made, so the route and any future consumer agree.
 //
 // Plain .mjs (not .ts) so the root test suite can import it without a build,
-// mirroring followup-seed.mjs.
+// mirroring scripts/followup-seed.mjs.
 
 const DUE_URGENCIES = new Set(["urgent", "overdue"]);
 
-/** True when a followup-cadence.mjs entry is actionable right now. */
+/** True when a scripts/followup-cadence.mjs entry is actionable right now. */
 export function isDue(entry) {
   return DUE_URGENCIES.has(entry?.urgency);
 }

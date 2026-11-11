@@ -31,7 +31,7 @@ import {
   matchesSeenCompanyRole,
   requisitionIdsForDedup,
   resolveDedupIncludeLanguage,
-} from '../scan.mjs';
+} from '../scripts/scan.mjs';
 import {
   parseScanHistoryLine,
   scanHistoryLineHasColumn,

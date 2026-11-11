@@ -24,7 +24,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyStoryBank } from '../story-provenance-check.mjs';
+import { classifyStoryBank } from '../scripts/story-provenance-check.mjs';
 
 /** Bucket name a single-claim classification landed in. */
 function verdict(storyBank, cv) {

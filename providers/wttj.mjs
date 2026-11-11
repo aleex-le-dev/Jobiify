@@ -37,7 +37,7 @@
 // "everything that passes the filter", which is usually what you want.
 //
 // Each hit maps to the normalized Job shape; salary_yearly_minimum (when
-// present) is attached as `salary: {min, max, currency}` so scan.mjs's
+// present) is attached as `salary: {min, max, currency}` so scripts/scan.mjs's
 // salary_filter can gate on it.
 
 const ENV_URL = 'https://www.welcometothejungle.com/api/env';

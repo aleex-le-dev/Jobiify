@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * process-quality.mjs — Recruiting-Process Friction Aggregator for career-ops
+ * scripts/process-quality.mjs — Recruiting-Process Friction Aggregator for career-ops
  *
  * Parses data/active-interviews.md, extracts inline `[process-friction]` tags
  * from the Notes column, and aggregates them per company into a friction
@@ -24,11 +24,11 @@
  *   [process-friction: interview rescheduled 2+ times same week]
  *   [process-friction: no confirmation after stated timeline passed]
  *
- * Run: node process-quality.mjs             (JSON to stdout)
- *      node process-quality.mjs --summary   (human-readable table)
- *      node process-quality.mjs --min-threshold 2  (min total interviews per company to report)
- *      node process-quality.mjs --file path/to/active-interviews.md  (override the data path; test isolation)
- *      node process-quality.mjs --self-test
+ * Run: node scripts/process-quality.mjs             (JSON to stdout)
+ *      node scripts/process-quality.mjs --summary   (human-readable table)
+ *      node scripts/process-quality.mjs --min-threshold 2  (min total interviews per company to report)
+ *      node scripts/process-quality.mjs --file path/to/active-interviews.md  (override the data path; test isolation)
+ *      node scripts/process-quality.mjs --self-test
  *
  * Issue #1466 — github.com/career-ops-hq/career-ops
  */
@@ -37,9 +37,9 @@ import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { getCareerOpsRoot } from './path-resolver.mjs';
-import { flagValue, validateFlags, safeIntFlag } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
-import { isPlaceholderCompany } from './lib/placeholder-cell.mjs';
+import { flagValue, validateFlags, safeIntFlag } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
+import { isPlaceholderCompany } from '../lib/placeholder-cell.mjs';
 
 const CAREER_OPS = getCareerOpsRoot();
 const DEFAULT_ACTIVE_INTERVIEWS_PATH = existsSync(join(CAREER_OPS, 'data/active-interviews.md'))
@@ -52,7 +52,7 @@ const FRICTION_TAG = /\[process-friction(?::\s*([^\]]+))?\]/i;
 const args = process.argv.slice(2);
 const summaryMode = args.includes('--summary');
 const selfTestMode = args.includes('--self-test');
-// --file overrides the data path — mirrors validate-portals.mjs / verify-portals.mjs's
+// --file overrides the data path — mirrors scripts/validate-portals.mjs / scripts/verify-portals.mjs's
 // --file convention. Primarily for test isolation: it lets tests point at a
 // controlled temp path instead of depending on whatever data/active-interviews.md
 // happens to exist (or not) in the caller's real workspace.
@@ -64,7 +64,7 @@ const ACTIVE_INTERVIEWS_PATH = fileFlagValue !== undefined
 // detect-reposts it did not even fall back — `--min-threshold
 // 999999999999999999999` was ACCEPTED and reported as `"minThreshold": 1e+21`,
 // the exact "metadata reports a value that is not the one in effect" failure
-// detect-reposts.mjs documents isSafeInteger as existing to prevent (#2982).
+// scripts/detect-reposts.mjs documents isSafeInteger as existing to prevent (#2982).
 // "abc" and "-5" already fell back to 1 via the clamp below; "3.5" silently
 // became 3. All of them now take the documented fallback.
 const rawMinThreshold = safeIntFlag(flagValue(args, '--min-threshold'), 1);
@@ -352,15 +352,15 @@ const KNOWN_FLAGS = ['--file', '--min-threshold', '--summary', '--self-test', '-
 const VALUE_FLAGS = ['--file', '--min-threshold'];
 
 const USAGE = `Usage:
-  node process-quality.mjs                        # JSON report
-  node process-quality.mjs --summary              # human-readable table
-  node process-quality.mjs --file <path>          # a different active-interviews.md
-  node process-quality.mjs --min-threshold <N>    # minimum rounds before a company is reported (default 1)
-  node process-quality.mjs --self-test            # run the built-in fixtures
-  node process-quality.mjs --help                 # show this message`;
+  node scripts/process-quality.mjs                        # JSON report
+  node scripts/process-quality.mjs --summary              # human-readable table
+  node scripts/process-quality.mjs --file <path>          # a different active-interviews.md
+  node scripts/process-quality.mjs --min-threshold <N>    # minimum rounds before a company is reported (default 1)
+  node scripts/process-quality.mjs --self-test            # run the built-in fixtures
+  node scripts/process-quality.mjs --help                 # show this message`;
 
 if (isMainModule(import.meta.url)) {
-  // Inside the main-module guard, not at import time: rejection-latency.mjs
+  // Inside the main-module guard, not at import time: scripts/rejection-latency.mjs
   // imports parseActiveInterviews from here, so a top-level check would judge
   // the IMPORTER's argv and reject its flags as unrecognized (#2919).
   //

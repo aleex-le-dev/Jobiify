@@ -22,7 +22,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { pass, fail } from './helpers.mjs';
-import { gitIn, gitRawIn, stagedPathsOutside } from '../update-system.mjs';
+import { gitIn, gitRawIn, stagedPathsOutside } from '../scripts/update-system.mjs';
 
 // A throwaway repo pinned to core.fileMode=false, which is what makes the bug
 // reachable. On a filesystem that records the executable bit this setting is what
@@ -107,22 +107,22 @@ console.log('\n🧪 Testing update-commit file-mode preservation...');
   const { dir, g, raw } = makeRepo();
   mkdirSync(join(dir, 'providers'));
   writeFileSync(join(dir, 'providers/acme.mjs'), 'x\n');
-  writeFileSync(join(dir, 'scan.mjs'), 'x\n');
+  writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/scan.mjs')), 'x\n');
   writeFileSync(join(dir, 'cv.md'), 'personal\n');
   g('add', '-A');
   g('commit', '-qm', 'base');
 
   // Only update-owned paths staged.
   writeFileSync(join(dir, 'providers/acme.mjs'), 'updated\n');
-  writeFileSync(join(dir, 'scan.mjs'), 'updated\n');
-  g('add', 'providers/acme.mjs', 'scan.mjs');
+  writeFileSync((mkdirSync(join(dir, 'scripts'), { recursive: true }), join(dir, 'scripts/scan.mjs')), 'updated\n');
+  g('add', 'providers/acme.mjs', 'scripts/scan.mjs');
 
-  const clean = stagedPathsOutside(['providers/', 'scan.mjs'], [], raw);
+  const clean = stagedPathsOutside(['providers/', 'scripts/scan.mjs'], [], raw);
   if (clean.length === 0) pass('stagedPathsOutside: update-owned paths only → safe to commit the index');
   else fail(`expected none outside, got [${clean}]`);
 
   const dirCovered = stagedPathsOutside(['providers/'], [], raw);
-  if (dirCovered.length === 1 && dirCovered[0] === 'scan.mjs') {
+  if (dirCovered.length === 1 && dirCovered[0] === 'scripts/scan.mjs') {
     pass('stagedPathsOutside: a directory entry covers files beneath it');
   } else {
     fail(`directory coverage wrong, got [${dirCovered}]`);
@@ -133,7 +133,7 @@ console.log('\n🧪 Testing update-commit file-mode preservation...');
   writeFileSync(join(dir, 'cv.md'), 'user edit\n');
   g('add', 'cv.md');
 
-  const withUser = stagedPathsOutside(['providers/', 'scan.mjs'], [], raw);
+  const withUser = stagedPathsOutside(['providers/', 'scripts/scan.mjs'], [], raw);
   if (withUser.includes('cv.md')) {
     pass('stagedPathsOutside: an unrelated staged file is reported, forcing the scoped commit');
   } else {

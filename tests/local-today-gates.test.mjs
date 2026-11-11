@@ -4,13 +4,13 @@
 // #2765 fixed followup-seed, #2932 fixed set-status's two. These are the rest,
 // and each GATES a decision rather than stamping a filename:
 //
-//   scan.mjs                 `today < cooldownUntil` — a posting the user
+//   scripts/scan.mjs                 `today < cooldownUntil` — a posting the user
 //                            silenced until a date resurfaces a day early
-//   followup-cadence.mjs     the follow-up due decision
+//   scripts/followup-cadence.mjs     the follow-up due decision
 //   check-table-freshness    `expired`, which exits 1 — a CI gate
-//   funnel-velocity.mjs      the "waiting" figure
-//   company-history.mjs      the `now` all age math runs against
-//   assessment-log.mjs       the date written into a user's assessments.tsv row
+//   scripts/funnel-velocity.mjs      the "waiting" figure
+//   scripts/company-history.mjs      the `now` all age math runs against
+//   scripts/assessment-log.mjs       the date written into a user's assessments.tsv row
 //
 // PINNED INSTANT, not the wall clock. The window where the UTC day and the
 // local day disagree only exists for part of the UTC day, so a test that reads
@@ -29,8 +29,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { localToday } from '../lib/local-today.mjs';
 import { isNestedCheckout, trackedFiles } from '../lib/mjs-files.mjs';
 import { codeMask, isCodeRange } from './helpers.mjs';
-import { shouldDedupScanHistoryRow } from '../scan.mjs';
-import { parseScanHistory, detectReposts } from '../detect-reposts.mjs';
+import { shouldDedupScanHistoryRow } from '../scripts/scan.mjs';
+import { parseScanHistory, detectReposts } from '../scripts/detect-reposts.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -130,7 +130,7 @@ test("scan's DEFAULT today is the local day, so a cooldown holds", () => {
   // still the day before, so the default must keep the posting silenced —
   // resolving the default as the UTC day opened it a day early.
   const out = inFrozenTz('America/New_York',
-    `const {shouldDedupScanHistoryRow} = await import('${spec('scan.mjs')}');` +
+    `const {shouldDedupScanHistoryRow} = await import('${spec('scripts/scan.mjs')}');` +
     `const held = shouldDedupScanHistoryRow({firstSeen:'2026-01-01',status:'cooldown:${UTC_DAY}'});` +
     `process.stdout.write(String(held));`);
   assert.equal(out, 'true', 'the default today opened the cooldown a day early');
@@ -140,7 +140,7 @@ test('company-history today() is the local calendar day at UTC midnight', () => 
   // The UTC-midnight ANCHOR is deliberate and must survive; only WHICH day
   // moves. #2765 drew the same line, so both halves are asserted.
   const out = inFrozenTz('America/New_York',
-    `const {today} = await import('${spec('company-history.mjs')}');` +
+    `const {today} = await import('${spec('scripts/company-history.mjs')}');` +
     `process.stdout.write(today().toISOString());`);
   assert.equal(out.slice(0, 10), NY_DAY, `today() returned the UTC day (${out.slice(0, 10)}), not the local one`);
   assert.equal(out.slice(10), 'T00:00:00.000Z', 'the UTC-midnight anchor was lost');
@@ -149,7 +149,7 @@ test('company-history today() is the local calendar day at UTC midnight', () => 
 test('check-table-freshness --today still overrides, and reports the date it used', () => {
   // The flag is the deterministic escape hatch; the local-day default must not
   // have broken it, or every CI pin in the repo silently drifts.
-  const r = spawnSync(process.execPath, [join(ROOT, 'check-table-freshness.mjs'), '--today', '2026-08-18'], {
+  const r = spawnSync(process.execPath, [join(ROOT, 'scripts/check-table-freshness.mjs'), '--today', '2026-08-18'], {
     cwd: ROOT, encoding: 'utf-8', timeout: 30_000,
   });
   assert.equal(r.error, undefined);
@@ -175,7 +175,7 @@ test('check-table-freshness --today still overrides, and reports the date it use
 test('each scanner that writes scan-history imports localToday', () => {
   // The check above is satisfied by deleting the date argument entirely. This
   // asserts the replacement is actually present.
-  for (const file of ['scan.mjs', 'scan-ats-full.mjs']) {
+  for (const file of ['scripts/scan.mjs', 'scripts/scan-ats-full.mjs']) {
     const src = readFileSync(join(ROOT, file), 'utf8');
     assert.match(
       src, /import\s*{[^}]*\blocalToday\b[^}]*}\s*from\s*['"][^'"]*local-today\.mjs['"]/,
@@ -210,7 +210,7 @@ test('weekly-digest: "this week" is the week the caller is actually in', () => {
   // week just ended came back empty — which reads as a quiet week, not as a
   // wrong window.
   const out = inFrozenTz('America/New_York',
-    `const {computeDefaultRange} = await import('${spec('weekly-digest.mjs')}');` +
+    `const {computeDefaultRange} = await import('${spec('scripts/weekly-digest.mjs')}');` +
     `process.stdout.write(JSON.stringify(computeDefaultRange()));`,
     WEEK_INSTANT);
   assert.deepEqual(JSON.parse(out), { from: '2026-08-10', to: '2026-08-16' },
@@ -219,7 +219,7 @@ test('weekly-digest: "this week" is the week the caller is actually in', () => {
 
 test('weekly-digest: an explicit `now` is resolved locally too', () => {
   const out = inFrozenTz('America/New_York',
-    `const {computeDefaultRange} = await import('${spec('weekly-digest.mjs')}');` +
+    `const {computeDefaultRange} = await import('${spec('scripts/weekly-digest.mjs')}');` +
     `process.stdout.write(JSON.stringify(computeDefaultRange(new Date('${WEEK_INSTANT}'))));`,
     WEEK_INSTANT);
   assert.deepEqual(JSON.parse(out), { from: '2026-08-10', to: '2026-08-16' });
@@ -244,7 +244,7 @@ test('rejection-latency: the courtesy threshold is measured from the local day',
   ].join('\n');
 
   const out = inFrozenTz('America/New_York',
-    `const q = await import('${spec('process-quality.mjs')}');const m = await import('${spec('rejection-latency.mjs')}');` +
+    `const q = await import('${spec('scripts/process-quality.mjs')}');const m = await import('${spec('scripts/rejection-latency.mjs')}');` +
     `const rows = q.parseActiveInterviews(${JSON.stringify(active)});` +
     `const tr = m.parseTrackerInterviewRows(${JSON.stringify(tracker)});` +
     // No `today` — the default is what is under test.
@@ -270,7 +270,7 @@ test('rejection-latency still flags once the local window HAS elapsed', () => {
   ].join('\n');
 
   const out = inFrozenTz('America/New_York',
-    `const q = await import('${spec('process-quality.mjs')}');const m = await import('${spec('rejection-latency.mjs')}');` +
+    `const q = await import('${spec('scripts/process-quality.mjs')}');const m = await import('${spec('scripts/rejection-latency.mjs')}');` +
     `const rows = q.parseActiveInterviews(${JSON.stringify(active)});` +
     `const tr = m.parseTrackerInterviewRows(${JSON.stringify(tracker)});` +
     `const r = m.computeRejectionLatency(rows, tr, { courtesyDays: 30 });` +
@@ -302,8 +302,8 @@ test('rejection-latency still flags once the local window HAS elapsed', () => {
 // The import check below is cc241ea's and is kept as it was.
 //
 // data/scan-history.tsv is appended to by FOUR scripts through the same
-// exported helper — scan.mjs, scan-ats-full.mjs, scan-hn.mjs and
-// scan-interamt.mjs. #3070 moved scan.mjs to the local day and left the other
+// exported helper — scripts/scan.mjs, scripts/scan-ats-full.mjs, scan-hn.mjs and
+// scan-interamt.mjs. #3070 moved scripts/scan.mjs to the local day and left the other
 // three on the UTC day, so a single evening west of Greenwich stamps two
 // different dates into the same file.
 //
@@ -317,7 +317,7 @@ test('rejection-latency still flags once the local window HAS elapsed', () => {
  * The argument list of every `appendToScanHistory(...)` CALL in `src`,
  * paren-matched over CODE positions only.
  *
- * `(?<!function )` skips the definition in scan.mjs — its own `date` parameter
+ * `(?<!function )` skips the definition in scripts/scan.mjs — its own `date` parameter
  * is not stamped by anything and would read as an offender.
  */
 function scanHistoryCallArgs(src) {
@@ -410,9 +410,9 @@ test('the call scanner sees code and only code', () => {
 test('the scanner resolves every call the four known writers contain', () => {
   // The shapes above are synthetic. This is the real files, and it is what
   // would catch masking that is correct in miniature and wrong at scale.
-  // scan.mjs went 5 → 7 when the location and posting-age cuts started
+  // scripts/scan.mjs went 5 → 7 when the location and posting-age cuts started
   // recording what they drop (`skipped_location`, `skipped_age`).
-  for (const [file, expected] of [['scan.mjs', 7], ['scan-ats-full.mjs', 1]]) {
+  for (const [file, expected] of [['scripts/scan.mjs', 7], ['scripts/scan-ats-full.mjs', 1]]) {
     const src = readFileSync(join(ROOT, file), 'utf-8');
     const naive = [...src.matchAll(/(?<!function )\bappendToScanHistory\s*\(/g)].length;
     assert.equal(naive, expected, `${file}: expected ${expected} call sites, source has ${naive} — update this expectation deliberately`);
@@ -514,12 +514,12 @@ test('two dates for one posting is all detect-reposts needs to call it a repost'
   const sameDay = tsv.replaceAll('2026-08-23', '2026-08-22');
   assert.deepEqual(detectReposts(parseScanHistory(sameDay), 90, 1, null), [], 'one evening, one date, no repost');
 });
-test('stats.mjs and analyze-patterns.mjs stamp the local day in report headers, not UTC', () => {
+test('scripts/stats.mjs and scripts/analyze-patterns.mjs stamp the local day in report headers, not UTC', () => {
   // At INSTANT (01:30 UTC), UTC_DAY is 2026-08-18 but NY_DAY is 2026-08-17.
   // Both report headers must reflect the local day (NY_DAY).
   //
-  // stats.mjs resolves its data files from the data root when it is imported,
-  // and followup-cadence.mjs, which it imports, reads config/profile.yml there.
+  // scripts/stats.mjs resolves its data files from the data root when it is imported,
+  // and scripts/followup-cadence.mjs, which it imports, reads config/profile.yml there.
   // So the child gets an empty data root, with the two overrides that outrank
   // it cleared, and the sources check shows it never read the user's files.
   const dataRoot = mkdtempSync(join(tmpdir(), 'career-ops-localtoday-stats-'));
@@ -528,13 +528,13 @@ test('stats.mjs and analyze-patterns.mjs stamp the local day in report headers, 
       `process.env.CAREER_OPS_ROOT = ${JSON.stringify(dataRoot)};` +
       `delete process.env.CAREER_OPS_TRACKER;` +
       `delete process.env.CAREER_OPS_PROFILE;` +
-      `const { computeAllStats } = await import('${spec('stats.mjs')}');` +
+      `const { computeAllStats } = await import('${spec('scripts/stats.mjs')}');` +
       `const s = computeAllStats();` +
       `process.stdout.write(JSON.stringify(s.metadata));`
     );
     const { generatedAt, sources } = JSON.parse(statsOut);
-    assert.deepEqual(Object.keys(sources).filter((k) => sources[k]), [], 'stats.mjs read data files outside its empty data root');
-    assert.equal(generatedAt, NY_DAY, `stats.mjs stamped ${generatedAt}, expected local day ${NY_DAY}`);
+    assert.deepEqual(Object.keys(sources).filter((k) => sources[k]), [], 'scripts/stats.mjs read data files outside its empty data root');
+    assert.equal(generatedAt, NY_DAY, `scripts/stats.mjs stamped ${generatedAt}, expected local day ${NY_DAY}`);
   } finally {
     rmSync(dataRoot, { recursive: true, force: true, maxRetries: 10 });
   }
@@ -543,9 +543,9 @@ test('stats.mjs and analyze-patterns.mjs stamp the local day in report headers, 
     Array(5).fill({ date: '2026-08-01', status: 'Applied', report: '', score: '85', notes: '' })
   );
   const patternsOut = inFrozenTz('America/New_York',
-    `const { analyze } = await import('${spec('analyze-patterns.mjs')}');` +
+    `const { analyze } = await import('${spec('scripts/analyze-patterns.mjs')}');` +
     `const p = analyze(${mockEntries});` +
     `process.stdout.write(p.metadata.analysisDate);`
   );
-  assert.equal(patternsOut, NY_DAY, `analyze-patterns.mjs stamped ${patternsOut}, expected local day ${NY_DAY}`);
+  assert.equal(patternsOut, NY_DAY, `scripts/analyze-patterns.mjs stamped ${patternsOut}, expected local day ${NY_DAY}`);
 });

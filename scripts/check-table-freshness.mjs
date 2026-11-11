@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-table-freshness.mjs — Staleness validator for jurisdiction data tables
+ * scripts/check-table-freshness.mjs — Staleness validator for jurisdiction data tables
  *
  * The jurisdiction-compliance tables (umbrella #2026) decay on a schedule:
  * minimum wages adjust annually, pre-announced legal changes land on known
@@ -41,11 +41,11 @@
  * (bad --max-age-months / --today), 0 otherwise — `review-due` alone never
  * fails the run.
  *
- * Run: node check-table-freshness.mjs                    (JSON to stdout)
- *      node check-table-freshness.mjs --summary          (human-readable table)
- *      node check-table-freshness.mjs --max-age-months 6 (override review threshold)
- *      node check-table-freshness.mjs --today 2026-10-02 (deterministic date for tests)
- *      node check-table-freshness.mjs --self-test
+ * Run: node scripts/check-table-freshness.mjs                    (JSON to stdout)
+ *      node scripts/check-table-freshness.mjs --summary          (human-readable table)
+ *      node scripts/check-table-freshness.mjs --max-age-months 6 (override review threshold)
+ *      node scripts/check-table-freshness.mjs --today 2026-10-02 (deterministic date for tests)
+ *      node scripts/check-table-freshness.mjs --self-test
  *
  * Issue #2036 — github.com/career-ops-hq/career-ops
  */
@@ -54,13 +54,13 @@ import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
-import { flagValue, validateFlags } from './lib/cli-flags.mjs';
-import { localToday } from './lib/local-today.mjs';
-import { parseDate } from './lib/parse-date.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { flagValue, validateFlags } from '../lib/cli-flags.mjs';
+import { localToday } from '../lib/local-today.mjs';
+import { parseDate } from '../lib/parse-date.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 
-const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
+const CAREER_OPS = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const TEMPLATES_DIR = join(CAREER_OPS, 'templates');
 const DEFAULT_MAX_AGE_MONTHS = 12;
@@ -77,12 +77,12 @@ const KNOWN_FLAGS = ['--summary', '--self-test', '--max-age-months', '--today', 
 const VALUE_FLAGS = ['--max-age-months', '--today'];
 
 const USAGE = `Usage:
-  node check-table-freshness.mjs                       # JSON freshness report
-  node check-table-freshness.mjs --summary             # human-readable table
-  node check-table-freshness.mjs --max-age-months <n>  # review-due threshold (default: 12)
-  node check-table-freshness.mjs --today <YYYY-MM-DD>  # evaluate as of a fixed date
-  node check-table-freshness.mjs --self-test           # run the inline self-test
-  node check-table-freshness.mjs --help                # show this message
+  node scripts/check-table-freshness.mjs                       # JSON freshness report
+  node scripts/check-table-freshness.mjs --summary             # human-readable table
+  node scripts/check-table-freshness.mjs --max-age-months <n>  # review-due threshold (default: 12)
+  node scripts/check-table-freshness.mjs --today <YYYY-MM-DD>  # evaluate as of a fixed date
+  node scripts/check-table-freshness.mjs --self-test           # run the inline self-test
+  node scripts/check-table-freshness.mjs --help                # show this message
 
 Exits 1 when any row is expired (past next_effective without re-verification).`;
 
@@ -276,7 +276,7 @@ function loadTables(dir = TEMPLATES_DIR) {
   return { tables, parseWarnings };
 }
 
-// --- Config (mirrors salary-gap.mjs's profile read: optional, never fatal) ---
+// --- Config (mirrors scripts/salary-gap.mjs's profile read: optional, never fatal) ---
 // Returns { months, warning }. A missing profile or absent key is a non-event
 // (both null). A PRESENT but invalid table_freshness.max_age_months is never
 // partially parsed or silently swallowed: months stays null (default applies)
@@ -302,7 +302,7 @@ function loadConfigMaxAge() {
     }
     return { months, warning: null };
   } catch {
-    return { months: null, warning: null }; // unreadable profile is a non-event here; doctor.mjs owns that complaint
+    return { months: null, warning: null }; // unreadable profile is a non-event here; scripts/doctor.mjs owns that complaint
   }
 }
 
@@ -577,7 +577,7 @@ if (isMainModule(import.meta.url)) {
   // Precedence: --max-age-months flag > config table_freshness.max_age_months > default 12.
   // An explicitly passed flag must be a strictly positive integer — anything
   // else is a usage error, not a silent fall-through to config/default
-  // (fail-fast on bad flag values, same as scan-ats-full.mjs).
+  // (fail-fast on bad flag values, same as scripts/scan-ats-full.mjs).
   const configWarnings = [];
   let maxAgeMonths;
   if (maxAgeRaw !== null) {

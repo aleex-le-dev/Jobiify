@@ -7,10 +7,10 @@
 // a defect on its own — it is three different situations that look identical at
 // the call site:
 //
-//   1. the caller runs its OWN, richer validation (scan.mjs's requireValue()
+//   1. the caller runs its OWN, richer validation (scripts/scan.mjs's requireValue()
 //      separates no-value / zero / negative / non-finite / out-of-range; the
 //      generic message would collapse five diagnostics into one line),
-//   2. requireOperand would be WRONG for that flag (contacts.mjs's --vcf takes
+//   2. requireOperand would be WRONG for that flag (scripts/contacts.mjs's --vcf takes
 //      an optional operand — `--vcf` alone means the default path), or
 //   3. nothing validates it at all, and the script answers from a default.
 //
@@ -33,7 +33,7 @@
 // A new script wires up validateFlags with `valueFlags`, forgets the option,
 // and nothing fails — it just inherits the bug, exactly as before #3087. There
 // is no signal at the call site that anything is missing. Two such callers were
-// already in the tree when #3092 audited it (fix-slugs.mjs, upskill.mjs) and
+// already in the tree when #3092 audited it (scripts/fix-slugs.mjs, scripts/upskill.mjs) and
 // neither appeared in that audit's list.
 //
 // So the rule is enforced where it can go red rather than restated where it can
@@ -41,14 +41,14 @@
 //
 // WHAT THIS DELIBERATELY DOES NOT CHECK: where the call sits. Both shapes in the
 // tree are correct and the difference is not stylistic. A script nothing imports
-// validates at module top level (contacts.mjs, rejection-latency.mjs,
-// batch-tailor.mjs; test-all.mjs spawns those as subprocesses). A module that IS
+// validates at module top level (scripts/contacts.mjs, scripts/rejection-latency.mjs,
+// scripts/batch-tailor.mjs; scripts/test-all.mjs spawns those as subprocesses). A module that IS
 // imported in-process validates inside its main-module guard
-// (`isMainModule(import.meta.url)`, lib/is-main-module.mjs) — followup-cadence.mjs
+// (`isMainModule(import.meta.url)`, lib/is-main-module.mjs) — scripts/followup-cadence.mjs
 // (#3196) reads the argv of whatever process imported it otherwise, so a
 // top-level validator would exit(1) on the TEST RUNNER's flags and take the
-// suite down with it. Same for upskill.mjs and check-table-freshness.mjs; scan.mjs
-// and archive-posting.mjs validate inside the function that parses argv.
+// suite down with it. Same for scripts/upskill.mjs and scripts/check-table-freshness.mjs; scripts/scan.mjs
+// and scripts/archive-posting.mjs validate inside the function that parses argv.
 //
 // The invariant is "a declared value flag is validated", not "validated in one
 // particular place", so the classifier below reads the call's ARGUMENTS and
@@ -58,7 +58,7 @@
 //
 // SCOPE: tracked `.mjs` source, enumerated with `git ls-files` — the set that
 // ships. A recursive walk would also read whatever untracked scratch the tree
-// is carrying (a killed test-all.mjs run leaves a `.tmp-script-test-*` copy of
+// is carrying (a killed scripts/test-all.mjs run leaves a `.tmp-script-test-*` copy of
 // the whole repo behind), and every stale copy in it would report as an
 // offender. Test files are excluded: tests/cli-flags.test.mjs calls
 // validateFlags WITHOUT requireOperand on purpose, to prove the option stays
@@ -148,19 +148,19 @@ console.log('\nvalidateFlags — every value-taking caller handles a missing ope
 // Together those make the number monotonic downward. It may go down; it may not
 // go up without someone saying so out loud.
 const OWN_GUARD = new Map([
-  ['scan.mjs',
-    'requireValue() (scan.mjs) + the shared parseSinceDays(): distinguishes a missing value from a zero, ' +
+  ['scripts/scan.mjs',
+    'requireValue() (scripts/scan.mjs) + the shared parseSinceDays(): distinguishes a missing value from a zero, ' +
     'a negative, a non-finite, an out-of-range cutoff and a repeated flag — five diagnostics one generic line would replace.'],
-  ['rejection-latency.mjs',
+  ['scripts/rejection-latency.mjs',
     'argValue() rejects missing, empty AND `--`-prefixed values, and exits 2 (not 1) — its documented exit code for a usage error.'],
-  ['scan-ats-full.mjs',
+  ['scripts/scan-ats-full.mjs',
     'valueOf() only accepts a next token that is not `--`-prefixed, and parseSinceDays()/the seed-source check reject the malformed rest.'],
-  ['check-table-freshness.mjs',
+  ['scripts/check-table-freshness.mjs',
     'parseDate()/parsePositiveInt() validate the operand SHAPE, naming the expected format ("expected YYYY-MM-DD", "a positive integer").'],
-  ['contacts.mjs',
-    '--vcf takes an OPTIONAL operand — `node contacts.mjs --vcf` means the default output/contacts.vcf. requireOperand would break that call.'],
+  ['scripts/contacts.mjs',
+    '--vcf takes an OPTIONAL operand — `node scripts/contacts.mjs --vcf` means the default output/contacts.vcf. requireOperand would break that call.'],
   // Not in #3092's audit, found by this sweep: a guard that predates it.
-  ['fix-slugs.mjs',
+  ['scripts/fix-slugs.mjs',
     'a hand-rolled --file check BEFORE validateFlags, covering more than requireOperand does: `--file=` (empty) and `--file -h` (single-dash next token) are rejected too.'],
 ]);
 
@@ -191,7 +191,7 @@ function sourceFiles() {
     // lib/cli-flags.mjs DEFINES validateFlags; tests exercise it directly,
     // including the deliberately unguarded form.
     .filter((p) => p !== 'lib/cli-flags.mjs')
-    .filter((p) => !p.startsWith('tests/') && !basename(p).endsWith('.test.mjs') && p !== 'test-all.mjs')
+    .filter((p) => !p.startsWith('tests/') && !basename(p).endsWith('.test.mjs') && p !== 'scripts/test-all.mjs')
     .map((p) => join(ROOT, p));
 }
 
@@ -448,8 +448,8 @@ if (misread.length === 0) {
 // Placement is not part of the rule. The five shapes below are the ones in the
 // tree — and choosing between them is a correctness decision about whether the
 // module gets imported in-process, not a style one (see the header). A future
-// edit that started reading position would fail followup-cadence.mjs and
-// upskill.mjs, which validate inside `isMain` because they must.
+// edit that started reading position would fail scripts/followup-cadence.mjs and
+// scripts/upskill.mjs, which validate inside `isMain` because they must.
 //
 // Each fixture is the SHAPE THAT HAS CONSEQUENCES (noSharedGuard), not the
 // harmless one: a position-sensitive scanner would degrade a wrapped call to
@@ -459,8 +459,8 @@ const PLACEMENTS = [
   ['top level', 'validateFlags(args, K, U, { valueFlags: V });'],
   ['isMain guard', 'if (isMain) {\n  const args = process.argv.slice(2);\n  validateFlags(args, K, U, { valueFlags: V });\n}'],
   // The two real spellings of the same guard: a named `isMain` const
-  // (upskill.mjs) and the call inline (followup-cadence.mjs,
-  // check-table-freshness.mjs). Both go through lib/is-main-module.mjs — the
+  // (scripts/upskill.mjs) and the call inline (scripts/followup-cadence.mjs,
+  // scripts/check-table-freshness.mjs). Both go through lib/is-main-module.mjs — the
   // older hand-rolled `process.argv[1]` comparison is banned repo-wide by
   // tests/main-guard-convention.test.mjs (#3170), including inside a string
   // literal like this one, so quoting it here would fail that test.

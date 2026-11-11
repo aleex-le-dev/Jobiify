@@ -1,15 +1,15 @@
 // tests/tracker-db-path-late-env.test.mjs — openDb() must honor
-// CAREER_OPS_TRACKER_DB set AFTER tracker.mjs is already in the module cache
+// CAREER_OPS_TRACKER_DB set AFTER scripts/tracker.mjs is already in the module cache
 // (#3506).
 //
-// tracker.mjs resolved DB_PATH at module scope. That is correct for a CLI — one
+// scripts/tracker.mjs resolved DB_PATH at module scope. That is correct for a CLI — one
 // process, one invocation, env fixed before node starts — and wrong the moment
 // the module is imported rather than executed: the first importer froze the path
 // for the whole process, and a later assignment to the documented override was
 // silently ignored.
 //
 // tests/tracker-busy-timeout.test.mjs is exactly that shape. It pins the variable
-// before importing tracker.mjs, but test-all.mjs imports tracker.mjs earlier in
+// before importing scripts/tracker.mjs, but scripts/test-all.mjs imports scripts/tracker.mjs earlier in
 // the same process (removeRowByNum), so under a full-suite run the pin did
 // nothing and openDb() created its schema at the unpinned path — a stray
 // applications.db in the repo root, or in a user's data/ if they ran the suite
@@ -29,14 +29,14 @@ console.log('\ntracker.mjs — CAREER_OPS_TRACKER_DB honored after import (#3506
 const work = mkdtempSync(join(tmpdir(), 'cops-db-late-'));
 const before = process.env.CAREER_OPS_TRACKER_DB;
 
-// The path a frozen DB_PATH would have used — computed the way tracker.mjs
+// The path a frozen DB_PATH would have used — computed the way scripts/tracker.mjs
 // computes it, from the ambient env, before this suite changes anything. That is
 // where the pre-fix build writes, and it is outside the fixture by definition, so
 // the suite has to name it: assert nothing appeared there, and clean up if
 // something did. Otherwise a FAILING run of this test leaves behind exactly the
 // stray database the change is meant to prevent — and only ever removes what it
 // created itself, never a real index that was already on disk.
-const { getCareerOpsRoot, resolveTrackerPath } = await import('../path-resolver.mjs');
+const { getCareerOpsRoot, resolveTrackerPath } = await import('../scripts/path-resolver.mjs');
 const mdPath = resolveTrackerPath(getCareerOpsRoot());
 const fallbackDb = mdPath.endsWith('.md') ? mdPath.slice(0, -3) + '.db' : mdPath + '.db';
 const fallbackExisted = existsSync(fallbackDb);
@@ -64,7 +64,7 @@ try {
   // 1. Import with the override ABSENT, the way an unrelated consumer would.
   //    Any module-scope resolution happens here, at the wrong path.
   delete process.env.CAREER_OPS_TRACKER_DB;
-  const { openDb } = await import(new URL('../tracker.mjs', import.meta.url).href);
+  const { openDb } = await import(new URL('../scripts/tracker.mjs', import.meta.url).href);
 
   // 2. Only now pin it. A module-scope const cannot see this.
   const pinned = join(work, 'applications.db');

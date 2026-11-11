@@ -1,8 +1,8 @@
 // tests/verifiers-plugin-providers.test.mjs — the scanner and both health
 // checkers must resolve providers through the SAME path (#4026).
 //
-// scan.mjs folds enabled provider plugins into its map with
-// mergeProviderPlugins(). verify-pipeline.mjs and verify-portals.mjs did not,
+// scripts/scan.mjs folds enabled provider plugins into its map with
+// mergeProviderPlugins(). scripts/verify-pipeline.mjs and scripts/verify-portals.mjs did not,
 // so a supported `provider: <plugin-id>` portals entry was reported as an
 // "unknown provider" that "never scans" — while the scanner scanned it. The
 // divergence is the bug and it can reappear the moment a caller drifts, so it
@@ -35,10 +35,10 @@ function prepareFixtureCodeRoot(tmp) {
       cpSync(join(ROOT, entry.name), join(codeRoot, entry.name));
     }
   }
-  for (const dir of ['providers', 'plugins', 'templates', 'lib', 'batch']) {
+  for (const dir of ['scripts', 'providers', 'plugins', 'templates', 'lib', 'batch']) {
     if (existsSync(join(ROOT, dir))) cpSync(join(ROOT, dir), join(codeRoot, dir), { recursive: true });
   }
-  // Through the shared helper, so this site and the one in test-all.mjs cannot
+  // Through the shared helper, so this site and the one in scripts/test-all.mjs cannot
   // drift again: each had half of the pair (a guard here, the Windows junction
   // type there) and the halves are now one function.
   //
@@ -46,7 +46,7 @@ function prepareFixtureCodeRoot(tmp) {
   // already failed two of this fixture's assertions. Two of four, measured: the
   // spawned verifier dies ERR_MODULE_NOT_FOUND, and the FIRST check reads that
   // crash output, finds no "unknown provider: apify" in it, and passes. It then
-  // reports that verify-pipeline.mjs resolves the plugin, about a run that never
+  // reports that scripts/verify-pipeline.mjs resolves the plugin, about a run that never
   // reached the resolution code. A false green is the failure this whole file
   // exists to remove, so the reason is carried out and the caller skips on it.
   const depsReason = linkNodeModules(codeRoot, ROOT);
@@ -61,12 +61,12 @@ const MINIMAL_TRACKER =
 
 // ── 1. Structural: all three provider-map builders run mergeProviderPlugins ──
 {
-  const callers = ['scan.mjs', 'verify-pipeline.mjs', 'verify-portals.mjs'];
+  const callers = ['scripts/scan.mjs', 'scripts/verify-pipeline.mjs', 'scripts/verify-portals.mjs'];
   const missing = callers.filter(
     (f) => !/\bmergeProviderPlugins\s*\(/.test(stripJsComments(readFileSync(join(ROOT, f), 'utf8'))),
   );
   if (missing.length === 0) {
-    pass('scan.mjs, verify-pipeline.mjs and verify-portals.mjs all run mergeProviderPlugins()');
+    pass('scripts/scan.mjs, scripts/verify-pipeline.mjs and scripts/verify-portals.mjs all run mergeProviderPlugins()');
   } else {
     fail(`these provider-map builders skip mergeProviderPlugins() and will disagree with the scanner: ${missing.join(', ')}`);
   }
@@ -89,7 +89,7 @@ providerFixture: {
       break providerFixture;
     }
 
-    // verify-pipeline.mjs resolves CAREER_OPS via getCareerOpsRoot() and, past
+    // scripts/verify-pipeline.mjs resolves CAREER_OPS via getCareerOpsRoot() and, past
     // the tracker, mkdir's/reads real-looking data/reports paths under it
     // (line 54 `mkdirSync(join(CAREER_OPS, 'data'), ...)`). The spawn below
     // inherits the full process.env, so a developer's own CAREER_OPS_ROOT
@@ -117,11 +117,11 @@ providerFixture: {
               CAREER_OPS_ROOT: dataRoot,
               // Explicitly undefined (not omitted): a bare ...process.env
               // spread would otherwise leak the developer's own
-              // CAREER_OPS_REPORTS in unchanged, and verify-pipeline.mjs
+              // CAREER_OPS_REPORTS in unchanged, and scripts/verify-pipeline.mjs
               // resolves it as an absolute-or-relative-to-CAREER_OPS override
               // that wins over dataRoot entirely (CodeRabbit, #4046). An
               // undefined value drops the key from the child's env, so
-              // verify-pipeline.mjs falls back to its default, dataRoot/reports.
+              // scripts/verify-pipeline.mjs falls back to its default, dataRoot/reports.
               CAREER_OPS_REPORTS: undefined,
               CAREER_OPS_PORTALS: portals,
               CAREER_OPS_TRACKER: tracker,
@@ -135,27 +135,27 @@ providerFixture: {
       }
     };
 
-    const pipeline = runVerifier('verify-pipeline.mjs');
+    const pipeline = runVerifier('scripts/verify-pipeline.mjs');
     if (/unknown provider:\s*apify/i.test(pipeline.out)) {
-      fail(`verify-pipeline.mjs still reports the enabled apify plugin as an unknown provider (exit ${pipeline.code})`);
+      fail(`scripts/verify-pipeline.mjs still reports the enabled apify plugin as an unknown provider (exit ${pipeline.code})`);
     } else {
-      pass('verify-pipeline.mjs resolves an enabled `apify` plugin provider instead of "unknown provider"');
+      pass('scripts/verify-pipeline.mjs resolves an enabled `apify` plugin provider instead of "unknown provider"');
     }
     // Negative direction: a genuinely unknown id must STILL be flagged — the
     // fix must not turn the check into accept-everything.
     if (/unknown provider:\s*definitely-not-a-provider/i.test(pipeline.out)) {
-      pass('verify-pipeline.mjs still flags a genuinely unknown provider id');
+      pass('scripts/verify-pipeline.mjs still flags a genuinely unknown provider id');
     } else {
-      fail('verify-pipeline.mjs stopped flagging an unknown provider id — the resolution check is now too permissive');
+      fail('scripts/verify-pipeline.mjs stopped flagging an unknown provider id — the resolution check is now too permissive');
     }
 
-    const portalsRun = runVerifier('verify-portals.mjs', ['--file', portals]);
+    const portalsRun = runVerifier('scripts/verify-portals.mjs', ['--file', portals]);
     if (/unknown provider:\s*apify/i.test(portalsRun.out)) {
-      fail(`verify-portals.mjs still reports the enabled apify plugin as an unknown provider (exit ${portalsRun.code})`);
+      fail(`scripts/verify-portals.mjs still reports the enabled apify plugin as an unknown provider (exit ${portalsRun.code})`);
     } else if (/missing env APIFY_TOKEN/i.test(portalsRun.out)) {
-      pass('verify-portals.mjs resolves `apify` to the actionable missing-env plugin stub');
+      pass('scripts/verify-portals.mjs resolves `apify` to the actionable missing-env plugin stub');
     } else {
-      fail(`verify-portals.mjs did not prove apify reached the missing-env plugin path (exit ${portalsRun.code})`);
+      fail(`scripts/verify-portals.mjs did not prove apify reached the missing-env plugin path (exit ${portalsRun.code})`);
     }
   } finally {
     rmSync(tmp, { recursive: true, force: true });

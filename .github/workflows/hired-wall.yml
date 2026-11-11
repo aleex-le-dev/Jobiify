@@ -1,5 +1,5 @@
 # hired-wall — turns a verified "I Got Hired" issue into a permanent entry on
-# the Hired Wall: appends the card to HIRED.md, bumps docs/hired-count.json
+# the Hired Wall: appends the card to docs/projet/HIRED.md, bumps docs/hired-count.json
 # (what the README badge reads) and regenerates docs/hired-wall.svg (the strip
 # under the hero, three most recent stories, avatars inlined as base64 because
 # GitHub sanitizes external references inside SVGs).
@@ -98,16 +98,16 @@ jobs:
           E_LINK: ${{ steps.entry.outputs.link }}
         run: |
           # Idempotence: re-labeling an issue already on the wall is a no-op.
-          if grep -qF "link=\"$E_LINK\"" HIRED.md; then
+          if grep -qF "link=\"$E_LINK\"" docs/projet/HIRED.md; then
             echo "entry already on the wall — rebuild only"
-            node hired-wall-build.mjs --rebuild --fetch-avatars
+            node scripts/hired-wall-build.mjs --rebuild --fetch-avatars
           else
             set -- --add --level "$E_LEVEL" --role "$E_ROLE" --story "$E_STORY" --link "$E_LINK" --fetch-avatars
             [ -n "$E_HANDLE" ] && set -- "$@" --handle "$E_HANDLE"
             [ -n "$E_SECTOR" ] && set -- "$@" --sector "$E_SECTOR"
             [ -n "$E_GEO" ] && set -- "$@" --geo "$E_GEO"
             [ -n "$E_WEEKS" ] && set -- "$@" --weeks "$E_WEEKS"
-            node hired-wall-build.mjs "$@"
+            node scripts/hired-wall-build.mjs "$@"
           fi
       - name: Commit
         id: commit
@@ -116,7 +116,7 @@ jobs:
           # commits belong to @careerops-ledger (whose PAT is LEDGER_TOKEN).
           git config user.name "careerops-ledger"
           git config user.email "careerops-ledger@users.noreply.github.com"
-          git add HIRED.md docs/hired-count.json docs/hired-wall.svg
+          git add docs/projet/HIRED.md docs/hired-count.json docs/hired-wall.svg
           if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
           N=$(node -e "console.log(JSON.parse(require('fs').readFileSync('docs/hired-count.json','utf8')).count)")
           git commit -m "chore(hired-wall): hire #$N joins the wall"

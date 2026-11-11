@@ -4,7 +4,7 @@
  *
  * A fork that keeps its own files (a nightly runner, an .mcp.json, a
  * .gitattributes) has no supported way to say "this file is mine": the only
- * lever is USER_PATHS, which lives inside update-system.mjs — the very file
+ * lever is USER_PATHS, which lives inside scripts/update-system.mjs — the very file
  * `apply` overwrites and git re-merges on every sync. The declaration file
  * moves that statement OUT of the system layer.
  *
@@ -25,7 +25,7 @@ import {
   localUserPaths,
   effectiveUserPaths,
   userLayerViolations,
-} from '../update-system.mjs';
+} from '../scripts/update-system.mjs';
 
 /** A throwaway root with an optional declaration file already written. */
 function makeRoot(contents) {
@@ -112,14 +112,14 @@ console.log('\n🧪 Local user-paths declaration file (#2421)\n');
 {
   let threw = null;
   try {
-    localUserPaths(root('merge-tracker.mjs\n'));
+    localUserPaths(root('scripts/merge-tracker.mjs\n'));
   } catch (err) {
     threw = err;
   }
-  if (threw && threw.message.includes('merge-tracker.mjs')) {
+  if (threw && threw.message.includes('scripts/merge-tracker.mjs')) {
     pass('declaring a SYSTEM_PATHS entry throws and names the path');
   } else {
-    fail(`#6 expected a throw naming merge-tracker.mjs, got ${threw ? threw.message : 'no throw'}`);
+    fail(`#6 expected a throw naming scripts/merge-tracker.mjs, got ${threw ? threw.message : 'no throw'}`);
   }
 }
 
@@ -148,7 +148,7 @@ console.log('\n🧪 Local user-paths declaration file (#2421)\n');
   const collisions = [
     ['modes/', 'a system-directory ancestor'],
     ['modes', 'the same ancestor without its directory marker'],
-    ['merge-tracker.mjs/child', 'a child below a system file'],
+    ['scripts/merge-tracker.mjs/child', 'a child below a system file'],
     ['te\u017Fts/', 'a Unicode case-folded alias of a system directory'],
   ];
   const survivors = [];
@@ -167,7 +167,7 @@ console.log('\n🧪 Local user-paths declaration file (#2421)\n');
     fail(`#8 accepted system overlaps: ${survivors.join('; ')}`);
   }
 
-  const neighbours = ['modes-local/', 'merge-tracker.mjs.local'];
+  const neighbours = ['modes-local/', 'scripts/merge-tracker.mjs.local'];
   let problem = null;
   try {
     const got = localUserPaths(root(`${neighbours.join('\n')}\n`));
@@ -262,12 +262,12 @@ console.log('\n🧪 Local user-paths declaration file (#2421)\n');
 
 // ── 10/11. End-to-end: the coverage guard honours the declaration ──
 //    This is the half of #2421 that bites second. Even with the safety check
-//    fixed, `validate-system-paths-coverage.mjs` fails the whole suite on any
+//    fixed, `scripts/validate-system-paths-coverage.mjs` fails the whole suite on any
 //    tracked file that is in neither array — so a fork keeping its own file
-//    still has to edit update-system.mjs. Both halves have to move together.
+//    still has to edit scripts/update-system.mjs. Both halves have to move together.
 //
 //    Driven against a throwaway git repo holding copies of the two scripts,
-//    the same shape as the coverage-guard probe in test-all.mjs.
+//    the same shape as the coverage-guard probe in scripts/test-all.mjs.
 {
   const dir = mkdtempSync(join(tmpdir(), 'co-local-paths-repo-'));
   roots.push(dir);
@@ -287,8 +287,8 @@ console.log('\n🧪 Local user-paths declaration file (#2421)\n');
   g('config', 'commit.gpgsign', 'false');
   g('config', 'core.hooksPath', join(dir, 'no-such-hooks'));
 
-  for (const f of ['validate-system-paths-coverage.mjs', 'update-system.mjs']) {
-    copyFileSync(join(ROOT, f), join(dir, f));
+  for (const f of ['scripts/validate-system-paths-coverage.mjs', 'scripts/update-system.mjs']) {
+    (mkdirSync(join(dir, f, '..'), { recursive: true }), (mkdirSync(join(dir, f, '..'), { recursive: true }), (mkdirSync(join(dir, f, '..'), { recursive: true }), copyFileSync(join(ROOT, f), join(dir, f)))));
   }
   // A fork-local file upstream has never heard of — the reported case.
   writeFileSync(join(dir, 'run-nightly.ps1'), '# fork-local runner\n');
@@ -296,7 +296,7 @@ console.log('\n🧪 Local user-paths declaration file (#2421)\n');
   g('commit', '-qm', 'base');
 
   const runGuard = () =>
-    spawnSync(process.execPath, [join(dir, 'validate-system-paths-coverage.mjs')], {
+    spawnSync(process.execPath, [join(dir, 'scripts/validate-system-paths-coverage.mjs')], {
       cwd: dir,
       encoding: 'utf-8',
       env,

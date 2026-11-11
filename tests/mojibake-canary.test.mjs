@@ -7,7 +7,7 @@
 // fingerprints and fails naming the file and line.
 // This file contains mojibake-like literals in detector comments and fixtures, so it must stay excluded from its own scan.
 //
-// Run:  node test-all.mjs --only mojibake-canary
+// Run:  node scripts/test-all.mjs --only mojibake-canary
 
 import { readFileSync } from 'fs';
 import { relative } from 'path';

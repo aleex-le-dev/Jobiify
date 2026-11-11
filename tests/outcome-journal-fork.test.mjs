@@ -1,9 +1,9 @@
 // tests/outcome-journal-fork.test.mjs — one application, one journal.
 //
-// outcome.mjs stores an application's outcome journal and artifacts in
+// scripts/outcome.mjs stores an application's outcome journal and artifacts in
 // data/outcomes/{num}_{company_slug}_{role_slug}/, and that journal is
 // append-only: "the LAST `## Entry:` block is the current truth"
-// (calibrate.mjs's parseOutcomeJournal).
+// (scripts/calibrate.mjs's parseOutcomeJournal).
 //
 // The directory name was rebuilt from the tracker row's CURRENT text on every
 // call, so editing the Role cell between two recordings — normalising "Senior
@@ -46,18 +46,18 @@ function sandbox() {
 }
 
 function record(dir, args) {
-  const r = spawnSync(process.execPath, [join(ROOT, 'outcome.mjs'), ...args], {
+  const r = spawnSync(process.execPath, [join(ROOT, 'scripts/outcome.mjs'), ...args], {
     cwd: ROOT,
     encoding: 'utf-8',
     timeout: 30_000,
     env: { ...process.env, CAREER_OPS_TRACKER: join(dir, 'data', 'applications.md') },
   });
   assert.equal(r.error, undefined, `spawn failed: ${r.error?.message}`);
-  // Exit status, not just "it spawned". outcome.mjs writes outcome.md BEFORE
+  // Exit status, not just "it spawned". scripts/outcome.mjs writes outcome.md BEFORE
   // it updates the tracker, so a failure after the journal write leaves every
   // file these tests look for while r.error stays undefined — the assertions
   // below would pass on a command that failed.
-  assert.equal(r.status, 0, `outcome.mjs ${args.join(' ')} exited ${r.status}: ${r.stderr || r.stdout}`);
+  assert.equal(r.status, 0, `scripts/outcome.mjs ${args.join(' ')} exited ${r.status}: ${r.stderr || r.stdout}`);
   return r;
 }
 

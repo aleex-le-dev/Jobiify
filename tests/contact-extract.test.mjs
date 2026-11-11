@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * tests/contact-extract.test.mjs — regression tests for contact-extract.mjs (#4361).
+ * tests/contact-extract.test.mjs — regression tests for scripts/contact-extract.mjs (#4361).
  *
  * Locks in the local-only, no-Gmail path from a pasted interview-invite or
  * rejection email to a saved data/contacts.tsv row:
@@ -14,7 +14,7 @@
  *      by name/notes content.
  *   4. appendContact creates the file with its documented header comment,
  *      updates name+company matches, and sanitizes on the way in.
- *   5. CLI end to end: auto-match via reply-matcher.mjs's matchCandidates,
+ *   5. CLI end to end: auto-match via scripts/reply-matcher.mjs's matchCandidates,
  *      manual --company/--tracker override, no-match no-op (nothing written,
  *      exit 0), --type validation, interactive y/n confirm vs --yes,
  *      missing-file / unknown-flag / --help exits.
@@ -34,7 +34,7 @@ import { pass, fail, ROOT } from './helpers.mjs';
 
 console.log('\ncontact-extract.mjs — pasted reply to a saved contact');
 const NODE = process.execPath;
-const CLI = join(ROOT, 'contact-extract.mjs');
+const CLI = join(ROOT, 'scripts/contact-extract.mjs');
 
 function check(name, cond, detail = '') {
   if (cond) pass(name);
@@ -185,7 +185,7 @@ console.log('2. appendContact — direct unit import');
   await mod.appendContact({ name: '=Formula Name', company: '@Acme', type: 'recruiter', email: 'safe@example.com', tracker: '12' }, formulaPath);
   await mod.appendContact({ name: '=Formula Name', company: '@Acme', type: 'interviewer', email: 'updated@example.com', tracker: '12' }, formulaPath);
   const formulaContent = readFileSync(formulaPath, 'utf8');
-  const contactsMod = await import(pathToFileURL(join(ROOT, 'contacts.mjs')).href);
+  const contactsMod = await import(pathToFileURL(join(ROOT, 'scripts/contacts.mjs')).href);
   const parsedFormula = contactsMod.parseContacts(formulaContent);
   check('appendContact: formula-leading cells are escaped on disk', formulaContent.includes("'=Formula Name\t'@Acme\t"), formulaContent);
   check('appendContact: escaped and raw identity forms update one row', parsedFormula.contacts.length === 1, formulaContent);
@@ -214,7 +214,7 @@ console.log('2. appendContact — direct unit import');
 }
 
 // ---------------------------------------------------------------------------
-console.log('3. CLI: auto-matches company + role via reply-matcher.mjs and saves with --yes');
+console.log('3. CLI: auto-matches company + role via scripts/reply-matcher.mjs and saves with --yes');
 {
   const { dir, trackerFile, contactsFile } = setupWorkspace();
   const emailFile = writeEmail(dir, {

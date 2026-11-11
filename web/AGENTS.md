@@ -13,7 +13,7 @@ before changing anything under `web/`.
 
 2. **Markdown is the source of truth.** `data/applications.md`, `cv.md`, `reports/`
    are canonical; anything else is a derived index. Status changes go through
-   `/api/status`, which delegates to the root `set-status.mjs`. That is the single
+   `/api/status`, which delegates to the root `scripts/set-status.mjs`. That is the single
    write path, and it is single on purpose. Never write a user's file from a route
    that bypasses it.
 

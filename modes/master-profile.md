@@ -9,15 +9,15 @@ existing `data/` user-layer rule.
 
 ## Initial CV import
 
-1. Run `node career-profile.mjs import [cv.md]` to preview extracted candidates.
+1. Run `node scripts/career-profile.mjs import [cv.md]` to preview extracted candidates.
 2. Review candidates with the user. For the interactive item-by-item gate, run
-   `node career-profile.mjs import [cv.md] --review`; accept, edit, or skip each
+   `node scripts/career-profile.mjs import [cv.md] --review`; accept, edit, or skip each
    candidate. Nothing is written before this review.
 3. The importer preserves the source quote and line number for each approved
    item. Approval marks the extracted statement `verified`; it does not verify
    claims beyond what the source actually says. Never embellish metrics,
    ownership, dates, skills, or outcomes.
-4. Run `node career-profile.mjs validate` and report any errors. Import merges
+4. Run `node scripts/career-profile.mjs validate` and report any errors. Import merges
    additively and keeps existing profile entries; it does not replace them.
 
 The parser is intentionally conservative and heading-based. Tell the user

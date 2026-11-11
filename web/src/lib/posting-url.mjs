@@ -4,7 +4,7 @@
  */
 
 /**
- * Undo the destination escapes tracker-parse.mjs undoes. A backslash before
+ * Undo the destination escapes scripts/tracker-parse.mjs undoes. A backslash before
  * `\`, `(`, `)`, `<`, `>`, or a space is the escape. Anything else stays.
  * @param {string} text
  * @returns {string}
@@ -14,7 +14,7 @@ function unescapeDestination(text) {
 }
 
 /**
- * Markdown link destination, same rules as tracker-parse.mjs
+ * Markdown link destination, same rules as scripts/tracker-parse.mjs
  * `markdownLinkDestination`. Balanced parentheses stay in the URL. A space
  * at depth 0 ends it. An angle-bracket destination runs to the closing `>`.
  * @param {string} raw
@@ -50,7 +50,7 @@ function linkDestination(raw) {
 
 /**
  * First http(s) markdown-link target in a tracker cell.
- * The walk matches tracker-parse.mjs `parseMarkdownLinks`: the label ends at
+ * The walk matches scripts/tracker-parse.mjs `parseMarkdownLinks`: the label ends at
  * an unescaped `]`, the destination ends at the matching `)`, and a `\` skips
  * the next character.
  * @param {string} value
@@ -102,7 +102,7 @@ function firstHttpMarkdownTarget(value) {
  * The posting URL a tracker URL cell points at.
  * A markdown link returns its href. A bare URL, `—`, `N/A`, or any other
  * cell comes back trimmed and unchanged. Same result as `extractCellUrl`
- * in tracker-parse.mjs for the cells merge-tracker writes (#3516).
+ * in scripts/tracker-parse.mjs for the cells merge-tracker writes (#3516).
  * @param {string} cell
  * @returns {string}
  */

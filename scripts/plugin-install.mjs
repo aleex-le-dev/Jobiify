@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // @ts-check
-// plugin-install.mjs — clone/scaffold/validate community plugins. Lives at repo
+// scripts/plugin-install.mjs — clone/scaffold/validate community plugins. Lives at repo
 // ROOT (not under plugins/) because it uses node:child_process to run git, which
-// test-all's plugin deny-list forbids inside plugins/. Imported by plugins.mjs.
+// test-all's plugin deny-list forbids inside plugins/. Imported by scripts/plugins.mjs.
 //
 // Security (the clone-time-RCE class): git is spawned via execFileSync with an
 // ARRAY argv (never a shell string), the URL is strict-allowlisted to
@@ -14,11 +14,11 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, mkdirSync, rmSync, cpSync, readdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { validateManifest } from './plugins/_engine.mjs';
-import { hashPluginTree } from './plugins/_lock.mjs';
+import { validateManifest } from '../plugins/_engine.mjs';
+import { hashPluginTree } from '../plugins/_lock.mjs';
 import { auditPlugin } from './plugin-audit.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 const GITHUB_URL_RE = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+?(?:\.git)?$/;
 const NAME_RE = /^career-ops-plugin-([a-z0-9][a-z0-9-]*)$/;
@@ -81,7 +81,7 @@ export function validateInstall(dir, expectId) {
 export function installFromRepo(root, { url, sha }) {
   const { url: safeUrl, id } = parseRepoArg(url);
   const dest = path.join(root, 'plugins.local', id);
-  if (existsSync(dest)) throw new Error(`plugins.local/${id} already exists — \`node plugins.mjs remove ${id}\` first`);
+  if (existsSync(dest)) throw new Error(`plugins.local/${id} already exists — \`node scripts/plugins.mjs remove ${id}\` first`);
   let cloned = safeClone(safeUrl, sha);
   let result;
   try { result = validateInstall(cloned, id); }
@@ -136,29 +136,29 @@ export function scaffoldNew(root, name) {
 
 // ── CLI flags + help ────────────────────────────────────────────────
 //
-// This file is a library first: plugins.mjs owns the user-facing `new`/`add`
+// This file is a library first: scripts/plugins.mjs owns the user-facing `new`/`add`
 // commands and calls the exports above. But docs/SCRIPTS.md lists `node
-// plugin-install.mjs` as a runnable command, so it is reachable directly — and
+// scripts/plugin-install.mjs` as a runnable command, so it is reachable directly — and
 // every direct invocation printed nothing and exited 0, `--help` and a typo'd
 // flag included. That is the silent-success shape lib/cli-flags.mjs exists to
 // end (#2775): nothing told you the install/scaffold commands live elsewhere.
 //
 // KNOWN_FLAGS is exactly --help/-h because that is every flag this file parses.
-// --sha and --confirm are plugins.mjs's flags, not this script's, so they are
+// --sha and --confirm are scripts/plugins.mjs's flags, not this script's, so they are
 // pointed at rather than claimed here.
 
 const KNOWN_FLAGS = ['--help', '-h'];
 
 const USAGE = `Usage:
-  node plugin-install.mjs --help|-h   # print this usage block and exit
+  node scripts/plugin-install.mjs --help|-h   # print this usage block and exit
 
-plugin-install.mjs takes no flags or arguments of its own — it is the
-clone/scaffold/validate engine behind plugins.mjs, which owns the CLI:
+scripts/plugin-install.mjs takes no flags or arguments of its own — it is the
+clone/scaffold/validate engine behind scripts/plugins.mjs, which owns the CLI:
 
-  node plugins.mjs new <name>
+  node scripts/plugins.mjs new <name>
       # scaffold plugins.local/<name> from plugins/_template/
 
-  node plugins.mjs add <name|owner/repo> [--sha <commit>] [--confirm]
+  node scripts/plugins.mjs add <name|owner/repo> [--sha <commit>] [--confirm]
       # clone a pinned commit into plugins.local/<id>, validate it, and print
       # its capability card (--confirm also enables it)
 
@@ -177,12 +177,12 @@ if (isMainModule(import.meta.url)) {
   // command this file does not have. Exiting 0 in silence is how you end up
   // believing a plugin was installed, so say where the command lives instead.
   if (args.length > 0) {
-    console.error(`Error: plugin-install.mjs takes no arguments (got: ${args.join(' ')}). Its commands live on plugins.mjs.`);
+    console.error(`Error: scripts/plugin-install.mjs takes no arguments (got: ${args.join(' ')}). Its commands live on scripts/plugins.mjs.`);
     console.error(USAGE);
     process.exit(1);
   }
 
-  // Bare `node plugin-install.mjs`, the form docs/SCRIPTS.md documents: there is
+  // Bare `node scripts/plugin-install.mjs`, the form docs/SCRIPTS.md documents: there is
   // no work to do here, so print where the work is rather than nothing at all.
   console.log(USAGE);
 }

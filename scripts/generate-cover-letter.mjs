@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * generate-cover-letter.mjs — Renders a cover letter payload to PDF.
+ * scripts/generate-cover-letter.mjs — Renders a cover letter payload to PDF.
  *
  * Usage:
- *   node generate-cover-letter.mjs --payload payload.json
- *   node generate-cover-letter.mjs --payload payload.json --out output/slug-cover.pdf
+ *   node scripts/generate-cover-letter.mjs --payload payload.json
+ *   node scripts/generate-cover-letter.mjs --payload payload.json --out output/slug-cover.pdf
  *
  * Fills templates/cover-letter-template.html with the payload, then renders
- * it to PDF via the same Playwright pipeline used for CVs (generate-pdf.mjs).
+ * it to PDF via the same Playwright pipeline used for CVs (scripts/generate-pdf.mjs).
  *
  * `buildHtml` and `safeOutputPath` are exported as pure functions so the
  * template and --out path guard can be tested without loading Playwright
@@ -20,14 +20,14 @@ import { fileURLToPath } from "url";
 import { parseArgs } from "util";
 import { assertFacts, printAdvisoryFacts } from "./verify-cv-facts.mjs";
 import { resolveTemplate } from "./cv-templates.mjs";
-import { isMainModule } from "./lib/is-main-module.mjs";
-import { PAGE_FORMATS, normalizePageFormat, pageFormatForCountry } from "./lib/page-format.mjs";
+import { isMainModule } from "../lib/is-main-module.mjs";
+import { PAGE_FORMATS, normalizePageFormat, pageFormatForCountry } from "../lib/page-format.mjs";
 import { getCareerOpsRoot } from "./path-resolver.mjs";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(dirname(fileURLToPath(import.meta.url)));
 // output/ is a USER-layer directory. Anchoring it to the script directory made
 // the cover letter unwritable under an external data directory: this module
-// insisted on <checkout>/output while the shared PDF guard in generate-pdf.mjs
+// insisted on <checkout>/output while the shared PDF guard in scripts/generate-pdf.mjs
 // required the tracker workspace, and the two could not both be satisfied.
 // getCareerOpsRoot() returns the checkout when no external root is configured,
 // so the default install is unchanged.
@@ -37,7 +37,7 @@ const OUTPUT_ROOT = resolve(getCareerOpsRoot(), "output");
  * Resolve a requested cover-letter output path.
  *
  * Paths that stay inside `output/` keep their relative subdirectory (the
- * application-bundle layout `generate-pdf.mjs` already supports). Paths that
+ * application-bundle layout `scripts/generate-pdf.mjs` already supports). Paths that
  * would escape `output/` — `..` traversal or an absolute path outside it —
  * are rejected instead of being silently flattened to `output/<basename>`.
  *
@@ -306,7 +306,7 @@ function buildSignatureBlock(signature, candidateName) {
 // no templates dir, bad config) falls back to the base template, preserving the
 // original hardcoded behavior.
 export function resolveCoverTemplatePath(payload = {}, opts = {}) {
-  const scriptDir = dirname(fileURLToPath(import.meta.url));
+  const scriptDir = dirname(dirname(fileURLToPath(import.meta.url)));
   const base = resolve(scriptDir, "templates", "cover-letter-template.html");
   try {
     return resolveTemplate("cover", payload.template, { format: "html", fallback: true, ...opts });
@@ -372,7 +372,7 @@ export function buildHtml(payload, templatePath) {
   // sequence is left literal instead of being re-interpreted as a placeholder.
   //
   // A token with no entry in the map is a template the renderer cannot fill —
-  // a custom cover-letter template (KINDS.cover in cv-templates.mjs) carrying a
+  // a custom cover-letter template (KINDS.cover in scripts/cv-templates.mjs) carrying a
   // typo'd or unsupported token. Collect those DURING the pass rather than
   // scanning the result: a scan of the output cannot tell a template token from
   // the same sequence appearing inside a substituted value, which is exactly
@@ -387,7 +387,7 @@ export function buildHtml(payload, templatePath) {
     return value;
   });
 
-  // Fail loudly, matching build-cv-html.mjs and build-cv-latex.mjs. Shipping a
+  // Fail loudly, matching scripts/build-cv-html.mjs and scripts/build-cv-latex.mjs. Shipping a
   // letter with a literal {{TOKEN}} in it is worse than not producing one.
   if (unresolved.size) {
     throw new Error(`Unresolved placeholders: ${[...unresolved].join(', ')}`);
@@ -412,7 +412,7 @@ async function main() {
   if (args.help || !args.payload) {
     console.log(`
 Usage:
-  node generate-cover-letter.mjs --payload payload.json [--out output/path.pdf] [--format letter|a4] [--country XX] [--report NNN]
+  node scripts/generate-cover-letter.mjs --payload payload.json [--out output/path.pdf] [--format letter|a4] [--country XX] [--report NNN]
 
   --payload   Path to the JSON payload file (required)
   --out       Override output path from payload (optional)
@@ -425,7 +425,7 @@ Usage:
     process.exit(args.help ? 0 : 1);
   }
 
-  // Supplied flags are validated like generate-pdf.mjs does. A typo that fell
+  // Supplied flags are validated like scripts/generate-pdf.mjs does. A typo that fell
   // through to the profile or the payload would print a letter on the wrong sheet.
   // `auto` is a profile or payload value, never a sheet, so --format rejects it.
   if (args.format !== undefined && !normalizePageFormat(args.format)) {

@@ -1,7 +1,7 @@
 // tests/mjs-files.test.mjs — the syntax gate covers the whole repository, and
 // both gates agree about what "the whole repository" is (#3419).
 //
-// The defect: test-all.mjs's section 1 called a NON-recursive readdirSync on the
+// The defect: scripts/test-all.mjs's section 1 called a NON-recursive readdirSync on the
 // repository root, so it syntax-checked 121 of ~575 .mjs files while printing a
 // `{file} syntax OK` line for each one it did check — a screen of green that
 // looked complete and never mentioned the 263 files under tests/. It also
@@ -12,7 +12,7 @@
 //
 //   1. BEHAVIOUR — the collector actually recurses, skips what it claims to
 //      skip, and returns a stable order.
-//   2. SCOPE — test-all.mjs's gate and `npm run lint` check the SAME set. This
+//   2. SCOPE — scripts/test-all.mjs's gate and `npm run lint` check the SAME set. This
 //      is the assertion the old code would have failed.
 //   3. CONVENTION — neither caller re-derives the file list itself. A second
 //      hand-rolled walk is free to re-diverge the next time one of them learns
@@ -197,7 +197,7 @@ test('the walk root is exempt, so running from inside a worktree still checks it
 });
 
 // Through the RE-EXPORT on purpose: `lib/walk-tree.mjs` owns the predicate now,
-// but intake.mjs and older callers import it from here, and this is the test
+// but scripts/intake.mjs and older callers import it from here, and this is the test
 // that notices if the re-export is dropped.
 test('isNestedCheckout detects the marker, of either type, and nothing else', () => {
   const dir = mkdtempSync(join(tmpdir(), 'co-mjs-files-'));
@@ -506,7 +506,7 @@ test('trackedFiles returns an unmerged path once, not once per index stage', () 
 });
 
 test('trackedFiles throws rather than reporting an empty, passing scan', () => {
-  // Same stance as collectMjsFiles above and validate-system-paths-coverage.mjs:
+  // Same stance as collectMjsFiles above and scripts/validate-system-paths-coverage.mjs:
   // a guard that could not look must never read as a guard that passed. The
   // realistic way to get here is running from a temp copy inside the repo,
   // where `ls-files` reports nothing at all — which is how the SYSTEM_PATHS
@@ -585,7 +585,7 @@ test('a checkout under tests/ does not get its suites EXECUTED by the runner', (
   // The end of the #3762 chain, asserted where it bites. Every other walker in
   // this repository READS what it finds; `discoverTests` feeds `node:test`, so
   // a worktree under `tests/` ran a stale checkout's suites against the current
-  // tree and `test-all.mjs` printed "🟢 All tests passed — safe to push/merge"
+  // tree and `scripts/test-all.mjs` printed "🟢 All tests passed — safe to push/merge"
   // for them. The marker is what the predicate keys on, so a plain file named
   // `.git` reproduces it exactly as `git worktree add tests/x` does, without
   // needing git.
@@ -612,7 +612,7 @@ test('a checkout under tests/ does not get its suites EXECUTED by the runner', (
     let status = 0;
     let output = '';
     try {
-      output = execFileSync(process.execPath, ['test-all.mjs', '--only', only], {
+      output = execFileSync(process.execPath, ['scripts/test-all.mjs', '--only', only], {
         cwd: ROOT, encoding: 'utf-8', timeout: 120000,
       });
     } catch (err) {
@@ -649,7 +649,7 @@ test('a checkout parked among the fixture states is not an allowlisted state', (
 
     const listed = execFileSync(
       process.execPath,
-      ['-e', "import('./seed-fixture.mjs').then((m) => console.log(JSON.stringify(m.listStates())))"],
+      ['-e', "import('./scripts/seed-fixture.mjs').then((m) => console.log(JSON.stringify(m.listStates())))"],
       { cwd: ROOT, encoding: 'utf-8', timeout: 60000 },
     );
     const states = JSON.parse(listed);
@@ -665,17 +665,17 @@ test('a checkout parked among the fixture states is not an allowlisted state', (
 
 
 test('both syntax checkers derive their file list from the shared collector', () => {
-  for (const caller of ['test-all.mjs', 'scripts/check-syntax.mjs']) {
+  for (const caller of ['scripts/test-all.mjs', 'scripts/check-syntax.mjs']) {
     const src = readFileSync(join(ROOT, caller), 'utf-8');
     assert.match(src, /collectMjsFiles\(/, `${caller} must use lib/mjs-files.mjs`);
   }
 
-  // Scoped to section 1 rather than the whole file: test-all.mjs legitimately
+  // Scoped to section 1 rather than the whole file: scripts/test-all.mjs legitimately
   // walks other subtrees for other reasons (plugins/, web/), and a
   // whole-file ban would fail on those. What must not come back is a walk
   // feeding THIS gate — that is the drift, and re-reading a directory here is
   // the only way to reintroduce it.
-  const testAll = readFileSync(join(ROOT, 'test-all.mjs'), 'utf-8');
+  const testAll = readFileSync(join(ROOT, 'scripts/test-all.mjs'), 'utf-8');
   const start = testAll.indexOf('1. SYNTAX CHECKS');
   const end = testAll.indexOf('2. SCRIPT EXECUTION');
   assert.ok(start > 0 && end > start, 'section 1 and 2 banners must still be findable');

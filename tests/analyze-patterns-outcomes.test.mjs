@@ -1,5 +1,5 @@
 // tests/analyze-patterns-outcomes.test.mjs — outcome classification and the
-// conversion denominators in analyze-patterns.mjs.
+// conversion denominators in scripts/analyze-patterns.mjs.
 //
 // These two are tested together because they fail together: counting a sent-
 // but-unanswered application as a positive outcome AND dividing by a `total`
@@ -18,7 +18,7 @@ import { pathToFileURL } from 'url';
 console.log('\nanalyze-patterns — outcome classification & conversion denominators');
 
 const { classifyOutcome, newOutcomeCounts, withOutcomeRates, OUTCOME_BUCKETS, bestDecidedSegment, worstDecidedSegment, scoreThresholdFrom } =
-  await import(pathToFileURL(join(ROOT, 'analyze-patterns.mjs')).href);
+  await import(pathToFileURL(join(ROOT, 'scripts/analyze-patterns.mjs')).href);
 
 // --- classifyOutcome ---------------------------------------------------------
 
@@ -198,7 +198,7 @@ let result = null;
 let summary = '';
 let gated = null;
 try {
-  const run = (...flags) => execFileSync(NODE, [join(ROOT, 'analyze-patterns.mjs'), ...flags], {
+  const run = (...flags) => execFileSync(NODE, [join(ROOT, 'scripts/analyze-patterns.mjs'), ...flags], {
     encoding: 'utf-8',
     timeout: 60000,
     env: { ...process.env, CAREER_OPS_ROOT: work },
@@ -208,7 +208,7 @@ try {
   // Below the floor the script prints its JSON and exits 1.
   try { run('--min-threshold', '12'); } catch (e) { gated = JSON.parse(e.stdout || 'null'); }
 } catch (e) {
-  fail(`analyze-patterns.mjs did not run over the fixture tracker: ${(e.stderr || e.message || '').toString().slice(0, 300)}`);
+  fail(`scripts/analyze-patterns.mjs did not run over the fixture tracker: ${(e.stderr || e.message || '').toString().slice(0, 300)}`);
 } finally {
   rmSync(work, { recursive: true, force: true });
 }

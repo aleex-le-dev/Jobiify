@@ -6,7 +6,7 @@ Common questions from the community, answered in one place. For setup details se
 
 ## 1. Skills aren't loading on Windows — symlink error on install
 
-Windows does not create symlinks by default, so Git checks out the CLI skill entrypoints (`.claude/skills/`, `.opencode/skills/`, etc.) as plain pointer files instead of real symlinks. The installer and updater both detect this automatically: run `node update-system.mjs apply --confirm` (or `npx @santifer/career-ops init` on a fresh install) and the `materializeSkillEntrypoints` step will replace the pointer files with the full canonical skill content. From a linked Git worktree, `apply` makes this repair in your `main` checkout; run `git merge main` in the worktree to pick it up (new worktrees get it automatically). With `CAREER_OPS_UPDATE_IN_WORKTREE=1` set, `apply` repairs only that worktree's branch instead, and `main` stays unrepaired. No manual `mklink` or Developer Mode changes are needed.
+Windows does not create symlinks by default, so Git checks out the CLI skill entrypoints (`.claude/skills/`, `.opencode/skills/`, etc.) as plain pointer files instead of real symlinks. The installer and updater both detect this automatically: run `node scripts/update-system.mjs apply --confirm` (or `npx @santifer/career-ops init` on a fresh install) and the `materializeSkillEntrypoints` step will replace the pointer files with the full canonical skill content. From a linked Git worktree, `apply` makes this repair in your `main` checkout; run `git merge main` in the worktree to pick it up (new worktrees get it automatically). With `CAREER_OPS_UPDATE_IN_WORKTREE=1` set, `apply` repairs only that worktree's branch instead, and `main` stays unrepaired. No manual `mklink` or Developer Mode changes are needed.
 
 ## 2. What is the difference between `scan` and `scan:full`?
 
@@ -60,7 +60,7 @@ career-ops therefore uses two trust tiers:
 Audit the story bank locally, without an LLM call:
 
 ```bash
-node story-provenance-check.mjs --summary
+node scripts/story-provenance-check.mjs --summary
 ```
 
 The checker classifies each numeric claim as `existing`, `supportedByResume`, `derived-unverified`, or `user-cannot-confirm`. It is read-only: for a flagged claim, verify it against a primary source, provide the correct figure, remove the number and keep the story as narrative, or say "I don't know." That last answer is intentionally first-class — a `**Provenance:** user-cannot-confirm` marker keeps the number from being treated as verified on a later scan, so an honest unknown is never laundered into a confident fact through repetition.
@@ -95,7 +95,7 @@ No. Everything is files in your checkout, and there is no cloud component. Peopl
 
 ## How do I get an issue assigned to me?
 
-Comment on it and we'll assign it (this is in CONTRIBUTING.md). A PR with no prior issue is welcome for bug fixes, zero-auth scanner providers, docs and translations. Issue-first applies only to new features, new modes and architecture changes.
+Comment on it and we'll assign it (this is in docs/projet/CONTRIBUTING.md). A PR with no prior issue is welcome for bug fixes, zero-auth scanner providers, docs and translations. Issue-first applies only to new features, new modes and architecture changes.
 
 ## Can I use career-ops without a terminal?
 

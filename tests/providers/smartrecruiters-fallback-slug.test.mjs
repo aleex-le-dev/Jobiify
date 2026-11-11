@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { pass, fail } from '../helpers.mjs';
 import provider, { parseSmartRecruitersResponse } from '../../providers/smartrecruiters.mjs';
-import { normalizeUrl } from '../../url-key.mjs';
+import { normalizeUrl } from '../../scripts/url-key.mjs';
 
 const entry = {
   name: 'Example Research & Design',

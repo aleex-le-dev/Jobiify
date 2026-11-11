@@ -13,7 +13,7 @@ const EXACT: Record<string, string> = {
   "Follow-ups": "les relances",
   "New matches": "les nouvelles offres",
   "Follow-ups and new matches": "les relances et les nouvelles offres",
-  // Relances sans réponse (rejection-latency.mjs)
+  // Relances sans réponse (scripts/rejection-latency.mjs)
   "Elapsed-time observation only — not legal advice or a claim that the employer did anything wrong.":
     "Simple mesure du temps écoulé — ni un avis juridique, ni l'affirmation que l'employeur a mal agi.",
   // Assistant de candidature (lib/apply/url-guard.mjs)

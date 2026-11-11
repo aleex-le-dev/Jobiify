@@ -60,7 +60,7 @@ test("runner and scheduler-status derive the same default and custom lock path",
 test("relative configured store paths resolve against the supplied career-ops root", () => {
   // os.tmpdir(), which reads TEMP on Windows. Falling back to the working
   // directory when TEMP is unset, as it is on macOS and Linux, put both of
-  // these in the repository root whenever test-all.mjs ran this file.
+  // these in the repository root whenever scripts/test-all.mjs ran this file.
   const firstRoot = fs.mkdtempSync(path.join(os.tmpdir(), "career-ops-store-root-a-"));
   const secondRoot = fs.mkdtempSync(path.join(os.tmpdir(), "career-ops-store-root-b-"));
   try {

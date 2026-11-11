@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * funnel-velocity.mjs — Funnel calibration vs market benchmarks + stage velocity
+ * scripts/funnel-velocity.mjs — Funnel calibration vs market benchmarks + stage velocity
  *
  * Three payloads, decreasing availability:
  *   1. calibration — own funnel rates (canonical ever* definition imported from
- *      stats.mjs) vs candidate-side market benchmark ranges. Works day one;
+ *      scripts/stats.mjs) vs candidate-side market benchmark ranges. Works day one;
  *      folds status-log history when the ledger is present so a row rejected
  *      after an interview still counts as having reached Interview (#3493).
  *   2. waiting — in-flight Applied rows and elapsed days vs the typical
@@ -12,7 +12,7 @@
  *   3. velocity — median/p75 days per stage hop, folded from the append-only
  *      transition ledger data/status-log.tsv. Accrues value as the log grows.
  *
- * Transition ledger (written by set-status.mjs, never edited in place):
+ * Transition ledger (written by scripts/set-status.mjs, never edited in place):
  *   {tracker#}\t{YYYY-MM-DD}\t{from}\t{to}\t{source}\t{note}
  *   - from may be "-" (unknown prior state)
  *   - to "-" retracts the row's latest observation
@@ -30,10 +30,10 @@
  * Benchmarks lookup order: --benchmarks <path> > config/benchmarks.yml (user
  * layer, survives updates) > templates/benchmarks.yml (shipped default).
  *
- * Run: node funnel-velocity.mjs             (JSON)
- *      node funnel-velocity.mjs --summary   (human-readable)
- *      node funnel-velocity.mjs --self-test
- *      node funnel-velocity.mjs --benchmarks path/to/benchmarks.yml
+ * Run: node scripts/funnel-velocity.mjs             (JSON)
+ *      node scripts/funnel-velocity.mjs --summary   (human-readable)
+ *      node scripts/funnel-velocity.mjs --self-test
+ *      node scripts/funnel-velocity.mjs --benchmarks path/to/benchmarks.yml
  */
 
 import { readFileSync, existsSync } from 'fs';
@@ -45,9 +45,9 @@ import { resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
 import { resolveTrackerPath, loadCanonicalStates, resolveCanonicalState } from './tracker-utils.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { parseAppliedDate, normalizeStatus } from './followup-cadence.mjs';
-import { flagValue, validateFlags } from './lib/cli-flags.mjs';
-import { localToday } from './lib/local-today.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { flagValue, validateFlags } from '../lib/cli-flags.mjs';
+import { localToday } from '../lib/local-today.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 
 // Two roots, because this file reads both layers and they are not the same
 // directory. CODE_ROOT is where the shipped templates live; DATA_ROOT is where
@@ -59,7 +59,7 @@ import { isMainModule } from './lib/is-main-module.mjs';
 // the tracker lookup at the checkout. A user with a data root configured got
 // "No tracker found ... nothing to calibrate yet" — indistinguishable from
 // having no data.
-const CODE_ROOT = dirname(fileURLToPath(import.meta.url));
+const CODE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const STATES_FILE = join(CODE_ROOT, 'templates/states.yml');
 
@@ -67,11 +67,11 @@ const KNOWN_FLAGS = ['--summary', '--self-test', '--benchmarks', '--help', '-h']
 const VALUE_FLAGS = ['--benchmarks'];
 
 const USAGE = `Usage:
-  node funnel-velocity.mjs                       # JSON report
-  node funnel-velocity.mjs --summary             # human-readable report
-  node funnel-velocity.mjs --benchmarks <path>   # override the benchmark YAML file
-  node funnel-velocity.mjs --self-test           # run the built-in fixtures
-  node funnel-velocity.mjs --help|-h              # show this message`;
+  node scripts/funnel-velocity.mjs                       # JSON report
+  node scripts/funnel-velocity.mjs --summary             # human-readable report
+  node scripts/funnel-velocity.mjs --benchmarks <path>   # override the benchmark YAML file
+  node scripts/funnel-velocity.mjs --self-test           # run the built-in fixtures
+  node scripts/funnel-velocity.mjs --help|-h              # show this message`;
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 // `web` sits alongside `set-status` because it is the same class of event: a
@@ -363,7 +363,7 @@ export function analyze({ trackerContent, logContent, benchmarks, states, todayS
   // sitting in a terminal snapshot (Rejected/Discarded) still counts for the
   // middle stages it passed through, so interviewRate/responseRate stop
   // undercounting rejected-after-interview rows (#3493). Same canonical
-  // definition `node stats.mjs` uses. Branch on the parsed stages, not the raw
+  // definition `node scripts/stats.mjs` uses. Branch on the parsed stages, not the raw
   // file: a header-only, comment-only, or all-malformed log has no history to
   // fold, and taking the ledger path anyway would stamp basis:'ledger' on a
   // funnel identical to the snapshot and print the "rates fold history" note.
@@ -473,7 +473,7 @@ export function renderSummary(result, todayStr) {
     }
   }
   if (!hopsWithData.length && dq.observations === 0) {
-    out.push('  ledger is empty — velocity accrues as statuses change through set-status.mjs');
+    out.push('  ledger is empty — velocity accrues as statuses change through scripts/set-status.mjs');
   }
 
   out.push('\nData quality:');
@@ -665,7 +665,7 @@ function selfTest() {
   check(below.includes('(2025, directional)'), 'tone: benchmark year + directional attached');
 
   // -- ledger-aware calibration (#3493): a terminal Rejected snapshot must not
-  // erase the middle stages the row actually reached. Same shape stats.mjs uses. --
+  // erase the middle stages the row actually reached. Same shape scripts/stats.mjs uses. --
   const ledgerHeader = '| # | Date | Company | Role | Score | Status | PDF | Report | Notes |\n|---|------|---------|------|-------|--------|-----|--------|-------|';
   const ledgerRows = [];
   for (let i = 1; i <= 21; i++) ledgerRows.push(`| ${i} | 2026-06-01 | Co${i} | Role | 4.0/5 | Applied | ❌ | - | |`);

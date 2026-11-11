@@ -48,7 +48,7 @@ try {
     formatApplicationAnswersSection,
     parseApplicationAnswersSection,
     upsertApplicationAnswersSection,
-  } = await import(pathToFileURL(join(ROOT, 'application-answers.mjs')).href);
+  } = await import(pathToFileURL(join(ROOT, 'scripts/application-answers.mjs')).href);
 
   // ── 1. corpus ────────────────────────────────────────────────────────────
   // Deliberately includes every lossy path: array selections, a missing file
@@ -425,7 +425,7 @@ try {
     // DESIGN, and its refusal message belongs in lastRunFailure(), not
     // interleaved with the suite's own output.
     const cli = (...extra) =>
-      run('node', ['application-answers.mjs', ...extra], { stdio: ['ignore', 'pipe', 'pipe'] });
+      run('node', ['scripts/application-answers.mjs', ...extra], { stdio: ['ignore', 'pipe', 'pipe'] });
     const cliChecks = [];
 
     const cleanOut = cli('--report', cleanPath, '--read');

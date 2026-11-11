@@ -266,5 +266,5 @@
 **ملاحظة:** بعد إنشاء ملف الإضافة المؤقت، يجب تشغيل الأمر التالي لدمج التعديلات في الجدول الرئيسي:
 
 ```bash
-node merge-tracker.mjs
+node scripts/merge-tracker.mjs
 ```

@@ -19,7 +19,7 @@ import (
 func markedCheckout(t *testing.T, depth int) (root, deepest string) {
 	t.Helper()
 	root = t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, "path-resolver.mjs"), []byte("// marker\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "scripts/path-resolver.mjs"), []byte("// marker\n"), 0o644); err != nil {
 		t.Fatalf("write marker: %v", err)
 	}
 	deepest = root

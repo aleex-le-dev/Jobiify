@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
 /**
- * scan-ats-full.mjs — Reverse ATS discovery scanner. Part of #230.
+ * scripts/scan-ats-full.mjs — Reverse ATS discovery scanner. Part of #230.
  *
- * Where scan.mjs scans the companies you track in portals.yml, this script
+ * Where scripts/scan.mjs scans the companies you track in portals.yml, this script
  * inverts the direction: it walks public directories of companies per ATS
  * (Greenhouse, Lever, Ashby, Workday, iCIMS, BambooHR) and surfaces fresh
  * postings that match your portals.yml `title_filter` / `location_filter` —
  * no manual company curation needed.
  *
  * Optional `title_filter_full` in portals.yml overrides `title_filter` for
- * THIS scanner only, so the keywords tuned for scan.mjs's curated company
+ * THIS scanner only, so the keywords tuned for scripts/scan.mjs's curated company
  * list do not have to double as the filter for every public board. Absent,
  * `title_filter` is used exactly as before.
  *
@@ -18,7 +18,7 @@
  * but scoped to specific companies (matched by slug) rather than the whole
  * sweep — e.g. letting known university/college employers surface general
  * campus-admin postings without loosening the net for everyone else. See
- * scan.mjs's buildTitleFilterOverrides()/buildTitleFilterWithOverrides().
+ * scripts/scan.mjs's buildTitleFilterOverrides()/buildTitleFilterWithOverrides().
  *
  * Optional `domain_filter` in portals.yml gates whole BOARDS before any title
  * is tested (#3105): a board with no domain-bearing posting is not this user's
@@ -29,23 +29,23 @@
  * Company directories come from the public job-board-aggregator dataset
  * (github.com/Feashliaa/job-board-aggregator), cached in data/cache/ for 24h.
  *
- * Zero LLM tokens — pure HTTP + JSON, same providers/ modules as scan.mjs.
+ * Zero LLM tokens — pure HTTP + JSON, same providers/ modules as scripts/scan.mjs.
  * Postings without a usable publish date are skipped: a reverse scan is only
  * useful for fresh postings, and stale results would flood the pipeline.
  *
  * Usage:
- *   node scan-ats-full.mjs                      # scan all ATS directories, last 3 days
- *   node scan-ats-full.mjs --since 7            # postings from the last 7 days
- *   node scan-ats-full.mjs --ats greenhouse,workday  # subset of sources
- *   node scan-ats-full.mjs --history-seeds --ats successfactors # scan history-derived boards
- *   node scan-ats-full.mjs --limit 200          # max companies per ATS (default: all)
- *   node scan-ats-full.mjs --dry-run            # preview without writing files
- *   node scan-ats-full.mjs --liveness           # Playwright-verify matches before writing
- *   node scan-ats-full.mjs --include-blacklisted # audit: let data/blacklist.md matches through, annotated
- *   node scan-ats-full.mjs --verbose            # log per-board fetch failures
- *   node scan-ats-full.mjs --md-out <dir>       # also write a dated markdown digest to <dir>
- *   node scan-ats-full.mjs --resume             # continue an interrupted sweep from its checkpoint
- *   node scan-ats-full.mjs --help               # print this usage block and exit
+ *   node scripts/scan-ats-full.mjs                      # scan all ATS directories, last 3 days
+ *   node scripts/scan-ats-full.mjs --since 7            # postings from the last 7 days
+ *   node scripts/scan-ats-full.mjs --ats greenhouse,workday  # subset of sources
+ *   node scripts/scan-ats-full.mjs --history-seeds --ats successfactors # scan history-derived boards
+ *   node scripts/scan-ats-full.mjs --limit 200          # max companies per ATS (default: all)
+ *   node scripts/scan-ats-full.mjs --dry-run            # preview without writing files
+ *   node scripts/scan-ats-full.mjs --liveness           # Playwright-verify matches before writing
+ *   node scripts/scan-ats-full.mjs --include-blacklisted # audit: let data/blacklist.md matches through, annotated
+ *   node scripts/scan-ats-full.mjs --verbose            # log per-board fetch failures
+ *   node scripts/scan-ats-full.mjs --md-out <dir>       # also write a dated markdown digest to <dir>
+ *   node scripts/scan-ats-full.mjs --resume             # continue an interrupted sweep from its checkpoint
+ *   node scripts/scan-ats-full.mjs --help               # print this usage block and exit
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync, unlinkSync } from 'fs';
@@ -55,38 +55,38 @@ import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 import { renameSyncWithRetry } from './tracker-utils.mjs';
 
-import { makeHttpCtx, fetchJson } from './providers/_http.mjs';
-import { withConnectionScope } from './providers/_connection-scope.mjs';
-import { isResolverFailure, dnsPacingStats } from './providers/_dns-cache.mjs';
-import greenhouse from './providers/greenhouse.mjs';
-import lever from './providers/lever.mjs';
-import ashby from './providers/ashby.mjs';
-import workday, { WORKDAY_TRUNCATED_REASON } from './providers/workday.mjs';
-import icims from './providers/icims.mjs';
-import bamboohr from './providers/bamboohr.mjs';
+import { makeHttpCtx, fetchJson } from '../providers/_http.mjs';
+import { withConnectionScope } from '../providers/_connection-scope.mjs';
+import { isResolverFailure, dnsPacingStats } from '../providers/_dns-cache.mjs';
+import greenhouse from '../providers/greenhouse.mjs';
+import lever from '../providers/lever.mjs';
+import ashby from '../providers/ashby.mjs';
+import workday, { WORKDAY_TRUNCATED_REASON } from '../providers/workday.mjs';
+import icims from '../providers/icims.mjs';
+import bamboohr from '../providers/bamboohr.mjs';
 import { buildTitleFilter, buildTitleFilterOverrides, buildTitleFilterWithOverrides, buildLocationFilter, buildContentFilter, matchedTitleKeywords, loadSeenUrls, normalizeUrlForDedup, appendToPipeline, appendToScanHistory, findBlacklistEntry, loadBlacklist, parseSinceDays, PORTALS_PATH, PIPELINE_PATH, SCAN_HISTORY_PATH } from './scan.mjs';
-import { localToday } from './lib/local-today.mjs';
-import { printScanSummaryHeader } from './lib/scan-summary-marker.mjs';
-import { SEED_SOURCES, toPortalEntry } from './seeds/vc-portfolios.mjs';
-import { validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { localToday } from '../lib/local-today.mjs';
+import { printScanSummaryHeader } from '../lib/scan-summary-marker.mjs';
+import { SEED_SOURCES, toPortalEntry } from '../seeds/vc-portfolios.mjs';
+import { validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { boardKey, loadDeadBoards, recordBoardFailure, recordBoardResult, saveDeadBoards, shouldSkipDeadBoard } from './dead-boards.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { barePrefixDomainKeywords, buildDomainFilter } from './title-keywords.mjs';
 import { KNOWN_ATS_VENDORS } from './ats-vendor.mjs';
 import { loadHistoryAtsSeeds } from './history-ats-seeds.mjs';
-import { loadProviders } from './providers/_registry.mjs';
+import { loadProviders } from '../providers/_registry.mjs';
 
 // ── Config ──────────────────────────────────────────────────────────
 
-// PORTALS_PATH and PIPELINE_PATH are imported from scan.mjs rather than
-// re-derived here (#3510). This file appends results through scan.mjs's
+// PORTALS_PATH and PIPELINE_PATH are imported from scripts/scan.mjs rather than
+// re-derived here (#3510). This file appends results through scripts/scan.mjs's
 // appendToPipeline, so its own bare-relative copy meant it could create an empty
 // data/pipeline.md in the cwd and then write the actual matches somewhere else.
 // Its portals fallback had the same split: it honored CAREER_OPS_PORTALS but
 // otherwise looked in the cwd instead of the data root.
 const DATA_ROOT = getCareerOpsRoot();
-const PROVIDERS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'providers');
+const PROVIDERS_DIR = path.join(path.dirname(path.dirname(fileURLToPath(import.meta.url))), 'providers');
 const CACHE_DIR = path.join(DATA_ROOT, 'data/cache/ats-companies');
 const CACHE_TTL_HOURS = 24;
 // Tracks `main` deliberately: the dataset's value is freshness (new boards
@@ -373,24 +373,24 @@ const KNOWN_FLAGS = [
 const VALUE_FLAGS = ['--since', '--limit', '--ats', '--seeds', '--md-out'];
 
 const USAGE = `Usage:
-  node scan-ats-full.mjs                      # scan all ATS directories, last 3 days
-  node scan-ats-full.mjs --since 7            # postings from the last 7 days
-  node scan-ats-full.mjs --ats greenhouse,workday  # subset of sources
-  node scan-ats-full.mjs --history-seeds       # also scan boards from local application history
-  node scan-ats-full.mjs --history-seeds --ats successfactors # history-derived boards for this ATS
-  node scan-ats-full.mjs --limit 200          # max companies per ATS (default: all)
-  node scan-ats-full.mjs --dry-run            # preview without writing files
-  node scan-ats-full.mjs --liveness           # Playwright-verify matches before writing
-  node scan-ats-full.mjs --include-blacklisted # audit: let data/blacklist.md matches through, annotated
-  node scan-ats-full.mjs --verbose            # log per-board fetch failures
-  node scan-ats-full.mjs --md-out <dir>       # also write a dated markdown digest to <dir>
-  node scan-ats-full.mjs --resume             # continue an interrupted sweep from its checkpoint
-  node scan-ats-full.mjs --help               # print this usage block and exit`;
+  node scripts/scan-ats-full.mjs                      # scan all ATS directories, last 3 days
+  node scripts/scan-ats-full.mjs --since 7            # postings from the last 7 days
+  node scripts/scan-ats-full.mjs --ats greenhouse,workday  # subset of sources
+  node scripts/scan-ats-full.mjs --history-seeds       # also scan boards from local application history
+  node scripts/scan-ats-full.mjs --history-seeds --ats successfactors # history-derived boards for this ATS
+  node scripts/scan-ats-full.mjs --limit 200          # max companies per ATS (default: all)
+  node scripts/scan-ats-full.mjs --dry-run            # preview without writing files
+  node scripts/scan-ats-full.mjs --liveness           # Playwright-verify matches before writing
+  node scripts/scan-ats-full.mjs --include-blacklisted # audit: let data/blacklist.md matches through, annotated
+  node scripts/scan-ats-full.mjs --verbose            # log per-board fetch failures
+  node scripts/scan-ats-full.mjs --md-out <dir>       # also write a dated markdown digest to <dir>
+  node scripts/scan-ats-full.mjs --resume             # continue an interrupted sweep from its checkpoint
+  node scripts/scan-ats-full.mjs --help               # print this usage block and exit`;
 
 export function parseArgs(argv) {
   const args = argv.slice(2);
 
-  // Shared with reply-watch.mjs/dedup-tracker.mjs/scan.mjs via
+  // Shared with scripts/reply-watch.mjs/dedup-tracker.mjs/scan.mjs via
   // lib/cli-flags.mjs (#2775). This also fixes a latent ordering bug this
   // script had before the pattern was consolidated: the unrecognized-flag
   // check now runs BEFORE --help, so `--help --bogus` still errors instead
@@ -404,14 +404,14 @@ export function parseArgs(argv) {
     const kv = args.find(a => a.startsWith(flag + '='));
     return kv ? kv.split('=').slice(1).join('=') : null;
   };
-  // Validated by the SAME parser scan.mjs uses, so one flag name cannot mean
+  // Validated by the SAME parser scripts/scan.mjs uses, so one flag name cannot mean
   // two different things (#2498). `Number(...) || 3` silently swallowed every
   // malformed operand: `--since abc` and `--since 0` became 3 while the user
   // believed they had scanned the window they typed; `--since -5` put the
   // cutoff in the FUTURE so nothing was ever eligible, which reads exactly like
   // "no new postings"; `--since 1e400` became Infinity → an -Infinity cutoff,
   // i.e. no window at all. Only the DEFAULT stays local: absent --since means
-  // 3 days here, where scan.mjs means no bound.
+  // 3 days here, where scripts/scan.mjs means no bound.
   const sinceArg = parseSinceDays(args);
   if (sinceArg.error) {
     console.error(`Error: ${sinceArg.error}`);
@@ -531,7 +531,7 @@ export function undatedInListing(listing, cutoff) {
     && classifyPostingDate(job, cutoff) === 'undated').length;
 }
 
-// Apply the same user-owned do-not-apply gate as scan.mjs to reverse-scan
+// Apply the same user-owned do-not-apply gate as scripts/scan.mjs to reverse-scan
 // results. Absent/empty blacklist is a no-op. Default skips are counted and
 // never silent; --include-blacklisted keeps matches but marks them for audit.
 export function filterBlacklistedOffers(offers, blacklist, { includeBlacklisted = false } = {}) {
@@ -569,7 +569,7 @@ export function filterBlacklistedOffers(offers, blacklist, { includeBlacklisted 
   return { offers: kept, filteredBlacklist, annotatedBlacklisted };
 }
 
-// `title_filter` is written for scan.mjs, whose corpus is the curated
+// `title_filter` is written for scripts/scan.mjs, whose corpus is the curated
 // tracked_companies list. That corpus is what makes a broad keyword safe:
 // "Backend" at a company you already vetted is a real lead, and dropping it
 // costs real roles — so tightening the shared key to protect this sweep is a
@@ -584,7 +584,7 @@ export function filterBlacklistedOffers(offers, blacklist, { includeBlacklisted 
 // 194 distinct companies, one matched a crypto name — a gas-station chain.
 //
 // Optional `title_filter_full` lets one portals.yml carry a strict profile
-// for this sweep and a broad one for scan.mjs. Absent — the default — this
+// for this sweep and a broad one for scripts/scan.mjs. Absent — the default — this
 // returns `title_filter` and behaviour is byte-identical to before.
 export function resolveTitleFilterConfig(config) {
   return config?.title_filter_full ?? config?.title_filter;
@@ -594,7 +594,7 @@ export function resolveTitleFilterConfig(config) {
 // reverse sweep: it asks the TITLE to answer both "is this the right role" and
 // "is this employer in my industry", and a title cannot answer the second one —
 // "Senior Backend Engineer" is character-for-character identical at a Solana
-// infrastructure company and at a supermarket chain. scan.mjs never had that
+// infrastructure company and at a supermarket chain. scripts/scan.mjs never had that
 // problem because tracked_companies settles the employer before a title is
 // read; the sweep deletes that premise and hands the whole burden to keywords
 // that were never chosen for it.
@@ -812,7 +812,7 @@ const SEED_PROVIDERS = [greenhouse, lever, ashby];
  * Companies are converted to PortalEntry shape, then each ATS provider's
  * detect() is tried in order (greenhouse → lever → ashby). The first hit
  * wins and its fetch() is called — identical to how portals.yml tracked
- * companies flow through scan.mjs.
+ * companies flow through scripts/scan.mjs.
  *
  * @param {string}   seedId      Key from SEED_SOURCES (e.g. 'yc').
  * @param {object}   opts        Parsed CLI options.
@@ -1052,7 +1052,7 @@ export async function parallelEach(items, limit, fn, onItemDone = null, shouldSt
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, () => worker()));
 }
 
-// ── Liveness verification (reuses liveness-browser.mjs) ────────────
+// ── Liveness verification (reuses scripts/liveness-browser.mjs) ────────────
 
 async function filterLive(offers) {
   let chromium, checkUrlLiveness, newLivenessPage;
@@ -1143,7 +1143,7 @@ async function main() {
   const titleFilterOverrides = buildTitleFilterOverrides(config?.title_filter_overrides);
   const titleFilter = buildTitleFilterWithOverrides(fullTitleFilterConfig, titleFilterOverrides);
   const locationFilter = buildLocationFilter(config?.location_filter);
-  // Same content_filter (incl. by_title_keyword scoping) scan.mjs applies —
+  // Same content_filter (incl. by_title_keyword scoping) scripts/scan.mjs applies —
   // see #1846. Built once here from the same portals.yml config.
   const contentFilter = buildContentFilter(config?.content_filter);
   // Opt-in, and the opt-in IS the key: `domain_filter` does not exist in any
@@ -1153,7 +1153,7 @@ async function main() {
   // why the summary can tell "off" from "on and nothing was skipped".
   // A bare `word:`/`stem:` would build a gate that matches nothing and drops
   // every complete board, so refuse to start rather than sweep blind. Checked
-  // here as well as in validate-portals.mjs, which a direct run never calls.
+  // here as well as in scripts/validate-portals.mjs, which a direct run never calls.
   const bareDomain = barePrefixDomainKeywords(config?.domain_filter);
   if (bareDomain.length) {
     console.error(`Error: portals.yml domain_filter[${bareDomain.join(', ')}]: a word:/stem: prefix needs a term after it.`);
@@ -1175,7 +1175,7 @@ async function main() {
   opts.locationFilter = locationFilter;
   opts.contentFilter = contentFilter;
   // Raw title_filter config, needed by matchedTitleKeywords() to scope
-  // content_filter.by_title_keyword the same way scan.mjs does.
+  // content_filter.by_title_keyword the same way scripts/scan.mjs does.
   opts.titleFilterConfig = fullTitleFilterConfig;
 
   // User-layer history is an opt-in additive board directory. It fills vendors
@@ -1215,7 +1215,7 @@ async function main() {
   // workday.mjs picks its cap-hit warning from it — there is no portal entry
   // here for the user to edit, so "raise max_pages on this entry" would be
   // inactionable. It used to infer that from sinceMs being set, which stopped
-  // being true once #2418 taught scan.mjs --since to set it too (#2495).
+  // being true once #2418 taught scripts/scan.mjs --since to set it too (#2495).
   const ctx = {
     ...makeHttpCtx(),
     sinceMs: cutoff,

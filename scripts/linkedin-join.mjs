@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * linkedin-join.mjs — Warm-intro finder: LinkedIn connections ⋈ job-search targets
+ * scripts/linkedin-join.mjs — Warm-intro finder: LinkedIn connections ⋈ job-search targets
  *
  * Joins a LinkedIn `Connections.csv` export (Settings → Data Privacy → Get a
  * copy of your data → Connections) against the two company lists the pipeline
@@ -48,26 +48,26 @@
  * therefore also carries a prefilled people-search URL that career-ops builds
  * and never fetches, so the user opens it themselves in their own browser.
  *
- * Run: node linkedin-join.mjs                  (JSON: targets + quality + totals)
- *      node linkedin-join.mjs --company Acme --summary
+ * Run: node scripts/linkedin-join.mjs                  (JSON: targets + quality + totals)
+ *      node scripts/linkedin-join.mjs --company Acme --summary
  *                                              ("do I know anyone here?", one company;
  *                                               says so explicitly when the answer is no)
- *      node linkedin-join.mjs --summary        (human-readable, grouped by company)
- *      node linkedin-join.mjs --summary --include-weak
- *      node linkedin-join.mjs --tracker-only   (only companies in applications.md)
- *      node linkedin-join.mjs --portals-only   (only scanner targets, no application yet)
- *      node linkedin-join.mjs --since 2020     (connections made in/after 2020)
- *      node linkedin-join.mjs --tsv            (contacts.tsv-shaped rows on stdout)
- *      node linkedin-join.mjs --csv <path>     (override the export location)
- *      node linkedin-join.mjs --self-test
- *      node linkedin-join.mjs --help
+ *      node scripts/linkedin-join.mjs --summary        (human-readable, grouped by company)
+ *      node scripts/linkedin-join.mjs --summary --include-weak
+ *      node scripts/linkedin-join.mjs --tracker-only   (only companies in applications.md)
+ *      node scripts/linkedin-join.mjs --portals-only   (only scanner targets, no application yet)
+ *      node scripts/linkedin-join.mjs --since 2020     (connections made in/after 2020)
+ *      node scripts/linkedin-join.mjs --tsv            (contacts.tsv-shaped rows on stdout)
+ *      node scripts/linkedin-join.mjs --csv <path>     (override the export location)
+ *      node scripts/linkedin-join.mjs --self-test
+ *      node scripts/linkedin-join.mjs --help
  *
  * Argv goes through lib/cli-flags.mjs, so every flag accepts both `--flag value`
  * and `--flag=value`, an unrecognized flag exits 1 rather than falling through to
  * default behaviour, and a value flag with no operand is a usage error.
  *
  * --tsv PRINTS, never appends: review the rows, then paste the keepers into
- * data/contacts.tsv so contacts.mjs and `contacto` pick them up.
+ * data/contacts.tsv so scripts/contacts.mjs and `contacto` pick them up.
  */
 
 import { readFileSync, existsSync } from 'fs';
@@ -75,12 +75,12 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 import { resolveColumns, parseTrackerRow, normalizeTextKey } from './tracker-parse.mjs';
-import { asciiFold } from './lib/ascii-fold.mjs';
-import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
-import { isMainModule } from './lib/is-main-module.mjs';
+import { asciiFold } from '../lib/ascii-fold.mjs';
+import { flagValue, hasFlag, validateFlags } from '../lib/cli-flags.mjs';
+import { isMainModule } from '../lib/is-main-module.mjs';
 import { getCareerOpsRoot, resolveTrackerPath } from './path-resolver.mjs';
 
-const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
+const CAREER_OPS = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_ROOT = getCareerOpsRoot();
 const DEFAULT_CSV = join(DATA_ROOT, 'data/Connections.csv');
 export const TRACKER_PATH = resolveTrackerPath(DATA_ROOT);
@@ -99,7 +99,7 @@ const KNOWN_FLAGS = [
   '--tracker-only', '--portals-only', ...VALUE_FLAGS, '--help', '-h',
 ];
 
-const USAGE = `Usage: node linkedin-join.mjs [options]
+const USAGE = `Usage: node scripts/linkedin-join.mjs [options]
 
 Joins a LinkedIn Connections.csv export against tracker + portals.yml companies
 to answer "do I know anyone here?". Offline, read-only, zero token cost.
@@ -181,7 +181,7 @@ const GENERIC = new Set([
  * ATS slug, but wrong here: both sides of this join are free text, so 株式会社X
  * must still match 株式会社X. When the ASCII fold empties a non-empty token, fall
  * back to normalizeTextKey, which preserves script (and with it the Devanagari
- * क/का distinction that tracker-parse.mjs exists to protect).
+ * क/का distinction that scripts/tracker-parse.mjs exists to protect).
  */
 export function foldToken(token) {
   const raw = String(token);
@@ -934,7 +934,7 @@ function main() {
   return 0;
 }
 
-// Entry guard (repo convention, cf. contacts.mjs / stats.mjs / invite-match.mjs):
+// Entry guard (repo convention, cf. scripts/contacts.mjs / scripts/stats.mjs / scripts/invite-match.mjs):
 // without it, importing this module to unit-test its exports runs the whole CLI
 // and exits the test process.
 if (isMainModule(import.meta.url)) {
