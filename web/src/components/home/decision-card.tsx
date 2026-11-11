@@ -53,7 +53,7 @@ export function DecisionCard({ app, reason }: { app: Application; reason?: CardR
       setDone(status);
       router.refresh();
     } catch {
-      setError("Could not confirm the change. Check your connection and pipeline, then retry.");
+      setError("Impossible de confirmer le changement. Vérifiez votre connexion et vos candidatures, puis réessayez.");
       setFailedStatus(status);
     } finally {
       submitting.current = false;

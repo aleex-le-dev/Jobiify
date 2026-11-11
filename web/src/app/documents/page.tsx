@@ -27,7 +27,7 @@ export default function DocumentsPage() {
   useEffect(() => {
     fetch("/api/documents")
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load documents");
+        if (!res.ok) throw new Error("Impossible de charger les documents");
         return res.json();
       })
       .then((data) => {
@@ -93,7 +93,7 @@ export default function DocumentsPage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          {isFr ? "Documents" : "Documents"}
+          {isFr ? "CV PDF & lettres" : "PDF CVs & letters"}
         </h1>
         <p className="mt-1 text-sm text-muted">
           {isFr

@@ -1,5 +1,6 @@
 "use client";
 
+import { fr } from "@/lib/fr-system";
 import { useEffect, useState } from "react";
 import { Clock3, Copy, Check } from "lucide-react";
 import { quietModel, checkRan } from "@/lib/quiet-companies.mjs";
@@ -77,7 +78,7 @@ function Caveats({ warnings, disclaimer }: { warnings: string[]; disclaimer: str
         </p>
       ))}
       {disclaimer && (
-        <p className="mt-4 border-t border-border pt-3 text-xs text-faint">{disclaimer}</p>
+        <p className="mt-4 border-t border-border pt-3 text-xs text-faint">{fr(disclaimer)}</p>
       )}
     </>
   );

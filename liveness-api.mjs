@@ -36,7 +36,6 @@
  */
 
 import { DEFAULT_USER_AGENT } from './user-agent.mjs';
-import { parseWwrFeed } from './providers/weworkremotely.mjs';
 import { isZohoRecordClosed, parseZohoDetailPage } from './providers/zoho-recruit.mjs';
 import { atsVendorOf } from './ats-vendor.mjs';
 import { linkedInJobId, linkedInGuestUrl } from './lib/linkedin-url.mjs';
@@ -308,25 +307,6 @@ const ATS_PROVIDERS = [
       return posting?.referenznummer === refnr && posting?.stellenangebotsTitel
         ? { result: 'active', code: 'arbeitsagentur_api_active', reason: 'Arbeitsagentur returns the matching job detail' }
         : null;
-    },
-  },
-  {
-    id: 'weworkremotely',
-    match(u) {
-      if (u.hostname !== 'weworkremotely.com' || !/^\/remote-jobs\/[^/]+\/?$/.test(u.pathname)) return null;
-      return { slug: u.pathname.split('/')[2] };
-    },
-    api: () => 'https://weworkremotely.com/remote-jobs.rss',
-    accept: 'application/rss+xml',
-    api404Authoritative: false,
-    async interpret(res, { slug }) {
-      let feed;
-      try { feed = await res.text(); } catch { return null; }
-      if (!/<rss\b/i.test(feed)) return null;
-      const listed = parseWwrFeed(feed).some((job) => new URL(job.url).pathname.replace(/\/$/, '') === `/remote-jobs/${slug}`);
-      return listed
-        ? { result: 'active', code: 'weworkremotely_feed_listed', reason: 'Posting is listed in the current RSS feed' }
-        : null; // feed is bounded; absence cannot prove expiry
     },
   },
   {

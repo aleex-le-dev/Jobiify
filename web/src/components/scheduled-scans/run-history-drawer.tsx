@@ -89,7 +89,7 @@ export function RunHistoryDrawer({
                   <p className="mt-2 text-muted leading-relaxed">{run.message || (isFr ? "Exécution terminée" : "Execution completed")}</p>
 
                   <div className="mt-2 flex items-center justify-between text-[11px] text-faint border-t border-border/40 pt-1.5">
-                    <span>Date : {new Date(run.at).toLocaleDateString()}</span>
+                    <span>Date : {new Date(run.at).toLocaleDateString("fr-FR")}</span>
                     {typeof run.rolesFound === "number" && (
                       <span className="font-semibold text-foreground">
                         {run.rolesFound} {isFr ? (run.rolesFound <= 1 ? "offre trouvée" : "offres trouvées") : "roles found"}

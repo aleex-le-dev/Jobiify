@@ -1,9 +1,7 @@
-import fs from "node:fs";
-import path from "node:path";
-import { careerOpsRoot } from "@/lib/career-ops";
 import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
 import { titleFit } from "@/lib/title-fit.mjs";
-import { inZone, type Zone } from "./zone";
+import { acceptInZone, type Zone } from "./zone";
+import { ANCHOR_CITIES, cacheKey, getEnvVar, readCache, searchKeywords, writeCache } from "./local-area";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 heures
 
@@ -20,69 +18,18 @@ interface JoobleRawJob {
   updated?: string;
 }
 
-function getEnvVar(key: string): string | undefined {
-  if (process.env[key]?.trim()) return process.env[key]?.trim();
-  try {
-    const envPaths = [
-      path.join(careerOpsRoot(), "web", ".env.local"),
-      path.join(careerOpsRoot(), ".env"),
-      path.join(process.cwd(), ".env.local"),
-      path.join(process.cwd(), ".env"),
-    ];
-    for (const p of envPaths) {
-      if (fs.existsSync(p)) {
-        const content = fs.readFileSync(p, "utf8");
-        const match = content.match(new RegExp(`^${key}=(.*)$`, "m"));
-        if (match && match[1]?.trim()) {
-          return match[1].trim().replace(/^["']|["']$/g, "");
-        }
-      }
-    }
-  } catch {
-    /* ignore */
-  }
-  return undefined;
-}
-
-export async function fetchAndCacheJoobleJobs(): Promise<JoobleRawJob[]> {
+export async function fetchAndCacheJoobleJobs(positive?: string[]): Promise<JoobleRawJob[]> {
   const apiKey = getEnvVar("JOOBLE_API_KEY");
-  if (!apiKey) {
-    return [];
-  }
+  if (!apiKey) return [];
 
-  const cacheDir = path.join(careerOpsRoot(), "data", "cache");
-  const cacheFile = path.join(cacheDir, "jooble-62.json");
-
-  try {
-    if (fs.existsSync(cacheFile)) {
-      const stat = fs.statSync(cacheFile);
-      if (Date.now() - stat.mtimeMs < CACHE_TTL_MS) {
-        const raw = fs.readFileSync(cacheFile, "utf8");
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed as JoobleRawJob[];
-        }
-      }
-    }
-  } catch {
-    /* fallback to live fetch */
-  }
+  const keywords = searchKeywords(positive, 8);
+  const key = cacheKey("jooble", keywords);
+  const cached = readCache<JoobleRawJob>(key, CACHE_TTL_MS);
+  if (cached) return cached;
 
   try {
-    const queries = [
-      { kw: "technicien informatique", loc: "Pas-de-Calais, France" },
-      { kw: "support informatique", loc: "Pas-de-Calais, France" },
-      { kw: "developpeur web", loc: "Pas-de-Calais, France" },
-      { kw: "informatique", loc: "Béthune, France" },
-      { kw: "informatique", loc: "Lens, France" },
-      { kw: "informatique", loc: "Arras, France" },
-      { kw: "technicien helpdesk", loc: "Pas-de-Calais, France" },
-      { kw: "administrateur systeme", loc: "Pas-de-Calais, France" },
-      { kw: "technicien reseau", loc: "Pas-de-Calais, France" },
-      { kw: "integrateur web", loc: "Pas-de-Calais, France" },
-      { kw: "support applicatif", loc: "Pas-de-Calais, France" },
-      { kw: "informatique", loc: "Pas-de-Calais, France" },
-    ];
+    // Chaque mot-clé autour de chaque ville d'ancrage, rayon 40 km (valeur Jooble autorisée).
+    const queries = keywords.flatMap((kw) => ANCHOR_CITIES.slice(0, 3).map((city) => ({ kw, loc: `${city}, France` })));
     const allJobs = new Map<string, JoobleRawJob>();
 
     for (const q of queries) {
@@ -97,6 +44,7 @@ export async function fetchAndCacheJoobleJobs(): Promise<JoobleRawJob[]> {
           body: JSON.stringify({
             keywords: q.kw,
             location: q.loc,
+            radius: "40",
             page,
           }),
         });
@@ -115,10 +63,7 @@ export async function fetchAndCacheJoobleJobs(): Promise<JoobleRawJob[]> {
     }
 
     const jobs = Array.from(allJobs.values());
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir, { recursive: true });
-    }
-    fs.writeFileSync(cacheFile, JSON.stringify(jobs, null, 2), "utf8");
+    if (jobs.length) writeCache(key, jobs);
     return jobs;
   } catch (err) {
     console.error("Jooble search failed:", err);
@@ -142,21 +87,17 @@ const NON_IT_TITLE_REGEX =
   /\b(production\s+automobile|chimie|chemical|fluvial|m[ée]canique|usinage|qualit[ée]\s+uap|approvisionnement\s+mati[èe]re|technical cleanliness)\b/i;
 
 function resolveJoobleLocation(job: JoobleRawJob): string {
-  const snippet = (job.snippet || "").toLowerCase();
-  const company = (job.company || "").toLowerCase();
-  if (company.includes("automotive cells company") || company.includes("acc")) {
-    return "Billy-Berclau / Douvrin (62)";
+  // 1. Le lieu fourni par Jooble prime dès qu'il est précis.
+  const loc = (job.location || "").trim();
+  if (loc && !/^(france|hauts[- ]de[- ]france|nord[- ]pas[- ]de[- ]calais|pas[- ]de[- ]calais|nord)$/i.test(loc.split(",")[0].trim())) {
+    return loc;
   }
-  if (snippet.includes("lens")) return "Lens (62)";
-  if (snippet.includes("arras")) return "Arras (62)";
-  if (snippet.includes("béthune") || snippet.includes("bethune")) return "Béthune (62)";
-  if (snippet.includes("calais")) return "Calais (62)";
-  if (snippet.includes("douvrin")) return "Douvrin (62)";
-  if (snippet.includes("saint-omer")) return "Saint-Omer (62)";
-  if (job.location && job.location.toLowerCase() !== "france") {
-    return job.location;
-  }
-  return "Pas-de-Calais (62)";
+  // 2. Sinon, une commune nommée explicitement dans l'annonce (mot entier).
+  const snippet = job.snippet || "";
+  const m = snippet.match(/\b(Lillers|Béthune|Bethune|Bruay-la-Buissière|Auchel|Isbergues|Aire-sur-la-Lys|Lens|Liévin|Douvrin|Billy-Berclau|Noeux-les-Mines|Hazebrouck|Merville|Arras|Saint-Omer)\b/i);
+  if (m) return m[1];
+  // 3. Lieu vague : on le laisse vague, la zone de trajet l'écartera.
+  return loc || "Pas-de-Calais";
 }
 
 function matchesKeyword(text: string, kw: string): boolean {
@@ -210,20 +151,11 @@ function matchesFilters(
   if (is100Remote && userWantsRemote) return true;
 
   const alwaysAllow = filters?.alwaysAllow || [];
-  if (alwaysAllow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
+  if (!zone && alwaysAllow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
 
   if (zone) {
-    const verdict = inZone({ ville: location }, zone);
-    if (verdict === "oui") return true;
-    if (verdict === "non") {
-      const allow = filters?.allow || [];
-      if (allow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
-      return false;
-    }
-    if (filters?.allow && filters.allow.length > 0) {
-      return filters.allow.some((a) => a && matchesKeyword(fullLoc, a));
-    }
-    return true;
+    // Zone de trajet active : elle seule décide (la liste "allow" ne peut plus la contourner).
+    return acceptInZone({ ville: location, texte: title }, zone);
   }
 
   const allow = filters?.allow || [];
@@ -237,7 +169,7 @@ export async function loadJoobleDiscoveredOffers(
   roleTargets: string[],
   zone?: Zone,
 ): Promise<DiscoveredOffer[]> {
-  const rawJobs = await fetchAndCacheJoobleJobs();
+  const rawJobs = await fetchAndCacheJoobleJobs(filters?.positive);
   const offers: DiscoveredOffer[] = [];
 
   for (const job of rawJobs) {

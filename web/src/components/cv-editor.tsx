@@ -154,7 +154,13 @@ const PREVIEW_STYLE = `
 }
 `;
 
-export function CvEditor() {
+/**
+ * Sans props : édite cv.md (CV du profil actif). Avec `profileId` : édite le CV
+ * de ce profil (et cv.md s'il est actif). `embedded` retire le gabarit de page
+ * pour l'afficher dans la carte d'un profil.
+ */
+export function CvEditor({ profileId, embedded = false }: { profileId?: string; embedded?: boolean } = {}) {
+  const cvUrl = profileId ? `/api/search-profiles/${encodeURIComponent(profileId)}/cv` : "/api/cv";
   const { locale } = useI18n();
   const isFr = locale === "fr";
   const [content, setContent] = useState("");
@@ -165,19 +171,19 @@ export function CvEditor() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    fetch("/api/cv")
+    fetch(cvUrl, { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         setContent(d.content ?? "");
         setExists(d.exists ?? false);
       })
       .finally(() => setLoaded(true));
-  }, []);
+  }, [cvUrl]);
 
   async function save() {
     setSaving(true);
     try {
-      const res = await fetch("/api/cv", {
+      const res = await fetch(cvUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content }),
@@ -215,10 +221,10 @@ export function CvEditor() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
+    <div className={embedded ? "" : "mx-auto max-w-6xl px-6 py-8"}>
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl tracking-tight text-landing">
+          <h1 className={embedded ? "text-base font-semibold text-foreground" : "font-display text-2xl tracking-tight text-landing"}>
             {isFr ? "Éditeur de CV" : "CV editor"}
           </h1>
           <p className="mt-1 text-sm text-muted">
@@ -316,7 +322,7 @@ export function CvEditor() {
               }}
               spellCheck={false}
               placeholder={isFr ? "# Votre Nom\n\n## Résumé\n..." : "# Your Name\n\n## Summary\n..."}
-              className="min-h-[60vh] w-full resize-none rounded-2xl border border-border bg-surface/50 p-4 font-mono text-sm leading-relaxed outline-none transition-colors placeholder:text-faint focus:border-brand/40"
+              className={`${embedded ? "min-h-[45vh]" : "min-h-[60vh]"} w-full resize-none rounded-2xl border border-border bg-surface/50 p-4 font-mono text-sm leading-relaxed outline-none transition-colors placeholder:text-faint focus:border-brand/40`}
             />
           </div>
           <div className="flex flex-col">
@@ -324,7 +330,7 @@ export function CvEditor() {
               <span>{isFr ? "Aperçu en direct (Titre en avant)" : "Live preview (Title prioritized)"}</span>
               <span className="text-emerald-600 dark:text-emerald-400 font-medium">{isFr ? "Mise en forme dynamique" : "Dynamic formatting"}</span>
             </div>
-            <article className="report-prose cv-preview min-h-[60vh] overflow-auto rounded-2xl border border-border bg-surface/30 p-5">
+            <article className={`report-prose cv-preview ${embedded ? "min-h-[45vh] max-h-[70vh]" : "min-h-[60vh]"} overflow-auto rounded-2xl border border-border bg-surface/30 p-5`}>
               {!content.trim() ? (
                 <div className="flex h-full min-h-[50vh] flex-col items-center justify-center rounded-xl border border-dashed border-border/80 p-8 text-center">
                   <div className="flex size-12 items-center justify-center rounded-2xl bg-brand/10 text-brand">
@@ -357,7 +363,7 @@ export function CvEditor() {
 
       {/* Below the editor: the gaps are context for what to write next, and they
           belong after the document rather than competing with it. */}
-      <SkillGaps />
+      {!embedded && <SkillGaps />}
     </div>
   );
 }

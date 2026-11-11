@@ -175,7 +175,7 @@ export function InboxTriage({ inbox }: { inbox: InboxJob[] }) {
       await notice.fn();
       setUndo((current) => current?.fn === notice.fn ? null : current);
     } catch (cause) {
-      const error = cause instanceof Error ? cause.message : "Could not undo this skip. Please try again.";
+      const error = cause instanceof Error ? cause.message : "Impossible d'annuler cette mise de côté. Veuillez réessayer.";
       setUndo((current) => current?.fn === notice.fn ? { ...current, busy: false, error } : current);
     } finally {
       undoRunning.current.delete(notice.fn);

@@ -2,27 +2,43 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Design tokens — inherited from career-ops-docs. Brand burnt-orange #dd7627
-   (mode-invariant), zinc neutrals, light + dark (Fumadocs neutral values).
+   Identité Jobiify — « Anthracite & Jade »
+   Anthracite : la barre latérale, clin d'œil au bassin minier.
+   Jade : l'accent, le vert des terrils végétalisés de l'Artois.
+   Tout le design passe par ces variables : changer une valeur ici change l'app.
    ────────────────────────────────────────────────────────────────────────── */
 @theme {
-  --color-brand: hsl(26 73% 51%);
-  --color-brand-200: hsl(33 100% 60%); /* hover / lighter */
-  /* Near-black on the brand orange: 5.2:1 on brand, 8.3:1 on brand-200 hover
-     (white was 3.14:1, an AA fail in BOTH themes since the button is the same).
-     The brand orange itself is untouched — only what sits on top of it. */
-  --color-brand-foreground: hsl(24 30% 12%);
-  --color-brand-soft: hsl(26 73% 51% / 0.12);
-  --color-brand-secondary: #fc7744;
+  --font-sans: var(--font-ui), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* `font-serif` / `font-display` gardent leur nom (utilisés partout) mais
+     pointent vers la police de titres. */
+  --font-serif: var(--font-display-face), var(--font-ui), ui-sans-serif, sans-serif;
+  --font-display: var(--font-display-face), var(--font-ui), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
-  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  /* Arrondis plus serrés : aspect logiciel plutôt que site vitrine. */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.625rem;
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 1rem;
+
+  /* Ombres froides et discrètes. */
+  --shadow-xs: 0 1px 1px hsl(220 40% 10% / 0.04);
+  --shadow-sm: 0 1px 2px hsl(220 40% 10% / 0.06), 0 1px 1px hsl(220 40% 10% / 0.03);
+  --shadow-md: 0 4px 10px -2px hsl(220 40% 10% / 0.08), 0 2px 4px -2px hsl(220 40% 10% / 0.05);
+  --shadow-lg: 0 12px 28px -8px hsl(220 40% 10% / 0.16), 0 4px 10px -4px hsl(220 40% 10% / 0.08);
 }
 
-/* Semantic surfaces reference runtime vars so they swap with the theme class. */
+/* Couleurs sémantiques : elles suivent le thème (clair / sombre). */
 @theme inline {
+  --color-brand: var(--brand);
+  --color-brand-200: var(--brand-hover); /* survol */
+  --color-brand-foreground: var(--brand-fg);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-text: var(--brand-text);
+
   --color-background: var(--bg);
   --color-surface: var(--surface);
   --color-surface-hover: var(--surface-hover);
@@ -30,47 +46,105 @@
   --color-foreground: var(--fg);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
-  --color-landing: var(--landing); /* editorial olive (light) / cream (dark) — docs landing-foreground */
-  /* Brand as SMALL TEXT: the raw orange only passes AA in dark (4.95); in light
-     it's 2.6-3.1 on cream/white. brand-text darkens it for light and keeps the
-     raw brand in dark. Use for small text/badges; brand stays for accents,
-     surfaces, icons and large headings (≥24px passes at 3:1). */
-  --color-brand-text: var(--brand-text);
+  --color-landing: var(--landing); /* titres de page */
+
+  /* Barre latérale anthracite (identique dans les deux thèmes). */
+  --color-rail: var(--rail-bg);
+  --color-rail-hover: var(--rail-hover);
+  --color-rail-active: var(--rail-active);
+  --color-rail-border: var(--rail-border);
+  --color-rail-fg: var(--rail-fg);
+  --color-rail-muted: var(--rail-muted);
 }
 
 :root {
-  --bg: #f7f6f3; /* warm off-white (docs stone tone) */
+  /* Jade — contraste AA avec du texte blanc (5,1:1). */
+  --brand: hsl(166 74% 28%);
+  --brand-hover: hsl(166 70% 33%);
+  --brand-fg: #ffffff;
+  --brand-soft: hsl(166 74% 28% / 0.1);
+  --brand-secondary: hsl(196 80% 36%);
+  --brand-text: hsl(167 82% 23%);
+
+  --bg: #f3f5f8;
   --surface: #ffffff;
-  --surface-hover: #efeeea;
-  --border: hsl(40 9% 86%);
-  --fg: hsl(30 10% 11%); /* warm near-black, high legibility */
-  --muted: hsl(35 9% 34%); /* darker than before for readable body text */
-  --faint: hsl(35 7% 42%); /* AA: ~4.6:1 on #fff (was 50% ≈ 3.9:1, failed small text) */
-  --landing: #59592a; /* olive editorial headline */
-  --brand-text: hsl(26 80% 36%); /* darkened brand for small text: 5.5 white / 5.1 cream / 4.7 surface-hover */
-  --dot: 40 8% 42% / 0.09;
-  --pre-bg: #f2f1ed;
+  --surface-hover: #eef1f5;
+  --border: hsl(216 20% 88%);
+  --fg: hsl(220 32% 11%);
+  --muted: hsl(218 15% 33%);
+  --faint: hsl(218 11% 43%); /* AA sur blanc */
+  --landing: hsl(220 32% 11%);
+  --dot: 218 20% 40% / 0.08;
+  --pre-bg: #f1f4f8;
+
+  --rail-bg: #111a26;
+  --rail-hover: #1a2533;
+  --rail-active: #1f2c3c;
+  --rail-border: #223042;
+  --rail-fg: #eef2f7;
+  --rail-muted: #9ba8b9;
+
   color-scheme: light;
 }
 
 .dark {
-  --bg: #0a0a0a;
-  --surface: #161616;
-  --surface-hover: #232323;
-  --border: #262626;
-  --fg: #fafafa;
-  --muted: #a1a1aa;
-  --faint: #8b8b95; /* AA: ~4.6:1 on #161616 (was #71717a ≈ 3.7:1, failed small text) */
-  --landing: #e4e2d0; /* cream editorial headline */
-  --brand-text: hsl(26 73% 51%); /* raw brand already passes in dark (≥4.95 on bg/surface) */
-  --dot: 240 5% 65% / 0.10;
-  --pre-bg: #111111;
+  --brand: hsl(162 62% 44%);
+  --brand-hover: hsl(162 62% 50%);
+  --brand-fg: #06130f;
+  --brand-soft: hsl(162 62% 44% / 0.14);
+  --brand-secondary: hsl(196 70% 55%);
+  --brand-text: hsl(160 62% 56%);
+
+  --bg: #0b1017;
+  --surface: #121a24;
+  --surface-hover: #1a2431;
+  --border: #223042;
+  --fg: #e8edf3;
+  --muted: #a7b2c1;
+  --faint: #8d99aa; /* AA sur --surface */
+  --landing: #f2f5f9;
+  --dot: 215 25% 70% / 0.07;
+  --pre-bg: #0e151e;
+
+  --rail-bg: #070b11;
+  --rail-hover: #111a26;
+  --rail-active: #162130;
+  --rail-border: #18222f;
+  --rail-fg: #e8edf3;
+  --rail-muted: #8d99aa;
+
   color-scheme: dark;
+}
+
+/* Îlot anthracite (barre latérale) : mêmes noms de variables que le thème,
+   valeurs fixes sombres — placé APRÈS .dark pour l'emporter à spécificité égale. */
+.rail {
+  --bg: #111a26;
+  --surface: #172231;
+  --surface-hover: #1e2b3b;
+  --border: #243246;
+  --fg: #eef2f7;
+  --muted: #b0bccb;
+  --faint: #8e9bad;
+  --brand: hsl(162 62% 46%);
+  --brand-hover: hsl(162 62% 52%);
+  --brand-fg: #06130f;
+  --brand-soft: hsl(162 62% 46% / 0.16);
+  --brand-text: hsl(160 64% 60%);
+  background: var(--bg);
+  color: var(--fg);
+}
+html.dark .rail {
+  --bg: #070b11;
+  --surface: #0f1620;
+  --surface-hover: #151f2c;
+  --border: #18222f;
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
+  font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -78,15 +152,52 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* Titres : police de titres, approche serrée, graisse franche. */
+h1, h2, h3, .font-display, .font-serif {
+  font-family: var(--font-display);
+  letter-spacing: -0.018em;
+  font-optical-sizing: auto;
+}
+h1.font-display, h1.font-serif, .font-display:is(h1, h2) { font-weight: 650; }
+
+/* Chiffres tabulaires partout : les compteurs ne « sautent » pas. */
+.tabular-nums, td, .font-mono { font-variant-numeric: tabular-nums; }
+
+/* Sélection, focus clavier, barres de défilement aux couleurs de la marque. */
+::selection { background: color-mix(in srgb, var(--brand) 22%, transparent); }
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--fg) 22%, transparent) transparent; }
+
 @layer utilities {
   .font-serif-italic {
-    font-family: var(--font-instrument-serif-italic), var(--font-serif);
-    font-style: italic;
+    font-family: var(--font-display);
+    font-style: normal;
+    font-weight: 600;
+    color: var(--brand-text);
   }
-  /* Ambient dot grid — adapts to the theme via --dot. Pure CSS, 0 DOM. */
+  /* Trame de points discrète, adaptée au thème via --dot. */
   .dot-bg {
     background-image: radial-gradient(circle, hsl(var(--dot)) 1px, transparent 1px);
-    background-size: 24px 24px;
+    background-size: 22px 22px;
+  }
+  /* Carte de logiciel : surface, bordure fine, ombre légère. */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+  }
+  /* Petit libellé de section en capitales (« eyebrow »). */
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 650;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
   }
 }
 
@@ -323,3 +434,103 @@ html.dark .co-cost[data-tone="free"]{color:hsl(158 64% 60%);background:hsl(158 6
 .co-cost[data-tone="spend"]{color:hsl(35 9% 34%);background:hsl(35 8% 46% / .12);border-color:hsl(35 8% 46% / .26)}
 html.dark .co-cost[data-tone="spend"]{color:hsl(35 8% 70%);background:hsl(35 6% 60% / .12);border-color:hsl(35 6% 60% / .24)}
 .co-cost svg{width:.85em;height:.85em}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Mouvement — Jobiify
+   Animations courtes et sobres (logiciel pro, pas site vitrine) : elles
+   accompagnent l'œil, ne le retiennent pas. Toutes coupées si l'utilisateur
+   demande moins d'animations (voir le bloc prefers-reduced-motion en fin).
+   ══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Entrée de page : fondu + légère montée à chaque navigation. */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.page-enter { animation: page-enter 420ms var(--ease-out) both; }
+
+/* Apparition en cascade des enfants d'une grille / liste. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+.stagger > * { animation: rise 460ms var(--ease-out) both; }
+.stagger > *:nth-child(1) { animation-delay: 40ms; }
+.stagger > *:nth-child(2) { animation-delay: 85ms; }
+.stagger > *:nth-child(3) { animation-delay: 130ms; }
+.stagger > *:nth-child(4) { animation-delay: 175ms; }
+.stagger > *:nth-child(5) { animation-delay: 220ms; }
+.stagger > *:nth-child(6) { animation-delay: 265ms; }
+.stagger > *:nth-child(7) { animation-delay: 310ms; }
+.stagger > *:nth-child(8) { animation-delay: 355ms; }
+.stagger > *:nth-child(n + 9) { animation-delay: 400ms; }
+.animate-rise { animation: rise 460ms var(--ease-out) both; }
+/* Offres qui arrivent en direct pendant une recherche. */
+.co-rise { animation: rise 380ms var(--ease-out) both; }
+
+/* Élévation au survol : cartes cliquables. */
+/* translate (propriété indépendante) : se cumule avec un transform existant. */
+.lift {
+  transition: translate 220ms var(--ease-out), box-shadow 220ms var(--ease-out), border-color 180ms ease;
+}
+.lift:hover {
+  translate: 0 -2px;
+  box-shadow: var(--shadow-lg);
+}
+.panel { transition: border-color 180ms ease, box-shadow 220ms var(--ease-out); }
+
+/* Appui : les boutons « s'enfoncent » légèrement. */
+button:not(:disabled), .press {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, scale, translate;
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-out);
+}
+/* scale (propriété indépendante) : ne remplace jamais un transform de positionnement. */
+button:not(:disabled):active, .press:active { scale: 0.97; }
+
+/* Liens « → » : la flèche avance au survol. */
+.nudge-x { transition: transform 200ms var(--ease-out); }
+.group:hover .nudge-x { transform: translateX(3px); }
+
+/* Indicateur de la page active (barre latérale) : se déploie verticalement. */
+.nav-indicator { transform-origin: center; transition: transform 260ms var(--ease-spring), opacity 160ms ease; }
+
+/* Logo : le « j » se trace, puis le point se pose. */
+@keyframes mark-draw { from { stroke-dashoffset: 72; } to { stroke-dashoffset: 0; } }
+@keyframes mark-dot { 0% { transform: scale(0); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.mark-animated .mark-stroke { stroke-dasharray: 72; animation: mark-draw 900ms var(--ease-out) 120ms both; }
+.mark-animated .mark-dot { transform-box: fill-box; transform-origin: center; animation: mark-dot 520ms var(--ease-spring) 820ms both; }
+
+/* Point « en direct » (sources actives, recherche en cours). */
+@keyframes live-ping {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 55%, transparent); }
+  80%, 100% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--brand) 0%, transparent); }
+}
+.live-dot { animation: live-ping 1.8s ease-out infinite; border-radius: 999px; }
+
+/* Barres de progression : remplissage animé à l'affichage. */
+@keyframes grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.grow-x { transform-origin: left; animation: grow-x 900ms var(--ease-out) 200ms both; }
+
+/* Changement de thème : révélation circulaire depuis le bouton (View Transitions). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter, .stagger > *, .animate-rise, .co-rise,
+  .mark-animated .mark-stroke, .mark-animated .mark-dot, .live-dot, .grow-x { animation: none !important; }
+  .lift:hover { translate: none; }
+  button:not(:disabled):active, .press:active { scale: none; }
+  .nudge-x, .group:hover .nudge-x { transform: none; transition: none; }
+}
+
+/* Icône soleil / lune : rotation à l'échange. */
+@keyframes spin-in { from { opacity: 0; transform: rotate(-90deg) scale(0.6); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { [class*="spin-in"] { animation: none !important; } }

@@ -6,6 +6,10 @@ export interface ApiCredentials {
   FRANCETRAVAIL_CLIENT_ID?: string;
   FRANCETRAVAIL_CLIENT_SECRET?: string;
   JOOBLE_API_KEY?: string;
+  ADZUNA_APP_ID?: string;
+  ADZUNA_APP_KEY?: string;
+  CAREERJET_AFFID?: string;
+  RECHERCHE_RAYON_KM?: string;
 }
 
 export function readEnvFile(): string {
@@ -134,6 +138,34 @@ export async function verifyApiCredentials(apiId: string): Promise<{ ok: boolean
       return { ok: false, message: `Échec de connexion Jooble (HTTP ${res.status})` };
     } catch (e: any) {
       return { ok: false, message: `Erreur de connexion Jooble : ${e.message}` };
+    }
+  }
+
+  if (apiId === "adzuna") {
+    const id = env.ADZUNA_APP_ID?.trim();
+    const key = env.ADZUNA_APP_KEY?.trim();
+    if (!id || !key) return { ok: false, message: "App ID ou App Key Adzuna manquant" };
+    try {
+      const params = new URLSearchParams({ app_id: id, app_key: key, results_per_page: "1", what: "informatique", where: "Lillers" });
+      const res = await fetch(`https://api.adzuna.com/v1/api/jobs/fr/search/1?${params}`, { headers: { Accept: "application/json" } });
+      if (res.ok) return { ok: true, message: "Connexion Adzuna réussie · Clés validées" };
+      return { ok: false, message: `Échec de connexion Adzuna (HTTP ${res.status}) - vérifiez vos clés` };
+    } catch (e: any) {
+      return { ok: false, message: `Erreur de connexion Adzuna : ${e.message}` };
+    }
+  }
+
+  if (apiId === "careerjet") {
+    const affid = env.CAREERJET_AFFID?.trim();
+    if (!affid) return { ok: false, message: "Identifiant partenaire Careerjet (affid) manquant" };
+    try {
+      const params = new URLSearchParams({ locale_code: "fr_FR", keywords: "informatique", location: "Béthune", pagesize: "1", affid, user_ip: "127.0.0.1", user_agent: "jobiify/1.0" });
+      const res = await fetch(`http://public.api.careerjet.net/search?${params}`, { headers: { Referer: "http://localhost/jobiify" } });
+      const data = (await res.json().catch(() => ({}))) as { type?: string; error?: string };
+      if (res.ok && data.type === "JOBS") return { ok: true, message: "Connexion Careerjet réussie · affid validé" };
+      return { ok: false, message: `Échec Careerjet : ${data.error || `HTTP ${res.status}`}` };
+    } catch (e: any) {
+      return { ok: false, message: `Erreur de connexion Careerjet : ${e.message}` };
     }
   }
 

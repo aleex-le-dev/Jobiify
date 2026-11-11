@@ -1,5 +1,6 @@
 "use client";
 
+import { fr } from "@/lib/fr-system";
 import { Loader2, Wand2, Asterisk, Paperclip, Sparkles, ArrowUpRight, ShieldCheck, RotateCcw, FileCheck2, AlertTriangle, Terminal, Check, ScanLine, PenLine, CheckCircle2, Info, ExternalLink, MousePointerClick, ArrowLeft, ClipboardCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { ApplyIssue, DriveStep } from "@/lib/apply/issue";
@@ -17,7 +18,7 @@ import { Send } from "lucide-react";
 const STYLE = `
 @keyframes co-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .co-rise{animation:co-rise .55s cubic-bezier(.22,1,.36,1) both}
-@keyframes co-flash{0%{box-shadow:0 0 0 0 hsl(26 82% 55% / 0)}22%{box-shadow:0 0 0 3px hsl(26 82% 55% / .38)}100%{box-shadow:0 0 0 0 hsl(26 82% 55% / 0)}}
+@keyframes co-flash{0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--brand) 0%, transparent)}22%{box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 38%, transparent)}100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--brand) 0%, transparent)}}
 .co-flash{animation:co-flash 1.15s ease both;border-radius:.6rem}
 @keyframes co-shim{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .co-skel{background:linear-gradient(90deg, color-mix(in srgb,var(--fg) 5%, transparent) 25%, color-mix(in srgb,var(--fg) 12%, transparent) 37%, color-mix(in srgb,var(--fg) 5%, transparent) 63%);background-size:200% 100%;animation:co-shim 1.6s linear infinite;border-radius:.5rem}
@@ -82,7 +83,7 @@ export function ApplyView() {
                 <p className="text-sm text-amber-800 dark:text-amber-300">{a.error}</p>
                 {a.url && /^https?:\/\//.test(a.url) && (
                   <a href={a.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline">
-                    Open the form directly <ExternalLink className="size-3" />
+                    Ouvrir le formulaire directement <ExternalLink className="size-3" />
                   </a>
                 )}
               </div>
@@ -421,7 +422,7 @@ function ApplyExitBar() {
           </span>
         )}
       </div>
-      {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
+      {error && <p className="mt-2 text-xs text-red-500">{fr(error)}</p>}
     </div>
   );
 }

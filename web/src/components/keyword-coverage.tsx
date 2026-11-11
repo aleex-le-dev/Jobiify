@@ -78,7 +78,7 @@ export function KeywordCoverage({ reportId }: { reportId: string }) {
           {model.coveragePct === null ? "—" : `${model.coveragePct}%`}
         </span>
         <span className="text-sm text-muted">
-          {model.presentCount} of {model.total} JD keyword{model.total === 1 ? "" : "s"} found in your CV
+          {model.presentCount} mot{model.total === 1 ? "" : "s"}-clé{model.total === 1 ? "" : "s"} de l'annonce sur {model.total} trouvé{model.presentCount > 1 ? "s" : ""} dans votre CV
         </span>
       </div>
 
@@ -109,8 +109,8 @@ export function KeywordCoverage({ reportId }: { reportId: string }) {
       </div>
 
       <p className="mt-4 text-xs text-faint">
-        Diagnostic only — nothing here edits your CV. Reformulate what you genuinely have; never add a keyword you cannot
-        back up.
+        Diagnostic uniquement — rien ici ne modifie votre CV. Reformulez ce que vous avez réellement fait ; n'ajoutez jamais un
+        mot-clé que vous ne pouvez pas justifier.
       </p>
     </section>
   );
@@ -121,7 +121,7 @@ function Header() {
     <div className="flex flex-wrap items-center gap-2">
       <ScanSearch className="size-4 text-brand" />
       <h2 className="font-display text-base text-landing">ATS keyword coverage</h2>
-      <span className="text-xs text-faint">this JD vs your CV</span>
+      <span className="text-xs text-faint">cette annonce face à votre CV</span>
     </div>
   );
 }

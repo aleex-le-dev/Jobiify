@@ -133,7 +133,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
             ...j,
             status: "error",
             endedAt: Date.now(),
-            steps: [...j.steps, { kind: "status", label: "No CLI configured — open Config and click Save config", ts: Date.now() }],
+            steps: [...j.steps, { kind: "status", label: "Aucun outil IA disponible — installez Claude Code (détecté automatiquement) ou choisissez un outil dans Paramètres & outil IA", ts: Date.now() }],
           }));
           return;
         }

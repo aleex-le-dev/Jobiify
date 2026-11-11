@@ -18,10 +18,10 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <Link href="/pipeline" className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-brand">
-          <ArrowLeft className="size-4" /> Pipeline
+          <ArrowLeft className="size-4" /> Mes candidatures
         </Link>
         <p className="mt-8 text-sm text-muted">
-          This worker is no longer in memory (it finished earlier or the page was reloaded).
+          Cette tâche n'est plus en mémoire (elle s'est terminée plus tôt ou la page a été rechargée).
         </p>
       </div>
     );
@@ -30,7 +30,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
       <Link href="/pipeline" className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-brand">
-        <ArrowLeft className="size-4" /> Pipeline
+        <ArrowLeft className="size-4" /> Mes candidatures
       </Link>
 
       <section className="dot-bg relative mt-5 overflow-hidden rounded-2xl border border-border bg-surface/40 px-6 py-7">

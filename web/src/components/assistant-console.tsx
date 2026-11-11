@@ -381,7 +381,7 @@ export function AssistantConsole() {
     let snapshot: Msg[];
     try { snapshot = cleanMessages(messagesRef.current) as Msg[]; }
     catch (e) {
-      const error = e instanceof Error ? e : new Error("Conversation could not be saved");
+      const error = e instanceof Error ? e : new Error("La conversation n'a pas pu être enregistrée");
       setSaveError(error.message);
       return Promise.reject(error);
     }
@@ -400,7 +400,7 @@ export function AssistantConsole() {
         setSaveError("");
         await refreshChats();
       } catch (e) {
-        setSaveError(e instanceof Error ? e.message : "Conversation was not saved");
+        setSaveError(e instanceof Error ? e.message : "La conversation n'a pas été enregistrée");
         throw e;
       }
     });
@@ -444,7 +444,7 @@ export function AssistantConsole() {
         setMessages(next);
         await refreshChats();
         setChatReady(true);
-      } catch (e) { if (!cancelled) setSaveError(e instanceof Error ? e.message : "Could not load conversations"); }
+      } catch (e) { if (!cancelled) setSaveError(e instanceof Error ? e.message : "Impossible de charger les conversations"); }
     }
     void restore();
     return () => { cancelled = true; };
@@ -849,7 +849,7 @@ export function AssistantConsole() {
 
   return (
     <>
-      <div role="status" aria-label="Assistant request status" aria-live="polite" aria-atomic="true" className="sr-only">{announcement}</div>
+      <div role="status" aria-label="État de la demande à l'assistant" aria-live="polite" aria-atomic="true" className="sr-only">{announcement}</div>
       {!open && (
         <button
           ref={openerRef}

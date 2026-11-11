@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, X, FileText, Compass, ShieldCheck, Coins } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { instrumentSerif } from "@/lib/fonts";
+import { displayFont } from "@/lib/fonts";
 import { parseReport, scoreTone, legitimacyTone } from "@/lib/format";
 import { useJobs, type Job } from "@/components/jobs/job-store";
 
@@ -16,7 +16,7 @@ const SEEN_KEY = "career-ops:first-score-seen";
 const STYLE = `
 .co-aha{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:1.2rem;background:color-mix(in srgb, var(--bg) 70%, rgba(0,0,0,.5));-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);animation:co-aha-in .35s ease both}
 .co-aha__card{position:relative;width:min(34rem,100%);border-radius:1.3rem;border:1px solid var(--border,hsl(0 0% 50% /.2));background:var(--bg);box-shadow:0 24px 70px -20px rgba(0,0,0,.5);overflow:hidden}
-.co-aha__glow{position:absolute;inset:0;background:radial-gradient(80% 60% at 50% -10%, hsl(26 82% 55% /.22), transparent 70%);pointer-events:none}
+.co-aha__glow{position:absolute;inset:0;background:radial-gradient(80% 60% at 50% -10%, color-mix(in srgb, var(--brand) 22%, transparent), transparent 70%);pointer-events:none}
 .co-aha__grade{font-variant-numeric:tabular-nums;line-height:1}
 @keyframes co-aha-in{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.co-aha{animation:none}}
@@ -114,22 +114,22 @@ export function FirstScoreView() {
   };
 
   return (
-    <div className="co-aha" role="dialog" aria-modal="true" aria-label="Your first score" onClick={close}>
+    <div className="co-aha" role="dialog" aria-modal="true" aria-label="Votre premier score" onClick={close}>
       <style>{STYLE}</style>
       <div ref={panelRef} className="co-aha__card" onClick={(e) => e.stopPropagation()}>
         <div className="co-aha__glow" />
-        <button onClick={close} aria-label="Close" className="absolute right-3 top-3 z-10 rounded-md p-1.5 text-faint transition hover:text-foreground">
+        <button onClick={close} aria-label="Fermer" className="absolute right-3 top-3 z-10 rounded-md p-1.5 text-faint transition hover:text-foreground">
           <X className="size-4" />
         </button>
 
         <div className="relative px-7 pb-7 pt-8">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-brand">
-            <span className="text-faint">//</span> the job we found you — scored
+            <span className="text-faint">//</span> l'offre trouvée pour vous — évaluée
           </p>
 
           <div className="mt-4 flex items-start gap-4">
             <div className="min-w-0 flex-1">
-              <h2 className={`${instrumentSerif.className} truncate text-2xl leading-tight text-foreground`}>{role || company}</h2>
+              <h2 className={`${displayFont.className} truncate text-2xl leading-tight text-foreground`}>{role || company}</h2>
               {role && <p className="truncate text-sm text-muted">{company}</p>}
             </div>
             {score != null && (
@@ -148,7 +148,7 @@ export function FirstScoreView() {
           </div>
 
           {/* THE WHY — the hero. A sentence that read THIS CV against THIS job. */}
-          <blockquote className={`${instrumentSerif.className} mt-5 border-l-2 border-brand/40 pl-4 text-[19px] leading-snug text-foreground`}>
+          <blockquote className={`${displayFont.className} mt-5 border-l-2 border-brand/40 pl-4 text-[19px] leading-snug text-foreground`}>
             <Sparkles className="mb-1 inline size-4 text-brand" /> {why}
           </blockquote>
 
@@ -164,7 +164,7 @@ export function FirstScoreView() {
           )}
 
           <p className="mt-5 flex items-center gap-1.5 text-[12px] text-faint">
-            <Coins className="size-3.5" /> That ran on your own AI. Everything before it — finding this job — was free.
+            <Coins className="size-3.5" /> Cette évaluation a utilisé votre propre IA. Tout ce qui précède — trouver cette offre — était gratuit.
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2">
@@ -175,7 +175,7 @@ export function FirstScoreView() {
               }}
               className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground shadow-sm transition hover:brightness-110"
             >
-              <FileText className="size-4" /> See the full report
+              <FileText className="size-4" /> Voir le rapport complet
             </button>
             <button
               onClick={() => {
@@ -184,7 +184,7 @@ export function FirstScoreView() {
               }}
               className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface/50 px-4 py-2.5 text-sm font-medium text-foreground transition hover:border-brand/40 hover:text-brand"
             >
-              <Compass className="size-4" /> Find more like this
+              <Compass className="size-4" /> Trouver des offres similaires
             </button>
           </div>
         </div>

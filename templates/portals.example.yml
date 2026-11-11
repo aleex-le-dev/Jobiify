@@ -2119,17 +2119,7 @@ tracked_companies:
 
   # -- AI-native platforms (FDE/SA teams) --
 
-  - name: Retool
-    careers_url: https://jobs.gem.com/retool
-    provider: gem
-    notes: "London. Popularized Deployed Engineer role."
-    enabled: true
 
-  - name: Gem
-    api: https://api.gem.com/job_board/v0/gem/job_posts/
-    provider: gem
-    notes: "San Francisco. Recruiting platform — example of Gem's documented REST Job Board API (verified vanity path, not guessed from the company name)."
-    enabled: true
 
   - name: Airtable
     careers_url: https://job-boards.greenhouse.io/airtable
@@ -3231,53 +3221,13 @@ job_boards:
   # Public API — no auth needed. Division in URL path, campaign=career-ops for tracking.
   # Available divisions: it, engineering, marketing, sales, hr, logistics, finances, other
 
-  - name: SolidJobs IT
-    careers_url: https://solid.jobs/public-api/offers/it?campaign=career-ops
-    provider: solidjobs
-    enabled: true
-    notes: "Polish IT job board — IT division"
 
-  - name: SolidJobs Engineering
-    careers_url: https://solid.jobs/public-api/offers/engineering?campaign=career-ops
-    provider: solidjobs
-    enabled: false
-    notes: "Polish job board — Engineering & Production division"
 
-  - name: SolidJobs Marketing
-    careers_url: https://solid.jobs/public-api/offers/marketing?campaign=career-ops
-    provider: solidjobs
-    enabled: false
-    notes: "Polish job board — Marketing division"
 
-  - name: SolidJobs Sales
-    careers_url: https://solid.jobs/public-api/offers/sales?campaign=career-ops
-    provider: solidjobs
-    enabled: false
-    notes: "Polish job board — Sales division"
 
-  - name: SolidJobs HR
-    careers_url: https://solid.jobs/public-api/offers/hr?campaign=career-ops
-    provider: solidjobs
-    enabled: false
-    notes: "Polish job board — HR division"
 
-  - name: SolidJobs Logistics
-    careers_url: https://solid.jobs/public-api/offers/logistics?campaign=career-ops
-    provider: solidjobs
-    enabled: false
-    notes: "Polish job board — Logistics division"
 
-  - name: SolidJobs Finances
-    careers_url: https://solid.jobs/public-api/offers/finances?campaign=career-ops
-    provider: solidjobs
-    enabled: false
-    notes: "Polish job board — Finances division"
 
-  - name: SolidJobs Other
-    careers_url: https://solid.jobs/public-api/offers/other?campaign=career-ops
-    provider: solidjobs
-    enabled: false
-    notes: "Polish job board — Other specialists division"
 
   # ── JustJoin.it / NoFluffJobs (Polish tech market) ────────────────────────
   # Public job-board APIs. Disabled by default; enable and rely on the global

@@ -7,6 +7,7 @@ import { careerOpsRoot } from "@/lib/career-ops";
 import { CAPS } from "@/lib/worker-capabilities.mjs";
 import { scopeFrom } from "@/lib/claude-invocation.mjs";
 import { fencingReport } from "@/lib/cli-fencing.mjs";
+import { extractCvText } from "@/lib/core/doc-text";
 
 // Deny list DERIVED, never hand-written: every one of the six advisor argvs
 // that spelled its own omitted MultiEdit, which --permission-mode acceptEdits
@@ -36,21 +37,23 @@ function readCanonicalMode(): string | null {
 function ingestPrompt(source: string): string {
   const mode = readCanonicalMode();
   if (mode) {
-    return `${mode}\n\n--- HEADLESS OUTPUT CONTRACT (the career-ops WEB is parsing your stream) ---\nFollow the mode above exactly. You are a PROPOSER running headless: emit ONLY the markdown between <<cv:start>> and <<cv:end>> (own lines, never in a code fence), then one <<cv:seed>>{...} line; or <<cv:error>>{"reason":"unreadable"} if you can't read it. Narrate one short line before <<cv:start>>.\n\n${source}`;
+    return `${mode}\n\n--- HEADLESS OUTPUT CONTRACT (the career-ops WEB is parsing your stream) ---\nFollow the mode above exactly. You are a PROPOSER running headless: emit ONLY the markdown between <<cv:start>> and <<cv:end>> (own lines, never in a code fence), then one <<cv:seed>>{...} line; or <<cv:error>>{"reason":"unreadable"} if you can't read it. Narrate one short line in French before <<cv:start>>. Write the CV itself in French (labels and section headings included).\n\n${source}`;
   }
   // Fallback mirrors the canonical examples/cv-example.md format (the SSOT the
   // project ships) so a web-parsed CV is the same shape as a hand-written one.
   return `You convert a person's CV into clean cv.md markdown that EXACTLY mirrors career-ops's reference format.
 
-FORMAT (match exactly; omit a section if the source lacks it; INVENT NOTHING):
-\`# CV -- {Full Name}\`
-then bold contact lines directly under the title (no "Contact" section):
-\`**Location:** …\` / \`**Email:** …\` / \`**LinkedIn:** …\` / \`**Portfolio:** …\` / \`**GitHub:** …\`
-\`## Professional Summary\` — a 2-4 line summary, only from facts present.
-\`## Work Experience\` — each role as: \`### {Company} -- {Location}\`, then \`**{Job Title}**\` on its own line, then \`{Start}-{End or Present}\` on its own line, then bullet points (preserve EVERY quantified achievement verbatim).
-\`## Projects\` — flat bullets: \`- **{Name}** ({type}) -- {what + hero metric}\`.
-\`## Education\` — flat bullets: \`- {Degree}, {Institution} ({year})\`.
-\`## Skills\` — grouped bullets: \`- **{Category}:** {comma list}\`.
+FORMAT (match exactly; omit a section if the source lacks it; INVENT NOTHING).
+The CV MUST be written in FRENCH: every label and section heading below is French. Keep the person's own wording; if the source CV is in another language, translate it faithfully into French without adding anything.
+\`# CV -- {Prénom Nom}\`
+then bold contact lines directly under the title (no "Contact" section), French labels only:
+\`**Localisation:** …\` / \`**E-mail:** …\` / \`**Téléphone:** …\` / \`**LinkedIn:** …\` / \`**GitHub:** …\` / \`**Portfolio:** …\` (only those present in the source)
+\`## Profil professionnel\` — 2 à 4 lignes, uniquement à partir des faits présents.
+\`## Expériences professionnelles\` — chaque poste : \`### {Entreprise} -- {Ville}\`, puis \`**{Intitulé du poste}**\` seul sur sa ligne, puis \`{Début}-{Fin ou Présent}\` seul sur sa ligne, puis des puces (conserver CHAQUE chiffre et réalisation mot pour mot).
+\`## Projets\` — puces : \`- **{Nom}** ({type}) -- {quoi + résultat}\`.
+\`## Formation\` — puces : \`- {Diplôme}, {Établissement} ({année})\`.
+\`## Compétences\` — puces groupées : \`- **{Catégorie}:** {liste séparée par des virgules}\`.
+\`## Langues\` — puces : \`- {Langue} ({niveau})\` (si présent).
 Use \`--\` (double hyphen), NEVER an em dash (ATS rule). Preserve every company/title/date/metric. Clean, don't rewrite — it's THEIR CV.
 
 OUTPUT PROTOCOL:
@@ -88,18 +91,29 @@ export async function POST(req: Request) {
       // one below, which would wrongly say Claude is missing (#4607).
       resolved = resolveCliOrFallback(cliId);
       if (!resolved) return Response.json(cliUnavailableError(cliId), { status: 404 });
-      // Reading a PDF/DOCX from a path needs the CLI's file tool, which only Claude
-      // is granted here. Tell non-Claude users plainly instead of failing opaquely.
-      // Judged on the CLI that will actually run: a stale saved id falls back to
-      // the sole installed CLI, and that may well be Claude.
-      if (resolved.spec.id !== "claude" && /\.(pdf|docx)$/i.test(file.name)) {
-        return Response.json({ error: "PDF upload needs Claude Code — paste your CV text instead." }, { status: 400 });
+      const bytes = Buffer.from(await file.arrayBuffer());
+      // Word / OpenDocument / RTF : l'outil de lecture de l'IA ne sait pas ouvrir ces
+      // archives. Le texte est extrait ici, en local, puis envoyé comme un CV collé.
+      const extracted = extractCvText(file.name, bytes);
+      if (extracted && "error" in extracted) {
+        const reason = extracted.error === "unsupported" ? "doc-legacy" : "unreadable";
+        return new Response(`<<cv:error>>{"reason":"${reason}"}`, {
+          headers: { "Content-Type": "text/plain; charset=utf-8" },
+        });
       }
-      const ext = (file.name.match(/\.[a-z0-9]+$/i)?.[0] || ".pdf").toLowerCase();
-      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "career-ops-cv-"));
-      tempFile = path.join(dir, `cv${ext}`); // outside the repo, basename-only
-      fs.writeFileSync(tempFile, Buffer.from(await file.arrayBuffer()), { mode: 0o600 }); // PII → owner-only
-      promptSource = FILE_SRC(tempFile);
+      if (extracted) {
+        promptSource = TEXT_SRC(extracted.text);
+      } else {
+        // PDF / image : lus directement par l'outil de lecture de Claude.
+        if (resolved.spec.id !== "claude") {
+          return Response.json({ error: "La lecture d'un PDF nécessite Claude Code — collez le texte du CV à la place." }, { status: 400 });
+        }
+        const ext = (file.name.match(/\.[a-z0-9]+$/i)?.[0] || ".pdf").toLowerCase();
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "career-ops-cv-"));
+        tempFile = path.join(dir, `cv${ext}`); // outside the repo, basename-only
+        fs.writeFileSync(tempFile, bytes, { mode: 0o600 }); // PII → owner-only
+        promptSource = FILE_SRC(tempFile);
+      }
     } else {
       return Response.json({ error: "unsupported content-type" }, { status: 400 });
     }

@@ -11,16 +11,16 @@ export const LOCALES: { code: Locale; label: string; flag: string; flagLabel: st
 export const DICTIONARY: Record<Locale, Record<string, string>> = {
   fr: {
     // Navigation
-    nav_today: "Aujourd'hui",
-    nav_explore: "Explorer",
-    nav_scheduled_scans: "Scans planifiés",
-    nav_pipeline: "Ma sélection",
-    nav_followups: "Relances",
-    nav_portals: "Portails",
-    nav_analytics: "Statistiques",
-    nav_cv: "Mon CV",
-    nav_documents: "Documents",
-    nav_config: "Paramètres",
+    nav_today: "Tableau de bord",
+    nav_explore: "Rechercher des offres",
+    nav_scheduled_scans: "Recherches automatiques",
+    nav_pipeline: "Mes candidatures",
+    nav_followups: "Relances à envoyer",
+    nav_portals: "Sources & clés API",
+    nav_analytics: "Bilan & statistiques",
+    nav_cv: "Mes CV & profils",
+    nav_documents: "CV PDF & lettres",
+    nav_config: "Paramètres & outil IA",
     chip_new: "Nouveau",
 
     // Barre latérale & Thème
@@ -48,7 +48,7 @@ export const DICTIONARY: Record<Locale, Record<string, string>> = {
     awaiting_decision: "En attente de décision",
     ready_to_apply: "Prêt à postuler",
     fresh_matches: "Nouvelles opportunités",
-    scheduled_scans_card: "Scans programmés",
+    scheduled_scans_card: "Recherches automatiques",
     quick_eval_title: "Évaluation rapide",
     paste_job_placeholder: "Collez une URL d'offre ou le texte du poste...",
     evaluate_button: "Évaluer l'offre",
@@ -60,7 +60,7 @@ export const DICTIONARY: Record<Locale, Record<string, string>> = {
     cv_ready: "CV adapté disponible",
 
     // Pipeline
-    pipeline_title: "Candidatures & Ma sélection",
+    pipeline_title: "Mes candidatures",
     pipeline_subtitle: "Visualisez vos offres sélectionnées et pilotez vos candidatures",
     search_placeholder: "Rechercher par entreprise, poste, mot-clé...",
     filter_all: "Toutes les étapes",
@@ -118,16 +118,16 @@ export const DICTIONARY: Record<Locale, Record<string, string>> = {
   },
   en: {
     // Navigation
-    nav_today: "Today",
-    nav_explore: "Explore",
-    nav_scheduled_scans: "Scheduled scans",
-    nav_pipeline: "Pipeline",
-    nav_followups: "Follow-ups",
-    nav_portals: "Portals",
-    nav_analytics: "Analytics",
-    nav_cv: "CV",
-    nav_documents: "Documents",
-    nav_config: "Config",
+    nav_today: "Dashboard",
+    nav_explore: "Search jobs",
+    nav_scheduled_scans: "Automatic searches",
+    nav_pipeline: "My applications",
+    nav_followups: "Follow-ups to send",
+    nav_portals: "Sources & API keys",
+    nav_analytics: "Reports & analytics",
+    nav_cv: "My CVs & profiles",
+    nav_documents: "PDF CVs & letters",
+    nav_config: "Settings & AI tool",
     chip_new: "New",
 
     // Sidebar & Theme
@@ -155,7 +155,7 @@ export const DICTIONARY: Record<Locale, Record<string, string>> = {
     awaiting_decision: "Awaiting decision",
     ready_to_apply: "Ready to apply",
     fresh_matches: "Fresh matches",
-    scheduled_scans_card: "Scheduled scans",
+    scheduled_scans_card: "Automatic searches",
     quick_eval_title: "Quick Evaluate",
     paste_job_placeholder: "Paste a job URL or JD text...",
     evaluate_button: "Evaluate role",
@@ -167,7 +167,7 @@ export const DICTIONARY: Record<Locale, Record<string, string>> = {
     cv_ready: "Tailored CV ready",
 
     // Pipeline
-    pipeline_title: "Application Pipeline",
+    pipeline_title: "My applications",
     pipeline_subtitle: "Manage and track your job applications",
     search_placeholder: "Search company, role, keyword...",
     filter_all: "All stages",

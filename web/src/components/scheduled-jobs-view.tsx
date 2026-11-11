@@ -20,7 +20,7 @@ import { EditJobModal } from "./scheduled-scans/edit-job-modal";
 import { JobCard } from "./scheduled-scans/job-card";
 import { RunHistoryDrawer } from "./scheduled-scans/run-history-drawer";
 import type { ScheduledJob, JobRun } from "@/lib/scheduled-jobs";
-import { instrumentSerif } from "@/lib/fonts";
+import { displayFont } from "@/lib/fonts";
 import { updateScheduledJobRequest } from "@/lib/scheduled-job-client.mjs";
 import { isSchedulerStatusPayload } from "@/lib/scheduled-scheduler-status.mjs";
 import { useI18n } from "@/components/i18n-provider";
@@ -63,7 +63,7 @@ export function ScheduledJobsView() {
       ]);
       const resJobs = await jobsResponse.json().catch(() => ({}));
       const resScheduler = await schedulerResponse.json().catch(() => null);
-      if (!jobsResponse.ok) throw new Error(resJobs.error || "Could not load scheduled scans.");
+      if (!jobsResponse.ok) throw new Error(resJobs.error || "Impossible de charger les recherches automatiques.");
       if (!schedulerResponse.ok && resScheduler?.error) setError(resScheduler.error);
       setStore({
         jobs: Array.isArray(resJobs.jobs) ? resJobs.jobs : [],
@@ -71,7 +71,7 @@ export function ScheduledJobsView() {
       });
       if (schedulerResponse.ok && isSchedulerStatusPayload(resScheduler)) setScheduler(resScheduler as SchedulerStatus);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load scheduled scans.");
+      setError(cause instanceof Error ? cause.message : "Impossible de charger les recherches automatiques.");
     } finally {
       setLoading(false);
     }
@@ -87,22 +87,22 @@ export function ScheduledJobsView() {
       await updateScheduledJobRequest(id, { status: nextStatus });
       await loadData();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not update scheduled scan.");
+      setError(cause instanceof Error ? cause.message : "Impossible de modifier la recherche automatique.");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this scheduled scan?")) return;
+    if (!confirm("Supprimer définitivement cette recherche automatique ?")) return;
     try {
       const response = await fetch(`/api/scheduled-jobs/${id}`, { method: "DELETE" });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        setError(body.error || "Could not delete scheduled scan.");
+        setError(body.error || "Impossible de supprimer la recherche automatique.");
         return;
       }
       await loadData();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not delete scheduled scan.");
+      setError(cause instanceof Error ? cause.message : "Impossible de supprimer la recherche automatique.");
     }
   };
 
@@ -111,10 +111,10 @@ export function ScheduledJobsView() {
     try {
       const response = await fetch("/api/scheduler", { method: "POST" });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error || "Could not start scheduler.");
+      if (!response.ok) throw new Error(body.error || "Impossible de démarrer le planificateur.");
       await loadData();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not start scheduler.");
+      setError(cause instanceof Error ? cause.message : "Impossible de démarrer le planificateur.");
     } finally {
       setOsRunning(false);
     }
@@ -152,8 +152,8 @@ export function ScheduledJobsView() {
         <div>
           <div className="flex items-center gap-2.5">
             <CalendarClock className="size-6 text-brand" />
-            <h1 className={`${instrumentSerif.className} text-3xl text-foreground`}>
-              {isFr ? "Scans programmés" : "Scheduled Scans"}
+            <h1 className={`${displayFont.className} text-3xl text-foreground`}>
+              {isFr ? "Recherches automatiques" : "Automatic searches"}
             </h1>
           </div>
           <p className="mt-1.5 max-w-2xl text-sm text-muted">
@@ -320,14 +320,14 @@ export function ScheduledJobsView() {
       {filteredJobs.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border p-12 text-center">
           <CalendarClock className="mx-auto size-8 text-faint" />
-          <h3 className="mt-3 text-sm font-semibold text-foreground">No scheduled scans found</h3>
-          <p className="mt-1 text-xs text-muted">Create a new scan to start automatically discovering matching jobs.</p>
+          <h3 className="mt-3 text-sm font-semibold text-foreground">Aucune recherche automatique</h3>
+          <p className="mt-1 text-xs text-muted">Créez-en une pour découvrir automatiquement les nouvelles offres qui vous correspondent.</p>
           <button
             type="button"
             onClick={() => setCreateModalOpen(true)}
             className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-xs font-medium text-brand-foreground shadow"
           >
-            <CalendarPlus className="size-3.5" /> New Scheduled Scan
+            <CalendarPlus className="size-3.5" /> Nouvelle recherche automatique
           </button>
         </div>
       ) : (

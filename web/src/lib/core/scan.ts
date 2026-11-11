@@ -90,15 +90,8 @@ function ingestJsonOffer(
     if (!loc.includes("100% télétravail") && !loc.includes("remote")) return;
   }
 
-  if (zone && o.location) {
-    const verdict = inZone({ ville: o.location }, zone);
-    if (verdict === "non") {
-      const allow = filters.allow || [];
-      if (!allow.some((a) => a && o.location?.toLowerCase().includes(a.toLowerCase()))) {
-        return;
-      }
-    }
-  }
+  // Zone de trajet active : elle seule décide (lieu absent ou vague = écarté, sauf télétravail).
+  if (zone && !acceptInZone({ ville: o.location || "", texte: o.title }, zone)) return;
 
   seen.add(url);
   const source = o.source || `${currentAts}-full`;
@@ -404,7 +397,10 @@ import { loadServicePublicDiscoveredOffers } from "./service-public";
 import { loadWttjDiscoveredOffers } from "./wttj";
 import { loadFranceTravailDiscoveredOffers } from "./france-travail";
 import { loadJoobleDiscoveredOffers } from "./jooble";
-import { loadZone, inZone, type Zone } from "./zone";
+import { loadAdzunaDiscoveredOffers } from "./adzuna";
+import { loadCareerjetDiscoveredOffers } from "./careerjet";
+import { loadPortalLiveOffers } from "./portal-live";
+import { loadZone, acceptInZone, type Zone } from "./zone";
 
 function matchesKeyword(text: string, kw: string): boolean {
   const cleanKw = kw.toLowerCase().replace(/\s+/g, " ").trim();
@@ -472,59 +468,37 @@ async function scanLocalPortals(
 
   onEvent({ kind: "atsStart", ats: "portals", companies: trackedCount });
 
-  // 1. Open Data Choisir le Service Public & Emploi Territorial (data.gouv.fr)
-  try {
-    const spOffers = await loadServicePublicDiscoveredOffers(filters, roleTargets, zone);
-    for (const spOffer of spOffers) {
-      if (sink.seen.has(spOffer.url)) continue;
-      sink.seen.add(spOffer.url);
-      sink.offers.push(spOffer);
-      onEvent({ kind: "offer", offer: spOffer });
+  // Toutes les sources en parallèle, avec les mêmes filtres (profil + zone).
+  // Chaque offre est diffusée dès qu'une source répond ; une source en panne
+  // n'empêche jamais les autres de remonter leurs résultats.
+  const emit = (list: DiscoveredOffer[]) => {
+    for (const offer of list) {
+      if (sink.seen.has(offer.url)) continue;
+      sink.seen.add(offer.url);
+      sink.offers.push(offer);
+      onEvent({ kind: "offer", offer });
     }
-  } catch (err) {
-    console.error("Erreur lors de la récupération du Service Public:", err);
-  }
+  };
+  const sources: Array<[string, () => Promise<DiscoveredOffer[]>]> = [
+    ["Portails en direct (employeurs + intérim)", async () => (await loadPortalLiveOffers(filters, roleTargets, zone)).offers],
+    ["France Travail", () => loadFranceTravailDiscoveredOffers(filters, roleTargets, zone)],
+    ["Jooble", () => loadJoobleDiscoveredOffers(filters, roleTargets, zone)],
+    ["Adzuna", () => loadAdzunaDiscoveredOffers(filters, roleTargets, zone)],
+    ["Careerjet", () => loadCareerjetDiscoveredOffers(filters, roleTargets, zone)],
+    ["Welcome to the Jungle", () => loadWttjDiscoveredOffers(filters, roleTargets, zone)],
+    ["Service Public", () => loadServicePublicDiscoveredOffers(filters, roleTargets, zone)],
+  ];
+  await Promise.all(
+    sources.map(async ([name, load]) => {
+      try {
+        emit(await load());
+      } catch (err) {
+        console.error(`Erreur lors de la récupération de ${name}:`, err);
+      }
+    }),
+  );
 
-  // 2. Welcome to the Jungle (WTTJ)
-  try {
-    const wttjOffers = await loadWttjDiscoveredOffers(filters, roleTargets, zone);
-    for (const wOffer of wttjOffers) {
-      if (sink.seen.has(wOffer.url)) continue;
-      sink.seen.add(wOffer.url);
-      sink.offers.push(wOffer);
-      onEvent({ kind: "offer", offer: wOffer });
-    }
-  } catch (err) {
-    console.error("Erreur lors de la récupération de WTTJ:", err);
-  }
-
-  // 3. France Travail (si configuré dans .env)
-  try {
-    const ftOffers = await loadFranceTravailDiscoveredOffers(filters, roleTargets, zone);
-    for (const ftOffer of ftOffers) {
-      if (sink.seen.has(ftOffer.url)) continue;
-      sink.seen.add(ftOffer.url);
-      sink.offers.push(ftOffer);
-      onEvent({ kind: "offer", offer: ftOffer });
-    }
-  } catch (err) {
-    console.error("Erreur lors de la récupération de France Travail:", err);
-  }
-
-  // 4. Jooble (offres de PME et petits cabinets si JOOBLE_API_KEY dans .env)
-  try {
-    const joobleOffers = await loadJoobleDiscoveredOffers(filters, roleTargets, zone);
-    for (const jOffer of joobleOffers) {
-      if (sink.seen.has(jOffer.url)) continue;
-      sink.seen.add(jOffer.url);
-      sink.offers.push(jOffer);
-      onEvent({ kind: "offer", offer: jOffer });
-    }
-  } catch (err) {
-    console.error("Erreur lors de la récupération de Jooble:", err);
-  }
-
-  // 5. Inbox local jobs (offres sauvegardées ou ajoutées manuellement dans pipeline.md)
+  // Offres déjà enregistrées (pipeline.md), mêmes filtres (offres sauvegardées ou ajoutées manuellement dans pipeline.md)
   const inbox = readInbox();
   const scanDates = readScanDates();
   for (const job of inbox) {
@@ -536,15 +510,7 @@ async function scanLocalPortals(
       if (!loc.includes("100% télétravail") && !loc.includes("remote")) continue;
     }
 
-    if (zone && job.location) {
-      const verdict = inZone({ ville: job.location }, zone);
-      if (verdict === "non") {
-        const allow = filters.allow || [];
-        if (!allow.some((a) => a && job.location?.toLowerCase().includes(a.toLowerCase()))) {
-          continue;
-        }
-      }
-    }
+    if (zone && !acceptInZone({ ville: job.location || "", texte: job.role }, zone)) continue;
 
     const effectiveDate = job.postedAt || scanDates.get(job.url) || new Date().toISOString().slice(0, 10);
 

@@ -126,8 +126,8 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
           href={offer.url}
           target="_blank"
           rel="noopener noreferrer"
-          title="Open the posting"
-          aria-label="Open the posting"
+          title="Ouvrir l'annonce"
+          aria-label="Ouvrir l'annonce"
           className="-m-1 inline-flex shrink-0 items-center justify-center rounded p-1 text-faint transition-colors hover:text-foreground max-sm:min-h-[44px] max-sm:min-w-[44px]"
         >
           <ExternalLink className="size-4" />

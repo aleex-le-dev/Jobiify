@@ -273,10 +273,31 @@ const REGIONS_GENERIQUES = new Set([
   "pas de calais",
   "nord",
   "somme",
+  "aisne",
+  "oise",
   "hauts de france",
+  "nord pas de calais",
   "france",
+  "fr",
   "region",
+  "upline",
 ]);
+
+const REMOTE_RE = /t[ée]l[ée]travail|full remote|100\s*%\s*remote|\bremote\b/i;
+
+/**
+ * Règle unique de la zone de trajet, partagée par toutes les sources :
+ *  - dans la zone → gardée ;
+ *  - hors zone → écartée, même si une liste "allow" mentionne la ville ;
+ *  - lieu vague ("Pas-de-Calais", "France") → écartée, sauf offre en télétravail.
+ */
+export function acceptInZone(offre: OffreLocation & { texte?: string }, zone: Zone): boolean {
+  const verdict = inZone(offre, zone);
+  if (verdict === "oui") return true;
+  const remote = offre.teletravail === true || REMOTE_RE.test(`${offre.ville || ""} ${offre.texte || ""}`);
+  if (verdict === "inconnu") return remote;
+  return false;
+}
 
 /**
  * Détermine si une offre est située dans la zone de trajet.
@@ -306,42 +327,36 @@ export function inZone(offre: OffreLocation, zone: Zone): ZoneVerdict {
 
   // 3. Ville textuelle
   if (offre.ville) {
-    // Vérifier si un code postal 5 chiffres apparaît (ex: "62400", "62190")
+    // Code postal 5 chiffres (ex: "62400") : décisif dans un sens comme dans l'autre
     const cpMatch = offre.ville.match(/\b\d{5}\b/);
-    if (cpMatch && zone.cps.has(cpMatch[0])) {
-      return "oui";
-    }
+    if (cpMatch) return zone.cps.has(cpMatch[0]) ? "oui" : "non";
 
-    // Nettoyer la ville : retirer parenthèses, codes postaux, départements
+    // Nettoyer la ville : retirer parenthèses, codes départements
     const cleaned = offre.ville.replace(/\(.*?\)|\b\d{2,5}\b/g, "");
-    const parts = cleaned.split(/[,/—•|:]/).map((p) => norm(p)).filter(Boolean);
+    const parts = cleaned.split(/[,/—•|:;]/).map((p) => norm(p)).filter(Boolean);
     const full = norm(cleaned);
 
-    const candidates = [full, ...parts];
-    for (const cand of candidates) {
-      if (zone.noms.has(cand)) {
-        return "oui";
-      }
+    // "Lens Cedex 2" → "lens"
+    const uncedex = (p: string) => p.replace(/\s+cedex(\s+\d+)?$/, "").trim();
+    for (const cand of [full, ...parts].map(uncedex)) {
+      if (zone.noms.has(cand)) return "oui";
     }
 
-    // Vérifier si un des mots de commune dans la zone apparaît dans full
-    // (ex: "arras" dans "dipn62 arras", ou "lens" dans "route de la bassee lens")
-    const words = full.split(/\s+/).filter((w) => w.length >= 3);
-    for (const w of words) {
-      if (zone.noms.has(w)) {
-        return "oui";
-      }
-    }
+    // Les morceaux "génériques" (France, Nord, Hauts-de-France…) ne disent rien du lieu.
+    // Un seul morceau spécifique absent de la zone (ex: "Lille", "Comines") suffit à dire non.
+    const specific = parts.filter(
+      (p) => !REGIONS_GENERIQUES.has(p) && !/^(t[eé]l[eé]travail|remote|hybride)/.test(p) && !/^t[eé]l[eé]travail (partiel|total|occasionnel)/.test(p),
+    );
+    if (specific.length === 0) return "inconnu";
 
-    // Si le nom extrait contient une région générique comme "Pas-de-Calais"
-    if (REGIONS_GENERIQUES.has(full) || Array.from(REGIONS_GENERIQUES).some((r) => full === r || full.endsWith(r))) {
-      return "inconnu";
+    // Commune de la zone en FIN d'adresse longue (ex: "route de la bassee lens").
+    // Jamais un mot isolé au début d'un nom composé : "Fleury-sur-Orne" (14) n'est pas
+    // "Fleury" (62), "Saint-Omer-en-Chaussée" (60) n'est pas "Saint-Omer".
+    for (const p of specific) {
+      const words = uncedex(p).split(/\s+/);
+      if (words.length >= 3 && words[words.length - 1].length >= 4 && zone.noms.has(words[words.length - 1])) return "oui";
     }
-
-    // Une ville identifiée mais absente de la zone (ex: "Paris", "Toulouse", "Nanterre")
-    if (full.length > 2) {
-      return "non";
-    }
+    return "non";
   }
 
   return "inconnu";

@@ -107,7 +107,7 @@ export function ConfigForm() {
   return (
     <div className="mx-auto max-w-2xl px-6 py-10">
       <h1 className="font-display text-2xl tracking-tight text-landing">
-        {isFr ? "Configuration" : "Config"}
+        {isFr ? "Paramètres & outil IA" : "Settings & AI tool"}
       </h1>
       <p className="mt-1 text-sm text-muted">
         {isFr
@@ -281,9 +281,9 @@ export function ConfigForm() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Paste an AI key
+                Coller une clé d'IA
               </label>
-              <p className="mb-2 text-xs text-faint">Bring a key from OpenAI, Anthropic, and others.</p>
+              <p className="mb-2 text-xs text-faint">Utilisez une clé OpenAI, Anthropic ou d'un autre fournisseur.</p>
               <input
                 type="password"
                 value={apiKey}
@@ -293,7 +293,7 @@ export function ConfigForm() {
                 className="w-full rounded-xl border border-border bg-surface/60 px-4 py-2.5 font-mono text-sm outline-none transition-colors placeholder:text-faint focus:border-brand/50"
               />
               <p className="mt-2 text-xs text-faint">
-                Stored only in this browser — never sent anywhere but your chosen provider.
+                Conservée uniquement dans ce navigateur — envoyée seulement au fournisseur choisi.
               </p>
             </div>
           </div>
@@ -301,7 +301,7 @@ export function ConfigForm() {
 
         {mode === "manual" && (
           <div className="rounded-xl border border-dashed border-border bg-surface/30 p-4 text-sm text-muted">
-            The easiest way in — no keys, nothing to set up. On the roadmap.
+            Le plus simple — aucune clé, rien à configurer. Bientôt disponible.
           </div>
         )}
       </div>

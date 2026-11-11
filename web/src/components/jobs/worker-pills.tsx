@@ -28,7 +28,7 @@ export function WorkerPills() {
           <History className="size-3.5" />
         </Link>
         {finished > 0 && (
-          <button onClick={clearFinished} className="text-[10px] text-faint transition-colors hover:text-foreground" title="Clear finished">
+          <button onClick={clearFinished} className="text-[10px] text-faint transition-colors hover:text-foreground" title="Effacer les tâches terminées">
             clear
           </button>
         )}
@@ -55,7 +55,7 @@ export function WorkerPills() {
                         removeJob(j.id);
                       }}
                       className="text-faint opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
-                      aria-label="Dismiss job"
+                      aria-label="Masquer la tâche"
                     >
                       <X className="size-3" />
                     </button>

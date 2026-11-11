@@ -3,7 +3,7 @@ import path from "node:path";
 import { careerOpsRoot } from "@/lib/career-ops";
 import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
 import { titleFit } from "@/lib/title-fit.mjs";
-import { inZone, type Zone } from "./zone";
+import { acceptInZone, type Zone } from "./zone";
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 heure
 
@@ -199,20 +199,11 @@ function matchesFilters(
   if (is100Remote && userWantsRemote) return true;
 
   const alwaysAllow = filters?.alwaysAllow || [];
-  if (alwaysAllow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
+  if (!zone && alwaysAllow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
 
   if (zone) {
-    const verdict = inZone({ ville: location, lat: job?.lat, lon: job?.lon }, zone);
-    if (verdict === "oui") return true;
-    if (verdict === "non") {
-      const allow = filters?.allow || [];
-      if (allow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
-      return false;
-    }
-    if (filters?.allow && filters.allow.length > 0) {
-      return filters.allow.some((a) => a && matchesKeyword(fullLoc, a));
-    }
-    return true;
+    // Zone de trajet active : elle seule décide (la liste "allow" ne peut plus la contourner).
+    return acceptInZone({ ville: location, lat: job?.lat, lon: job?.lon, texte: title }, zone);
   }
 
   const allow = filters?.allow || [];

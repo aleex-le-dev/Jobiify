@@ -22,6 +22,9 @@ export async function GET() {
       FRANCETRAVAIL_CLIENT_ID: mask(env.FRANCETRAVAIL_CLIENT_ID),
       FRANCETRAVAIL_CLIENT_SECRET: mask(env.FRANCETRAVAIL_CLIENT_SECRET),
       JOOBLE_API_KEY: mask(env.JOOBLE_API_KEY),
+      ADZUNA_APP_ID: mask(env.ADZUNA_APP_ID),
+      ADZUNA_APP_KEY: mask(env.ADZUNA_APP_KEY),
+      CAREERJET_AFFID: mask(env.CAREERJET_AFFID),
     },
     apis: getApisStatus(),
   });

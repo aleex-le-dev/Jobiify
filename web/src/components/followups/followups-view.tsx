@@ -240,7 +240,7 @@ export function FollowupsView() {
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl tracking-tight text-landing flex items-center gap-2.5">
-            <span>{isFr ? "Suivi des relances" : "Follow-up Tracker"}</span>
+            <span>{isFr ? "Relances à envoyer" : "Follow-ups to send"}</span>
             {meta && (
               <span
                 className={cn(
@@ -479,7 +479,7 @@ function FollowupRow({
             type="button"
             onClick={onToggle}
             aria-expanded={expanded}
-            aria-label={`${expanded ? "Hide" : "Show"} follow-up history for ${e.company}`}
+            aria-label={`${expanded ? "Masquer" : "Afficher"} l'historique des relances pour ${e.company}`}
             className="rounded p-1 text-faint transition hover:text-foreground"
           >
             <Chevron className="size-4" />
@@ -508,7 +508,7 @@ function FollowupRow({
         <td className="px-2.5 py-3">
           <Badge
             tone={urgencyTone(e.urgency)}
-            title="Urgency is calculated from status, follow-up history, and the next follow-up date"
+            title="L'urgence est calculée à partir du statut, de l'historique des relances et de la prochaine date de relance"
           >
             {e.urgency}
           </Badge>
@@ -525,7 +525,7 @@ function FollowupRow({
           {e.nextOverride && (
             <span
               className="ml-1.5 inline-flex align-[-1px]"
-              title={`Pinned to ${e.nextOverride} — cleared when you log a follow-up`}
+              title={`Épinglée au ${e.nextOverride} — retirée dès que vous enregistrez une relance`}
               aria-label="Pinned manually"
             >
               <Pin className="size-3 text-brand" />
@@ -601,7 +601,7 @@ function HistoryPanel({ entry: e, isFr, onRemove }: { entry: CadenceEntry; isFr?
                     type="button"
                     onClick={() => onRemove(f.num!)}
                     title={isFr ? "Supprimer cette relance enregistrée" : "Remove this logged follow-up (added by mistake?)"}
-                    aria-label={`Remove follow-up logged ${f.date}`}
+                    aria-label={`Supprimer la relance enregistrée le ${f.date}`}
                     className="rounded p-0.5 text-faint opacity-0 transition group-hover/item:opacity-100 hover:text-red-500 focus-visible:opacity-100"
                   >
                     <Trash2 className="size-3.5" />

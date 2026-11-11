@@ -63,12 +63,7 @@ const rss = (title, link) =>
   `<description>Location: Remote</description></item></channel></rss>`;
 
 const rssProviders = [
-  ['jobspresso.mjs', 'parseJobspressoFeed', 'https://jobspresso.co/job/x/'],
-  ['higheredjobs.mjs', 'parseHigherEdJobsFeed', 'https://www.higheredjobs.com/details.cfm?JobCode=1'],
-  ['nodesk.mjs', 'parseNodeskFeed', 'https://nodesk.co/remote-jobs/x/'],
-  ['larajobs.mjs', 'parseLarajobsFeed', 'https://larajobs.com/job/1'],
   ['teamtailor.mjs', 'parseTeamtailorFeed', 'https://x.teamtailor.com/jobs/1'],
-  ['weworkremotely.mjs', 'parseWwrFeed', 'https://weworkremotely.com/remote-jobs/x'],
 ];
 // Every (label, getTitle) pair checked above, reused by the decode-equivalence
 // pass at the bottom so it covers the same set without re-deriving it.
@@ -173,8 +168,7 @@ for (const [label, getTitle] of checked) {
   // and so does not match either.
 
   const MIGRATED = [
-    'jobspresso.mjs', 'higheredjobs.mjs', 'nodesk.mjs', 'larajobs.mjs',
-    'personio.mjs', 'teamtailor.mjs', 'weworkremotely.mjs',
+    'personio.mjs', 'teamtailor.mjs',
   ];
 
   // The classification lives in one function so the POSITIVE CONTROL below can

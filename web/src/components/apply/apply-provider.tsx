@@ -1,5 +1,6 @@
 "use client";
 
+import { fr } from "@/lib/fr-system";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ApplyField } from "@/lib/apply/extract";
 import type { ApplyIssue, DriveStep } from "@/lib/apply/issue";
@@ -111,7 +112,7 @@ export function ApplyProvider({ children }: { children: React.ReactNode }) {
       const r = await fetch("/api/apply/drive", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: id, cliId: cliId(), goal: "reach" }) });
       if (generation.current !== gen) return; // left mid-drive
       if (!r.body) {
-        setError("The agent couldn't start.");
+        setError("L'agent n'a pas pu démarrer.");
         setStatus("error");
         return;
       }
@@ -151,12 +152,12 @@ export function ApplyProvider({ children }: { children: React.ReactNode }) {
       }
       if (generation.current !== gen) return; // left mid-drive
       if (!finished) {
-        setError("The agent stopped before reaching a form.");
+        setError("L'agent s'est arrêté avant d'atteindre le formulaire.");
         setStatus("error");
       }
     } catch (e) {
       if (generation.current !== gen) return; // left mid-drive
-      setError(`The agent couldn't reach the form: ${e instanceof Error ? e.message : "stream error"}.`);
+      setError(`L'agent n'a pas pu atteindre le formulaire : ${e instanceof Error ? e.message : "erreur de flux"}.`);
       setStatus("error");
     }
   }, []);
@@ -196,7 +197,7 @@ export function ApplyProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       if (d.error) {
-        setError(d.error);
+        setError(fr(d.error));
         setStatus("error");
         return;
       }
@@ -215,7 +216,7 @@ export function ApplyProvider({ children }: { children: React.ReactNode }) {
       setStatus("ready");
     } catch {
       if (generation.current !== gen) return; // left while it was opening
-      setError("Could not open the form.");
+      setError("Impossible d'ouvrir le formulaire.");
       setStatus("error");
     }
   }, []);
@@ -224,7 +225,7 @@ export function ApplyProvider({ children }: { children: React.ReactNode }) {
     if (!sessionId.current) return;
     const gen = generation.current;
     if (!cliId()) {
-      setError("Configure a CLI in Config first, then pre-fill from your CV.");
+      setError("Aucun outil IA disponible : installez Claude Code (il est détecté automatiquement), puis pré-remplissez depuis votre CV.");
       return;
     }
     setStatus("prefilling");
@@ -246,7 +247,7 @@ export function ApplyProvider({ children }: { children: React.ReactNode }) {
       const r = await fetch("/api/apply/prefill", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: sessionId.current, cliId: cliId(), company: companyRef.current, application: nRef.current }) });
       if (generation.current !== gen) return; // left mid-prefill
       if (!r.body) {
-        setError("Couldn't pre-fill — no response stream.");
+        setError("Pré-remplissage impossible — aucune réponse reçue.");
         setStatus("ready");
         return;
       }
@@ -276,8 +277,8 @@ export function ApplyProvider({ children }: { children: React.ReactNode }) {
           } else if (ev.t === "done") {
             got = true;
             applyAnswers(ev.answers ?? {});
-            if ((ev.count ?? 0) === 0) setError("The planner returned 0 answers — see the diagnostics log below.");
-            else if (ev.truncated) setError("The planner was cut off — some fields were recovered, others may be blank. See diagnostics.");
+            if ((ev.count ?? 0) === 0) setError("Aucune réponse proposée — consultez le journal de diagnostic ci-dessous.");
+            else if (ev.truncated) setError("La préparation a été interrompue — certains champs sont remplis, d'autres peuvent être vides. Voir le diagnostic.");
           } else if (ev.t === "error") {
             sawError = true;
             setError(ev.m ? `Couldn't pre-fill: ${ev.m}` : "Couldn't pre-fill from your CV.");
@@ -286,11 +287,11 @@ export function ApplyProvider({ children }: { children: React.ReactNode }) {
         }
       }
       if (generation.current !== gen) return; // left mid-prefill
-      if (!got && !sawError) setError("Pre-fill ended without answers — see the diagnostics log below.");
+      if (!got && !sawError) setError("Le pré-remplissage s'est terminé sans réponse — consultez le journal de diagnostic ci-dessous.");
       setStatus("ready");
     } catch (e) {
       if (generation.current !== gen) return; // left mid-prefill
-      setError(`Couldn't pre-fill from your CV: ${e instanceof Error ? e.message : "stream error"}. See diagnostics.`);
+      setError(`Pré-remplissage depuis votre CV impossible : ${e instanceof Error ? e.message : "erreur de flux"}. Voir le diagnostic.`);
       setStatus("ready");
     }
   }, []);
@@ -325,7 +326,7 @@ export function ApplyProvider({ children }: { children: React.ReactNode }) {
       // session the user has already walked away from.
       if (generation.current !== gen) return; // left mid-fill
       if (d.error) {
-        setError(d.error);
+        setError(fr(d.error));
         setStatus("error");
         return;
       }
@@ -337,7 +338,7 @@ export function ApplyProvider({ children }: { children: React.ReactNode }) {
           return [...prev, ...(d.issues as ApplyIssue[]).filter((i) => !seen.has(i.message))];
         });
       }
-      if (d.navigated) setError("Heads up: the form's page changed during fill — review it carefully before submitting (career-ops never submits for you).");
+      if (d.navigated) setError("Attention : la page du formulaire a changé pendant le remplissage — vérifiez-la avant d'envoyer (Jobiify n'envoie jamais à votre place).");
       setStatus("done");
       // ESCALATION ("si no va, full agente"): if deterministic fill clearly
       // didn't land (most fields failed / mismatched), let the agent fill it.
@@ -349,7 +350,7 @@ export function ApplyProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {
       if (generation.current !== gen) return; // left mid-fill
-      setError("Fill failed.");
+      setError("Le remplissage a échoué.");
       setStatus("error");
     }
   }, [answers, fields]);
@@ -383,7 +384,7 @@ export function ApplyProvider({ children }: { children: React.ReactNode }) {
       setStatus(outcome.status);
     } catch (e) {
       if (controller.signal.aborted || generation.current !== gen) return; // left mid-fill
-      setError(`The agent couldn't fill the form: ${e instanceof Error ? e.message : "stream error"}. Check the real form before trying again.`);
+      setError(`L'agent n'a pas pu remplir le formulaire : ${e instanceof Error ? e.message : "erreur de flux"}. Vérifiez le vrai formulaire avant de réessayer.`);
       setStatus("ready");
     }
   }, []);

@@ -49,6 +49,8 @@ export function getApisStatus(): ApiInfo[] {
 
   // 4. Jooble
   const hasJooble = Boolean(env.JOOBLE_API_KEY?.trim());
+  const hasAdzuna = Boolean(env.ADZUNA_APP_ID?.trim() && env.ADZUNA_APP_KEY?.trim());
+  const hasCareerjet = Boolean(env.CAREERJET_AFFID?.trim());
 
   const list: ApiInfo[] = [
     {
@@ -78,7 +80,7 @@ export function getApisStatus(): ApiInfo[] {
       category: "Gouvernement & Open Data",
       status: hasFt ? "configured" : "unconfigured",
       detail: hasFt
-        ? "Clés API actives dans .env · Synchronisation Pas-de-Calais activée"
+        ? "Clés API actives dans .env · Recherche par rayon autour de Lières (62 + 59)"
         : "Non configuré · Clés 100% gratuites sur francetravail.io (Espace Développeurs)",
       free: true,
       docUrl: "https://francetravail.io",
@@ -110,9 +112,35 @@ export function getApisStatus(): ApiInfo[] {
       envKeys: ["JOOBLE_API_KEY"],
     },
     {
+      id: "adzuna",
+      name: "Adzuna API (agrégateur France)",
+      description: "Job boards, intérim et sites carrières indexés, recherche par rayon autour de Lillers",
+      category: "Agrégateurs & PME",
+      status: hasAdzuna ? "configured" : "unconfigured",
+      detail: hasAdzuna
+        ? "Clés API actives dans .env · Recherche par rayon autour de Lillers"
+        : "Optionnel · Clés gratuites sur developer.adzuna.com",
+      free: true,
+      docUrl: "https://developer.adzuna.com",
+      envKeys: ["ADZUNA_APP_ID", "ADZUNA_APP_KEY"],
+    },
+    {
+      id: "careerjet",
+      name: "Careerjet / Optioncarrière API",
+      description: "Agrégateur de milliers de sites d'emploi et d'intérim, refiltré sur ta zone de trajet",
+      category: "Agrégateurs & PME",
+      status: hasCareerjet ? "configured" : "unconfigured",
+      detail: hasCareerjet
+        ? "affid actif dans .env · Recherche Béthune / Lillers / Lens"
+        : "Optionnel · Identifiant partenaire gratuit sur careerjet.fr",
+      free: true,
+      docUrl: "https://www.careerjet.fr/partenaires/api/",
+      envKeys: ["CAREERJET_AFFID"],
+    },
+    {
       id: "ats-networks",
-      name: "Réseaux ATS Publics (Workday, Greenhouse, Lever, Ashby)",
-      description: "Moteurs de détection inversée sur les serveurs carrières des grandes entreprises",
+      name: "Employeurs régionaux & ATS publics (SmartRecruiters, Teamtailor, Workday…)",
+      description: "Sites carrières des employeurs du Nord-Pas-de-Calais suivis dans portals.yml + Workday",
       category: "Réseaux ATS",
       status: "live",
       detail: "Actif · 0 token LLM consommé (reverse discovery native)",

@@ -94,7 +94,7 @@ async function main() {
   const args = process.argv.slice(2);
   validateFlags(args, ['--portals', '--concurrency', '--help', '-h'],
     'Usage: node portal-live.mjs [--portals <file>] [--concurrency <n>]',
-    { valueFlags: ['--portals', '--concurrency'] });
+    { valueFlags: ['--portals', '--concurrency'], requireOperand: true });
   if (hasFlag(args, '--help') || hasFlag(args, '-h')) {
     console.log('Usage: node portal-live.mjs [--portals <file>] [--concurrency <n>]\nPrints every live posting of portals.yml as JSON (no writes, no dedup, no filters).');
     return;

@@ -104,6 +104,29 @@ const API_FIELDS: Record<
     extraNote:
       "💡 Idéal pour dénicher les offres de cabinets locaux et PME régionales.",
   },
+  adzuna: {
+    targetId: "adzuna",
+    title: "Configuration Adzuna API",
+    description:
+      "Agrégateur gratuit : job boards, agences d'intérim et sites carrières, recherché dans un rayon autour de Lillers.",
+    docUrl: "https://developer.adzuna.com/signup",
+    docLabel: "Créer un compte développeur gratuit sur adzuna.com",
+    fields: [
+      { key: "ADZUNA_APP_ID", label: "Application ID", placeholder: "ex: 1a2b3c4d" },
+      { key: "ADZUNA_APP_KEY", label: "Application Key", placeholder: "ex: 0123456789abcdef0123456789abcdef" },
+    ],
+    extraNote: "💡 Offre gratuite ≈ 250 requêtes/jour ; les résultats sont mis en cache 6 h.",
+  },
+  careerjet: {
+    targetId: "careerjet",
+    title: "Configuration Careerjet / Optioncarrière",
+    description:
+      "API officielle de l'agrégateur Careerjet (Optioncarrière en France) : des milliers de sites d'emploi et d'intérim.",
+    docUrl: "https://www.careerjet.fr/partenaires/api/",
+    docLabel: "Créer un compte partenaire gratuit sur careerjet.fr",
+    fields: [{ key: "CAREERJET_AFFID", label: "Identifiant partenaire (affid)", placeholder: "ex: 0123456789abcdef0123456789abcdef" }],
+    extraNote: "💡 Gratuit. Les résultats sont mis en cache 6 h et refiltrés sur ta zone de trajet.",
+  },
 };
 
 export function ApiConfigModal({ api, onClose, onSuccess }: ApiConfigModalProps) {

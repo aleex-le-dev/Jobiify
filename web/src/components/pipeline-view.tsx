@@ -174,7 +174,7 @@ export function PipelineView({
     if (failed.length > 0) {
       setBulkError(`${failed.length} not saved: ${failed.map((f) => `#${f.n} (${f.error})`).join(", ")}`);
     }
-    setAnnouncement(`${saved.length} application${saved.length === 1 ? "" : "s"} set to ${bulkStatus}.`);
+    setAnnouncement(`${saved.length} candidature${saved.length === 1 ? "" : "s"} passée${saved.length === 1 ? "" : "s"} en ${bulkStatus}.`);
     startTransition(() => router.refresh());
   }
 
@@ -182,7 +182,7 @@ export function PipelineView({
     <PageFrame>
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl tracking-tight text-landing">{isFr ? "Candidatures & Ma sélection" : "Pipeline"}</h1>
+          <h1 className="font-display text-2xl tracking-tight text-landing">{isFr ? "Mes candidatures" : "My applications"}</h1>
           <p className="mt-1 text-sm text-muted">
             <span className="tabular-nums">{inboxCount}</span> {isFr ? "dans ma sélection" : "in inbox"} ·{" "}
             <span className="tabular-nums">{visibleApplications.length}</span> {isFr ? "suivies" : "tracked"}
@@ -254,7 +254,7 @@ export function PipelineView({
             {selectedRows.length} {isFr ? "sélectionné(s)" : "selected"}
           </span>
           <select
-            aria-label="Status for selected applications"
+            aria-label="Statut des candidatures sélectionnées"
             value={bulkStatus}
             onChange={(e) => setBulkStatus(e.target.value)}
             disabled={bulkBusy}
@@ -293,7 +293,7 @@ export function PipelineView({
         <>
           {inbox === null ? (
             <div role="status" className="mt-4 overflow-x-auto rounded-2xl border border-border">
-              <span className="sr-only">Loading inbox…</span>
+              <span className="sr-only">Chargement de votre sélection…</span>
               <table aria-hidden="true" className="w-full min-w-176 text-sm">
                 <tbody className="divide-y divide-border">
                   <PipelineTableRowsSkeleton />
@@ -320,7 +320,7 @@ export function PipelineView({
                 <th className="w-8 px-3 py-2.5">
                   <input
                     type="checkbox"
-                    aria-label="Select all shown applications"
+                    aria-label="Sélectionner toutes les candidatures affichées"
                     checked={allSelected}
                     onChange={() => setSelected(allSelected ? new Set() : new Set(filteredKeys))}
                   />
@@ -359,7 +359,7 @@ export function PipelineView({
                     <td className="w-8 px-3 py-3">
                       <input
                         type="checkbox"
-                        aria-label={`Select ${company.label}, ${r.role} (#${r.n})`}
+                        aria-label={`Sélectionner ${company.label}, ${r.role} (n°${r.n})`}
                         checked={selected.has(key)}
                         onChange={() => toggleRow(key)}
                       />
@@ -408,7 +408,7 @@ export function PipelineView({
                         if (tab !== "ALL" && !canonStatus(status).includes(tab) && (restoreFocus || focusedRow?.dataset.applicationKey === key)) {
                           activeTab.current?.focus();
                         }
-                        setAnnouncement(`Application #${r.n} status saved as ${status}.`);
+                        setAnnouncement(`Statut de la candidature n°${r.n} enregistré : ${status}.`);
                         startTransition(() => {
                           showSavedStatus({ key, status });
                           router.refresh();
@@ -451,7 +451,7 @@ function InboxEmpty({ tracked }: { tracked: number }) {
         <span className="size-2.5 rounded-full bg-foreground/15" aria-hidden="true" />
         <span className="size-2.5 rounded-full bg-foreground/15" aria-hidden="true" />
         <span className="size-2.5 rounded-full bg-foreground/15" aria-hidden="true" />
-        <span className="ml-3 font-mono text-xs tracking-wide text-muted">Jobiify · inbox</span>
+        <span className="ml-3 font-mono text-xs tracking-wide text-muted">Jobiify · ma sélection</span>
       </div>
       <div className="px-6 py-10 text-center">
         <p className="font-display text-lg">

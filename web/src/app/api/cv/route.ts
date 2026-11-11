@@ -4,6 +4,7 @@ import path from "node:path";
 import { careerOpsRoot } from "@/lib/career-ops";
 import { atomicWriteWithBackup } from "@/lib/core/safe-write";
 import { readJsonObject } from "@/lib/json-body";
+import { getActiveProfile, saveProfileCv } from "@/lib/core/search-profiles";
 
 function cvPath() {
   return path.join(careerOpsRoot(), "cv.md");
@@ -32,6 +33,9 @@ export async function POST(req: Request) {
   // blind-overwrite — snapshot the prior CV to a .bak first, write atomically.
   try {
     const bak = atomicWriteWithBackup(cvPath(), body.content);
+    // Le CV modifié appartient au profil de recherche actif : on le garde en phase.
+    const active = getActiveProfile();
+    if (active) saveProfileCv(active.id, body.content);
     return NextResponse.json({ ok: true, backedUp: !!bak });
   } catch {
     return NextResponse.json({ error: "write failed" }, { status: 500 });

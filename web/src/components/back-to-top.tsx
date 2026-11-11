@@ -32,7 +32,7 @@ export function BackToTop() {
     <button
       type="button"
       onClick={toTop}
-      aria-label="Back to top"
+      aria-label="Revenir en haut"
       aria-hidden={!visible}
       tabIndex={visible ? 0 : -1}
       className={cn(

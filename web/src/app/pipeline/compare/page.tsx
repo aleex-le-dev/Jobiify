@@ -47,11 +47,11 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   return (
     <PageFrame>
       <Link href="/pipeline?tab=all" className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-brand">
-        <ArrowLeft className="size-4" /> Pipeline
+        <ArrowLeft className="size-4" /> Mes candidatures
       </Link>
-      <h1 className="mt-5 font-display text-2xl tracking-tight text-landing">Compare</h1>
+      <h1 className="mt-5 font-display text-2xl tracking-tight text-landing">Comparer</h1>
       {columns.length < 2 ? (
-        <p className="mt-4 text-sm text-muted">Select two or three applications in the Pipeline to compare them.</p>
+        <p className="mt-4 text-sm text-muted">Sélectionnez deux ou trois candidatures dans « Mes candidatures » pour les comparer.</p>
       ) : (
         <div className="mt-6 overflow-x-auto rounded-2xl border border-border">
           <table className="w-full min-w-[40rem] table-fixed text-sm">

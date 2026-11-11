@@ -85,11 +85,11 @@ function FailureNote({ failure }: { failure: PdfFailure }) {
     <Link
       href={`/jobs/${failure.jobId}`}
       role="alert"
-      title="Open the run log"
+      title="Ouvrir le journal d'exécution"
       className="inline-flex max-w-md items-start gap-1 text-xs text-red-700 hover:underline dark:text-red-400"
     >
       <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-      <span>CV not generated. {failure.reason}</span>
+      <span>CV non généré. {failure.reason}</span>
     </Link>
   );
 }

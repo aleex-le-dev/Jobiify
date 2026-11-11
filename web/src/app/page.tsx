@@ -7,6 +7,9 @@ import { scoreNum, parseReport } from "@/lib/format";
 import { OnboardingBanner } from "@/components/onboarding-banner";
 import { FirstRunHome } from "@/components/home/first-run-home";
 import { TodayDashboard } from "@/components/home/today-dashboard";
+import { listProfiles } from "@/lib/core/search-profiles";
+import { getApisStatus } from "@/lib/core/api-status";
+import type { SourceStatus } from "@/components/home/profile-overview";
 
 export const dynamic = "force-dynamic"; // always read fresh local files at request time (never at build — CI has no user data)
 
@@ -27,10 +30,33 @@ export default function Home() {
     const tier = parseReport(content).legitimacy;
     if (tier) legitimacy[app.n] = tier;
   }
+  // Profil de recherche actif + état des sources : le contexte de la recherche du jour.
+  let profiles: ReturnType<typeof listProfiles> = { active: null, profiles: [], summaries: {} };
+  let sources: SourceStatus[] = [];
+  try {
+    profiles = listProfiles();
+  } catch {
+    /* pas de profils lisibles : la carte propose d'en créer un */
+  }
+  try {
+    sources = getApisStatus().map(({ id, name, status, free }) => ({ id, name, status, free }));
+  } catch {
+    /* statut des sources indisponible : la liste reste vide */
+  }
   return (
     <>
       {onboardingNeeded && <OnboardingBanner />}
-      <TodayDashboard applications={applications} reasons={reasons} legitimacy={legitimacy} inbox={inbox} inBetween={phase === "in-between"} />
+      <TodayDashboard
+        applications={applications}
+        reasons={reasons}
+        legitimacy={legitimacy}
+        inbox={inbox}
+        inBetween={phase === "in-between"}
+        profiles={profiles.profiles}
+        activeProfileId={profiles.active}
+        summaries={profiles.summaries}
+        sources={sources}
+      />
     </>
   );
 }

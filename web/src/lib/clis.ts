@@ -100,7 +100,32 @@ function searchDirs(): string[] {
     );
   }
   const fromPath = (process.env.PATH || "").split(path.delimiter).filter(Boolean);
-  return [...new Set([...fromPath, ...extra])];
+  return [...new Set([...fromPath, ...extra, ...ideBundledClaudeDirs(home)])];
+}
+
+/**
+ * Claude Code installé via une extension d'IDE (VS Code, Cursor, Windsurf,
+ * Antigravity…) embarque son propre exécutable, sans l'ajouter au PATH :
+ *   ~/.{ide}/extensions/anthropic.claude-code-{version}-{platform}/resources/native-binary/
+ * On le détecte automatiquement (version la plus récente d'abord), pour que
+ * l'utilisateur n'ait rien à configurer à la main.
+ */
+function ideBundledClaudeDirs(home: string): string[] {
+  const ides = [".vscode", ".vscode-insiders", ".cursor", ".windsurf", ".antigravity", ".antigravity-ide", ".vscode-oss", ".vscodium"];
+  const dirs: string[] = [];
+  for (const ide of ides) {
+    const extRoot = path.join(home, ide, "extensions");
+    let entries: string[] = [];
+    try {
+      entries = fs.readdirSync(extRoot).filter((e) => e.startsWith("anthropic.claude-code-"));
+    } catch {
+      continue;
+    }
+    entries
+      .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
+      .forEach((e) => dirs.push(path.join(extRoot, e, "resources", "native-binary")));
+  }
+  return dirs;
 }
 
 // On Windows, executables carry an extension (claude.exe, claude.cmd, ...).
@@ -168,6 +193,14 @@ export type CliResolution = { spec: CliSpec; binPath: string; substitutedFrom: s
 export function resolveCliOrFallback(id: string): CliResolution | null {
   const direct = resolveCli(id);
   if (direct) return { ...direct, substitutedFrom: null };
+  // Aucun outil choisi : sélection automatique, Claude Code d'abord (il sait lire
+  // les PDF / Word), sinon le premier outil installé. Rien à configurer à la main.
+  if (!id) {
+    const installed = installedCliIds(detectClis());
+    const auto = installed.includes("claude") ? "claude" : installed[0];
+    const r = auto ? resolveCli(auto) : null;
+    return r ? { ...r, substitutedFrom: null } : null;
+  }
   const pick = pickUsableCli(id, detectClis());
   if (!pick.id) return null;
   const fallback = resolveCli(pick.id);
@@ -177,14 +210,14 @@ export function resolveCliOrFallback(id: string): CliResolution | null {
 /** The notice a route shows when it ran a different CLI than the one it was sent. */
 export function cliSubstitutionNotice(r: CliResolution): string | null {
   if (!r.substitutedFrom) return null;
-  return `Saved CLI '${r.substitutedFrom}' is not installed — using ${r.spec.name} instead. Pick one in Config to make this permanent.`;
+  return `L'outil enregistré « ${r.substitutedFrom} » n'est pas installé — ${r.spec.name} est utilisé à la place. Choisissez-en un dans Paramètres & outil IA pour le garder.`;
 }
 
 /** The 404 body when no CLI can be resolved: which CLIs ARE installed, and where to choose. */
 export function cliUnavailableError(id: string): { error: string; installed: string[] } {
   const installed = installedCliIds(detectClis());
   const error = installed.length
-    ? `CLI '${id}' not found on this machine. Installed: ${installed.join(", ")} — choose one in Config.`
-    : `CLI '${id}' not found on this machine, and no supported CLI is installed. Install one, then choose it in Config.`;
+    ? `Outil IA « ${id || "automatique"} » introuvable sur cet ordinateur. Installés : ${installed.join(", ")} — choisissez-en un dans Paramètres & outil IA.`
+    : `Aucun outil IA compatible n'est installé sur cet ordinateur. Installez Claude Code (extension VS Code ou CLI) : il sera détecté automatiquement.`;
   return { error, installed };
 }

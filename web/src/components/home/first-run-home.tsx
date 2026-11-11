@@ -1,6 +1,6 @@
 "use client";
 
-import { instrumentSerif } from "@/lib/fonts";
+import { displayFont } from "@/lib/fonts";
 import { HeroGlow } from "@/components/hero-glow";
 import { CvIngest } from "@/components/cv/cv-ingest";
 import { OnboardingProgress } from "@/components/home/onboarding-progress";
@@ -27,7 +27,7 @@ export function FirstRunHome() {
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
             <span className="text-faint">//</span> {isFr ? "local-first · votre machine" : "local-first · your machine"}
           </p>
-          <h1 className={`${instrumentSerif.className} mt-3 text-4xl leading-[1.05] text-landing md:text-5xl`}>
+          <h1 className={`${displayFont.className} mt-3 text-4xl leading-[1.05] text-landing md:text-5xl`}>
             {isFr
               ? "Déposez votre CV. Découvrez qui recrute en 60 secondes."
               : "Drop your CV. See who's hiring you in 60 seconds."}

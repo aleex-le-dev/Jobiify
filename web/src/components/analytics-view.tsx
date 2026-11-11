@@ -59,7 +59,7 @@ export function AnalyticsShell({ total, view, children }: {
             {isFr ? "Opérations / Statistiques" : "Operations / Analytics"}
           </p>
           <h1 className="mt-2 font-display text-3xl tracking-tight text-landing sm:text-4xl">
-            {isFr ? "Analyse de recherche" : "Search intelligence"}
+            {isFr ? "Bilan & statistiques" : "Reports & analytics"}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
             {isFr

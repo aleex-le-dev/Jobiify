@@ -1,35 +1,39 @@
 import localFont from "next/font/local";
 
-// Body / UI — Inter, same as the career-ops-docs home. The latin variable
-// subset is vendored so an offline production build never contacts Google.
-export const inter = localFont({
+// Identité Jobiify « Anthracite & Jade ». Toutes les polices sont embarquées en
+// local (voir src/assets/fonts/README.md) : aucun appel réseau au build ni à l'usage.
+
+// Interface / texte courant — Hanken Grotesk : une grotesque nette et dense,
+// très lisible en petite taille (tableaux, formulaires, listes d'offres).
+export const uiFont = localFont({
   src: [{
-    path: "../assets/fonts/inter/Inter-Latin-Variable.woff2",
+    path: "../assets/fonts/hanken-grotesk/hanken-grotesk-latin-wght-normal.woff2",
     weight: "100 900",
     style: "normal",
   }],
-  variable: "--font-inter",
+  variable: "--font-ui",
   display: "swap",
 });
 
-// Editorial display — Instrument Serif. Regular and italic mirror the docs
-// typography while remaining fully local at build and runtime.
-export const instrumentSerif = localFont({
+// Titres — Bricolage Grotesque : du caractère pour les titres de pages et de
+// cartes, sans perdre l'aspect logiciel professionnel.
+export const displayFont = localFont({
   src: [{
-    path: "../assets/fonts/instrument-serif/InstrumentSerif-Latin-Regular.woff2",
-    weight: "400",
+    path: "../assets/fonts/bricolage-grotesque/bricolage-grotesque-latin-wght-normal.woff2",
+    weight: "200 800",
     style: "normal",
   }],
-  variable: "--font-instrument-serif",
+  variable: "--font-display-face",
   display: "swap",
 });
 
-export const instrumentSerifItalic = localFont({
+// Chiffres, compteurs, code — JetBrains Mono.
+export const monoFont = localFont({
   src: [{
-    path: "../assets/fonts/instrument-serif/InstrumentSerif-Latin-Italic.woff2",
-    weight: "400",
-    style: "italic",
+    path: "../assets/fonts/jetbrains-mono/jetbrains-mono-latin-wght-normal.woff2",
+    weight: "100 800",
+    style: "normal",
   }],
-  variable: "--font-instrument-serif-italic",
+  variable: "--font-mono-face",
   display: "swap",
 });

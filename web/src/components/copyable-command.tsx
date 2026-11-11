@@ -43,7 +43,7 @@ export function CopyableCommand({
           copied ? "opacity-100" : "opacity-0",
         )}
       >
-        Copied
+        Copié
       </span>
       <Button
         variant="ghost"

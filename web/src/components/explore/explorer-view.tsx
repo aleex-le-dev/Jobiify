@@ -4,12 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Compass, ChevronDown, RotateCcw, AlertTriangle, Sparkles, Settings, Trash2, Clock, Coins } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import { instrumentSerif } from "@/lib/fonts";
+import { displayFont } from "@/lib/fonts";
 import type { Application, InboxJob } from "@/lib/career-ops";
 import { normalizeTextKey } from "@/lib/core/normalize-text-key.mjs";
 import { paramsToFilters, paramsToAi, RECENCY_FR, RECENCY_EN, type ExploreFilters } from "@/lib/explore";
 import { isOfferWithinSinceDays } from "@/lib/format";
-import { FilterBuilder } from "./filter-builder";
+import { ProfileSwitcher } from "./profile-switcher";
 import { DiscoveringState } from "./discovering-state";
 import { AiHuntView } from "./ai-hunt-view";
 import { ExploreModeToggle } from "./explore-mode-toggle";
@@ -52,6 +52,10 @@ export function ExplorerView({
 
   const inited = useRef(false);
   const [refineOpen, setRefineOpen] = useState(false);
+  // Profil actif au chargement (seed.seededFrom porte « profil « Nom » »).
+  const [profileName, setProfileName] = useState<string | null>(
+    () => seed.seededFrom.map((x) => x.match(/^profil « (.+) »$/)?.[1]).find(Boolean) ?? null,
+  );
   const [cli, setCli] = useState<{ id: string | null; name?: string }>({ id: null });
   const [firstRun, setFirstRun] = useState(false);
 
@@ -172,10 +176,7 @@ export function ExplorerView({
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2.5">
             <Compass className="size-6 text-brand" />
-            <h1 className={`${instrumentSerif.className} text-3xl text-foreground`}>{isFr ? "Explorer" : "Explore"}</h1>
-            <span className="rounded-full border border-brand/30 bg-brand-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-text">
-              {isFr ? "Nouveau" : "New"}
-            </span>
+            <h1 className={`${displayFont.className} text-3xl text-foreground`}>{isFr ? "Rechercher des offres" : "Search jobs"}</h1>
           </div>
           <div className="w-full sm:ml-auto sm:w-auto">
             <ExploreModeToggle mode={mode} onChange={setMode} cliConfigured={!!cli.id} />
@@ -240,6 +241,7 @@ export function ExplorerView({
                 >
                   <Compass className="size-4 text-brand" />
                   <span>{isFr ? "Affiner la recherche" : "Refine search"}</span>
+                  {profileName && <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-semibold text-brand">{profileName}</span>}
                   <ChevronDown className={cn("size-4 text-muted transition-transform duration-200", refineOpen && "rotate-180")} />
                 </button>
 
@@ -296,11 +298,11 @@ export function ExplorerView({
 
             {refineOpen && (
               <div className="space-y-4 rounded-xl border border-border bg-surface/30 p-4">
-                <FilterBuilder filters={filters} onChange={setFilters} seededFrom={seed.seededFrom} />
+                <ProfileSwitcher onApply={setFilters} onActiveName={setProfileName} />
                 <DiscoverBar
                   canDiscover={canDiscover}
                   onDiscover={discover}
-                  onClearFilters={clearFilters}
+                  // Pas d'« effacer les filtres » : la recherche suit toujours un profil.
                   onRestoreFilters={clearedSnapshot ? restoreFilters : undefined}
                   label={
                     isFr
@@ -457,7 +459,7 @@ function EmptyState({ tone, title, body, onRerun, rerunLabel }: { tone: "good" |
       <div className={cn("mx-auto grid size-12 place-items-center rounded-full", tone === "good" ? "bg-emerald-500/12 text-emerald-500" : "bg-brand-soft text-brand")}>
         <Sparkles className="size-6" />
       </div>
-      <h2 className={`${instrumentSerif.className} mt-4 text-2xl text-foreground`}>{title}</h2>
+      <h2 className={`${displayFont.className} mt-4 text-2xl text-foreground`}>{title}</h2>
       <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">{body}</p>
       <button onClick={onRerun} className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface/50 px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:border-brand/40 hover:text-brand">
         <RotateCcw className="size-4" /> {rerunLabel}
@@ -525,7 +527,7 @@ function FailedCard({ msg, scannerMissing, onRetry }: { msg: string; scannerMiss
         <div className="mx-auto grid size-12 place-items-center rounded-full bg-brand-soft text-brand">
           <Compass className="size-6" />
         </div>
-        <h2 className={`${instrumentSerif.className} mt-4 text-2xl text-foreground`}>
+        <h2 className={`${displayFont.className} mt-4 text-2xl text-foreground`}>
           {isFr ? "La découverte nécessite la suite complète" : "Discovery needs the full toolkit"}
         </h2>
         <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">
@@ -564,7 +566,7 @@ function BlockedCard() {
       <div className="mx-auto grid size-12 place-items-center rounded-full bg-brand-soft text-brand">
         <Sparkles className="size-6" />
       </div>
-      <h2 className={`${instrumentSerif.className} mt-4 text-2xl text-foreground`}>
+      <h2 className={`${displayFont.className} mt-4 text-2xl text-foreground`}>
         {isFr ? "La recherche IA nécessite une CLI" : "AI search needs a CLI"}
       </h2>
       <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">

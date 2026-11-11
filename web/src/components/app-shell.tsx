@@ -17,8 +17,8 @@ import { FirstScoreView } from "@/components/explore/first-score-view";
 import { BetaBanner } from "@/components/beta/beta-banner";
 import { WorkerPills } from "@/components/jobs/worker-pills";
 import { UsageMeter } from "@/components/usage-meter";
-import { instrumentSerif } from "@/lib/fonts";
-import { visibleNavItems, isActivePath } from "@/lib/nav-items";
+import { displayFont } from "@/lib/fonts";
+import { visibleNavItems, isActivePath, groupedNavItems, NAV_GROUP_LABELS } from "@/lib/nav-items";
 import { useI18n } from "@/components/i18n-provider";
 
 function AppShellContent({ children, followupsEnabled }: { children: React.ReactNode; followupsEnabled: boolean }) {
@@ -30,80 +30,96 @@ function AppShellContent({ children, followupsEnabled }: { children: React.React
     <>
       <MobileNav followupsEnabled={followupsEnabled} />
       <div className="flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-border bg-surface/30 p-4 md:flex">
-          <Link href="/" className="mb-8 flex items-center gap-2.5 px-1">
-            <CoMark size={32} />
-            <span className={`${instrumentSerif.className} relative -top-px text-2xl font-normal tracking-tight text-landing`}>
-              Jobiify
+        {/* Barre latérale anthracite : un « îlot sombre » (classes dark + rail) pour
+            que tout ce qu'elle contient s'affiche en thème sombre, même en clair. */}
+        <aside className="dark rail sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-border px-3 py-4 text-foreground md:flex">
+          <Link href="/" className="mb-6 flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-hover">
+            <CoMark size={34} animated />
+            <span className="flex flex-col leading-none">
+              <span className={`${displayFont.className} text-[19px] font-semibold tracking-tight text-foreground`}>Jobiify</span>
+              <span className="mt-1 text-[11px] font-medium text-faint">{locale === "fr" ? "Emploi local · Artois" : "Local jobs · Artois"}</span>
             </span>
           </Link>
-          <nav className="flex flex-col gap-1">
-            {visibleNavItems(followupsEnabled).map(({ href, key, label, icon: Icon, chip }) => {
-              const active = isActivePath(href, pathname);
-              const translatedLabel = t(key) || label;
-              const translatedChip = chip === "New" ? t("chip_new") : chip;
-              const isFollowups = href === "/followups";
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                    active
-                      ? "bg-brand-soft text-brand-text font-medium"
-                      : "text-muted hover:bg-surface-hover hover:text-foreground",
-                  )}
-                >
-                  <Icon className="size-4 shrink-0" />
-                  <span className="flex items-center gap-1.5 flex-1 min-w-0">
-                    <span className="truncate">{translatedLabel}</span>
-                    {isFollowups && (
+          <nav className="flex flex-col gap-4" aria-label={locale === "fr" ? "Navigation principale" : "Main navigation"}>
+            {groupedNavItems(visibleNavItems(followupsEnabled)).map(({ group, items }) => (
+              <div key={group} className="flex flex-col gap-0.5">
+                <span className="eyebrow mb-1 px-3">{NAV_GROUP_LABELS[group][locale === "fr" ? "fr" : "en"]}</span>
+                {items.map(({ href, key, label, icon: Icon, chip }) => {
+                  const active = isActivePath(href, pathname);
+                  const translatedLabel = t(key) || label;
+                  const translatedChip = chip === "New" ? t("chip_new") : chip;
+                  const isFollowups = href === "/followups";
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] transition-colors",
+                        active
+                          ? "bg-surface-hover font-semibold text-foreground"
+                          : "text-muted hover:bg-surface/80 hover:text-foreground",
+                      )}
+                    >
+                      {/* Indicateur jade de la page active. */}
                       <span
+                        aria-hidden
                         className={cn(
-                          "inline-flex items-center justify-center rounded-full px-1.5 py-0.2 text-[10px] font-bold tabular-nums leading-normal",
-                          dueCount > 0
-                            ? "bg-brand/20 text-brand-text border border-brand/30"
-                            : "bg-surface-hover text-faint border border-border/50",
+                          "nav-indicator absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-brand",
+                          active ? "scale-y-100 opacity-100" : "scale-y-0 opacity-0",
                         )}
-                        title={
-                          dueCount > 0
-                            ? `${dueCount} ${locale === "fr" ? "relance(s) en attente" : "follow-up(s) due"}`
-                            : (locale === "fr" ? "Aucune relance en attente" : "No follow-ups due")
-                        }
-                      >
-                        {dueCount}
+                      />
+                      <Icon className={cn("size-[17px] shrink-0 transition-transform duration-200 group-hover:scale-110", active ? "text-brand" : "text-faint group-hover:text-muted")} />
+                      <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                        <span className="truncate">{translatedLabel}</span>
                       </span>
-                    )}
-                  </span>
-                  {translatedChip && (
-                    <span className="ml-auto rounded-full border border-brand/30 bg-brand-soft px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-brand-text">
-                      {translatedChip}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
+                      {isFollowups && (
+                        <span
+                          className={cn(
+                            "inline-flex min-w-5 items-center justify-center rounded-md px-1.5 py-0.5 font-mono text-[10.5px] font-semibold leading-none",
+                            dueCount > 0 ? "bg-brand text-brand-foreground" : "bg-surface text-faint",
+                          )}
+                          title={
+                            dueCount > 0
+                              ? `${dueCount} ${locale === "fr" ? "relance(s) en attente" : "follow-up(s) due"}`
+                              : (locale === "fr" ? "Aucune relance en attente" : "No follow-ups due")
+                          }
+                        >
+                          {dueCount}
+                        </span>
+                      )}
+                      {translatedChip && (
+                        <span className="rounded-md bg-brand-soft px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-brand-text">
+                          {translatedChip}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
 
           <WorkerPills />
 
-          <div className="mt-auto space-y-3 pb-16 pt-4">
+          <div className="mt-auto space-y-3 border-t border-border pb-16 pt-4">
             <UsageMeter />
 
-            {/* Appearance / Theme */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between px-1">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-faint">{t("appearance")}</span>
+                <span className="eyebrow">{t("appearance")}</span>
                 <span className="font-mono text-[10px] text-faint">{t("theme")}</span>
               </div>
               <ThemeToggle showLabel />
-              <div className="px-1">
-                <span className={`${instrumentSerif.className} text-sm text-faint`}>{t("local_first")}</span>
-              </div>
+              <p className="flex items-center gap-1.5 px-1 text-[11px] text-faint">
+                <span className="size-1.5 rounded-full bg-brand" aria-hidden />
+                {t("local_first")}
+              </p>
             </div>
           </div>
         </aside>
-        <main className="flex-1 overflow-x-hidden">{children}</main>
+        {/* key = chemin : chaque navigation rejoue l'entrée de page. */}
+        <main key={pathname} className="page-enter min-w-0 flex-1 overflow-x-hidden">{children}</main>
         <AssistantConsole />
         <BackToTop />
         <FirstScoreView />

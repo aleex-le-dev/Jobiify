@@ -56,7 +56,7 @@ export default function JobsHistory() {
               <span className="mt-2 block">
                 Vous avez lancé une évaluation depuis votre CLI IA ? Elle apparaît dans le{" "}
                 <Link href="/pipeline?tab=ALL" className="text-foreground underline-offset-2 hover:underline">
-                  Pipeline
+                  Mes candidatures
                 </Link>
                 , pas ici.
               </span>
@@ -67,7 +67,7 @@ export default function JobsHistory() {
               <span className="mt-2 block">
                 Ran an evaluation from your AI CLI? It shows up in{" "}
                 <Link href="/pipeline?tab=ALL" className="text-foreground underline-offset-2 hover:underline">
-                  Pipeline
+                  Mes candidatures
                 </Link>
                 , not here.
               </span>

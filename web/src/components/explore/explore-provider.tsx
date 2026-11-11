@@ -311,7 +311,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
       }
       setMatchCount(acc.length);
       setPhase("revealing");
-      setStatus(`${acc.length} fresh role${acc.length === 1 ? "" : "s"} found — free.`);
+      setStatus(`${acc.length} nouvelle${acc.length === 1 ? "" : "s"} offre${acc.length === 1 ? "" : "s"} trouvée${acc.length === 1 ? "" : "s"} — gratuit.`);
       window.setTimeout(() => {
         if (runs.current.owns(run)) setPhase("results");
       }, 850);
@@ -339,7 +339,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
     const run = runs.current.start();
     runningRef.current = true;
     setPhase("casting");
-    setStatus("Loading fresh matches…");
+    setStatus("Chargement des nouvelles offres…");
     setOffers([]);
     setMatchCount(0);
     setCompaniesScanned(0);
@@ -374,7 +374,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
       setPhase(list.length > 0 ? "results" : "empty-current");
     } catch (e) {
       if (!runs.current.owns(run)) return;
-      setError(e instanceof Error ? e.message : "Couldn't load fresh matches.");
+      setError(e instanceof Error ? e.message : "Impossible de charger les nouvelles offres.");
       setPhase("failed");
     } finally {
       if (runs.current.owns(run)) runningRef.current = false;
@@ -504,7 +504,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
     setAiCost({ searches: 0, candidates: 0, fetches: 0 });
     setError("");
     setScannerMissing(false);
-    setStatus("Casting across the open web…");
+    setStatus("Recherche sur le web en cours…");
     // Same as the scan path: do not replaceState while /api/explore/ai is in
     // flight. The URL is written once the hunt has settled.
 

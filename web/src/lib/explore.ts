@@ -7,11 +7,24 @@
 export type AtsSource = "portals" | "greenhouse" | "lever" | "ashby" | "workday";
 export const ATS_SOURCES: AtsSource[] = ["portals", "workday", "greenhouse", "lever", "ashby"];
 export const ATS_LABEL: Record<AtsSource, string> = {
-  portals: "Portails locaux 62",
-  greenhouse: "Greenhouse",
-  lever: "Lever",
-  ashby: "Ashby",
-  workday: "Workday",
+  portals: "Sources régionales",
+  greenhouse: "Greenhouse (international)",
+  lever: "Lever (international)",
+  ashby: "Ashby (international)",
+  workday: "Grands groupes (Workday)",
+};
+
+/**
+ * Sources proposées pour une recherche. Les bases mondiales Greenhouse / Lever /
+ * Ashby (surtout des entreprises américaines) restent lisibles dans l'historique
+ * mais ne sont plus interrogées : filtrées sur une zone de trajet autour de
+ * Lillers, elles ne trouvaient presque rien et ralentissaient chaque recherche.
+ */
+export const SEARCH_SOURCES: AtsSource[] = ["portals", "workday"];
+/** Détail affiché sous chaque source proposée. */
+export const SOURCE_HINT: Partial<Record<AtsSource, string>> = {
+  portals: "France Travail, Jooble, Adzuna, Careerjet, Welcome to the Jungle, Service Public, vos employeurs suivis et les agences d'intérim",
+  workday: "Sites carrière des grands groupes utilisant Workday (plus lent, peu d'offres locales)",
 };
 
 /** Returns a precise, human-readable source label (e.g. "Service Public (62)", "France Travail") */
@@ -25,13 +38,38 @@ export function offerSourceLabel(offer: DiscoveredOffer, isFr = true): string {
   if (offer.source === "france-travail") {
     return "France Travail";
   }
+  if (offer.source === "careerjet") {
+    return "Careerjet";
+  }
+  if (offer.source === "adzuna") {
+    return "Adzuna";
+  }
+  if (offer.source?.startsWith("jooble")) {
+    return "Jooble";
+  }
   if (offer.source === "la-bonne-boite-pme") {
     return "La Bonne Boîte";
   }
   if (offer.source?.startsWith("wttj")) {
     return "Welcome to the Jungle";
   }
+  // Noms lisibles des sources techniques (portails suivis, historique des scans).
+  const READABLE: Record<string, string> = {
+    "interim-sitemap": isFr ? "Agence d'intérim" : "Temp agency",
+    smartrecruiters: "SmartRecruiters",
+    teamtailor: "Teamtailor",
+    recruitee: "Recruitee",
+    workable: "Workable",
+    successfactors: "SuccessFactors",
+    other: isFr ? "Portail suivi" : "Tracked portal",
+    "whats-new": isFr ? "Portail suivi" : "Tracked portal",
+  };
+  if (offer.source?.startsWith("portal-")) {
+    const id = offer.source.slice("portal-".length);
+    return READABLE[id] ?? ATS_LABEL[id as AtsSource] ?? (isFr ? "Portail suivi" : "Tracked portal");
+  }
   const atsKey = (offer.ats || "").replace(/-full$/, "") as AtsSource;
+  if (READABLE[atsKey]) return READABLE[atsKey];
   return ATS_LABEL[atsKey] ?? offer.ats ?? (isFr ? "Portail local 62" : "Local Portal 62");
 }
 
@@ -81,7 +119,7 @@ export const DEFAULT_FILTERS: ExploreFilters = {
   blockHard: [],
   alwaysAllow: [],
   sinceDays: 1,
-  ats: ["portals", "workday", "greenhouse", "lever", "ashby"],
+  ats: ["portals"],
   limitPerAts: 150,
   commuteMinutes: 30,
   originCity: "Lières",
