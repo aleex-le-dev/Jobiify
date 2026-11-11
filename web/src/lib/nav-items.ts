@@ -1,4 +1,4 @@
-import { LayoutDashboard, Compass, ListChecks, Send, Radar, BarChart3, FileText, Files, Settings, CalendarClock } from "lucide-react";
+import { LayoutDashboard, Compass, ListChecks, Send, Radar, FileText, Files, Settings, CalendarClock, HardHat } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
 // Single source of truth for the app's primary destinations — shared by the
@@ -18,7 +18,7 @@ export type NavGroup = "search" | "applications" | "insights" | "dossier" | "sys
 export const NAV_GROUP_LABELS: Record<NavGroup, { fr: string; en: string }> = {
   search: { fr: "Trouver un emploi", en: "Find a job" },
   applications: { fr: "Postuler & relancer", en: "Apply & follow up" },
-  insights: { fr: "Sources & bilan", en: "Sources & reports" },
+  insights: { fr: "Sources", en: "Sources" },
   dossier: { fr: "Mon dossier candidat", en: "My candidate file" },
   system: { fr: "Réglages", en: "Settings" },
 };
@@ -26,11 +26,11 @@ export const NAV_GROUP_LABELS: Record<NavGroup, { fr: string; en: string }> = {
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Today", key: "nav_today", icon: LayoutDashboard, group: "search" },
   { href: "/explore", label: "Explore", key: "nav_explore", icon: Compass, group: "search" },
+  { href: "/interim", label: "Temp work", key: "nav_interim", icon: HardHat, group: "search" },
   { href: "/scheduled-scans", label: "Scheduled scans", key: "nav_scheduled_scans", icon: CalendarClock, group: "search" },
   { href: "/pipeline", label: "Pipeline", key: "nav_pipeline", icon: ListChecks, group: "applications" },
   { href: "/followups", label: "Follow-ups", key: "nav_followups", icon: Send, group: "applications" },
   { href: "/portals", label: "Portals", key: "nav_portals", icon: Radar, group: "insights" },
-  { href: "/analytics", label: "Analytics", key: "nav_analytics", icon: BarChart3, group: "insights" },
   { href: "/cv", label: "CV", key: "nav_cv", icon: FileText, group: "dossier" },
   { href: "/documents", label: "Documents", key: "nav_documents", icon: Files, group: "dossier" },
   { href: "/config", label: "Config", key: "nav_config", icon: Settings, group: "system" },

@@ -75,7 +75,7 @@ export function ProfileOverview({
 
   useEffect(() => {
     if (!active || active.remoteOnly) return;
-    const qs = new URLSearchParams({ minutes: String(active.commuteMinutes), ville: active.originCity });
+    const qs = new URLSearchParams({ minutes: String(active.commuteMinutes), ville: active.originCity, ...(active.originInsee ? { insee: active.originInsee } : {}) });
     fetch(`/api/explore/zone?${qs}`)
       .then((r) => r.json())
       .then((d) => d.ok && setZone({ count: d.communesCount, km: d.rayonMaxKm }))
@@ -207,7 +207,7 @@ export function ProfileOverview({
           </div>
 
           <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-border pt-4 sm:grid-cols-4">
-            <Fact icon={MapPin} label="Départ" value={active.remoteOnly ? "Télétravail" : active.originCity} />
+            <Fact icon={MapPin} label="Départ" value={active.remoteOnly ? "Télétravail" : `${active.originCity}${active.originPostalCode ? ` (${active.originPostalCode})` : ""}`} />
             <Fact icon={CircleDashed} label="Trajet max." value={active.remoteOnly ? "—" : `${active.commuteMinutes} min`} />
             <Fact
               icon={Layers}

@@ -4,10 +4,63 @@ import { useEffect, useState } from "react";
 import { Gauge, Settings2, Check, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 
+type QuotaWindow = { percent: number; resetsAt: number | null; status: string | null };
 type Usage = {
   window5h: { tokens: number; messages?: number };
   window7d: { tokens: number; messages?: number };
+  /** Quota réel du compte Claude (null si indisponible). */
+  real?: { fiveHour: QuotaWindow | null; sevenDay: QuotaWindow | null } | null;
+  realCheckedAt?: number | null;
 };
+
+/** « dans 2 h 05 », « mar. 14:00 »… */
+function resetLabel(at: number | null): string {
+  if (!at) return "";
+  const ms = at - Date.now();
+  if (ms <= 0) return "réinitialisé";
+  const min = Math.round(ms / 60_000);
+  if (min < 60) return `dans ${min} min`;
+  if (min < 24 * 60) return `dans ${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}`;
+  return new Date(at).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+function RealQuota({ real, checkedAt }: { real: NonNullable<Usage["real"]>; checkedAt: number | null }) {
+  const rows = [
+    { label: "5 h", full: "Session (5 heures glissantes)", w: real.fiveHour },
+    { label: "7 j", full: "Semaine (7 jours glissants)", w: real.sevenDay },
+  ].filter((r) => r.w);
+  const when = checkedAt ? new Date(checkedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
+  return (
+    <div className="space-y-2.5 px-1">
+      {rows.map(({ label, full, w }) => {
+        const pct = Math.min(100, Math.round(w!.percent));
+        return (
+          <div
+            key={label}
+            title={`${full} : ${w!.percent} % du quota de votre compte utilisé${w!.resetsAt ? `
+Réinitialisation : ${new Date(w!.resetsAt).toLocaleString("fr-FR")}` : ""}`}
+            className="cursor-default"
+          >
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="font-medium text-faint">{label}</span>
+              <span className="font-mono text-[10px] font-semibold tabular-nums text-foreground">{pct} %</span>
+            </div>
+            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-surface-hover">
+              <div className={cn("h-full rounded-full transition-all duration-500", tone(pct))} style={{ width: `${Math.max(pct, 2)}%` }} />
+            </div>
+            <div className="mt-0.5 flex items-center justify-between text-[9px] text-faint">
+              <span>Reste {100 - pct} %</span>
+              <span>{resetLabel(w!.resetsAt)}</span>
+            </div>
+          </div>
+        );
+      })}
+      <p className="flex items-center gap-1 text-[9px] text-faint">
+        <span className="live-dot inline-block size-1.5 rounded-full bg-emerald-500" /> Quota réel du compte{when ? ` · mis à jour ${when}` : ""}
+      </p>
+    </div>
+  );
+}
 
 // Budgets par défaut selon le CLI utilisé :
 // - Claude Code compte massivement les cache reads (jusqu'à des dizaines de millions par session).
@@ -107,9 +160,9 @@ export function UsageMeter() {
         </div>
         <div className="flex items-center gap-1.5">
           <span className="font-mono text-[9px] uppercase text-faint">
-            {cli === "claude" ? "Claude" : cli === "codex" ? "Codex" : "IA"}
+            {data?.real ? "Claude" : cli === "claude" ? "Claude" : cli === "codex" ? "Codex" : "IA"}
           </span>
-          <button
+          {!data?.real && <button
             type="button"
             onClick={() => {
               setCustomW7((budget.w7 / 1_000_000).toString());
@@ -119,10 +172,14 @@ export function UsageMeter() {
             className="rounded p-0.5 text-faint hover:bg-surface-hover hover:text-foreground transition-colors"
           >
             <Settings2 className="size-2.5" />
-          </button>
+          </button>}
         </div>
       </div>
 
+      {data?.real ? (
+        <RealQuota real={data.real} checkedAt={data.realCheckedAt ?? null} />
+      ) : (
+      <>
       {showConfig && (
         <div className="mb-2 rounded-md border border-border bg-surface p-2 text-[11px] shadow-sm">
           <div className="mb-1 font-medium text-foreground flex items-center justify-between">
@@ -193,6 +250,9 @@ export function UsageMeter() {
           );
         })}
       </div>
+      <p className="mt-1.5 px-1 text-[9px] leading-tight text-faint">Estimation locale (jetons comptés dans les journaux), le quota réel n'a pas pu être lu.</p>
+      </>
+      )}
     </div>
   );
 }

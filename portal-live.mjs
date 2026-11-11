@@ -19,7 +19,7 @@
  *   node portal-live.mjs --portals f.yml # autre fichier
  *   node portal-live.mjs --concurrency 6
  *
- * Sortie : {"version":"jobiify.portal-live@1","offers":[{company,title,url,location,postedAt,source}],"errors":[{name,error}]}
+ * Sortie : {"version":"jobiify.portal-live@1","offers":[{company,title,url,location,postedAt,source,category?,portal}],"errors":[{name,error}]}
  */
 
 import { existsSync, readFileSync } from 'fs';
@@ -78,6 +78,9 @@ export async function fetchLive(entries, { providers, httpCtx = null, concurrenc
             location: typeof j.location === 'string' ? j.location : '',
             postedAt: iso(j.postedAt),
             source: resolved.provider.id,
+            // Catégorie déclarée dans portals.yml (ex. « interim ») : utilisée par la page Missions d'intérim.
+            ...(typeof entry.category === 'string' ? { category: entry.category } : {}),
+            portal: name,
           });
         }
       } catch (err) {

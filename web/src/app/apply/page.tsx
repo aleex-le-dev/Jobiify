@@ -1,4 +1,3 @@
-import { Send } from "lucide-react";
 import { ApplyView } from "@/components/apply-view";
 import { ApplyBackdropMount } from "@/components/apply/apply-backdrop-mount";
 

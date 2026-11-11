@@ -4,20 +4,16 @@ export type Locale = "fr" | "en";
 export const DEFAULT_LOCALE: Locale = "fr";
 export const LOCALE_STORAGE_KEY = "career-ops:locale";
 
-export const LOCALES: { code: Locale; label: string; flag: string; flagLabel: string }[] = [
-  { code: "fr", label: "Français", flag: "🇫🇷", flagLabel: "Français" },
-];
-
 export const DICTIONARY: Record<Locale, Record<string, string>> = {
   fr: {
     // Navigation
     nav_today: "Tableau de bord",
     nav_explore: "Rechercher des offres",
+    nav_interim: "Missions d'intérim",
     nav_scheduled_scans: "Recherches automatiques",
     nav_pipeline: "Mes candidatures",
     nav_followups: "Relances à envoyer",
     nav_portals: "Sources & clés API",
-    nav_analytics: "Bilan & statistiques",
     nav_cv: "Mes CV & profils",
     nav_documents: "CV PDF & lettres",
     nav_config: "Paramètres & outil IA",
@@ -120,11 +116,11 @@ export const DICTIONARY: Record<Locale, Record<string, string>> = {
     // Navigation
     nav_today: "Dashboard",
     nav_explore: "Search jobs",
+    nav_interim: "Temp work missions",
     nav_scheduled_scans: "Automatic searches",
     nav_pipeline: "My applications",
     nav_followups: "Follow-ups to send",
     nav_portals: "Sources & API keys",
-    nav_analytics: "Reports & analytics",
     nav_cv: "My CVs & profiles",
     nav_documents: "PDF CVs & letters",
     nav_config: "Settings & AI tool",

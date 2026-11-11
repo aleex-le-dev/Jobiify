@@ -98,25 +98,6 @@ const CALL_SITES = [
     probe: 'run',
   },
   {
-    source: 'web/src/app/api/stats/route.ts',
-    script: 'stats.mjs',
-    // NO FLAGS. stats.mjs prints JSON by default and rejects `--json` outright
-    // ("unrecognized flag(s): --json"), unlike every other route here — which is
-    // exactly the drift this file exists to catch, so the empty argv is the
-    // assertion.
-    args: [],
-    probe: 'json-any-exit',
-  },
-  {
-    source: 'web/src/app/api/patterns/route.ts',
-    script: 'analyze-patterns.mjs',
-    // Exits 1 on this one-row fixture, by design: it is under its minimum
-    // sample and says so in a JSON payload the route renders. The contract is
-    // the payload, not the status.
-    args: [],
-    probe: 'json-any-exit',
-  },
-  {
     source: 'web/src/app/api/keyword-match/route.ts',
     script: 'keyword-match.mjs',
     // {{report}} is replaced with the fixture report below. This script takes a

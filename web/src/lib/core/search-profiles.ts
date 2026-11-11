@@ -127,13 +127,28 @@ function sanitize(input: Partial<SearchProfile>, base?: SearchProfile): SearchPr
   const minutes = Number(input.commuteMinutes ?? base?.commuteMinutes ?? 30);
   const since = Number(input.sinceDays ?? base?.sinceDays ?? 14);
   const sources = allowedSources(cleanChips(input.sources ?? base?.sources ?? DEFAULT_SOURCES));
+  // « Lières (62190) » (ancien format) → nom « Lières » + code postal « 62190 ».
+  let originCity = String(input.originCity ?? base?.originCity ?? "Lières").trim().slice(0, 80) || "Lières";
+  let originPostalCode = String(input.originPostalCode ?? base?.originPostalCode ?? "").trim();
+  const inParens = originCity.match(/^(.*?)\s*\((\d{5})\)\s*$/);
+  if (inParens) {
+    originCity = inParens[1].trim() || "Lières";
+    originPostalCode ||= inParens[2];
+  }
+  if (!/^\d{5}$/.test(originPostalCode)) originPostalCode = "";
+  // Une ville saisie sans choix dans la liste ne garde pas l'INSEE d'une autre commune.
+  const cityChanged = input.originCity !== undefined && base && input.originInsee === undefined && originCity !== base.originCity;
+  const rawInsee = String(input.originInsee ?? (cityChanged ? "" : base?.originInsee ?? "")).trim();
+  const originInsee = /^(\d{5}|2[AB]\d{3})$/.test(rawInsee) ? rawInsee : "";
   return {
     id: base?.id || randomUUID(),
     name: String(input.name ?? base?.name ?? (titles[0] || "Nouveau profil")).trim().slice(0, 80) || "Profil",
     titles,
     synonyms: cleanChips(input.synonyms ?? base?.synonyms ?? expandTitles(titles)),
     negative: cleanChips(input.negative ?? base?.negative ?? ["stage", "stagiaire", "alternance", "apprenti"]),
-    originCity: String(input.originCity ?? base?.originCity ?? "Lières").trim().slice(0, 80) || "Lières",
+    originCity,
+    ...(originPostalCode ? { originPostalCode } : {}),
+    ...(originInsee ? { originInsee } : {}),
     commuteMinutes: Number.isFinite(minutes) ? Math.min(120, Math.max(5, Math.round(minutes))) : 30,
     remoteOnly: Boolean(input.remoteOnly ?? base?.remoteOnly ?? false),
     sinceDays: Number.isFinite(since) ? Math.min(90, Math.max(0, Math.round(since))) : 14,
@@ -253,6 +268,7 @@ export function filtersFromProfile(p: SearchProfile, base: ExploreFilters = DEFA
     allow: [],
     alwaysAllow: [],
     originCity: p.originCity,
+    originInsee: p.originInsee,
     commuteMinutes: p.commuteMinutes,
     remoteOnly: p.remoteOnly,
     sinceDays: p.sinceDays,

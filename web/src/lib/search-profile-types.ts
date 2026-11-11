@@ -11,8 +11,12 @@ export interface SearchProfile {
   synonyms: string[];
   /** Mots qui excluent une offre (stage, alternance…) */
   negative: string[];
-  /** Ville de départ pour la zone de trajet */
+  /** Ville de départ pour la zone de trajet (nom seul, ex. « Lières ») */
   originCity: string;
+  /** Code postal de la commune de départ (affichage, ex. « 62190 ») */
+  originPostalCode?: string;
+  /** Code INSEE de la commune de départ : distingue les homonymes */
+  originInsee?: string;
   /** Temps de trajet maximum, en minutes */
   commuteMinutes: number;
   remoteOnly: boolean;

@@ -1,5 +1,5 @@
 import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
-import { formatLocationCity, normalizeDateToIso } from "@/lib/format";
+import { formatLocationCity } from "@/lib/format";
 import { titleFit } from "@/lib/title-fit.mjs";
 import { acceptInZone, type Zone } from "./zone";
 import { ORIGIN, cacheKey, getEnvVar, radiusKm, readCache, searchKeywords, writeCache } from "./local-area";
@@ -230,4 +230,52 @@ export async function loadFranceTravailDiscoveredOffers(
   }
 
   return offers;
+}
+
+export type { FtRawJob };
+
+/**
+ * Missions d'intérim (typeContrat=MIS) autour du point de départ, TOUS métiers.
+ * France Travail reçoit les offres de la plupart des agences (Adecco, Manpower,
+ * Proman, Crit, Start People, Samsic…) : c'est la source la plus complète pour
+ * l'intérim. Pagination jusqu'à 1 500 missions, cache 1 h.
+ */
+export async function fetchFranceTravailInterim(): Promise<FtRawJob[] | null> {
+  const clientId = getEnvVar("FRANCETRAVAIL_CLIENT_ID");
+  const clientSecret = getEnvVar("FRANCETRAVAIL_CLIENT_SECRET");
+  if (!clientId || !clientSecret) return null; // null = clé absente
+
+  const key = `france-travail-interim-${radiusKm()}`;
+  const cached = readCache<FtRawJob>(key, 60 * 60 * 1000);
+  if (cached) return cached;
+
+  const token = await getAccessToken(clientId, clientSecret);
+  if (!token) return [];
+  const all = new Map<string, FtRawJob>();
+  const PAGE = 150;
+  try {
+    for (let start = 0; start < 1500; start += PAGE) {
+      const params = new URLSearchParams({
+        typeContrat: "MIS",
+        commune: ORIGIN.insee,
+        distance: String(Math.max(radiusKm(), 40)),
+        range: `${start}-${start + PAGE - 1}`,
+        sort: "1",
+      });
+      const res = await fetch(`https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search?${params}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+      if (res.status === 204 || !res.ok) break;
+      const data = (await res.json()) as { resultats?: FtRawJob[] };
+      const page = data.resultats || [];
+      for (const item of page) if (item.id && !all.has(item.id)) all.set(item.id, item);
+      if (page.length < PAGE) break;
+      await new Promise((r) => setTimeout(r, 120));
+    }
+  } catch (err) {
+    console.error("France Travail (intérim) search failed:", err);
+  }
+  const jobs = Array.from(all.values());
+  if (jobs.length) writeCache(key, jobs);
+  return jobs;
 }

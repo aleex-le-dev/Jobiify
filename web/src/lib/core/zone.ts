@@ -120,8 +120,22 @@ export async function centreCommune(nom: string, dep = "62"): Promise<[number, n
 }
 
 /** Calcule ou charge depuis le cache la zone isochrone (OpenRouteService ou rayon Haversine) */
-export async function loadZone(minutes = 30, villeDepart = "Lières"): Promise<Zone> {
-  const normVille = norm(villeDepart) || "lieres";
+/** Centre d'une commune par son code INSEE (aucune ambiguïté entre homonymes). */
+async function centreByInsee(insee: string): Promise<[number, number] | null> {
+  try {
+    const res = await fetch(`https://geo.api.gouv.fr/communes/${encodeURIComponent(insee)}?fields=centre`);
+    if (!res.ok) return null;
+    const data = (await res.json()) as { centre?: { coordinates: [number, number] } };
+    return data.centre?.coordinates ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function loadZone(minutes = 30, villeDepart = "Lières", insee?: string): Promise<Zone> {
+  const validInsee = insee && /^(\d{5}|2[AB]\d{3})$/.test(insee) ? insee : "";
+  // Le code INSEE distingue les homonymes (deux « Fleury ») : il fait partie de la clé de cache.
+  const normVille = validInsee || norm(villeDepart.replace(/\(.*?\)/g, "")) || "lieres";
   const cacheDir = path.join(careerOpsRoot(), "data", "cache", "zones");
   const cacheFile = path.join(cacheDir, `zone-${normVille}-${minutes}min.json`);
 
@@ -141,7 +155,7 @@ export async function loadZone(minutes = 30, villeDepart = "Lières"): Promise<Z
 
   // 2. Si pas en cache, calcul complet
   if (!data || !Array.isArray(data.communes) || data.communes.length === 0) {
-    const origin = await centreCommune(villeDepart);
+    const origin = (validInsee && (await centreByInsee(validInsee))) || (await centreCommune(villeDepart.replace(/\s*\(.*?\)\s*/g, "").trim() || "Lières"));
     let polygon: any = null;
     let method: "openrouteservice" | "haversine-fallback" = "haversine-fallback";
 
@@ -180,10 +194,23 @@ export async function loadZone(minutes = 30, villeDepart = "Lières"): Promise<Z
       method = "haversine-fallback";
     }
 
-    // Récupération des communes des départements 62, 59, 80
+    // Communes candidates : Pas-de-Calais, Nord, Somme par défaut. Un départ situé
+    // ailleurs (ou trop près d'une autre limite) charge toute la France, une fois,
+    // le résultat de la zone étant ensuite mis en cache 30 jours.
+    const [olon, olat] = origin;
+    const inNordRegion = olat > 49.6 && olat < 51.15 && olon > 1.3 && olon < 4.3;
+    const departements = inNordRegion ? DEPARTEMENTS : ["__france__"];
     const rawCommunes = (
       await Promise.all(
-        DEPARTEMENTS.map(async (d) => {
+        departements.map(async (d) => {
+          if (d === "__france__") {
+            try {
+              const res = await fetch("https://geo.api.gouv.fr/communes?fields=nom,code,centre,codesPostaux");
+              return res.ok ? ((await res.json()) as Array<{ nom: string; code: string; centre?: { coordinates: [number, number] }; codesPostaux?: string[] }>) : [];
+            } catch {
+              return [];
+            }
+          }
           try {
             const res = await fetch(
               `https://geo.api.gouv.fr/departements/${d}/communes?fields=nom,code,centre,codesPostaux`,

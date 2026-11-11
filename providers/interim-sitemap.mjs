@@ -60,8 +60,40 @@ export function slugify(s) {
 }
 
 /** @param {string} slug */
+// Les adresses d'offres perdent accents et apostrophes (« preparateur », « dexecution ») :
+// on rétablit l'orthographe des mots de métier les plus courants.
+const ACCENTS = new Map(Object.entries({
+  macon: 'maçon', preparateur: 'préparateur', preparatrice: 'préparatrice', electricien: 'électricien',
+  electricienne: 'électricienne', electromecanicien: 'électromécanicien', electrotechnicien: 'électrotechnicien',
+  mecanicien: 'mécanicien', mecanicienne: 'mécanicienne', manoeuvre: 'manœuvre', operateur: 'opérateur',
+  operatrice: 'opératrice', regleur: 'régleur', employe: 'employé', employee: 'employée', agreeur: 'agréeur',
+  receptionnaire: 'réceptionnaire', securite: 'sécurité', qualite: 'qualité', controleur: 'contrôleur',
+  controleuse: 'contrôleuse', ingenieur: 'ingénieur', secretaire: 'secrétaire', comptabilite: 'comptabilité',
+  facade: 'façade', facadier: 'façadier', menuiserie: 'menuiserie', funeraire: 'funéraire', batiment: 'bâtiment',
+  chaudronnier: 'chaudronnier', methodes: 'méthodes', metallurgie: 'métallurgie', metallier: 'métallier',
+  equipe: 'équipe', equipier: 'équipier', equipiere: 'équipière', depanneur: 'dépanneur', vehicule: 'véhicule',
+  vehicules: 'véhicules', polyvalent: 'polyvalent', agroalimentaire: 'agroalimentaire', telephonique: 'téléphonique',
+  teleconseiller: 'téléconseiller', teleconseillere: 'téléconseillère', referent: 'référent', referente: 'référente',
+  generale: 'générale', general: 'général', electrique: 'électrique', electriques: 'électriques', hydraulique: 'hydraulique',
+  premier: 'premier', etancheur: 'étancheur', serrurier: 'serrurier', plaquiste: 'plaquiste', cariste: 'cariste',
+  dexecution: "d'exécution", dentretien: "d'entretien", daccueil: "d'accueil", dusinage: "d'usinage",
+  dequipe: "d'équipe", dexploitation: "d'exploitation", datelier: "d'atelier", dassemblage: "d'assemblage",
+  dimpression: "d'impression", demballage: "d'emballage", dentrepot: "d'entrepôt",
+  entrepot: 'entrepôt', ligne: 'ligne', commandes: 'commandes', reseaux: 'réseaux', reseau: 'réseau',
+  systemes: 'systèmes', systeme: 'système', informatique: 'informatique', ebeniste: 'ébéniste', elagueur: 'élagueur',
+  peintre: 'peintre', menage: 'ménage', hotesse: 'hôtesse', hote: 'hôte', boucher: 'boucher', patissier: 'pâtissier',
+  cuisinier: 'cuisinier', reception: 'réception', expedition: 'expédition', preparation: 'préparation',
+  conditionnement: 'conditionnement', mecanique: 'mécanique', soudeur: 'soudeur', tolier: 'tôlier',
+}));
+
 export function titleFromSlug(slug) {
-  const words = slug.replace(/-(?:f-?h|h-?f)(?:-x)?$/i, '').split('-').filter(Boolean);
+  const words = slug
+    .replace(/-(?:f-?h|h-?f)(?:-x)?$/i, '')
+    .split('-')
+    .filter(Boolean)
+    // « hf » / « fh » isolés (H/F déjà ajouté à la fin) et mots doublés du slug.
+    .filter((w, i, arr) => !/^(hf|fh|h|f)$/i.test(w) || (i > 0 && i < arr.length - 1 && !/^(hf|fh)$/i.test(w)))
+    .map((w) => ACCENTS.get(w.toLowerCase()) ?? w);
   const t = words.join(' ');
   return t ? `${t[0].toUpperCase()}${t.slice(1)} (H/F)` : '';
 }

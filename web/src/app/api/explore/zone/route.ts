@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     const villeParam = searchParams.get("ville") || "Lières";
 
     const minutes = Math.max(5, Math.min(120, Number(minutesParam) || 30));
-    const zone = await loadZone(minutes, villeParam);
+    const zone = await loadZone(minutes, villeParam, searchParams.get("insee") || undefined);
 
     return NextResponse.json({
       ok: true,

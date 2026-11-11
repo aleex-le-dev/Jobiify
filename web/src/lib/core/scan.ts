@@ -7,10 +7,9 @@ import { writeTempPortals, cleanupTempPortals } from "./portals";
 import { profileTargetKeywords } from "@/lib/profile-keywords.mjs";
 import { titleFit } from "@/lib/title-fit.mjs";
 import { resolveScanTimeoutMs, scanTimeoutMessage } from "./scan-timeout.mjs";
-import { ATS_LABEL, ATS_SOURCES, type AtsSource, type DiscoveredOffer, type ExploreFilters, type FitBand, type ScanEvent } from "@/lib/explore";
+import { ATS_LABEL, type AtsSource, type DiscoveredOffer, type ExploreFilters, type FitBand, type ScanEvent } from "@/lib/explore";
 import { mergeScanResults, timedOutMessage } from "./scan-merge.mjs";
 import { parseScanJsonStdout } from "./scan-json.mjs";
-import { isOfferWithinSinceDays } from "@/lib/format";
 
 export type { DiscoveredOffer, ScanEvent, AtsSource } from "@/lib/explore";
 export { ATS_SOURCES } from "@/lib/explore";
@@ -400,6 +399,7 @@ import { loadJoobleDiscoveredOffers } from "./jooble";
 import { loadAdzunaDiscoveredOffers } from "./adzuna";
 import { loadCareerjetDiscoveredOffers } from "./careerjet";
 import { loadPortalLiveOffers } from "./portal-live";
+import { loadInterimForProfile } from "./interim";
 import { loadZone, acceptInZone, type Zone } from "./zone";
 
 function matchesKeyword(text: string, kw: string): boolean {
@@ -420,29 +420,6 @@ function matchesTitle(title: string, positive?: string[], negative?: string[]): 
   const pos = positive || [];
   if (pos.length === 0) return true;
   return pos.some((p) => p && matchesKeyword(title, p));
-}
-
-function isBlockedLocation(location: string, blockList?: string[]): boolean {
-  if (!blockList || blockList.length === 0) return false;
-  const locWithoutDept = location.toLowerCase().replace(/\bpas[- ]de[- ]calais\b/g, "").trim();
-  return blockList.some((b) => {
-    if (!b) return false;
-    const cleanB = b.toLowerCase().trim();
-    if (cleanB === "calais") {
-      return /\bcalais\b/i.test(locWithoutDept);
-    }
-    return matchesKeyword(locWithoutDept, b);
-  });
-}
-
-function matchesLocation(location: string, allow?: string[], block?: string[], blockHard?: string[]): boolean {
-  const bHard = blockHard || [];
-  if (isBlockedLocation(location, bHard)) return false;
-  const blk = block || [];
-  if (isBlockedLocation(location, blk)) return false;
-  const alw = allow || [];
-  if (alw.length === 0) return true;
-  return alw.some((a) => a && matchesKeyword(location, a));
 }
 
 async function scanLocalPortals(
@@ -487,6 +464,8 @@ async function scanLocalPortals(
     ["Careerjet", () => loadCareerjetDiscoveredOffers(filters, roleTargets, zone)],
     ["Welcome to the Jungle", () => loadWttjDiscoveredOffers(filters, roleTargets, zone)],
     ["Service Public", () => loadServicePublicDiscoveredOffers(filters, roleTargets, zone)],
+    // Intérim : agences, France Travail (contrats d'intérim) et agrégateurs, filtrés par le profil.
+    ["Intérim", () => loadInterimForProfile(filters, roleTargets)],
   ];
   await Promise.all(
     sources.map(async ([name, load]) => {
@@ -541,7 +520,7 @@ export async function runDiscovery(filters: ExploreFilters, onEvent: (e: ScanEve
   let effectiveFilters = { ...filters };
   if (filters.commuteMinutes) {
     try {
-      zone = await loadZone(filters.commuteMinutes, filters.originCity || "Lières");
+      zone = await loadZone(filters.commuteMinutes, filters.originCity || "Lières", filters.originInsee);
       const zoneCommunes = zone.communes.map((c) => c.nom);
       effectiveFilters = {
         ...filters,

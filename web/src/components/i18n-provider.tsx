@@ -13,9 +13,6 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
-function savedLocale(): Locale {
-  return "fr";
-}
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale] = useState<Locale>("fr");

@@ -88,14 +88,6 @@ export function urgencyTone(u: string): "bad" | "warn" | "info" | "muted" {
   return "muted";
 }
 
-/** Status badge tone per spec: interview=green, responded/assessment=blue, else neutral. */
-export function followupStatusTone(status: string): "good" | "info" | "muted" {
-  const s = status.toLowerCase();
-  if (s.includes("interview")) return "good";
-  if (s.includes("responded") || s.includes("assessment")) return "info";
-  return "muted";
-}
-
 /** "today" / "tomorrow" / "in N days" / "N days ago" from a daysUntil delta. */
 export function relativeDays(daysUntil: number): string {
   if (daysUntil === 0) return "today";

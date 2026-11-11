@@ -30,9 +30,8 @@ function AppShellContent({ children, followupsEnabled }: { children: React.React
     <>
       <MobileNav followupsEnabled={followupsEnabled} />
       <div className="flex min-h-screen">
-        {/* Barre latérale anthracite : un « îlot sombre » (classes dark + rail) pour
-            que tout ce qu'elle contient s'affiche en thème sombre, même en clair. */}
-        <aside className="dark rail sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-border px-3 py-4 text-foreground md:flex">
+        {/* Barre latérale : claire en mode clair, anthracite en mode sombre (classe .rail). */}
+        <aside className="rail sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-border px-3 py-4 text-foreground md:flex">
           <Link href="/" className="mb-6 flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-hover">
             <CoMark size={34} animated />
             <span className="flex flex-col leading-none">

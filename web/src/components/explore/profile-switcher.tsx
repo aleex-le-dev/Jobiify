@@ -85,14 +85,17 @@ export function ProfileSwitcher({
           const isActive = p.id === active;
           const hue = hueOf(p.id);
           return (
+            // Un bouton ne peut pas en contenir un autre : la carte (sélection) et le
+            // lien « Modifier » sont frères dans un conteneur commun.
+            <div key={p.id} className="lift relative">
             <button
-              key={p.id}
               type="button"
               onClick={() => void choose(p)}
               disabled={busy !== null}
               aria-pressed={isActive}
+              title={isActive ? "Profil utilisé pour la recherche" : "Utiliser ce profil pour la recherche"}
               className={cn(
-                "lift relative flex flex-col gap-2 overflow-hidden rounded-xl border bg-background/60 p-3 pt-4 text-left disabled:cursor-wait",
+                "relative flex h-full w-full flex-col gap-2 overflow-hidden rounded-xl border bg-background/60 p-3 pb-11 pt-4 text-left transition disabled:cursor-wait",
                 isActive ? "border-brand shadow-[0_0_0_3px_color-mix(in_srgb,var(--brand)_15%,transparent)]" : "border-border hover:border-foreground/30",
               )}
             >
@@ -116,10 +119,18 @@ export function ProfileSwitcher({
                   <Layers className="size-3" /> {p.synonyms.length} synonymes
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <MapPin className="size-3" /> {p.remoteOnly ? "Télétravail" : `${p.originCity} · ${p.commuteMinutes} min`}
+                  <MapPin className="size-3" /> {p.remoteOnly ? "Télétravail" : `${p.originCity}${p.originPostalCode ? ` (${p.originPostalCode})` : ""} · ${p.commuteMinutes} min`}
                 </span>
               </span>
             </button>
+            <Link
+              href={`/cv?modifier=${encodeURIComponent(p.id)}`}
+              className="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[11.5px] font-medium text-muted transition hover:border-brand/50 hover:text-foreground"
+              aria-label={`Modifier le profil ${p.name}`}
+            >
+              <Pencil className="size-3" /> Modifier
+            </Link>
+            </div>
           );
         })}
 

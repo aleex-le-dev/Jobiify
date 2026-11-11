@@ -6,14 +6,11 @@ import {
   Loader2,
   Radar,
   Wrench,
-  Globe,
   Building2,
   Cpu,
   CheckCircle2,
   ExternalLink,
   Key,
-  Layers,
-  Sparkles,
 } from "lucide-react";
 import { CompanyLogo } from "@/components/company-logo";
 import { useJobs, type Job } from "@/components/jobs/job-store";

@@ -25,6 +25,8 @@ try {
 
   check(slugify('Bruay-la-Buissière') === 'bruay-la-buissiere', 'slugify folds accents', `slugify=${slugify('Bruay-la-Buissière')}`);
   check(slugify("Villeneuve-d'Ascq") === 'villeneuve-d-ascq', 'slugify maps apostrophes to dashes', `slugify=${slugify("Villeneuve-d'Ascq")}`);
+  check(titleFromSlug('macon-marbrier-funeraire-hf-fh') === 'Maçon marbrier funéraire (H/F)' && titleFromSlug('ouvrier-dexecution-fh') === 'Ouvrier d\x27exécution (H/F)',
+    'titleFromSlug restores French accents and apostrophes', `accents=${titleFromSlug('macon-marbrier-funeraire-hf-fh')} / ${titleFromSlug('ouvrier-dexecution-fh')}`);
   check(titleFromSlug('technicien-informatique-fh') === 'Technicien informatique (H/F)',
     'titleFromSlug strips the gender marker and capitalises', `title=${titleFromSlug('technicien-informatique-fh')}`);
 

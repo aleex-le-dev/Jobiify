@@ -342,7 +342,6 @@ export function formatPublicationDate(
     timeStr = `${h}:${m}`;
   }
 
-  const now = Date.now();
   // Comparaison par rapport au jour calendrier (minuit local)
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);

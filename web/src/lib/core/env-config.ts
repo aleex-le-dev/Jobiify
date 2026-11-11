@@ -2,16 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { careerOpsRoot } from "@/lib/career-ops";
 
-export interface ApiCredentials {
-  FRANCETRAVAIL_CLIENT_ID?: string;
-  FRANCETRAVAIL_CLIENT_SECRET?: string;
-  JOOBLE_API_KEY?: string;
-  ADZUNA_APP_ID?: string;
-  ADZUNA_APP_KEY?: string;
-  CAREERJET_AFFID?: string;
-  RECHERCHE_RAYON_KM?: string;
-}
-
 export function readEnvFile(): string {
   const envPath = path.join(careerOpsRoot(), ".env");
   if (fs.existsSync(envPath)) {

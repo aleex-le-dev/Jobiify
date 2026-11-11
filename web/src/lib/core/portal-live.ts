@@ -12,18 +12,45 @@ import { acceptInZone, type Zone } from "./zone";
  * Aucune écriture : c'est l'utilisateur qui choisit quoi ajouter au pipeline.
  */
 
-interface LiveOffer {
+export interface LiveOffer {
   company: string;
   title: string;
   url: string;
   location: string;
   postedAt: string;
   source: string;
+  /** Catégorie déclarée dans portals.yml (ex. « interim »). */
+  category?: string;
+  /** Nom de l'entrée portals.yml qui a fourni l'offre. */
+  portal?: string;
+}
+
+type LiveResult = { offers: LiveOffer[]; errors: Array<{ name: string; error: string }> };
+
+// Cache mémoire partagé (recherche d'offres + page Missions d'intérim) : une
+// lecture complète des portails prend ~10 s, inutile de la refaire à chaque page.
+const LIVE_TTL_MS = 20 * 60 * 1000;
+let liveCache: { at: number; result: LiveResult } | null = null;
+let liveInflight: Promise<LiveResult> | null = null;
+
+/** Offres actuelles de tous les portails, avec cache de 20 min. */
+export async function getPortalLiveRaw({ fresh = false } = {}): Promise<LiveResult> {
+  if (!fresh && liveCache && Date.now() - liveCache.at < LIVE_TTL_MS) return liveCache.result;
+  if (liveInflight) return liveInflight;
+  liveInflight = runPortalLive()
+    .then((result) => {
+      if (result.offers.length) liveCache = { at: Date.now(), result };
+      return result;
+    })
+    .finally(() => {
+      liveInflight = null;
+    });
+  return liveInflight;
 }
 
 const TIMEOUT_MS = 120_000;
 
-function runPortalLive(): Promise<{ offers: LiveOffer[]; errors: Array<{ name: string; error: string }> }> {
+function runPortalLive(): Promise<LiveResult> {
   const script = rootScript("portal-live");
   if (!fs.existsSync(script)) return Promise.resolve({ offers: [], errors: [{ name: "portal-live.mjs", error: "script absent" }] });
   return new Promise((resolve) => {
@@ -69,12 +96,14 @@ export async function loadPortalLiveOffers(
   roleTargets: string[],
   zone?: Zone,
 ): Promise<{ offers: DiscoveredOffer[]; boards: number; errors: number }> {
-  const { offers: raw, errors } = await runPortalLive();
+  const { offers: raw, errors } = await getPortalLiveRaw();
   const sinceMs = filters.sinceDays > 0 ? Date.now() - filters.sinceDays * 86_400_000 : 0;
   const offers: DiscoveredOffer[] = [];
   const boards = new Set<string>();
 
   for (const o of raw) {
+    // Les agences d'intérim passent par la source « Intérim » (étiquette + agence).
+    if (o.category === "interim") continue;
     boards.add(o.company);
     if (filters.negative.some((n) => n && matchesKeyword(o.title, n))) continue;
     if (filters.positive.length > 0 && !filters.positive.some((p) => p && matchesKeyword(o.title, p))) continue;

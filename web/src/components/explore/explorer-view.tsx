@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Compass, ChevronDown, RotateCcw, AlertTriangle, Sparkles, Settings, Trash2, Clock, Coins } from "lucide-react";
+import { Compass, ChevronDown, RotateCcw, AlertTriangle, Sparkles, Settings, Clock, Coins } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { displayFont } from "@/lib/fonts";
@@ -143,28 +143,6 @@ export function ExplorerView({
   // entre le compteur de chargement et le nombre d'offres filtrées.
   const showScanList = !isAi && (isResults || phase === "revealing");
 
-  const [clearedSnapshot, setClearedSnapshot] = useState<ExploreFilters | null>(null);
-
-  const clearFilters = () => {
-    setClearedSnapshot({ ...filters });
-    setFilters({
-      ...filters,
-      positive: [],
-      negative: [],
-      allow: [],
-      alwaysAllow: [],
-      block: [],
-      blockHard: [],
-    });
-  };
-
-  const restoreFilters = () => {
-    if (clearedSnapshot) {
-      setFilters({ ...clearedSnapshot });
-      setClearedSnapshot(null);
-    }
-  };
-
   if (running && isAi) return <AiHuntView cliName={cli.name} />;
 
   return (
@@ -302,8 +280,6 @@ export function ExplorerView({
                 <DiscoverBar
                   canDiscover={canDiscover}
                   onDiscover={discover}
-                  // Pas d'« effacer les filtres » : la recherche suit toujours un profil.
-                  onRestoreFilters={clearedSnapshot ? restoreFilters : undefined}
                   label={
                     isFr
                       ? isResults
@@ -313,7 +289,6 @@ export function ExplorerView({
                         ? "Apply & re-cast"
                         : "Apply & scan"
                   }
-                  filters={filters}
                 />
               </div>
             )}
@@ -391,26 +366,13 @@ function DiscoverBar({
   canDiscover,
   onDiscover,
   label,
-  filters,
-  onClearFilters,
-  onRestoreFilters,
 }: {
   canDiscover: boolean;
   onDiscover: () => void;
   label: string;
-  filters: ExploreFilters;
-  onClearFilters?: () => void;
-  onRestoreFilters?: () => void;
 }) {
   const { locale } = useI18n();
   const isFr = locale === "fr";
-  const hasAnyFilter =
-    filters.positive.length > 0 ||
-    filters.negative.length > 0 ||
-    filters.allow.length > 0 ||
-    filters.alwaysAllow.length > 0 ||
-    filters.block.length > 0 ||
-    filters.blockHard.length > 0;
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -422,27 +384,6 @@ function DiscoverBar({
       >
         <Compass className="size-4" /> {label}
       </button>
-      {hasAnyFilter && onClearFilters ? (
-        <button
-          type="button"
-          onClick={onClearFilters}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors max-sm:min-h-11"
-          title={isFr ? "Effacer tous les critères de recherche" : "Clear all search filters"}
-        >
-          <Trash2 className="size-4" />
-          <span>{isFr ? "Effacer tous les filtres" : "Clear filters"}</span>
-        </button>
-      ) : onRestoreFilters ? (
-        <button
-          type="button"
-          onClick={onRestoreFilters}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-brand/30 bg-brand-soft px-3.5 py-2.5 text-sm font-medium text-brand hover:brightness-110 transition-colors max-sm:min-h-11"
-          title={isFr ? "Restaurer les critères précédemment effacés" : "Restore previous filters"}
-        >
-          <RotateCcw className="size-4" />
-          <span>{isFr ? "Restaurer les filtres" : "Restore filters"}</span>
-        </button>
-      ) : null}
       <span className="inline-flex items-center gap-1.5 text-[12px] text-muted">
         <Coins className="size-3.5 text-amber-500" />
         {isFr

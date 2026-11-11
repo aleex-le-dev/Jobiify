@@ -118,19 +118,13 @@
 
 /* Îlot anthracite (barre latérale) : mêmes noms de variables que le thème,
    valeurs fixes sombres — placé APRÈS .dark pour l'emporter à spécificité égale. */
+/* Barre latérale : claire en mode clair (blanc, bordure fine), anthracite en
+   mode sombre. Mêmes noms de variables que le thème, placés APRÈS .dark. */
 .rail {
-  --bg: #111a26;
-  --surface: #172231;
-  --surface-hover: #1e2b3b;
-  --border: #243246;
-  --fg: #eef2f7;
-  --muted: #b0bccb;
-  --faint: #8e9bad;
-  --brand: hsl(162 62% 46%);
-  --brand-hover: hsl(162 62% 52%);
-  --brand-fg: #06130f;
-  --brand-soft: hsl(162 62% 46% / 0.16);
-  --brand-text: hsl(160 64% 60%);
+  --bg: #ffffff;
+  --surface: #f6f8fb;
+  --surface-hover: #edf1f6;
+  --border: hsl(216 20% 88%);
   background: var(--bg);
   color: var(--fg);
 }
@@ -139,6 +133,14 @@ html.dark .rail {
   --surface: #0f1620;
   --surface-hover: #151f2c;
   --border: #18222f;
+  --fg: #eef2f7;
+  --muted: #b0bccb;
+  --faint: #8e9bad;
+  --brand: hsl(162 62% 46%);
+  --brand-hover: hsl(162 62% 52%);
+  --brand-fg: #06130f;
+  --brand-soft: hsl(162 62% 46% / 0.16);
+  --brand-text: hsl(160 64% 60%);
 }
 
 body {

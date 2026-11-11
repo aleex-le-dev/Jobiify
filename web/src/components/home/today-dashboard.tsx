@@ -17,7 +17,7 @@ import { FollowupsDueSectionSkeleton } from "@/components/page-loading-skeletons
 import { scoreNum } from "@/lib/format";
 import { pickAwaitingDecision, groupAwaiting } from "@/lib/home/awaiting.mjs";
 import { companyPresentation } from "@/lib/company-presentation.mjs";
-import { resolveHeroState, mayClaimAllClear, showsQueue, missingSourceLabel, displayCounts } from "@/lib/home/hero-state.mjs";
+import { resolveHeroState, mayClaimAllClear, missingSourceLabel, displayCounts } from "@/lib/home/hero-state.mjs";
 import { useI18n } from "@/components/i18n-provider";
 import { CountUp } from "@/components/ui/count-up";
 import { ProfileOverview, type SourceStatus } from "@/components/home/profile-overview";
@@ -54,7 +54,6 @@ export function TodayDashboard({
   const [overdue, setOverdue] = useState(0);
   const [followupsLoading, setFollowupsLoading] = useState(true);
   const [followupsError, setFollowupsError] = useState(false);
-  const [followupsEnabled, setFollowupsEnabled] = useState(true);
   const [upcoming, setUpcoming] = useState<FollowUp[]>([]);
   const [fresh, setFresh] = useState<DiscoveredOffer[]>([]);
   const [freshCount, setFreshCount] = useState(0);
@@ -62,7 +61,7 @@ export function TodayDashboard({
   const [freshError, setFreshError] = useState(false);
   const requestGeneration = useRef(0);
   const router = useRouter();
-  const { locale, t } = useI18n();
+  const { locale } = useI18n();
   const isFr = locale === "fr";
   const dateLabel = useMemo(() => new Date().toLocaleDateString(isFr ? "fr-FR" : "en-US", { weekday: "long", month: "short", day: "numeric" }), [isFr]);
 
@@ -87,7 +86,6 @@ export function TodayDashboard({
         // is overdue" (the old `?? d.entries?.length` fallback).
         setFollowups(Array.isArray(d.entries) ? d.entries : []);
         setOverdue((d.metadata?.overdue ?? 0) + (d.metadata?.urgent ?? 0));
-        setFollowupsEnabled(d.followupsEnabled !== false);
         setUpcoming(Array.isArray(d.upcoming) ? d.upcoming : []);
       })
       .catch(() => { if (isLatest()) setFollowupsError(true); })

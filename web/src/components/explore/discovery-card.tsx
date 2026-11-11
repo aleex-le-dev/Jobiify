@@ -54,7 +54,6 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
   const statusLabel = workerMap[job?.kind ?? ""] ?? (isFr ? "En cours…" : "Working…");
 
   const inSel = (added.has(offer.url) || inPipeline) && !removed?.has(offer.url);
-  const isAdded = inSel || working || doneEval;
   const isAdding = adding?.has?.(offer.url) ?? false;
   const fresh = offer.postedHint || "";
   const city = useMemo(() => formatLocationCity(offer.location), [offer.location]);

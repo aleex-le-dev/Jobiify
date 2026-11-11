@@ -1,4 +1,3 @@
-import { Radar } from "lucide-react";
 import path from "node:path";
 import { PortalsView } from "@/components/portals-view";
 import { careerOpsRoot } from "@/lib/career-ops";

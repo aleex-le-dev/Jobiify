@@ -6,7 +6,6 @@ import { resolveDataRoot } from "@/lib/core/data-root.mjs";
 import { readTrackerFile } from "@/lib/core/tracker-files.mjs";
 import { resolveCodeRoot, resolveRootScript } from "@/lib/core/code-root.mjs";
 import { parseApplications } from "@/lib/tracker-table.mjs";
-import { parseStatusLog } from "@/lib/pipeline-sankey.mjs";
 // Pipeline rows are parsed in a plain .mjs for the same reason as
 // tracker-table.mjs: so `node --test` can exercise the real parser.
 import { parseInbox, splitLines } from "@/lib/pipeline-table.mjs";
@@ -172,29 +171,6 @@ export function readApplications(): Application[] {
   // third argument is the running system checkout, so a data-only root (no
   // tracker-aliases.json of its own) still resolves headers correctly.
   return parseApplications(md, careerOpsRoot(), path.resolve(process.cwd(), "..")) as Application[];
-}
-
-export type StatusLogRow = {
-  num: number;
-  date: string;
-  from: string;
-  to: string;
-  source: string;
-  note: string;
-};
-
-/** Append-only transitions beside the active tracker. A missing log is
- *  normal (no status change recorded yet) and yields []. Any other read failure
- *  is rethrown: an unreadable log must not pass for an empty one, which would
- *  silently drop recorded interview paths from the Sankey (web/AGENTS.md: a
- *  missing file is not a malformed file). */
-export function readStatusLog(): StatusLogRow[] {
-  return parseStatusLog(readApplicationStatusLog() ?? "");
-}
-
-/** Ledger sibling of the same tracker readApplications consumes. */
-export function readApplicationStatusLog(): string | null {
-  return readTrackerFile(careerOpsRoot(), "status-log.tsv");
 }
 
 /** Resolve the report-number cell in data/pdf-index.tsv for a given report id.

@@ -51,7 +51,7 @@ TU PEUX AGIR — tu le fais en émettant des ENVELOPPES D'ACTION dans ta répons
 Les arguments forment un objet JSON unique. L'application traite l'enveloppe et exécute l'action (tu ne vois pas son résultat) — explique donc brièvement ce que tu fais, puis émets l'enveloppe.
 
 ACTIONS :
-- navigate {"path":"/pipeline?tab=OFFER&min=4"} — diriger l'utilisateur vers une section. Chemins valides : /, /pipeline, /portals, /analytics, /cv, /config, /apply, /pipeline/{n} (un rapport), /jobs/{id} (une tâche). Le chemin peut comporter des paramètres d'URL.
+- navigate {"path":"/pipeline?tab=OFFER&min=4"} — diriger l'utilisateur vers une section. Chemins valides : /, /pipeline, /portals, /cv, /config, /apply, /pipeline/{n} (un rapport), /jobs/{id} (une tâche). Le chemin peut comporter des paramètres d'URL.
 - filterPipeline {"tab":"OFFER","min":4,"q":"texte","sort":"score","dir":-1} — filtrer le tableau du pipeline. tab ∈ INBOX, ALL, EVALUATED, APPLIED, RESPONDED, ASSESSMENT, INTERVIEW, OFFER, HIRED, REJECTED, DISCARDED, SKIP ; min = score plancher 0–5.
 - evaluate {"url":"https://…","title":"Évaluer · Acme","subtitle":"Poste"} — lancer un worker d'évaluation en lecture seule sur une URL spécifique d'offre. Uniquement si tu disposes d'une vraie URL.
 - evaluateCompany {"company":"Anthropic"} — évaluer TOUTES les offres en attente dans la boîte pour cette entreprise. Émets le NOM DE L'ENTREPRISE UNIQUEMENT — jamais d'URL inventée ; l'application résout elle-même les offres.

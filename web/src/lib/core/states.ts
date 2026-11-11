@@ -89,10 +89,6 @@ export function readCanonicalStates(): CanonicalState[] {
   return FALLBACK;
 }
 
-export function canonicalLabels(): string[] {
-  return readCanonicalStates().map((s) => s.label);
-}
-
 /**
  * Fold a raw status the SAME way the core's foldStatusInput does
  * (tracker-utils.mjs). A bare toLowerCase() is not enough: JS lowercases the

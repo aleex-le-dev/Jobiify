@@ -38,6 +38,9 @@ export function offerSourceLabel(offer: DiscoveredOffer, isFr = true): string {
   if (offer.source === "france-travail") {
     return "France Travail";
   }
+  if (offer.source?.startsWith("interim-")) {
+    return isFr ? "Intérim" : "Temp work";
+  }
   if (offer.source === "careerjet") {
     return "Careerjet";
   }
@@ -88,6 +91,8 @@ export type ExploreFilters = {
   limitPerAts: number;
   commuteMinutes?: number;
   originCity?: string;
+  /** Code INSEE de la commune de départ (distingue les homonymes). */
+  originInsee?: string;
   remoteOnly?: boolean;
 };
 
@@ -242,6 +247,10 @@ export function parseExplorePatch(
   if (raw.ats !== undefined) next.ats = cleanAts(raw.ats);
   if (raw.commuteMinutes !== undefined) next.commuteMinutes = clampNum(raw.commuteMinutes, 0, 120, 30);
   if (raw.originCity !== undefined) next.originCity = String(raw.originCity);
+  if (raw.originInsee !== undefined) {
+    const v = String(raw.originInsee);
+    next.originInsee = /^(\d{5}|2[AB]\d{3})$/.test(v) ? v : undefined;
+  }
   if (raw.remoteOnly !== undefined) next.remoteOnly = Boolean(raw.remoteOnly);
   return next;
 }

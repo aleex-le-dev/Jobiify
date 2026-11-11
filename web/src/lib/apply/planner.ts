@@ -29,19 +29,6 @@ import type { CliSpec } from "@/lib/clis";
 const ADVISOR_SCOPE = scopeFrom("Read,Glob,Grep");
 
 /**
- * One form control, as much of it as the planner needs. Structurally satisfied
- * by ApplyField; kept separate so this module does not import extract.ts and
- * with it playwright-core.
- */
-export type PlannerField = {
-  id: string;
-  type: string;
-  label: string;
-  required?: boolean;
-  options?: string[];
-};
-
-/**
  * A finished planner run. `code: null` with `signal: null` means the spawn
  * itself failed; the caller decides whether that is fatal, which is why this
  * resolves rather than rejecting. `refused` carries the fencing refusal when

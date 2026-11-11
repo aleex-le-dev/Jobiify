@@ -25,6 +25,7 @@ import type { CvSummary, SearchProfile } from "@/lib/search-profile-types";
 import { SOURCE_HINT } from "@/lib/explore";
 import { CvEditor } from "@/components/cv-editor";
 import { CvIngest } from "./cv-ingest";
+import { CityPicker, type City } from "@/components/ui/city-picker";
 import { LinksBox } from "./links-box";
 
 const splitList = (v: string) => v.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
@@ -63,6 +64,13 @@ export function ProfilesPanel({ onActiveChange }: { onActiveChange?: (activeName
   const [importing, setImporting] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  // Carte tout juste enregistrée : brève confirmation après repli.
+  const [justSaved, setJustSaved] = useState<string | null>(null);
+  useEffect(() => {
+    if (!justSaved) return;
+    const t = setTimeout(() => setJustSaved(null), 2600);
+    return () => clearTimeout(t);
+  }, [justSaved]);
   const [err, setErr] = useState("");
   // Incrémenté quand les liens réécrivent les CV : recharge l'éditeur ouvert.
   const [cvVersion, setCvVersion] = useState(0);
@@ -91,6 +99,16 @@ export function ProfilesPanel({ onActiveChange }: { onActiveChange?: (activeName
       .finally(() => setLoading(false));
   }, [apply]);
   useEffect(load, [load]);
+
+  // Arrivée depuis la recherche (« Modifier » sur une carte de profil) : ouvre ce profil.
+  useEffect(() => {
+    if (loading) return;
+    const id = new URLSearchParams(window.location.search).get("modifier");
+    if (id && profiles.some((p) => p.id === id)) {
+      setEditing(id);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, [loading, profiles]);
 
   // Ouvrir « Modifier » amène la carte agrandie en haut de l'écran, une seule fois.
   useEffect(() => {
@@ -196,7 +214,12 @@ export function ProfilesPanel({ onActiveChange }: { onActiveChange?: (activeName
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify(patch),
                     });
-                    void d;
+                    if (d) {
+                      setEditing(null);
+                      setJustSaved(p.id);
+                      // Ramène la carte repliée sous les yeux.
+                      setTimeout(() => document.getElementById(`carte-${p.id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 60);
+                    }
                   }}
                 />
                 {/* Le CV de CE profil, en Markdown + aperçu, directement dans la carte. */}
@@ -209,6 +232,7 @@ export function ProfilesPanel({ onActiveChange }: { onActiveChange?: (activeName
               <ProfileCard
                 key={p.id}
                 dimmed={editing !== null}
+                saved={justSaved === p.id}
                 profile={p}
                 summary={summaries[p.id]}
                 isActive={p.id === active}
@@ -250,11 +274,13 @@ function ProfileCard({
   onEdit,
   onDelete,
   dimmed = false,
+  saved = false,
 }: {
   profile: SearchProfile;
   dimmed?: boolean;
   summary?: CvSummary;
   isActive: boolean;
+  saved?: boolean;
   busy: boolean;
   onActivate: () => void;
   onSearch: () => void;
@@ -266,6 +292,7 @@ function ProfileCard({
   const more = p.titles.length - shown.length;
   return (
     <article
+      id={`carte-${p.id}`}
       className={cn(
         "lift relative flex flex-col overflow-hidden rounded-2xl border bg-surface/50",
         dimmed && "opacity-60 hover:opacity-100",
@@ -292,8 +319,13 @@ function ProfileCard({
                 : "Aucun CV associé"}
             </p>
           </div>
-          {isActive ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-brand-foreground">
+          {/* Juste après « Enregistrer le profil », la confirmation prend la place du badge. */}
+          {saved ? (
+            <span key="saved" className="animate-rise inline-flex shrink-0 items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-brand-foreground shadow-sm">
+              <Check className="size-3" /> Enregistré
+            </span>
+          ) : isActive ? (
+            <span key="active" className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-brand-foreground">
               <Check className="size-3" /> Actif
             </span>
           ) : null}
@@ -322,7 +354,7 @@ function ProfileCard({
           <div className="flex items-center gap-1.5">
             <MapPin className="size-3.5 shrink-0" />
             <dt className="sr-only">Zone</dt>
-            <dd className="truncate">{p.remoteOnly ? "Télétravail" : `${p.originCity} · ${p.commuteMinutes} min`}</dd>
+            <dd className="truncate">{p.remoteOnly ? "Télétravail" : `${p.originCity}${p.originPostalCode ? ` (${p.originPostalCode})` : ""} · ${p.commuteMinutes} min`}</dd>
           </div>
           <div className="flex items-center gap-1.5">
             <FileText className="size-3.5 shrink-0" />
@@ -382,7 +414,7 @@ function ProfileEditor({
   const [titles, setTitles] = useState(profile.titles.join(", "));
   const [synonyms, setSynonyms] = useState(profile.synonyms.join(", "));
   const [negative, setNegative] = useState(profile.negative.join(", "));
-  const [city, setCity] = useState(profile.originCity);
+  const [city, setCity] = useState<City>({ nom: profile.originCity, codePostal: profile.originPostalCode || "", codeInsee: profile.originInsee || "" });
   const [minutes, setMinutes] = useState(profile.commuteMinutes);
   const [remoteOnly, setRemoteOnly] = useState(profile.remoteOnly);
   const [withWorkday, setWithWorkday] = useState(profile.sources.includes("workday"));
@@ -422,10 +454,7 @@ function ProfileEditor({
           Mots exclus
           <input value={negative} onChange={(e) => setNegative(e.target.value)} className={input} />
         </label>
-        <label className="block text-[12px] text-muted">
-          Ville de départ
-          <input value={city} onChange={(e) => setCity(e.target.value)} className={input} />
-        </label>
+        <CityPicker value={city} onChange={setCity} />
         <label className="block text-[12px] text-muted">
           Trajet maximum : {minutes} min
           <input type="range" min={10} max={90} step={5} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="mt-3 w-full accent-[var(--brand)]" />
@@ -455,7 +484,9 @@ function ProfileEditor({
               titles: splitList(titles),
               synonyms: splitList(synonyms),
               negative: splitList(negative),
-              originCity: city,
+              originCity: city.nom,
+              originPostalCode: city.codePostal,
+              originInsee: city.codeInsee,
               commuteMinutes: minutes,
               remoteOnly,
               sources: withWorkday ? ["portals", "workday"] : ["portals"],

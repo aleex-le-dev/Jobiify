@@ -30,4 +30,3 @@ export function Button({
   return <button className={cn(buttonVariants({ variant, size }), className)} {...props} />;
 }
 
-export type ButtonVariants = VariantProps<typeof buttonVariants>;

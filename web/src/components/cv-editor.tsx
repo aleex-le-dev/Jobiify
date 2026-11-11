@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { SkillGaps } from "@/components/skill-gaps";
 import remarkGfm from "remark-gfm";
-import { Check, Loader2, Sparkles, Plus, Briefcase, GraduationCap, FileText, RotateCcw } from "lucide-react";
+import { Check, Loader2, Sparkles, Plus, Briefcase, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/components/i18n-provider";
 

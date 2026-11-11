@@ -3,6 +3,14 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { claudeUsageTokens } from "@/lib/claude-usage.mjs";
+import { quotaFromStream, type ClaudeQuota } from "@/lib/claude-quota.mjs";
+import { resolveCli } from "@/lib/clis";
+import { spawnHeadlessCli } from "@/lib/spawn-cli.mjs";
+import { CAPS } from "@/lib/worker-capabilities.mjs";
+import { scopeFrom } from "@/lib/claude-invocation.mjs";
+
+// Sonde sans écriture ni réseau : le cadrage exige une liste d'interdits explicite.
+const PROBE_SCOPE = scopeFrom("Read");
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -130,9 +138,59 @@ function compute(): Usage {
   return { window5h: { tokens: t5, messages: m5 }, window7d: { tokens: t7, messages: m7 }, computedAt: now };
 }
 
+// Quota RÉEL du compte : un appel minimal à Claude (Haiku, sans outils ni
+// contexte) renvoie l'événement rate_limit_event avec le % consommé sur 5 h et
+// 7 j, comme la commande /usage. Au plus un appel toutes les 3 minutes.
+const REAL_TTL = 3 * 60_000;
+let real: { at: number; data: ClaudeQuota | null } | null = null;
+let probing: Promise<ClaudeQuota | null> | null = null;
+
+function probeClaudeQuota(): Promise<ClaudeQuota | null> {
+  const resolved = resolveCli("claude");
+  if (!resolved) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    let out = "";
+    let child: ReturnType<typeof spawnHeadlessCli>;
+    try {
+      child = spawnHeadlessCli(
+        resolved.binPath,
+        ["-p", "ok", "--output-format", "stream-json", "--verbose", "--model", "haiku", "--system-prompt", "Réponds ok.",
+          "--strict-mcp-config", "--allowedTools", PROBE_SCOPE.allowed, "--disallowedTools", PROBE_SCOPE.disallowed, "--no-session-persistence", "--setting-sources", ""],
+        { cwd: os.homedir(), env: process.env },
+        { cliId: "claude", capabilities: CAPS.localReadOnly },
+      );
+    } catch {
+      resolve(null);
+      return;
+    }
+    const timer = setTimeout(() => child.kill(), 30_000);
+    child.stdout?.on("data", (b: Buffer) => {
+      out += b.toString("utf8");
+    });
+    child.on("error", () => {
+      clearTimeout(timer);
+      resolve(null);
+    });
+    child.on("close", () => {
+      clearTimeout(timer);
+      resolve(quotaFromStream(out));
+    });
+  });
+}
+
+async function realQuota(): Promise<{ quota: ClaudeQuota | null; checkedAt: number | null }> {
+  if (real && Date.now() - real.at < REAL_TTL) return { quota: real.data, checkedAt: real.at };
+  probing ??= probeClaudeQuota().finally(() => {
+    probing = null;
+  });
+  const data = await probing;
+  // Échec : on garde la dernière valeur connue plutôt que de l'effacer.
+  if (data || !real) real = { at: Date.now(), data: data ?? real?.data ?? null };
+  return { quota: real.data, checkedAt: real.data ? real.at : null };
+}
+
 export async function GET() {
-  if (cache && Date.now() - cache.at < 60_000) return NextResponse.json(cache.data);
-  const data = compute();
-  cache = { at: Date.now(), data };
-  return NextResponse.json(data);
+  if (!cache || Date.now() - cache.at >= 60_000) cache = { at: Date.now(), data: compute() };
+  const { quota, checkedAt } = await realQuota();
+  return NextResponse.json({ ...cache.data, real: quota, realCheckedAt: checkedAt });
 }
