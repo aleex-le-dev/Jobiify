@@ -5,7 +5,6 @@ import { resolveAtsApi, checkLivenessViaApi } from '../liveness-api.mjs';
 const greenhouse = 'https://careers.example.com/detail/7823005003/?gh_jid=7823005003';
 const smartrecruiters = 'https://jobs.smartrecruiters.com/ServiceNow/744000131661949-senior-director';
 const arbeitsagentur = 'https://www.arbeitsagentur.de/jobsuche/jobdetail/10001-1003597288-S';
-const wwr = 'https://weworkremotely.com/remote-jobs/acme-staff-engineer';
 
 async function withFetch(mock, run) {
   const previous = globalThis.fetch;
@@ -18,9 +17,9 @@ test('four new URL shapes route only to fixed API hosts', () => {
   assert.equal(resolveAtsApi(smartrecruiters).apiUrl,
     'https://api.smartrecruiters.com/v1/companies/ServiceNow/postings/744000131661949');
   assert.match(resolveAtsApi(arbeitsagentur).apiUrl, /^https:\/\/rest\.arbeitsagentur\.de\//);
-  assert.equal(resolveAtsApi(wwr).apiUrl, 'https://weworkremotely.com/remote-jobs.rss');
   assert.equal(resolveAtsApi('https://jobs.smartrecruiters.com.evil.test/ServiceNow/123-title'), null);
-  assert.equal(resolveAtsApi('https://weworkremotely.com/remote-jobs/%2e%2e'), null);
+  // We Work Remotely rung removed in the Jobiify regional fork.
+  assert.equal(resolveAtsApi('https://weworkremotely.com/remote-jobs/acme'), null);
 });
 
 test('Greenhouse company URL checks the per-job API after a validated embed redirect', async () => {
@@ -75,13 +74,4 @@ test('Arbeitsagentur confirms matching live detail but leaves 404 uncertain', as
   const missing = await withFetch(async () => new Response('', { status: 404 }),
     () => checkLivenessViaApi(arbeitsagentur));
   assert.equal(missing, null);
-});
-
-test('We Work Remotely feed presence proves live, absence remains unknown', async () => {
-  const rss = '<rss><channel><item><title>Acme: Engineer</title><link>https://weworkremotely.com/remote-jobs/acme-staff-engineer</link></item></channel></rss>';
-  const live = await withFetch(async () => new Response(rss), () => checkLivenessViaApi(wwr));
-  assert.equal(live.result, 'active');
-  const absent = await withFetch(async () => new Response(rss),
-    () => checkLivenessViaApi('https://weworkremotely.com/remote-jobs/another-job'));
-  assert.equal(absent, null);
 });

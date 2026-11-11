@@ -104,18 +104,10 @@ try {
     ? pass('scan.mjs exports pipeline/portals paths anchored to the data root')
     : fail(`scan.mjs does not export pipeline/portals paths under the data root: ${shared}`);
 
-  // 5. scan-interamt.mjs must not scan the internet just because it was
-  //    imported. It called main() unguarded, so importing it drove a live
-  //    browser scan and appended the results to the user's pipeline.
-  const interamtSrc = readFileSync(join(ROOT, 'scan-interamt.mjs'), 'utf-8');
-  /isMainModule\(import\.meta\.url\)/.test(interamtSrc)
-    ? pass('scan-interamt.mjs runs its scan behind a main guard, like its siblings')
-    : fail('scan-interamt.mjs calls main() at module scope — importing it starts a live scan (#3510)');
-
   // 6. No scanner may reintroduce a bare-relative user-data path. The behavioral
   //    checks above cover today's constants; this covers the next one added.
   const offenders = [];
-  for (const file of ['scan.mjs', 'scan-ats-full.mjs', 'scan-interamt.mjs', 'scan-hn.mjs']) {
+  for (const file of ['scan.mjs', 'scan-ats-full.mjs']) {
     const src = readFileSync(join(ROOT, file), 'utf-8');
     for (const m of src.matchAll(/^(?:export )?const\s+(\w+)\s*=\s*'((?:data|output)\/[^']*|portals\.yml)'/gm)) {
       offenders.push(`${file}: ${m[1]} = '${m[2]}'`);

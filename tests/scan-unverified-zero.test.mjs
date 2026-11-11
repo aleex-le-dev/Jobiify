@@ -75,13 +75,13 @@ test('scan records a swallowed first-page HTTP failure as unverified_zero', () =
     writeFileSync(join(dataRoot, 'portals.yml'), [
       'tracked_companies:',
       '  - name: Failed Board',
-      '    provider: builtin',
+      '    provider: recruitee',
       'job_boards: []',
       '',
     ].join('\n'));
     const preload = join(dataRoot, 'stub-provider.mjs');
     writeFileSync(preload, [
-      `import provider from ${JSON.stringify(new URL('../providers/builtin.mjs', import.meta.url).href)};`,
+      `import provider from ${JSON.stringify(new URL('../providers/recruitee.mjs', import.meta.url).href)};`,
       `globalThis.fetch = async () => new Response('unavailable', { status: 503 });`,
       `provider.fetch = async (_entry, ctx) => {`,
       `  try { await ctx.fetchJson('https://builtin.com/jobs', { redirect: 'error' }); } catch {}`,
