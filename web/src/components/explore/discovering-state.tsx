@@ -72,7 +72,7 @@ function SourceChip({ ats, s }: { ats: AtsSource; s?: SourceState }) {
 
 /** filteredCount = nombre d'offres dans la fenêtre sinceDays (ce que l'utilisateur verra) */
 export function DiscoveringState({ filteredCount }: { filteredCount: number }) {
-  const { sources, companiesScanned, status, phase, filters } = useExplore();
+  const { sources, sourceReports, companiesScanned, status, phase, filters } = useExplore();
   // Afficher le nombre d'offres filtrées (cohérent avec ResultsList)
   const shown = useCountUp(filteredCount);
   const companies = useCountUp(companiesScanned);
@@ -107,6 +107,27 @@ export function DiscoveringState({ filteredCount }: { filteredCount: number }) {
             <SourceChip key={a} ats={a} s={sources[a]} />
           ))}
         </div>
+
+        {sourceReports.length > 0 && (
+          <ul className="flex max-w-2xl flex-wrap justify-center gap-1.5" aria-label="Sources déjà interrogées">
+            {sourceReports.map((r) => (
+              <li
+                key={r.id}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/70 px-2.5 py-1 text-[12px] text-muted"
+              >
+                {r.status === "needs-key" ? (
+                  <span className="size-1.5 rounded-full bg-amber-500" />
+                ) : r.status === "error" ? (
+                  <span className="size-1.5 rounded-full bg-rose-500" />
+                ) : (
+                  <Check className="size-3 text-emerald-500" />
+                )}
+                <span className="font-medium text-foreground">{r.label}</span>
+                <span className="tabular-nums">{r.status === "needs-key" ? "à connecter" : r.status === "error" ? "sans réponse" : r.kept}</span>
+              </li>
+            ))}
+          </ul>
+        )}
 
         <p className="flex items-center gap-2 text-[13px] text-faint">
           <Loader2 className="size-3.5 animate-spin" />

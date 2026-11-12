@@ -48,7 +48,8 @@ const SENIORITY = new Set([
 ]);
 
 function tokens(text) {
-  const raw = String(text ?? "").toLowerCase().match(TOKEN_RE) ?? [];
+  // Sans accents : « DEVELOPPEUR » (France Travail) = « Développeur » (profil).
+  const raw = String(text ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().match(TOKEN_RE) ?? [];
   return raw
     // TOKEN_RE keeps sentence-ending periods so dotted names survive intact
     // (node.js, .net); strip only TERMINAL dots afterwards, or "Engineer."

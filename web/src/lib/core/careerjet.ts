@@ -1,8 +1,9 @@
-import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
+import type { DiscoveredOffer, ExploreFilters } from "@/lib/explore";
 import { formatLocationCity } from "@/lib/format";
-import { titleFit } from "@/lib/title-fit.mjs";
-import { acceptInZone, type Zone } from "./zone";
-import { ANCHOR_CITIES, cacheKey, getEnvVar, readCache, searchKeywords, writeCache } from "./local-area";
+import type { Zone } from "./zone";
+import { cacheKey, getEnvVar, readCache, searchKeywords, writeCache } from "./local-area";
+import { fitField, matchedField, passesFilters } from "./offer-filter";
+import type { SearchContext } from "./search-context";
 
 /**
  * Careerjet / Optioncarrière — API publique officielle (public.api.careerjet.net).
@@ -24,20 +25,20 @@ interface CareerjetRawJob {
 
 const strip = (s: string) => s.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
 
-export async function fetchAndCacheCareerjetJobs(positive?: string[]): Promise<CareerjetRawJob[]> {
+export async function fetchAndCacheCareerjetJobs(ctx: SearchContext, positive?: string[]): Promise<CareerjetRawJob[]> {
   const affid = getEnvVar("CAREERJET_AFFID");
   if (!affid) return [];
 
   const keywords = searchKeywords(positive, 8);
-  const key = cacheKey("careerjet", keywords);
+  const key = cacheKey("careerjet", keywords, ctx.key);
   const cached = readCache<CareerjetRawJob>(key, CACHE_TTL_MS);
   if (cached) return cached;
 
   const all = new Map<string, CareerjetRawJob>();
   try {
-    // Careerjet cherche par ville : on interroge les villes d'ancrage de la zone.
+    // Careerjet cherche par ville : on interroge les villes principales de la zone du profil.
     for (const kw of keywords) {
-      for (const city of ANCHOR_CITIES.slice(0, 3)) {
+      for (const city of ctx.anchors.slice(0, 3)) {
         const params = new URLSearchParams({
           locale_code: "fr_FR",
           keywords: kw,
@@ -67,40 +68,20 @@ export async function fetchAndCacheCareerjetJobs(positive?: string[]): Promise<C
   return jobs;
 }
 
-function matchesKeyword(text: string, kw: string): boolean {
-  const k = kw.toLowerCase().replace(/\s+/g, " ").trim();
-  if (!k) return false;
-  const t = text.toLowerCase().replace(/\s+/g, " ").trim();
-  if (k.length <= 3) {
-    const esc = k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return new RegExp(`(^|[^a-z0-9à-ÿ])${esc}([^a-z0-9à-ÿ]|$)`, "i").test(t);
-  }
-  return t.includes(k);
-}
-
-function fitField(title: string, targets: string[]): { fit: { band: FitBand; score: number } } | Record<string, never> {
-  const f = titleFit(title, targets);
-  return f ? { fit: { band: f.band as FitBand, score: f.score } } : {};
-}
-
 export async function loadCareerjetDiscoveredOffers(
   filters: ExploreFilters,
   roleTargets: string[],
-  zone?: Zone,
+  zone: Zone | undefined,
+  ctx: SearchContext,
 ): Promise<DiscoveredOffer[]> {
-  const raw = await fetchAndCacheCareerjetJobs(filters.positive);
+  const raw = await fetchAndCacheCareerjetJobs(ctx, filters.positive);
   const offers: DiscoveredOffer[] = [];
 
   for (const job of raw) {
     const title = strip(job.title || "");
     if (!title || !job.url) continue;
-    if (filters.negative.some((n) => n && matchesKeyword(title, n))) continue;
-    if (filters.positive.length > 0 && !filters.positive.some((p) => p && matchesKeyword(title, p))) continue;
-
     const loc = strip(job.locations || "");
-    if ([...(filters.blockHard || []), ...(filters.block || [])].some((b) => b && matchesKeyword(loc.toLowerCase(), b))) continue;
-    if (filters.remoteOnly && !/t[ée]l[ée]travail|remote/i.test(`${title} ${loc}`)) continue;
-    if (zone && !filters.remoteOnly && !acceptInZone({ ville: loc, texte: title }, zone)) continue;
+    if (!passesFilters({ title, location: loc }, filters, zone)) continue;
 
     const parsed = job.date ? new Date(job.date) : null;
     offers.push({
@@ -111,7 +92,7 @@ export async function loadCareerjetDiscoveredOffers(
       ats: "portals",
       source: "careerjet",
       url: job.url,
-      matchedKeyword: filters.positive.find((p) => p && title.toLowerCase().includes(p.toLowerCase())),
+      matchedKeyword: matchedField(title, filters),
       ...fitField(title, roleTargets),
     });
   }

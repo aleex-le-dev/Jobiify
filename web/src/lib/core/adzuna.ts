@@ -1,16 +1,21 @@
-import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
+import type { DiscoveredOffer, ExploreFilters } from "@/lib/explore";
 import { formatLocationCity } from "@/lib/format";
-import { titleFit } from "@/lib/title-fit.mjs";
-import { acceptInZone, type Zone } from "./zone";
-import { ORIGIN, cacheKey, getEnvVar, radiusKm, readCache, searchKeywords, writeCache } from "./local-area";
+import type { Zone } from "./zone";
+import { cacheKey, getEnvVar, readCache, searchKeywords, writeCache } from "./local-area";
+import { fitField, matchedField, passesFilters } from "./offer-filter";
+import type { SearchContext } from "./search-context";
 
 /**
  * Adzuna (api.adzuna.com) — agrégateur gratuit (clé sur developer.adzuna.com,
  * ~250 req/jour). Il indexe job boards, sites d'intérim et sites carrières PME,
- * ce qui complète bien France Travail. Recherche par ville + rayon autour de Lillers.
+ * ce qui complète bien France Travail. Recherche par ville + rayon autour de la
+ * commune de départ du profil.
  */
 
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+// Le compte gratuit n'a que 25 appels d'essai au TOTAL : peu de requêtes par
+// recherche (1 page, 3 mots-clés au plus) et un cache de 24 h. Avec un forfait
+// payant, ADZUNA_MAX_KEYWORDS=12 et ADZUNA_MAX_PAGES=3 rétablissent une recherche large.
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 interface AdzunaRawJob {
   id: string;
@@ -19,33 +24,36 @@ interface AdzunaRawJob {
   redirect_url: string;
   latitude?: number;
   longitude?: number;
+  contract_time?: string;
+  contract_type?: string;
   company?: { display_name?: string };
   location?: { display_name?: string; area?: string[] };
 }
 
 const strip = (s: string) => s.replace(/<[^>]+>/g, "").trim();
 
-export async function fetchAndCacheAdzunaJobs(positive?: string[]): Promise<AdzunaRawJob[]> {
+export async function fetchAndCacheAdzunaJobs(ctx: SearchContext, positive?: string[]): Promise<AdzunaRawJob[]> {
   const appId = getEnvVar("ADZUNA_APP_ID");
   const appKey = getEnvVar("ADZUNA_APP_KEY");
   if (!appId || !appKey) return [];
 
-  const keywords = searchKeywords(positive, 12);
-  const key = cacheKey("adzuna", keywords);
+  const keywords = searchKeywords(positive, Math.max(1, Number(getEnvVar("ADZUNA_MAX_KEYWORDS")) || 3));
+  const maxPages = Math.max(1, Number(getEnvVar("ADZUNA_MAX_PAGES")) || 1);
+  const key = cacheKey("adzuna", keywords, ctx.key);
   const cached = readCache<AdzunaRawJob>(key, CACHE_TTL_MS);
   if (cached) return cached;
 
   const all = new Map<string, AdzunaRawJob>();
   try {
     for (const kw of keywords) {
-      for (let page = 1; page <= 3; page++) {
+      for (let page = 1; page <= maxPages; page++) {
         const params = new URLSearchParams({
           app_id: appId,
           app_key: appKey,
           results_per_page: "50",
           what: kw,
-          where: `${ORIGIN.codePostal} Lillers`,
-          distance: String(radiusKm()),
+          where: [ctx.codePostal, ctx.nom].filter(Boolean).join(" "),
+          distance: String(ctx.radiusKm),
           max_days_old: "45",
           sort_by: "date",
           "content-type": "application/json",
@@ -69,54 +77,30 @@ export async function fetchAndCacheAdzunaJobs(positive?: string[]): Promise<Adzu
   return jobs;
 }
 
-function matchesKeyword(text: string, kw: string): boolean {
-  const k = kw.toLowerCase().replace(/\s+/g, " ").trim();
-  if (!k) return false;
-  const t = text.toLowerCase().replace(/\s+/g, " ").trim();
-  if (k.length <= 3) {
-    const esc = k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return new RegExp(`(^|[^a-z0-9à-ÿ])${esc}([^a-z0-9à-ÿ]|$)`, "i").test(t);
-  }
-  return t.includes(k);
-}
-
-function fitField(title: string, targets: string[]): { fit: { band: FitBand; score: number } } | Record<string, never> {
-  const f = titleFit(title, targets);
-  return f ? { fit: { band: f.band as FitBand, score: f.score } } : {};
-}
-
 export async function loadAdzunaDiscoveredOffers(
   filters: ExploreFilters,
   roleTargets: string[],
-  zone?: Zone,
+  zone: Zone | undefined,
+  ctx: SearchContext,
 ): Promise<DiscoveredOffer[]> {
-  const raw = await fetchAndCacheAdzunaJobs(filters.positive);
+  const raw = await fetchAndCacheAdzunaJobs(ctx, filters.positive);
   const offers: DiscoveredOffer[] = [];
 
   for (const job of raw) {
     const title = strip(job.title || "");
     if (!title || !job.redirect_url) continue;
-    if (filters.negative.some((n) => n && matchesKeyword(title, n))) continue;
-    if (filters.positive.length > 0 && !filters.positive.some((p) => p && matchesKeyword(title, p))) continue;
-
-    const loc = job.location?.display_name || "Hauts-de-France";
-    const lowLoc = loc.toLowerCase();
-    if ([...(filters.blockHard || []), ...(filters.block || [])].some((b) => b && matchesKeyword(lowLoc, b))) continue;
-    if (filters.remoteOnly && !/t[ée]l[ée]travail|remote/i.test(title + " " + loc)) continue;
-
-    if (zone && !filters.remoteOnly) {
-      if (!acceptInZone({ lat: job.latitude, lon: job.longitude, ville: loc, texte: title }, zone)) continue;
-    }
+    const loc = job.location?.display_name || "";
+    if (!passesFilters({ title, location: loc, lat: job.latitude, lon: job.longitude }, filters, zone)) continue;
 
     offers.push({
       company: strip(job.company?.display_name || "") || "Entreprise non communiquée",
       title,
-      location: formatLocationCity(loc) || loc,
+      location: formatLocationCity(loc) || loc || "Lieu non précisé",
       postedAt: job.created || "",
       ats: "portals",
       source: "adzuna",
       url: job.redirect_url,
-      matchedKeyword: filters.positive.find((p) => p && title.toLowerCase().includes(p.toLowerCase())),
+      matchedKeyword: matchedField(title, filters),
       ...fitField(title, roleTargets),
     });
   }

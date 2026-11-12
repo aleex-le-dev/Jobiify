@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ExternalLink, Plus, Check, Loader2, Coins, MapPin, Calendar } from "lucide-react";
+import { ExternalLink, Plus, Check, Loader2, Coins, MapPin, Calendar, Target } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { type DiscoveredOffer, offerSourceLabel } from "@/lib/explore";
 import { useJobs } from "@/components/jobs/job-store";
@@ -134,9 +134,32 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 text-[11.5px]">
+        {(offer.fit?.band === "strong" || offer.fit?.band === "related") && (
+          <span
+            title={
+              isFr
+                ? "Estimation gratuite d'après l'intitulé et les postes de votre profil. L'évaluation donne la vraie note."
+                : "Free estimate from the title and your profile's roles. Evaluation gives the real grade."
+            }
+            className={cn(
+              "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold",
+              offer.fit.band === "strong"
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                : "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+            )}
+          >
+            <Target className="size-3" />
+            {offer.fit.band === "strong" ? (isFr ? "Très proche du profil" : "Strong match") : isFr ? "Proche du profil" : "Related"}
+          </span>
+        )}
         <span className="inline-flex items-center rounded-md border border-brand/20 bg-brand-soft/50 px-2 py-0.5 text-[11px] font-medium text-brand">
           {offerSourceLabel(offer, isFr)}
         </span>
+        {offer.note && (
+          <span className="inline-flex max-w-full items-center rounded-md border border-border bg-surface-hover/50 px-2 py-0.5 text-[11px] font-medium text-foreground/80" title={offer.note}>
+            <span className="truncate">{offer.note}</span>
+          </span>
+        )}
         {pubInfo.label ? (
           <span
             className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-hover/70 px-2 py-0.5 font-medium text-foreground/85"

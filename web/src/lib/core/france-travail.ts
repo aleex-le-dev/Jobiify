@@ -1,10 +1,13 @@
-import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
+import type { DiscoveredOffer, ExploreFilters } from "@/lib/explore";
 import { formatLocationCity } from "@/lib/format";
-import { titleFit } from "@/lib/title-fit.mjs";
-import { acceptInZone, type Zone } from "./zone";
-import { ORIGIN, cacheKey, getEnvVar, radiusKm, readCache, searchKeywords, writeCache } from "./local-area";
+import { titlePasses } from "@/lib/offer-match.mjs";
+import type { Zone } from "./zone";
+import { cacheKey, getEnvVar, readCache, searchKeywords, writeCache } from "./local-area";
+import { fitField, matchedField, passesFilters, pause } from "./offer-filter";
+import type { SearchContext } from "./search-context";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 heures
+const SEARCH_URL = "https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search";
 
 interface FtRawJob {
   id: string;
@@ -12,6 +15,11 @@ interface FtRawJob {
   description?: string;
   dateCreation?: string;
   dateActualisation?: string;
+  romeCode?: string;
+  romeLibelle?: string;
+  appellationlibelle?: string;
+  typeContrat?: string;
+  typeContratLibelle?: string;
   lieuTravail?: {
     libelle?: string;
     codePostal?: string;
@@ -26,6 +34,8 @@ interface FtRawJob {
     urlOrigine?: string;
     partenaires?: Array<{ nom?: string; url?: string }>;
   };
+  /** Ajouté par Jobiify : offre remontée par son code métier (ROME), pas par un mot-clé. */
+  viaRome?: boolean;
 }
 
 let cachedToken: { access_token: string; expires_at: number } | null = null;
@@ -69,18 +79,50 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
   }
 }
 
+/** Paramètres de lieu : commune + rayon quand le code INSEE est connu, sinon départements. */
+function placeParams(ctx: SearchContext, minRadius = 0): Record<string, string> {
+  if (ctx.insee) return { commune: ctx.insee, distance: String(Math.max(ctx.radiusKm, minRadius)) };
+  return { departement: ctx.departements.slice(0, 5).join(",") };
+}
+
+/** Une recherche paginée (150 offres par page, jusqu'à `max`). */
+async function searchPaged(token: string, base: Record<string, string>, max: number, into: Map<string, FtRawJob>, mark?: (j: FtRawJob) => void) {
+  const PAGE = 150;
+  for (let start = 0; start < max; start += PAGE) {
+    const params = new URLSearchParams({ ...base, range: `${start}-${start + PAGE - 1}`, sort: "1" });
+    const res = await fetch(`${SEARCH_URL}?${params}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    });
+    if (res.status === 204 || !res.ok) break; // 200 et 206 sont valides
+    const data = (await res.json()) as { resultats?: FtRawJob[] };
+    const page = data.resultats || [];
+    for (const item of page) {
+      if (!item.id || into.has(item.id)) continue;
+      mark?.(item);
+      into.set(item.id, item);
+    }
+    if (page.length < PAGE) break;
+    await pause(120); // quota : ~10 req/s
+  }
+}
+
 /**
- * Recherche France Travail autour de Lières (commune INSEE + rayon), ce qui couvre
- * le 62 ET le Nord (59) voisin. Inclut les offres des partenaires (HelloWork,
- * Indeed, Meteojob, agences d'intérim…). Pagination jusqu'à 600 offres par mot-clé.
+ * Recherche France Travail autour de la commune de départ du profil. Inclut les
+ * offres des partenaires (HelloWork, Indeed, Meteojob, agences d'intérim…).
+ *
+ * Deux passes pour ne rien laisser passer :
+ *  1. par mots-clés (postes du profil + synonymes, jusqu'à 600 offres chacun) ;
+ *  2. par code métier ROME : les codes des offres trouvées en 1 dont le TITRE
+ *     correspond au profil sont réinterrogés sans mot-clé. On récupère ainsi les
+ *     offres du même métier publiées sous un intitulé que personne n'avait prévu.
  */
-export async function fetchAndCacheFranceTravailJobs(positive?: string[]): Promise<FtRawJob[]> {
+export async function fetchAndCacheFranceTravailJobs(ctx: SearchContext, positive?: string[]): Promise<FtRawJob[]> {
   const clientId = getEnvVar("FRANCETRAVAIL_CLIENT_ID");
   const clientSecret = getEnvVar("FRANCETRAVAIL_CLIENT_SECRET");
   if (!clientId || !clientSecret) return [];
 
-  const keywords = searchKeywords(positive, 15);
-  const key = cacheKey("france-travail", keywords);
+  const keywords = searchKeywords(positive, 20);
+  const key = cacheKey("france-travail", keywords, ctx.key);
   const cached = readCache<FtRawJob>(key, CACHE_TTL_MS);
   if (cached) return cached;
 
@@ -88,27 +130,28 @@ export async function fetchAndCacheFranceTravailJobs(positive?: string[]): Promi
   if (!token) return [];
 
   const allJobs = new Map<string, FtRawJob>();
-  const PAGE = 150;
-  const MAX_PER_KEYWORD = 600;
+  const place = placeParams(ctx);
   try {
-    for (const kw of keywords) {
-      for (let start = 0; start < MAX_PER_KEYWORD; start += PAGE) {
-        const params = new URLSearchParams({
-          motsCles: kw,
-          commune: ORIGIN.insee,
-          distance: String(radiusKm()),
-          range: `${start}-${start + PAGE - 1}`,
-          sort: "1",
+    for (const kw of keywords) await searchPaged(token, { ...place, motsCles: kw }, 600, allJobs);
+
+    // Passe 2 : codes ROME dominants parmi les offres dont le titre correspond au profil.
+    if (positive && positive.length > 0) {
+      const romeCount = new Map<string, number>();
+      let matched = 0;
+      for (const j of allJobs.values()) {
+        if (!j.romeCode || !titlePasses(j.intitule, { positive })) continue;
+        matched++;
+        romeCount.set(j.romeCode, (romeCount.get(j.romeCode) || 0) + 1);
+      }
+      const romes = [...romeCount.entries()]
+        .filter(([, n]) => n >= 2 && n / matched >= 0.12)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([code]) => code);
+      if (romes.length) {
+        await searchPaged(token, { ...place, codeROME: romes.join(",") }, 900, allJobs, (j) => {
+          j.viaRome = true;
         });
-        const res = await fetch(`https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search?${params}`, {
-          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-        });
-        if (res.status === 204 || !res.ok) break; // 200 et 206 sont valides
-        const data = (await res.json()) as { resultats?: FtRawJob[] };
-        const page = data.resultats || [];
-        for (const item of page) if (item.id && !allJobs.has(item.id)) allJobs.set(item.id, item);
-        if (page.length < PAGE) break;
-        await new Promise((r) => setTimeout(r, 120)); // quota : ~10 req/s
       }
     }
   } catch (err) {
@@ -120,111 +163,49 @@ export async function fetchAndCacheFranceTravailJobs(positive?: string[]): Promi
   return jobs;
 }
 
-function firstMatch(title: string, positives: string[]): string | undefined {
-  const lower = title.toLowerCase();
-  for (const k of positives) if (k && lower.includes(k.toLowerCase())) return k;
-  return undefined;
-}
-
-function fitField(title: string, targets: string[]): { fit: { band: FitBand; score: number } } | Record<string, never> {
-  const f = titleFit(title, targets);
-  return f ? { fit: { band: f.band as FitBand, score: f.score } } : {};
-}
-
-function matchesKeyword(text: string, kw: string): boolean {
-  const cleanKw = kw.toLowerCase().replace(/\s+/g, " ").trim();
-  if (!cleanKw) return false;
-  const cleanText = text.toLowerCase().replace(/\s+/g, " ").trim();
-  if (cleanKw.length <= 3) {
-    const escaped = cleanKw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const rx = new RegExp(`(^|[^a-z0-9à-ÿ])${escaped}([^a-z0-9à-ÿ]|$)`, "i");
-    return rx.test(cleanText);
-  }
-  return cleanText.includes(cleanKw);
-}
-
-function isBlockedLocation(location: string, blockList?: string[]): boolean {
-  if (!blockList || blockList.length === 0) return false;
-  const locWithoutDept = location.toLowerCase().replace(/\bpas[- ]de[- ]calais\b/g, "").trim();
-  return blockList.some((b) => {
-    if (!b) return false;
-    const cleanB = b.toLowerCase().trim();
-    if (cleanB === "calais") {
-      return /\bcalais\b/i.test(locWithoutDept);
-    }
-    return matchesKeyword(locWithoutDept, b);
-  });
-}
-
-function matchesFilters(
-  title: string,
-  location: string,
-  filters: ExploreFilters,
-  job?: FtRawJob,
-  zone?: Zone,
-): boolean {
-  if (filters.negative.some((n) => n && matchesKeyword(title, n))) return false;
-  if (filters.positive.length > 0 && !filters.positive.some((p) => p && matchesKeyword(title, p))) return false;
-
-  const fullLoc = location.toLowerCase();
-  if (isBlockedLocation(fullLoc, filters.blockHard)) return false;
-  if (isBlockedLocation(fullLoc, filters.block)) return false;
-
-  if (filters.remoteOnly) {
-    const isRemote = fullLoc.includes("100% télétravail") || fullLoc.includes("remote");
-    if (!isRemote) return false;
-    return true;
-  }
-
-  if (zone) {
-    // Zone de trajet active : elle seule décide (la liste "allow" ne peut plus la contourner).
-    return acceptInZone(
-      {
-        lat: job?.lieuTravail?.latitude,
-        lon: job?.lieuTravail?.longitude,
-        codeInsee: job?.lieuTravail?.commune,
-        ville: job?.lieuTravail?.libelle || location,
-        texte: title,
-      },
-      zone,
-    );
-  }
-
-  if (filters.allow.length > 0 && !filters.allow.some((a) => a && matchesKeyword(fullLoc, a))) return false;
-
-  return true;
+export function ftOfferUrl(job: FtRawJob): string {
+  return (
+    job.origineOffre?.partenaires?.[0]?.url ||
+    job.origineOffre?.urlOrigine ||
+    `https://candidat.francetravail.fr/offres/recherche/detail/${encodeURIComponent(job.id)}`
+  );
 }
 
 export async function loadFranceTravailDiscoveredOffers(
   filters: ExploreFilters,
   roleTargets: string[],
-  zone?: Zone,
+  zone: Zone | undefined,
+  ctx: SearchContext,
 ): Promise<DiscoveredOffer[]> {
-  const rawJobs = await fetchAndCacheFranceTravailJobs(filters.positive);
+  const rawJobs = await fetchAndCacheFranceTravailJobs(ctx, filters.positive);
   const offers: DiscoveredOffer[] = [];
 
   for (const job of rawJobs) {
-    const loc = job.lieuTravail?.libelle || job.lieuTravail?.commune || "Hauts-de-France";
-    if (!matchesFilters(job.intitule, loc, filters, job, zone)) continue;
-
-    const partnerUrl = job.origineOffre?.partenaires?.[0]?.url;
-    const originUrl = job.origineOffre?.urlOrigine;
-    const directUrl = `https://candidat.francetravail.fr/offres/recherche/detail/${encodeURIComponent(job.id)}`;
-    const finalUrl = partnerUrl || originUrl || directUrl;
-
-    const cleanCity = formatLocationCity(loc) || loc;
-    const rawDate = job.dateActualisation || job.dateCreation || "";
-    const postedAt = rawDate || "";
-
-    offers.push({
-      company: job.entreprise?.nom || "France Travail (Employeur confidentiel)",
+    const loc = job.lieuTravail?.libelle || job.lieuTravail?.commune || "";
+    const candidate = {
       title: job.intitule,
-      location: cleanCity,
-      postedAt,
+      location: loc,
+      lat: job.lieuTravail?.latitude,
+      lon: job.lieuTravail?.longitude,
+      codeInsee: job.lieuTravail?.commune,
+    };
+    const byTitle = passesFilters(candidate, filters, zone);
+    // Offre du même métier (ROME) sous un autre intitulé : gardée, et signalée comme telle.
+    const byRome = !byTitle && job.viaRome === true && passesFilters(candidate, filters, zone, { skipPositive: true });
+    if (!byTitle && !byRome) continue;
+
+    const contrat = job.typeContratLibelle || "";
+    const notes = [byRome && job.romeLibelle ? `Même métier : ${job.romeLibelle}` : "", contrat].filter(Boolean);
+    offers.push({
+      company: job.entreprise?.nom || "Employeur non communiqué",
+      title: job.intitule,
+      location: formatLocationCity(loc) || loc || "Lieu non précisé",
+      postedAt: job.dateActualisation || job.dateCreation || "",
       ats: "portals",
       source: "france-travail",
-      url: finalUrl,
-      matchedKeyword: firstMatch(job.intitule, filters.positive),
+      url: ftOfferUrl(job),
+      matchedKeyword: matchedField(job.intitule, filters),
+      ...(notes.length ? { note: notes.join(" · ") } : {}),
       ...fitField(job.intitule, roleTargets),
     });
   }
@@ -240,38 +221,20 @@ export type { FtRawJob };
  * Proman, Crit, Start People, Samsic…) : c'est la source la plus complète pour
  * l'intérim. Pagination jusqu'à 1 500 missions, cache 1 h.
  */
-export async function fetchFranceTravailInterim(): Promise<FtRawJob[] | null> {
+export async function fetchFranceTravailInterim(ctx: SearchContext): Promise<FtRawJob[] | null> {
   const clientId = getEnvVar("FRANCETRAVAIL_CLIENT_ID");
   const clientSecret = getEnvVar("FRANCETRAVAIL_CLIENT_SECRET");
   if (!clientId || !clientSecret) return null; // null = clé absente
 
-  const key = `france-travail-interim-${radiusKm()}`;
+  const key = `france-travail-interim-${ctx.key}`;
   const cached = readCache<FtRawJob>(key, 60 * 60 * 1000);
   if (cached) return cached;
 
   const token = await getAccessToken(clientId, clientSecret);
   if (!token) return [];
   const all = new Map<string, FtRawJob>();
-  const PAGE = 150;
   try {
-    for (let start = 0; start < 1500; start += PAGE) {
-      const params = new URLSearchParams({
-        typeContrat: "MIS",
-        commune: ORIGIN.insee,
-        distance: String(Math.max(radiusKm(), 40)),
-        range: `${start}-${start + PAGE - 1}`,
-        sort: "1",
-      });
-      const res = await fetch(`https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search?${params}`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      });
-      if (res.status === 204 || !res.ok) break;
-      const data = (await res.json()) as { resultats?: FtRawJob[] };
-      const page = data.resultats || [];
-      for (const item of page) if (item.id && !all.has(item.id)) all.set(item.id, item);
-      if (page.length < PAGE) break;
-      await new Promise((r) => setTimeout(r, 120));
-    }
+    await searchPaged(token, { ...placeParams(ctx, 40), typeContrat: "MIS" }, 1500, all);
   } catch (err) {
     console.error("France Travail (intérim) search failed:", err);
   }

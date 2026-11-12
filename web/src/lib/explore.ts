@@ -23,14 +23,14 @@ export const ATS_LABEL: Record<AtsSource, string> = {
 export const SEARCH_SOURCES: AtsSource[] = ["portals", "workday"];
 /** Détail affiché sous chaque source proposée. */
 export const SOURCE_HINT: Partial<Record<AtsSource, string>> = {
-  portals: "France Travail, Jooble, Adzuna, Careerjet, Welcome to the Jungle, Service Public, vos employeurs suivis et les agences d'intérim",
+  portals: "France Travail, Meteojob, Jooble, Adzuna, Careerjet, Welcome to the Jungle, fonction publique, vos employeurs suivis et les agences d'intérim",
   workday: "Sites carrière des grands groupes utilisant Workday (plus lent, peu d'offres locales)",
 };
 
 /** Returns a precise, human-readable source label (e.g. "Service Public (62)", "France Travail") */
 export function offerSourceLabel(offer: DiscoveredOffer, isFr = true): string {
   if (offer.source === "service-public-62") {
-    return isFr ? "Service Public (62)" : "Public Sector (62)";
+    return isFr ? "Fonction publique" : "Public sector";
   }
   if (offer.source === "sirene-pme-62") {
     return isFr ? "PME Locale (SIRENE)" : "Local SME (SIRENE)";
@@ -40,6 +40,9 @@ export function offerSourceLabel(offer: DiscoveredOffer, isFr = true): string {
   }
   if (offer.source?.startsWith("interim-")) {
     return isFr ? "Intérim" : "Temp work";
+  }
+  if (offer.source === "meteojob") {
+    return "Meteojob";
   }
   if (offer.source === "careerjet") {
     return "Careerjet";
@@ -167,6 +170,10 @@ export type DiscoveredOffer = {
   confidence?: "low" | "medium" | "high";
 };
 
+/** État d'une source après une recherche. « needs-key » = gratuite mais pas encore connectée. */
+export type SourceStatus = "ok" | "empty" | "needs-key" | "error";
+export type SourceReport = { id: string; label: string; status: SourceStatus; found: number; kept: number };
+
 /** The two discovery surfaces: free deterministic Scan vs token-spending AI search. */
 export type ExploreMode = "scan" | "ai";
 
@@ -193,6 +200,9 @@ export type ScanEvent =
       // others finished — a partial result, never "all caught up".
       incomplete?: string[];
     }
+  // Bilan d'une source régionale : combien d'offres elle a remontées, combien
+  // étaient nouvelles (non doublons), ou pourquoi elle n'a rien donné.
+  | { kind: "source"; id: string; label: string; status: SourceStatus; found: number; kept: number }
   | { kind: "log"; line: string }
   | { kind: "error"; message: string }
   | { kind: "done"; count: number; offers: DiscoveredOffer[]; cost?: { tokens: number; usd: number } };

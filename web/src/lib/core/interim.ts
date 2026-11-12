@@ -4,6 +4,9 @@ import { fetchAndCacheJoobleJobs } from "./jooble";
 import { fetchAndCacheAdzunaJobs } from "./adzuna";
 import { fetchAndCacheCareerjetJobs } from "./careerjet";
 import { getEnvVar } from "./local-area";
+import { fetchMeteojobInterim, meteojobUrl } from "./meteojob";
+import { buildSearchContext, type SearchContext } from "./search-context";
+import { titlePasses, firstMatch } from "@/lib/offer-match.mjs";
 import { acceptInZone, loadZone, type Zone } from "./zone";
 import { getActiveProfile } from "./search-profiles";
 import { formatLocationCity } from "@/lib/format";
@@ -60,14 +63,15 @@ function agencyName(...candidates: Array<string | undefined>): string {
 const looksInterim = (...texts: Array<string | undefined>) =>
   texts.some((t) => /int[ée]rim|mission|\btravail temporaire\b|\bett\b/i.test(t || ""));
 
-async function zoneFromProfile(): Promise<{ zone?: Zone; ville: string; minutes: number }> {
+async function zoneFromProfile(): Promise<{ zone?: Zone; ville: string; minutes: number; ctx: SearchContext }> {
   const p = getActiveProfile();
   const ville = p?.originCity || "Lières";
   const minutes = p?.commuteMinutes || 30;
   try {
-    return { zone: await loadZone(minutes, ville, p?.originInsee), ville, minutes };
+    const zone = await loadZone(minutes, ville, p?.originInsee);
+    return { zone, ville, minutes, ctx: await buildSearchContext({ originCity: ville, originInsee: p?.originInsee }, zone) };
   } catch {
-    return { ville, minutes };
+    return { ville, minutes, ctx: await buildSearchContext({ originCity: ville }) };
   }
 }
 
@@ -77,7 +81,7 @@ export async function loadInterimOffers({ fresh = false } = {}): Promise<{
   ville: string;
   minutes: number;
 }> {
-  const { zone, ville, minutes } = await zoneFromProfile();
+  const { zone, ville, minutes, ctx } = await zoneFromProfile();
   const keep = (o: InterimOffer, lat?: number, lon?: number) =>
     !zone || acceptInZone({ ville: o.location, lat, lon, texte: o.title }, zone);
   const sources: InterimSource[] = [];
@@ -108,7 +112,7 @@ export async function loadInterimOffers({ fresh = false } = {}): Promise<{
     // 2. France Travail — contrats d'intérim
     (async () => {
       try {
-        const jobs = await fetchFranceTravailInterim();
+        const jobs = await fetchFranceTravailInterim(ctx);
         if (jobs === null) {
           sources.push({ id: "france-travail", label: "France Travail (toutes agences)", status: "needs-key", count: 0 });
           return;
@@ -125,12 +129,24 @@ export async function loadInterimOffers({ fresh = false } = {}): Promise<{
         sources.push({ id: "france-travail", label: "France Travail (toutes agences)", status: "error", count: 0 });
       }
     })(),
-    // 3. Agrégateurs sur le mot « intérim »
+    // 3. Meteojob — contrats d'intérim, sans clé (Adecco, Synergie, Aquila RH, RAS…)
+    (async () => {
+      try {
+        let n = 0;
+        for (const j of await fetchMeteojobInterim(ctx)) {
+          if (add({ url: meteojobUrl(j.id), title: j.title, agency: agencyName(j.company), company: j.company, location: j.locality, postedAt: j.publicationDate, source: "meteojob" }, j.lat, j.lon)) n++;
+        }
+        sources.push({ id: "meteojob", label: "Meteojob (Adecco, Synergie, Aquila RH…)", status: "ok", count: n });
+      } catch {
+        sources.push({ id: "meteojob", label: "Meteojob (Adecco, Synergie, Aquila RH…)", status: "error", count: 0 });
+      }
+    })(),
+    // 4. Agrégateurs sur le mot « intérim »
     (async () => {
       if (!getEnvVar("JOOBLE_API_KEY")) return void sources.push({ id: "jooble", label: "Jooble", status: "needs-key", count: 0 });
       try {
         let n = 0;
-        for (const j of await fetchAndCacheJoobleJobs(["interim"])) {
+        for (const j of await fetchAndCacheJoobleJobs(ctx, ["interim"])) {
           if (!looksInterim(j.title, j.type, j.snippet, j.company)) continue;
           if (add({ url: j.link, title: j.title.replace(/<[^>]+>/g, ""), agency: agencyName(j.company, j.source), company: j.company || "", location: j.location || "", postedAt: j.updated || "", source: "jooble" })) n++;
         }
@@ -143,7 +159,7 @@ export async function loadInterimOffers({ fresh = false } = {}): Promise<{
       if (!getEnvVar("ADZUNA_APP_ID")) return void sources.push({ id: "adzuna", label: "Adzuna", status: "needs-key", count: 0 });
       try {
         let n = 0;
-        for (const j of await fetchAndCacheAdzunaJobs(["interim"])) {
+        for (const j of await fetchAndCacheAdzunaJobs(ctx, ["interim"])) {
           const company = j.company?.display_name || "";
           if (add({ url: j.redirect_url, title: j.title.replace(/<[^>]+>/g, ""), agency: agencyName(company), company, location: j.location?.display_name || "", postedAt: j.created || "", source: "adzuna" }, j.latitude, j.longitude)) n++;
         }
@@ -156,7 +172,7 @@ export async function loadInterimOffers({ fresh = false } = {}): Promise<{
       if (!getEnvVar("CAREERJET_AFFID")) return void sources.push({ id: "careerjet", label: "Careerjet", status: "needs-key", count: 0 });
       try {
         let n = 0;
-        for (const j of await fetchAndCacheCareerjetJobs(["interim"])) {
+        for (const j of await fetchAndCacheCareerjetJobs(ctx, ["interim"])) {
           if (add({ url: j.url, title: j.title.replace(/<[^>]+>/g, ""), agency: agencyName(j.company, j.site), company: j.company || "", location: j.locations || "", postedAt: j.date || "", source: "careerjet" })) n++;
         }
         sources.push({ id: "careerjet", label: "Careerjet", status: "ok", count: n });
@@ -168,18 +184,9 @@ export async function loadInterimOffers({ fresh = false } = {}): Promise<{
 
   // Les plus récentes d'abord ; sans date, à la fin dans leur ordre d'arrivée.
   offers.sort((a, b) => (Date.parse(b.postedAt) || 0) - (Date.parse(a.postedAt) || 0));
-  const order = ["agences", "france-travail", "jooble", "adzuna", "careerjet"];
+  const order = ["agences", "france-travail", "meteojob", "jooble", "adzuna", "careerjet"];
   sources.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   return { offers, sources, ville, minutes };
-}
-
-const foldText = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
-function hasKeyword(text: string, kw: string): boolean {
-  const k = foldText(kw);
-  if (!k) return false;
-  const t = foldText(text);
-  if (k.length <= 3) return new RegExp(`(^|[^a-z0-9])${k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`).test(t);
-  return t.includes(k);
 }
 
 /**
@@ -192,9 +199,8 @@ export async function loadInterimForProfile(filters: ExploreFilters, roleTargets
   const { offers } = await loadInterimOffers();
   const out: DiscoveredOffer[] = [];
   for (const o of offers) {
-    if (filters.negative.some((n) => n && hasKeyword(o.title, n))) continue;
-    const matched = filters.positive.find((p) => p && hasKeyword(o.title, p));
-    if (filters.positive.length > 0 && !matched) continue;
+    if (!titlePasses(o.title, filters)) continue;
+    const matched = firstMatch(o.title, filters.positive);
     const fit = titleFit(o.title, roleTargets);
     out.push({
       url: o.url,

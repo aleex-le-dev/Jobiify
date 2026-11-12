@@ -427,6 +427,46 @@ h1.font-display, h1.font-serif, .font-display:is(h1, h2) { font-weight: 650; }
 .report-prose tbody tr:hover { background: color-mix(in srgb, var(--fg) 3%, transparent); }
 .report-prose img { border-radius: 0.5rem; }
 
+/* ── Aperçu de CV (même rendu à l'import et dans l'éditeur) ─────────────── */
+.cv-preview { font-size: 0.9rem; line-height: 1.6; }
+.cv-preview h1 {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  margin: 0 0 0.3rem;
+}
+/* Ligne de coordonnées, juste sous le nom. */
+.cv-preview h1 + p {
+  margin: 0 0 1.4rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.cv-preview h2 {
+  font-family: var(--font-ui, inherit);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--brand-text);
+  margin: 1.6rem 0 0.7rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+.cv-preview h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 1.1rem 0 0.1rem;
+}
+/* Entreprise · lieu · dates, sous l'intitulé du poste. */
+.cv-preview h3 + p {
+  margin: 0 0 0.4rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.cv-preview h3 + p strong { color: var(--brand-text); font-weight: 600; }
+.cv-preview p { margin: 0.5rem 0; }
+.cv-preview ul { margin: 0.35rem 0 0.6rem; }
+.cv-preview li { margin: 0.2rem 0; }
+
 /* CostBadge (co-located → global): cost color-semantics, see cost-badge.tsx */
 .co-cost{display:inline-flex;align-items:center;gap:.28rem;border-radius:999px;font-weight:600;line-height:1;white-space:nowrap;border:1px solid transparent}
 .co-cost[data-size="xs"]{font-size:10.5px;padding:.16rem .4rem;letter-spacing:.04em;text-transform:uppercase}

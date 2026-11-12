@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
 import { SkillGaps } from "@/components/skill-gaps";
-import remarkGfm from "remark-gfm";
 import { Check, Loader2, Sparkles, Plus, Briefcase, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { CvPreview } from "@/components/cv/cv-preview";
 import { useI18n } from "@/components/i18n-provider";
 
 const CV_TEMPLATE_FR = `# CV -- [Prénom Nom]
@@ -106,53 +105,6 @@ const SNIPPET_EXPERIENCE = `### [Entreprise] -- [Ville (Département)]
 const SNIPPET_EDUCATION = `- **[Diplôme ou Formation] (Niveau Bac+X)**, [Établissement, Ville] ([Année])`;
 
 const SNIPPET_PROJECT = `- **[Nom du Projet]** : [Courte description, technologies utilisées et résultats].`;
-
-function formatCvPreview(markdown: string): string {
-  if (!markdown) return "";
-
-  // Assurer que les coordonnées sous le titre (Lieu, Permis, Email, Téléphone, etc.)
-  // s'affichent strictement ligne par ligne même si l'utilisateur n'a pas mis 2 espaces à la fin
-  let processed = markdown;
-  const parts = processed.split(/(^##\s+.*$)/m);
-  if (parts.length > 0) {
-    parts[0] = parts[0].replace(/([^\r\n]+)\r?\n(?!\r?\n|$)/g, (_, line) => {
-      if (line.startsWith("#")) return `${line}\n\n`;
-      return `${line.trimEnd()}  \n`;
-    });
-    processed = parts.join("");
-  }
-
-  // Dans les entrées d'expérience : reformater pour afficher le titre de l'emploi en grand (H3)
-  // et l'entreprise, le lieu et les dates en sous-titre secondaire discret.
-  const re = /^###\s+([^\n\r#]+?)(?:\s+[-–—]{1,2}\s+([^\n\r#]+))?\r?\n+(\*\*[^\*\n\r]+\*\*)\r?\n+([^\r\n]+)/gm;
-  return processed.replace(re, (_, company, location, roleBold, dates) => {
-    const roleText = roleBold.replace(/^\*\*|\*\*$/g, "").trim();
-    const loc = location ? ` · ${location.trim()}` : "";
-    const dt = dates.trim() ? ` · ${dates.trim().replace(/--/g, "–")}` : "";
-    return `### ${roleText}\n\n**${company.trim()}**${loc}${dt}\n\n`;
-  });
-}
-
-const PREVIEW_STYLE = `
-.cv-preview h3 {
-  font-size: 1.15rem !important;
-  font-weight: 700 !important;
-  color: var(--fg) !important;
-  margin-top: 1.6rem !important;
-  margin-bottom: 0.2rem !important;
-  letter-spacing: -0.01em;
-}
-.cv-preview h3 + p {
-  font-size: 0.88rem !important;
-  color: var(--muted) !important;
-  margin-top: 0 !important;
-  margin-bottom: 0.65rem !important;
-}
-.cv-preview h3 + p strong {
-  color: var(--color-brand, #ea580c) !important;
-  font-weight: 600 !important;
-}
-`;
 
 /**
  * Sans props : édite cv.md (CV du profil actif). Avec `profileId` : édite le CV
@@ -308,7 +260,6 @@ export function CvEditor({ profileId, embedded = false }: { profileId?: string; 
         <div className="mt-6 text-sm text-muted">{isFr ? "Chargement…" : "Loading…"}</div>
       ) : (
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          <style>{PREVIEW_STYLE}</style>
           <div className="flex flex-col">
             <div className="mb-2 flex items-center justify-between text-xs text-muted font-medium">
               <span>{isFr ? "Markdown source (cv.md)" : "Markdown source (cv.md)"}</span>
@@ -330,7 +281,7 @@ export function CvEditor({ profileId, embedded = false }: { profileId?: string; 
               <span>{isFr ? "Aperçu en direct (Titre en avant)" : "Live preview (Title prioritized)"}</span>
               <span className="text-emerald-600 dark:text-emerald-400 font-medium">{isFr ? "Mise en forme dynamique" : "Dynamic formatting"}</span>
             </div>
-            <article className={`report-prose cv-preview ${embedded ? "min-h-[45vh] max-h-[70vh]" : "min-h-[60vh]"} overflow-auto rounded-2xl border border-border bg-surface/30 p-5`}>
+            <article className={`${embedded ? "min-h-[45vh] max-h-[70vh]" : "min-h-[60vh]"} overflow-auto rounded-2xl border border-border bg-surface/30 p-5`}>
               {!content.trim() ? (
                 <div className="flex h-full min-h-[50vh] flex-col items-center justify-center rounded-xl border border-dashed border-border/80 p-8 text-center">
                   <div className="flex size-12 items-center justify-center rounded-2xl bg-brand/10 text-brand">
@@ -354,7 +305,7 @@ export function CvEditor({ profileId, embedded = false }: { profileId?: string; 
                   </button>
                 </div>
               ) : (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{formatCvPreview(content)}</ReactMarkdown>
+                <CvPreview markdown={content} />
               )}
             </article>
           </div>

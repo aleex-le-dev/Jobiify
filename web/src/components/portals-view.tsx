@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Loader2,
@@ -247,6 +247,16 @@ export function PortalsView({
 
 function ApisSection({ apis, onRefresh }: { apis: ApiInfo[]; onRefresh: () => void }) {
   const [configuringApi, setConfiguringApi] = useState<ApiInfo | null>(null);
+
+  // Arrivée depuis la recherche (« Connecter France Travail ») : la fenêtre de
+  // connexion de la source demandée s'ouvre directement.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("connect");
+    if (!wanted) return;
+    const api = apis.find((a) => a.id === wanted);
+    if (api && api.envKeys?.length) setConfiguringApi(api);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const activeCount = apis.filter((a) => a.status === "live" || a.status === "configured").length;
   const sortedApis = useMemo(() => {
     return [...apis].sort((a, b) => a.name.localeCompare(b.name, "fr", { sensitivity: "base" }));

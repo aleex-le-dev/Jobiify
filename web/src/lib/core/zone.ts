@@ -356,7 +356,10 @@ export function inZone(offre: OffreLocation, zone: Zone): ZoneVerdict {
   if (offre.ville) {
     // Code postal 5 chiffres (ex: "62400") : décisif dans un sens comme dans l'autre
     const cpMatch = offre.ville.match(/\b\d{5}\b/);
-    if (cpMatch) return zone.cps.has(cpMatch[0]) ? "oui" : "non";
+    if (cpMatch && zone.cps.has(cpMatch[0])) return "oui";
+    // Un code CEDEX (« 62019 ARRAS CEDEX ») n'est le code postal d'aucune commune :
+    // il ne permet pas de dire non, c'est le nom de la ville qui tranche plus bas.
+    if (cpMatch && !/\bcedex\b/i.test(offre.ville)) return "non";
 
     // Nettoyer la ville : retirer parenthèses, codes départements
     const cleaned = offre.ville.replace(/\(.*?\)|\b\d{2,5}\b/g, "");

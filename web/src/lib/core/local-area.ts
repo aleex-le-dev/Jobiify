@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { careerOpsRoot } from "@/lib/career-ops";
+import { genderVariants } from "@/lib/job-synonyms.mjs";
 
 /**
  * Secteur géographique de recherche, partagé par toutes les sources régionales
@@ -60,18 +61,32 @@ export function radiusKm(): number {
 /**
  * Mots-clés de recherche dérivés des filtres positifs : normalisés, dédoublonnés,
  * plafonnés pour rester dans les quotas des API gratuites.
+ * Les variantes de genre d'un mot-clé déjà retenu (« technicienne support ») sont
+ * sautées : les moteurs d'offres les traitent comme la même requête, et chaque
+ * place libérée sert à un vrai synonyme métier.
  */
 export function searchKeywords(positive: string[] | undefined, max = 10): string[] {
   const fold = (s: string) =>
-    s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+    s
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      // « (h/f) », « n1/n2 » : du bruit pour un moteur de recherche d'offres.
+      .replace(/\(?\b[hfm]\s*\/\s*[hfmx]\b\)?/g, " ")
+      .replace(/\bn\d(\s*\/\s*n?\d)*\b/g, " ")
+      .replace(/[^a-z0-9+#' -]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
   const out: string[] = [];
+  const skip = new Set<string>();
   // Les mots-clés par défaut (informatique) ne servent que si le profil n'a aucun poste :
   // un profil « cariste » ne doit pas se retrouver avec des requêtes « helpdesk ».
   const source = positive && positive.length > 0 ? positive : DEFAULT_KEYWORDS;
   for (const k of source) {
     const f = fold(k);
-    if (f.length < 3 || out.includes(f)) continue;
+    if (f.length < 3 || out.includes(f) || skip.has(f)) continue;
     out.push(f);
+    for (const v of genderVariants(f) as string[]) skip.add(fold(v));
     if (out.length >= max) break;
   }
   return out;
@@ -100,9 +115,9 @@ export function writeCache(name: string, data: unknown[]): void {
   }
 }
 
-/** Clé de cache stable pour un jeu de mots-clés + rayon. */
-export function cacheKey(prefix: string, keywords: string[]): string {
-  const raw = `${radiusKm()}|${keywords.join(",")}`;
+/** Clé de cache stable pour un jeu de mots-clés + une zone (ville de départ et rayon). */
+export function cacheKey(prefix: string, keywords: string[], scope = ""): string {
+  const raw = `${scope || radiusKm()}|${keywords.join(",")}`;
   let h = 0;
   for (let i = 0; i < raw.length; i++) h = (h * 31 + raw.charCodeAt(i)) | 0;
   return `${prefix}-${(h >>> 0).toString(36)}`;

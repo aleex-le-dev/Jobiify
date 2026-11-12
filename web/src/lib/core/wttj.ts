@@ -1,9 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
-import { careerOpsRoot } from "@/lib/career-ops";
-import type { DiscoveredOffer, ExploreFilters, FitBand } from "@/lib/explore";
-import { titleFit } from "@/lib/title-fit.mjs";
-import { acceptInZone, type Zone } from "./zone";
+import type { DiscoveredOffer, ExploreFilters } from "@/lib/explore";
+import type { Zone } from "./zone";
+import { cacheKey, readCache, searchKeywords, writeCache } from "./local-area";
+import { fitField, matchedField, passesFilters } from "./offer-filter";
+import type { SearchContext } from "./search-context";
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 heure
 
@@ -15,6 +14,7 @@ interface WttjJob {
   postedAt?: string;
   lat?: number;
   lon?: number;
+  remote?: boolean;
 }
 
 function parseEnvPayload(text: string): { appId: string; apiKey: string } {
@@ -27,59 +27,37 @@ function parseEnvPayload(text: string): { appId: string; apiKey: string } {
   return { appId, apiKey };
 }
 
-export async function fetchAndCacheWttjJobs(): Promise<WttjJob[]> {
-  const cacheDir = path.join(careerOpsRoot(), "data", "cache");
-  const cacheFile = path.join(cacheDir, "wttj-fr.json");
-
-  try {
-    if (fs.existsSync(cacheFile)) {
-      const stat = fs.statSync(cacheFile);
-      if (Date.now() - stat.mtimeMs < CACHE_TTL_MS) {
-        const raw = fs.readFileSync(cacheFile, "utf8");
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed as WttjJob[];
-        }
-      }
-    }
-  } catch {
-    /* fallback to fetch */
-  }
+/**
+ * Welcome to the Jungle, interrogé avec les postes DU PROFIL (et non une liste
+ * fixe de métiers) : chaque mot-clé est cherché en France, puis la zone de
+ * trajet du profil trie les résultats grâce aux coordonnées de chaque bureau.
+ */
+export async function fetchAndCacheWttjJobs(ctx: SearchContext, positive?: string[]): Promise<WttjJob[]> {
+  const keywords = searchKeywords(positive, 10);
+  const key = cacheKey("wttj", keywords, ctx.key);
+  const cached = readCache<WttjJob>(key, CACHE_TTL_MS);
+  if (cached) return cached;
 
   try {
     const envRes = await fetch("https://www.welcometothejungle.com/api/env", {
       headers: { "User-Agent": "career-ops/1.0" },
     });
     if (!envRes.ok) return [];
-    const envText = await envRes.text();
-    const { appId, apiKey } = parseEnvPayload(envText);
-    const algoliaHost = `${appId}-dsn.algolia.net`;
-
-    const queries = [
-      "informatique",
-      "support",
-      "technicien",
-      "developpeur",
-      "reseau",
-      "web",
-      "helpdesk",
-      "react",
-      "php",
-      "frontend",
-      "fullstack",
-    ];
+    const { appId, apiKey } = parseEnvPayload(await envRes.text());
+    const endpoint = `https://${appId}-dsn.algolia.net/1/indexes/wttj_jobs_production_en/query`;
     const byUrl = new Map<string, WttjJob>();
 
-    for (const query of queries) {
-      const url = `https://${algoliaHost}/1/indexes/wttj_jobs_production_en/query`;
+    const run = async (query: string, geo: boolean) => {
       const params = new URLSearchParams({
         query,
         hitsPerPage: "200",
         filters: "offices.country_code:FR",
         attributesToRetrieve: "name,slug,organization,offices,remote,published_at_timestamp",
+        // Autour de la commune de départ quand c'est possible : les 200 résultats
+        // sont alors ceux de la zone, pas les 200 premiers de toute la France.
+        ...(geo ? { aroundLatLng: `${ctx.lat},${ctx.lon}`, aroundRadius: String(Math.round(ctx.radiusKm * 1000)) } : {}),
       });
-
-      const res = await fetch(url, {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: {
           "x-algolia-application-id": appId,
@@ -89,10 +67,9 @@ export async function fetchAndCacheWttjJobs(): Promise<WttjJob[]> {
         },
         body: JSON.stringify({ params: params.toString() }),
       });
-
-      if (!res.ok) continue;
+      if (!res.ok) return false;
       const data = (await res.json()) as { hits?: Array<any> };
-      if (!Array.isArray(data?.hits)) continue;
+      if (!Array.isArray(data?.hits)) return false;
 
       for (const h of data.hits) {
         const title = (h.name || "").trim();
@@ -100,35 +77,38 @@ export async function fetchAndCacheWttjJobs(): Promise<WttjJob[]> {
         const orgSlug = (h.organization?.slug || "").trim();
         if (!title || !slug || !orgSlug) continue;
 
-        const jobUrl = `https://www.welcometothejungle.com/en/companies/${orgSlug}/jobs/${slug}`;
+        const jobUrl = `https://www.welcometothejungle.com/fr/companies/${orgSlug}/jobs/${slug}`;
         if (byUrl.has(jobUrl)) continue;
 
-        const company = (h.organization?.name || "Welcome to the Jungle").trim();
         const office = Array.isArray(h.offices) && h.offices.length > 0 ? h.offices[0] : null;
         const parts: string[] = [];
-        if (office?.city) parts.push(office.city.trim());
-        if (office?.country) parts.push(office.country.trim());
-        if (h.remote === "fulltime") {
-          parts.push("100% Télétravail");
-        } else if (h.remote === "partial" || h.remote === "punctual") {
-          parts.push("Télétravail partiel");
-        }
-        const location = parts.join(", ");
+        if (office?.city) parts.push(String(office.city).trim());
+        if (h.remote === "fulltime") parts.push("100% Télétravail");
+        else if (h.remote === "partial" || h.remote === "punctual") parts.push("Télétravail partiel");
 
         const ts = h.published_at_timestamp;
-        const postedAt = Number.isFinite(ts) && ts > 0 ? new Date(ts * 1000).toISOString() : "";
-        const lat = typeof office?._geoloc?.lat === "number" ? office._geoloc.lat : typeof h._geoloc?.lat === "number" ? h._geoloc.lat : undefined;
-        const lon = typeof office?._geoloc?.lng === "number" ? office._geoloc.lng : typeof h._geoloc?.lng === "number" ? h._geoloc.lng : undefined;
-
-        byUrl.set(jobUrl, { title, url: jobUrl, company, location, postedAt, lat, lon });
+        const geoloc = office?._geoloc ?? h._geoloc;
+        byUrl.set(jobUrl, {
+          title,
+          url: jobUrl,
+          company: (h.organization?.name || "Welcome to the Jungle").trim(),
+          location: parts.join(", "),
+          postedAt: Number.isFinite(ts) && ts > 0 ? new Date(ts * 1000).toISOString() : "",
+          lat: typeof geoloc?.lat === "number" ? geoloc.lat : undefined,
+          lon: typeof geoloc?.lng === "number" ? geoloc.lng : undefined,
+          remote: h.remote === "fulltime",
+        });
       }
+      return true;
+    };
+
+    for (const query of keywords) {
+      // Recherche locale d'abord ; si l'index refuse le filtre géographique, recherche nationale.
+      if (!(await run(query, true))) await run(query, false);
     }
 
     const jobs = Array.from(byUrl.values());
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir, { recursive: true });
-    }
-    fs.writeFileSync(cacheFile, JSON.stringify(jobs, null, 2), "utf8");
+    if (jobs.length) writeCache(key, jobs);
     return jobs;
   } catch (err) {
     console.error("WTTJ fetch failed:", err);
@@ -136,93 +116,17 @@ export async function fetchAndCacheWttjJobs(): Promise<WttjJob[]> {
   }
 }
 
-function firstMatch(title: string, positives?: string[]): string | undefined {
-  if (!positives || !Array.isArray(positives)) return undefined;
-  const lower = title.toLowerCase();
-  for (const k of positives) if (k && lower.includes(k.toLowerCase())) return k;
-  return undefined;
-}
-
-function fitField(title: string, targets: string[]): { fit: { band: FitBand; score: number } } | Record<string, never> {
-  const f = titleFit(title, targets);
-  return f ? { fit: { band: f.band as FitBand, score: f.score } } : {};
-}
-
-function matchesKeyword(text: string, kw: string): boolean {
-  const cleanKw = kw.toLowerCase().replace(/\s+/g, " ").trim();
-  if (!cleanKw) return false;
-  const cleanText = text.toLowerCase().replace(/\s+/g, " ").trim();
-  if (cleanKw.length <= 3) {
-    const escaped = cleanKw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const rx = new RegExp(`(^|[^a-z0-9à-ÿ])${escaped}([^a-z0-9à-ÿ]|$)`, "i");
-    return rx.test(cleanText);
-  }
-  return cleanText.includes(cleanKw);
-}
-
-function isBlockedLocation(location: string, blockList?: string[]): boolean {
-  if (!blockList || blockList.length === 0) return false;
-  const locWithoutDept = location.toLowerCase().replace(/\bpas[- ]de[- ]calais\b/g, "").trim();
-  return blockList.some((b) => {
-    if (!b) return false;
-    const cleanB = b.toLowerCase().trim();
-    if (cleanB === "calais") {
-      return /\bcalais\b/i.test(locWithoutDept);
-    }
-    return matchesKeyword(locWithoutDept, b);
-  });
-}
-
-function matchesFilters(
-  title: string,
-  location: string,
-  filters?: ExploreFilters,
-  job?: WttjJob,
-  zone?: Zone,
-): boolean {
-  const negative = filters?.negative || [];
-  if (negative.some((n) => n && matchesKeyword(title, n))) return false;
-  const positive = filters?.positive || [];
-  if (positive.length > 0 && !positive.some((p) => p && matchesKeyword(title, p))) return false;
-
-  const fullLoc = location.toLowerCase();
-  const blockHard = filters?.blockHard || [];
-  if (isBlockedLocation(fullLoc, blockHard)) return false;
-  const block = filters?.block || [];
-  if (isBlockedLocation(fullLoc, block)) return false;
-
-  const is100Remote = fullLoc.includes("100% télétravail") || fullLoc.includes("full remote");
-  if (filters?.remoteOnly) {
-    return is100Remote;
-  }
-  const userWantsRemote = (filters?.allow || []).some((a) => /remote|t[eé]l[eé]travail/i.test(a));
-  if (is100Remote && userWantsRemote) return true;
-
-  const alwaysAllow = filters?.alwaysAllow || [];
-  if (!zone && alwaysAllow.some((a) => a && matchesKeyword(fullLoc, a))) return true;
-
-  if (zone) {
-    // Zone de trajet active : elle seule décide (la liste "allow" ne peut plus la contourner).
-    return acceptInZone({ ville: location, lat: job?.lat, lon: job?.lon, texte: title }, zone);
-  }
-
-  const allow = filters?.allow || [];
-  if (allow.length > 0 && !allow.some((a) => a && matchesKeyword(fullLoc, a))) return false;
-
-  return true;
-}
-
 export async function loadWttjDiscoveredOffers(
   filters: ExploreFilters,
   roleTargets: string[],
-  zone?: Zone,
+  zone: Zone | undefined,
+  ctx: SearchContext,
 ): Promise<DiscoveredOffer[]> {
-  const rawJobs = await fetchAndCacheWttjJobs();
+  const rawJobs = await fetchAndCacheWttjJobs(ctx, filters.positive);
   const offers: DiscoveredOffer[] = [];
 
   for (const job of rawJobs) {
-    if (!matchesFilters(job.title, job.location, filters, job, zone)) continue;
-
+    if (!passesFilters({ title: job.title, location: job.location, lat: job.lat, lon: job.lon, remote: job.remote }, filters, zone)) continue;
     offers.push({
       company: job.company,
       title: job.title,
@@ -231,7 +135,7 @@ export async function loadWttjDiscoveredOffers(
       ats: "portals",
       source: "wttj-fr",
       url: job.url,
-      matchedKeyword: firstMatch(job.title, filters?.positive),
+      matchedKeyword: matchedField(job.title, filters),
       ...fitField(job.title, roleTargets),
     });
   }

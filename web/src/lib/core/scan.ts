@@ -40,12 +40,6 @@ const COMPANIES_RE = /Companies scanned:\s+(\d+)/;
 const UNREACHABLE_RE = /Unreachable boards:\s+(\d+)/;
 const SUMMARY_RE = /New matches:\s+(\d+)/;
 
-function firstMatch(title: string, positives: string[]): string | undefined {
-  const lower = title.toLowerCase();
-  for (const k of positives) if (k && lower.includes(k.toLowerCase())) return k;
-  return undefined;
-}
-
 /**
  * Profile target roles for the free fit band (#3260), loaded ONCE per scan run
  * (tolerantly: missing/unreadable profile.yml just means no chips — same
@@ -84,10 +78,7 @@ function ingestJsonOffer(
   if (!url || seen.has(url) || !o.company || !o.title) return;
   if (!matchesTitle(o.title, filters.positive, filters.negative)) return;
 
-  if (filters.remoteOnly) {
-    const loc = (o.location || "").toLowerCase();
-    if (!loc.includes("100% télétravail") && !loc.includes("remote")) return;
-  }
+  if (filters.remoteOnly && !looksRemote(o.location || "", o.title)) return;
 
   // Zone de trajet active : elle seule décide (lieu absent ou vague = écarté, sauf télétravail).
   if (zone && !acceptInZone({ ville: o.location || "", texte: o.title }, zone)) return;
@@ -398,29 +389,27 @@ import { loadFranceTravailDiscoveredOffers } from "./france-travail";
 import { loadJoobleDiscoveredOffers } from "./jooble";
 import { loadAdzunaDiscoveredOffers } from "./adzuna";
 import { loadCareerjetDiscoveredOffers } from "./careerjet";
+import { loadMeteojobDiscoveredOffers } from "./meteojob";
 import { loadPortalLiveOffers } from "./portal-live";
 import { loadInterimForProfile } from "./interim";
 import { loadZone, acceptInZone, type Zone } from "./zone";
-
-function matchesKeyword(text: string, kw: string): boolean {
-  const cleanKw = kw.toLowerCase().replace(/\s+/g, " ").trim();
-  if (!cleanKw) return false;
-  const cleanText = text.toLowerCase().replace(/\s+/g, " ").trim();
-  if (cleanKw.length <= 3) {
-    const escaped = cleanKw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const rx = new RegExp(`(^|[^a-z0-9à-ÿ])${escaped}([^a-z0-9à-ÿ]|$)`, "i");
-    return rx.test(cleanText);
-  }
-  return cleanText.includes(cleanKw);
-}
+import { buildSearchContext } from "./search-context";
+import { getEnvVar } from "./local-area";
+import { getActiveProfile } from "./search-profiles";
+import { dedupeKey, firstMatch, looksRemote, titlePasses } from "@/lib/offer-match.mjs";
 
 function matchesTitle(title: string, positive?: string[], negative?: string[]): boolean {
-  const neg = negative || [];
-  if (neg.some((n) => n && matchesKeyword(title, n))) return false;
-  const pos = positive || [];
-  if (pos.length === 0) return true;
-  return pos.some((p) => p && matchesKeyword(title, p));
+  return titlePasses(title, { positive, negative });
 }
+
+/** Une source régionale : son identifiant, son nom affiché, les clés d'API qu'elle exige, son chargeur. */
+type RegionalSource = {
+  id: string;
+  label: string;
+  /** Variables d'environnement requises ; absentes = source « à connecter ». */
+  keys?: string[];
+  load: () => Promise<DiscoveredOffer[]>;
+};
 
 async function scanLocalPortals(
   filters: ExploreFilters,
@@ -445,34 +434,62 @@ async function scanLocalPortals(
 
   onEvent({ kind: "atsStart", ats: "portals", companies: trackedCount });
 
-  // Toutes les sources en parallèle, avec les mêmes filtres (profil + zone).
-  // Chaque offre est diffusée dès qu'une source répond ; une source en panne
-  // n'empêche jamais les autres de remonter leurs résultats.
-  const emit = (list: DiscoveredOffer[]) => {
+  // Où chercher : commune de départ, rayon et villes principales de la zone DU PROFIL.
+  const ctx = await buildSearchContext(filters, zone);
+
+  // La même offre arrive souvent par plusieurs sources (France Travail la reçoit
+  // de Meteojob, qui la reçoit de l'agence) : une seule carte, la première arrivée.
+  const seenKeys = new Set<string>();
+  const emit = (list: DiscoveredOffer[]): number => {
+    let kept = 0;
     for (const offer of list) {
-      if (sink.seen.has(offer.url)) continue;
+      if (!offer.url || sink.seen.has(offer.url)) continue;
+      const key = dedupeKey(offer);
+      if (key && seenKeys.has(key)) continue;
+      if (key) seenKeys.add(key);
       sink.seen.add(offer.url);
       sink.offers.push(offer);
       onEvent({ kind: "offer", offer });
+      kept++;
     }
+    return kept;
   };
-  const sources: Array<[string, () => Promise<DiscoveredOffer[]>]> = [
-    ["Portails en direct (employeurs + intérim)", async () => (await loadPortalLiveOffers(filters, roleTargets, zone)).offers],
-    ["France Travail", () => loadFranceTravailDiscoveredOffers(filters, roleTargets, zone)],
-    ["Jooble", () => loadJoobleDiscoveredOffers(filters, roleTargets, zone)],
-    ["Adzuna", () => loadAdzunaDiscoveredOffers(filters, roleTargets, zone)],
-    ["Careerjet", () => loadCareerjetDiscoveredOffers(filters, roleTargets, zone)],
-    ["Welcome to the Jungle", () => loadWttjDiscoveredOffers(filters, roleTargets, zone)],
-    ["Service Public", () => loadServicePublicDiscoveredOffers(filters, roleTargets, zone)],
-    // Intérim : agences, France Travail (contrats d'intérim) et agrégateurs, filtrés par le profil.
-    ["Intérim", () => loadInterimForProfile(filters, roleTargets)],
+
+  // Toutes les sources en parallèle, avec les mêmes filtres (profil + zone).
+  // Chaque offre est diffusée dès qu'une source répond ; une source en panne
+  // n'empêche jamais les autres de remonter leurs résultats.
+  const sources: RegionalSource[] = [
+    { id: "portails", label: "Employeurs suivis", load: async () => (await loadPortalLiveOffers(filters, roleTargets, zone)).offers },
+    {
+      id: "france-travail",
+      label: "France Travail",
+      keys: ["FRANCETRAVAIL_CLIENT_ID", "FRANCETRAVAIL_CLIENT_SECRET"],
+      load: () => loadFranceTravailDiscoveredOffers(filters, roleTargets, zone, ctx),
+    },
+    { id: "meteojob", label: "Meteojob", load: () => loadMeteojobDiscoveredOffers(filters, roleTargets, zone, ctx) },
+    { id: "jooble", label: "Jooble", keys: ["JOOBLE_API_KEY"], load: () => loadJoobleDiscoveredOffers(filters, roleTargets, zone, ctx) },
+    { id: "adzuna", label: "Adzuna", keys: ["ADZUNA_APP_ID", "ADZUNA_APP_KEY"], load: () => loadAdzunaDiscoveredOffers(filters, roleTargets, zone, ctx) },
+    { id: "careerjet", label: "Careerjet", keys: ["CAREERJET_AFFID"], load: () => loadCareerjetDiscoveredOffers(filters, roleTargets, zone, ctx) },
+    { id: "wttj", label: "Welcome to the Jungle", load: () => loadWttjDiscoveredOffers(filters, roleTargets, zone, ctx) },
+    { id: "service-public", label: "Fonction publique", load: () => loadServicePublicDiscoveredOffers(filters, roleTargets, zone, ctx) },
+    // Intérim : agences, France Travail (contrats d'intérim), Meteojob et agrégateurs, filtrés par le profil.
+    { id: "interim", label: "Missions d'intérim", load: () => loadInterimForProfile(filters, roleTargets) },
   ];
+  // JOBIIFY_SOURCES_OFF=wttj,jooble dans .env : sources à ne pas interroger.
+  const off = new Set((getEnvVar("JOBIIFY_SOURCES_OFF") || "").split(",").map((v) => v.trim().toLowerCase()).filter(Boolean));
   await Promise.all(
-    sources.map(async ([name, load]) => {
+    sources.filter((src) => !off.has(src.id)).map(async ({ id, label, keys, load }) => {
+      if (keys && keys.some((k) => !getEnvVar(k))) {
+        onEvent({ kind: "source", id, label, status: "needs-key", found: 0, kept: 0 });
+        return;
+      }
       try {
-        emit(await load());
+        const found = await load();
+        const kept = emit(found);
+        onEvent({ kind: "source", id, label, status: found.length ? "ok" : "empty", found: found.length, kept });
       } catch (err) {
-        console.error(`Erreur lors de la récupération de ${name}:`, err);
+        console.error(`Erreur lors de la récupération de ${label}:`, err);
+        onEvent({ kind: "source", id, label, status: "error", found: 0, kept: 0 });
       }
     }),
   );
@@ -484,10 +501,7 @@ async function scanLocalPortals(
     if (sink.seen.has(job.url)) continue;
     if (!matchesTitle(job.role, filters.positive, filters.negative)) continue;
 
-    if (filters.remoteOnly) {
-      const loc = (job.location || "").toLowerCase();
-      if (!loc.includes("100% télétravail") && !loc.includes("remote")) continue;
-    }
+    if (filters.remoteOnly && !looksRemote(job.location || "", job.role)) continue;
 
     if (zone && !acceptInZone({ ville: job.location || "", texte: job.role }, zone)) continue;
 
@@ -539,7 +553,10 @@ export async function runDiscovery(filters: ExploreFilters, onEvent: (e: ScanEve
   // exactly (a 1.5s budget must not read as 2s).
   const timeoutMs = readScanTimeoutMs();
   const deadlineSec = timeoutMs / 1000;
-  const roleTargets = loadProfileTargets();
+  // Indice « proche du profil » : les postes du profil de recherche actif d'abord,
+  // sinon ceux de config/profile.yml.
+  const activeTitles = getActiveProfile()?.titles ?? [];
+  const roleTargets = activeTitles.length ? activeTitles : loadProfileTargets();
   const label = (a: string) => ATS_LABEL[a as AtsSource] ?? a;
   // One sink for the whole run: offers streamed live by any child land here
   // deduped by URL, and the final --json results below go through the same set.

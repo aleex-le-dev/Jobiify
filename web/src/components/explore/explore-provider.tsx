@@ -15,6 +15,7 @@ import {
   type ExploreMode,
   type ScanEvent,
 } from "@/lib/explore";
+import type { SourceReport } from "@/lib/explore";
 import { makeAiStreamParser, type AiTraceChunk } from "@/lib/explore-ai";
 import { MAX_OFFER_LIMIT } from "@/lib/whats-new.mjs";
 import { isAbortError, isScannerMissing } from "@/lib/explore-error.mjs";
@@ -54,6 +55,8 @@ type ExploreCtx = {
   running: boolean;
   offers: DiscoveredOffer[];
   sources: Partial<Record<AtsSource, SourceState>>;
+  /** Bilan de chaque source régionale après la dernière recherche. */
+  sourceReports: SourceReport[];
   matchCount: number;
   companiesScanned: number;
   companiesAvailable: number;
@@ -108,6 +111,7 @@ type ResultSnapshot = {
   capHit: boolean;
   droppedNoDate: number;
   sources: Partial<Record<AtsSource, SourceState>>;
+  sourceReports?: SourceReport[];
   partial: boolean;
   status: string;
   error: string;
@@ -134,6 +138,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [offers, setOffers] = useState<DiscoveredOffer[]>([]);
   const [sources, setSources] = useState<Partial<Record<AtsSource, SourceState>>>({});
+  const [sourceReports, setSourceReports] = useState<SourceReport[]>([]);
   const [matchCount, setMatchCount] = useState(0);
   const [companiesScanned, setCompaniesScanned] = useState(0);
   // Authoritative scan-health signals (scanner --json mode, #1199): tell a capped /
@@ -189,6 +194,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
     const init: Partial<Record<AtsSource, SourceState>> = {};
     for (const a of f.ats) init[a] = { state: "queued" };
     setSources(init);
+    setSourceReports([]);
     // Do not write the filter URL here. Next.js patches history.replaceState and
     // treats it as a navigation, which aborts this fetch — Discover flashed
     // empty and returned to the form. It is written once the run has settled.
@@ -256,6 +262,9 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
           if (ev.unreachable > 0 || datasetIssue) setPartial(true);
           break;
         }
+        case "source":
+          setSourceReports((list) => [...list.filter((r) => r.id !== ev.id), { id: ev.id, label: ev.label, status: ev.status, found: ev.found, kept: ev.kept }]);
+          break;
         case "error":
           sawError = ev.message;
           break;
@@ -639,6 +648,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
     setCapHit(!!snap.capHit);
     setDroppedNoDate(snap.droppedNoDate ?? 0);
     setSources(snap.sources ?? {});
+    setSourceReports(Array.isArray(snap.sourceReports) ? snap.sourceReports : []);
     setPartial(!!snap.partial);
     setStatus(typeof snap.status === "string" ? snap.status : "");
     setError(typeof snap.error === "string" ? snap.error : "");
@@ -658,24 +668,24 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
     if (!SETTLED.has(phase)) return;
     try {
       const snap: ResultSnapshot = {
-        v: 1, mode, phase, offers, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, sources,
+        v: 1, mode, phase, offers, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, sources, sourceReports,
         partial, status, error, scannerMissing, added: [...added], aiTrace, aiCost, aiIntent,
       };
       sessionStorage.setItem(RESULTS_KEY, JSON.stringify(snap));
     } catch {
       /* sessionStorage full/unavailable — non-fatal */
     }
-  }, [phase, mode, offers, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, sources, partial, status, error, scannerMissing, added, aiTrace, aiCost, aiIntent]);
+  }, [phase, mode, offers, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, sources, sourceReports, partial, status, error, scannerMissing, added, aiTrace, aiCost, aiIntent]);
 
   const value = useMemo(
     () => ({
       filters, setFilters, initFilters, phase,
       running: phase === "casting" || phase === "scanning" || phase === "revealing" || phase === "hunting",
-      offers, sources, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, status, partial, error, scannerMissing, added, adding, removed,
+      offers, sources, sourceReports, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, status, partial, error, scannerMissing, added, adding, removed,
       discover, loadFresh, addToPipeline, removeFromPipeline, applyPatch, reset,
       mode, setMode, aiIntent, setAiIntent, discoverAI, aiTrace, aiCost,
     }),
-    [filters, setFilters, initFilters, phase, offers, sources, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, status, partial, error, scannerMissing, added, adding, removed, discover, loadFresh, addToPipeline, removeFromPipeline, applyPatch, reset, mode, setMode, aiIntent, discoverAI, aiTrace, aiCost],
+    [filters, setFilters, initFilters, phase, offers, sources, sourceReports, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, status, partial, error, scannerMissing, added, adding, removed, discover, loadFresh, addToPipeline, removeFromPipeline, applyPatch, reset, mode, setMode, aiIntent, discoverAI, aiTrace, aiCost],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

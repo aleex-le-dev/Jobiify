@@ -15,6 +15,7 @@ import { AiHuntView } from "./ai-hunt-view";
 import { ExploreModeToggle } from "./explore-mode-toggle";
 import { AiSearchBox } from "./ai-search-box";
 import { ResultsList, type EnrichedOffer } from "./results-list";
+import { SourcesPanel } from "./sources-panel";
 import { useExplore } from "./explore-provider";
 import { useI18n } from "@/components/i18n-provider";
 
@@ -44,7 +45,7 @@ export function ExplorerView({
   const { locale } = useI18n();
   const isFr = locale === "fr";
   const recencyList = isFr ? RECENCY_FR : RECENCY_EN;
-  const { filters, setFilters, initFilters, phase, running, offers, discover, loadFresh, status, error, scannerMissing, mode, setMode, aiIntent, setAiIntent, discoverAI, companiesScanned, companiesAvailable, capHit, droppedNoDate, partial } = useExplore();
+  const { filters, setFilters, initFilters, phase, running, offers, discover, loadFresh, status, error, scannerMissing, mode, setMode, aiIntent, setAiIntent, discoverAI, companiesScanned, companiesAvailable, capHit, droppedNoDate, partial, sourceReports } = useExplore();
 
   // Référence stable sur la phase pour être lue dans un setTimeout sans stale closure.
   const phaseRef = useRef(phase);
@@ -167,7 +168,7 @@ export function ExplorerView({
                 ? "Décrivez le poste en langage naturel — une IA parcourt le web public pour vous. Les résultats sont vérifiés lors de l'évaluation."
                 : "Describe the role in plain language — an AI hunts the open web for it, on your own AI. Candidates are unverified until you evaluate.")
               : (isFr
-                ? "Explorez vos portails locaux (collectivités, hôpitaux, entreprises du Pas-de-Calais) et les bourses d'emploi. Des offres ciblées pour votre profil dans le 62, 0 jeton dépensé. Vous ne dépensez que lors de l'évaluation."
+                ? "Toutes les sources sont interrogées en même temps pour les postes de votre profil, dans votre zone de trajet : France Travail, Meteojob, agences d'intérim, fonction publique, employeurs suivis. La recherche est gratuite ; seule l'évaluation d'une offre consomme des jetons IA."
                 : "Scan your local portals, territorial public entities, and recruiting boards. Targeted jobs matched to your area in Pas-de-Calais, zero tokens. You only spend when you choose to evaluate.")}
           </p>
         )}
@@ -321,6 +322,11 @@ export function ExplorerView({
 
       {!scanRunning && !isAi && (
         <>
+          {(phase === "empty-current" || phase === "empty-loose" || phase === "degraded") && sourceReports.length > 0 && (
+            <div className="mb-4">
+              <SourcesPanel reports={sourceReports} />
+            </div>
+          )}
           {phase === "empty-current" && (
             <EmptyState
               tone="good"

@@ -22,26 +22,21 @@ export function getApisStatus(): ApiInfo[] {
   // 1. Service public & emploi territorial
   let spDetail = "En ligne (data.gouv.fr) · Prêt pour la synchronisation";
   try {
-    const spCache = path.join(cacheDir, "service-public-62.json");
+    const spName = fs
+      .readdirSync(cacheDir)
+      .filter((f) => f.startsWith("service-public-") && f.endsWith(".json"))
+      .sort((a, b) => b.length - a.length)[0];
+    const spCache = path.join(cacheDir, spName || "service-public-62.json");
     if (fs.existsSync(spCache)) {
       const data = JSON.parse(fs.readFileSync(spCache, "utf8"));
       if (Array.isArray(data)) {
-        spDetail = `En ligne (data.gouv.fr) · ${data.length} offres locales 62 en cache actif`;
+        spDetail = `En ligne (data.gouv.fr) · ${data.length} offres de la zone en cache (tous métiers)`;
       }
     }
   } catch {}
 
   // 2. WTTJ
-  let wttjDetail = "En ligne (Algolia France) · Requêtes temps réel sans token";
-  try {
-    const wttjCache = path.join(cacheDir, "wttj-fr.json");
-    if (fs.existsSync(wttjCache)) {
-      const data = JSON.parse(fs.readFileSync(wttjCache, "utf8"));
-      if (Array.isArray(data)) {
-        wttjDetail = `En ligne (Algolia France) · ${data.length} offres tech et PME en cache actif`;
-      }
-    }
-  } catch {}
+  const wttjDetail = "En ligne · interrogé avec les postes de votre profil, sans clé";
 
   const env = getEffectiveEnv();
   // 3. France Travail
@@ -56,7 +51,7 @@ export function getApisStatus(): ApiInfo[] {
     {
       id: "service-public",
       name: "Choisir le Service Public & Emploi Territorial",
-      description: "Flux Open Data officiel de l'État pour les postes territoriaux, mairies, hôpitaux et SDIS 62",
+      description: "Flux open data officiel : État, collectivités, mairies, hôpitaux — tous métiers, dans les départements de votre zone",
       category: "Gouvernement & Open Data",
       status: "live",
       detail: spDetail,
@@ -66,12 +61,22 @@ export function getApisStatus(): ApiInfo[] {
     {
       id: "wttj",
       name: "Welcome to the Jungle (WTTJ France)",
-      description: "API de recherche Algolia des entreprises numériques, PME innovantes et scale-ups",
+      description: "Entreprises qui recrutent sur Welcome to the Jungle, cherchées avec les postes de votre profil",
       category: "Agrégateurs & PME",
       status: "live",
       detail: wttjDetail,
       free: true,
       docUrl: "https://www.welcometothejungle.com",
+    },
+    {
+      id: "meteojob",
+      name: "Meteojob",
+      description: "Job board généraliste très fourni en intérim (Adecco, Synergie, Aquila RH…) et en CDI/CDD de PME, autour de votre commune",
+      category: "Agrégateurs & PME",
+      status: "live",
+      detail: "En ligne · sans clé · recherche par poste et missions d'intérim de la zone",
+      free: true,
+      docUrl: "https://www.meteojob.com",
     },
     {
       id: "france-travail",
@@ -80,23 +85,11 @@ export function getApisStatus(): ApiInfo[] {
       category: "Gouvernement & Open Data",
       status: hasFt ? "configured" : "unconfigured",
       detail: hasFt
-        ? "Clés API actives dans .env · Recherche par rayon autour de Lières (62 + 59)"
+        ? "Clés actives · recherche autour de la commune de chaque profil, par mots-clés puis par code métier (ROME)"
         : "Non configuré · Clés 100% gratuites sur francetravail.io (Espace Développeurs)",
       free: true,
       docUrl: "https://francetravail.io",
       envKeys: ["FRANCETRAVAIL_CLIENT_ID", "FRANCETRAVAIL_CLIENT_SECRET"],
-    },
-    {
-      id: "la-bonne-boite",
-      name: "La Bonne Boîte (France Travail)",
-      description: "Algorithme prédictif officiel détectant les PME/TPE du 62 avec fort potentiel d'embauche immédiat",
-      category: "Gouvernement & Open Data",
-      status: hasFt ? "configured" : "unconfigured",
-      detail: hasFt
-        ? "Connecté avec vos identifiants France Travail · Détection du marché caché 62"
-        : "Partage vos identifiants gratuits France Travail",
-      free: true,
-      docUrl: "https://labonneboite.francetravail.fr",
     },
     {
       id: "jooble",
@@ -114,11 +107,11 @@ export function getApisStatus(): ApiInfo[] {
     {
       id: "adzuna",
       name: "Adzuna API (agrégateur France)",
-      description: "Job boards, intérim et sites carrières indexés, recherche par rayon autour de Lillers",
+      description: "Job boards, intérim et sites carrières indexés, recherche par rayon autour de votre commune",
       category: "Agrégateurs & PME",
       status: hasAdzuna ? "configured" : "unconfigured",
       detail: hasAdzuna
-        ? "Clés API actives dans .env · Recherche par rayon autour de Lillers"
+        ? "Clés actives · recherche par rayon autour de la commune de chaque profil"
         : "Optionnel · Clés gratuites sur developer.adzuna.com",
       free: true,
       docUrl: "https://developer.adzuna.com",
@@ -131,7 +124,7 @@ export function getApisStatus(): ApiInfo[] {
       category: "Agrégateurs & PME",
       status: hasCareerjet ? "configured" : "unconfigured",
       detail: hasCareerjet
-        ? "affid actif dans .env · Recherche Béthune / Lillers / Lens"
+        ? "Identifiant actif · recherche dans les villes principales de votre zone"
         : "Optionnel · Identifiant partenaire gratuit sur careerjet.fr",
       free: true,
       docUrl: "https://www.careerjet.fr/partenaires/api/",

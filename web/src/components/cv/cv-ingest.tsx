@@ -3,10 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Upload, FileText, Loader2, Check, AlertTriangle, Lock, ArrowRight, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { CvPreview } from "@/components/cv/cv-preview";
 import { displayFont } from "@/lib/fonts";
 import { cvReadiness, parseCvStream, type CvSeed } from "@/lib/cv/quality";
 import { expandTitles } from "@/lib/job-synonyms.mjs";
@@ -311,13 +310,18 @@ export function CvIngest({ onSaved }: { onSaved?: (profile?: SearchProfile) => v
         </p>
       )}
       <div className="grid gap-3 md:grid-cols-2">
-        <textarea
-          value={md}
-          onChange={(e) => setMd(e.target.value)}
-          className="h-72 w-full resize-none rounded-lg border border-border bg-surface/40 p-3 font-mono text-[12px] leading-relaxed outline-none focus:border-brand/40"
-        />
-        <div className="prose prose-sm dark:prose-invert h-72 max-w-none overflow-y-auto rounded-lg border border-border bg-surface/40 p-3 text-[13px]">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{md}</ReactMarkdown>
+        <div className="flex flex-col">
+          <span className="mb-1.5 text-[11px] font-medium text-faint">Texte du CV (modifiable)</span>
+          <textarea
+            value={md}
+            onChange={(e) => setMd(e.target.value)}
+            spellCheck={false}
+            className="h-[30rem] w-full resize-none rounded-lg border border-border bg-surface/40 p-3 font-mono text-[12px] leading-relaxed outline-none focus:border-brand/40"
+          />
+        </div>
+        <div className="flex flex-col">
+          <span className="mb-1.5 text-[11px] font-medium text-faint">Aperçu</span>
+          <CvPreview markdown={md} className="h-[30rem] overflow-y-auto rounded-lg border border-border bg-surface/40 p-5" />
         </div>
       </div>
       <div className="mt-4 space-y-3 rounded-xl border border-border bg-surface/40 p-4">
