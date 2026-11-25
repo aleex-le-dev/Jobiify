@@ -97,6 +97,8 @@ export type ExploreFilters = {
   /** Code INSEE de la commune de départ (distingue les homonymes). */
   originInsee?: string;
   remoteOnly?: boolean;
+  /** Tous les métiers de la zone : aucun poste visé n'est exigé (les mots exclus restent appliqués). */
+  allMetiers?: boolean;
 };
 
 export type RecencyOption = { label: string; days: number };
@@ -132,6 +134,7 @@ export const DEFAULT_FILTERS: ExploreFilters = {
   commuteMinutes: 30,
   originCity: "Lières",
   remoteOnly: false,
+  allMetiers: false,
 };
 
 /** Banded title-vs-profile overlap (web/src/lib/title-fit.mjs). Words, not
@@ -147,6 +150,8 @@ export type DiscoveredOffer = {
   postedAt: string;
   ats: string;
   source: string;
+  /** Type de contrat déclaré par la source (CDI, CDD, Intérim…), quand elle le donne. */
+  contract?: string;
   /** which positive keyword matched the title (transparency, e.g. "ai" in "Nail") */
   matchedKeyword?: string;
   /** free, zero-token triage hint computed at discovery time from the posting
@@ -262,6 +267,7 @@ export function parseExplorePatch(
     next.originInsee = /^(\d{5}|2[AB]\d{3})$/.test(v) ? v : undefined;
   }
   if (raw.remoteOnly !== undefined) next.remoteOnly = Boolean(raw.remoteOnly);
+  if (raw.allMetiers !== undefined) next.allMetiers = Boolean(raw.allMetiers);
   return next;
 }
 
@@ -280,6 +286,7 @@ export function filtersToParams(f: ExploreFilters): string {
   if (f.commuteMinutes) sp.set("commute", String(f.commuteMinutes));
   if (f.originCity && f.originCity !== "Lières") sp.set("from", f.originCity);
   if (f.remoteOnly) sp.set("remote", "1");
+  if (f.allMetiers) sp.set("all", "1");
   return sp.toString();
 }
 
@@ -299,6 +306,7 @@ export function paramsToFilters(sp: URLSearchParams, base: ExploreFilters = DEFA
       commuteMinutes: sp.get("commute") ? Number(sp.get("commute")) : undefined,
       originCity: sp.get("from") ?? undefined,
       remoteOnly: sp.get("remote") === "1" ? true : undefined,
+      allMetiers: sp.get("all") === "1" ? true : undefined,
     },
     base,
   );

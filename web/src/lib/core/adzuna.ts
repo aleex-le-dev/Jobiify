@@ -32,14 +32,15 @@ interface AdzunaRawJob {
 
 const strip = (s: string) => s.replace(/<[^>]+>/g, "").trim();
 
-export async function fetchAndCacheAdzunaJobs(ctx: SearchContext, positive?: string[]): Promise<AdzunaRawJob[]> {
+export async function fetchAndCacheAdzunaJobs(ctx: SearchContext, positive?: string[], allMetiers = false): Promise<AdzunaRawJob[]> {
   const appId = getEnvVar("ADZUNA_APP_ID");
   const appKey = getEnvVar("ADZUNA_APP_KEY");
   if (!appId || !appKey) return [];
 
-  const keywords = searchKeywords(positive, Math.max(1, Number(getEnvVar("ADZUNA_MAX_KEYWORDS")) || 3));
+  // Tous les métiers : une seule requête sans mot-clé (le compte gratuit n'a que 25 appels au total).
+  const keywords = allMetiers ? [""] : searchKeywords(positive, Math.max(1, Number(getEnvVar("ADZUNA_MAX_KEYWORDS")) || 3));
   const maxPages = Math.max(1, Number(getEnvVar("ADZUNA_MAX_PAGES")) || 1);
-  const key = cacheKey("adzuna", keywords, ctx.key);
+  const key = cacheKey("adzuna", allMetiers ? ["*tous*"] : keywords, ctx.key);
   const cached = readCache<AdzunaRawJob>(key, CACHE_TTL_MS);
   if (cached) return cached;
 
@@ -51,7 +52,7 @@ export async function fetchAndCacheAdzunaJobs(ctx: SearchContext, positive?: str
           app_id: appId,
           app_key: appKey,
           results_per_page: "50",
-          what: kw,
+          ...(kw ? { what: kw } : {}),
           where: [ctx.codePostal, ctx.nom].filter(Boolean).join(" "),
           distance: String(ctx.radiusKm),
           max_days_old: "45",
@@ -83,7 +84,7 @@ export async function loadAdzunaDiscoveredOffers(
   zone: Zone | undefined,
   ctx: SearchContext,
 ): Promise<DiscoveredOffer[]> {
-  const raw = await fetchAndCacheAdzunaJobs(ctx, filters.positive);
+  const raw = await fetchAndCacheAdzunaJobs(ctx, filters.positive, filters.allMetiers);
   const offers: DiscoveredOffer[] = [];
 
   for (const job of raw) {
@@ -100,6 +101,7 @@ export async function loadAdzunaDiscoveredOffers(
       ats: "portals",
       source: "adzuna",
       url: job.redirect_url,
+      ...(job.contract_type || job.contract_time ? { contract: [job.contract_type, job.contract_time].filter(Boolean).join(" ") } : {}),
       matchedKeyword: matchedField(title, filters),
       ...fitField(title, roleTargets),
     });

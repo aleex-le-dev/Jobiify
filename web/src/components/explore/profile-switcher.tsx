@@ -119,7 +119,7 @@ export function ProfileSwitcher({
                   <Layers className="size-3" /> {p.synonyms.length} synonymes
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <MapPin className="size-3" /> {p.remoteOnly ? "Télétravail" : `${p.originCity}${p.originPostalCode ? ` (${p.originPostalCode})` : ""} · ${p.commuteMinutes} min`}
+                  <MapPin className="size-3" /> {p.remoteOnly ? "Télétravail" : `${p.originCity}${p.originPostalCode ? ` (${p.originPostalCode})` : ""} · ${p.commuteMinutes} km`}
                 </span>
               </span>
             </button>

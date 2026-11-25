@@ -55,7 +55,8 @@ export function matchesKeyword(text, keyword) {
   const t = foldText(text);
   if (!t) return false;
   if (k.length <= 3) return ` ${t} `.includes(` ${k} `);
-  if (t.includes(k)) return true;
+  // Mots entiers : « technicien micro » ne doit pas reconnaître « technicien microbiologiste ».
+  if (` ${t} `.includes(` ${k} `)) return true;
   const kw = words(k).filter((w) => !STOPWORDS.has(w));
   if (kw.length < 2) return false;
   const tw = words(t).filter((w) => !GENDER_TOKENS.has(w));
@@ -108,6 +109,49 @@ export function looksRemote(...texts) {
 }
 
 const GENERIC_COMPANY = /^(entreprise|societe|employeur|confidentiel|non communique|agence|france travail|pme)/;
+
+/** Types de contrat proposés en filtre, dans l'ordre d'affichage. */
+export const CONTRACTS = ["CDI", "CDD", "Intérim", "Alternance", "Stage", "Indépendant"];
+
+/**
+ * Type de contrat normalisé depuis ce que disent les sources (« permanent », « MIS »,
+ * « INTERIM », « Contrat d'apprentissage »…). "" quand rien ne permet de trancher.
+ * @param {unknown} raw
+ */
+export function normalizeContract(raw) {
+  const t = foldText(raw);
+  if (!t) return "";
+  if (/\b(interim|mis|temporaire|travail temporaire|mission)\b/.test(t)) return "Intérim";
+  if (/\b(apprentissage|apprentice|alternance|professionnalisation|apprenti)\b/.test(t)) return "Alternance";
+  if (/\b(stage|training|stagiaire)\b/.test(t)) return "Stage";
+  if (/\b(freelance|liberal|independant|lib|profession liberale)\b/.test(t)) return "Indépendant";
+  if (/\b(cdi|permanent|duree indeterminee)\b/.test(t)) return "CDI";
+  if (/\b(cdd|contract|duree determinee|saisonnier|sai|temporary)\b/.test(t)) return "CDD";
+  return "";
+}
+
+/**
+ * Contrat d'une offre : celui que la source a déclaré, sinon celui que le titre ou la note annoncent
+ * (« Cariste CDI », « Mission d'intérim »), sinon celui de la source (agences d'intérim). "" = non précisé.
+ * @param {{contract?: string, title?: string, note?: string, source?: string}} offer
+ */
+export function contractOf(offer) {
+  const declared = normalizeContract(offer?.contract);
+  if (declared) return declared;
+  const text = foldText(`${offer?.title ?? ""} ${offer?.note ?? ""}`);
+  if (/\bcdi\b/.test(text)) return "CDI";
+  if (/\bcdd\b/.test(text)) return "CDD";
+  if (/\b(interim|mission interim)\b/.test(text) || /^interim-/.test(String(offer?.source ?? ""))) return "Intérim";
+  if (/\b(alternance|apprenti|apprentissage|contrat pro)\b/.test(text)) return "Alternance";
+  if (/\bstage\b/.test(text)) return "Stage";
+  return "";
+}
+
+/** Entreprise comparable (sans accents ni casse), "" quand l'employeur est inconnu ou générique. */
+export function companyKey(company) {
+  const c = foldText(company);
+  return c && !GENERIC_COMPANY.test(c) ? c : "";
+}
 
 /**
  * Clé de dédoublonnage entre sources : la même offre publiée sur France Travail,

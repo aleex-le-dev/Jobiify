@@ -116,13 +116,13 @@ async function searchPaged(token: string, base: Record<string, string>, max: num
  *     correspond au profil sont réinterrogés sans mot-clé. On récupère ainsi les
  *     offres du même métier publiées sous un intitulé que personne n'avait prévu.
  */
-export async function fetchAndCacheFranceTravailJobs(ctx: SearchContext, positive?: string[]): Promise<FtRawJob[]> {
+export async function fetchAndCacheFranceTravailJobs(ctx: SearchContext, positive?: string[], allMetiers = false): Promise<FtRawJob[]> {
   const clientId = getEnvVar("FRANCETRAVAIL_CLIENT_ID");
   const clientSecret = getEnvVar("FRANCETRAVAIL_CLIENT_SECRET");
   if (!clientId || !clientSecret) return [];
 
-  const keywords = searchKeywords(positive, 20);
-  const key = cacheKey("france-travail", keywords, ctx.key);
+  const keywords = allMetiers ? [""] : searchKeywords(positive, 20);
+  const key = cacheKey("france-travail", allMetiers ? ["*tous*"] : keywords, ctx.key);
   const cached = readCache<FtRawJob>(key, CACHE_TTL_MS);
   if (cached) return cached;
 
@@ -132,10 +132,10 @@ export async function fetchAndCacheFranceTravailJobs(ctx: SearchContext, positiv
   const allJobs = new Map<string, FtRawJob>();
   const place = placeParams(ctx);
   try {
-    for (const kw of keywords) await searchPaged(token, { ...place, motsCles: kw }, 600, allJobs);
+    for (const kw of keywords) await searchPaged(token, kw ? { ...place, motsCles: kw } : place, allMetiers ? 1500 : 600, allJobs);
 
     // Passe 2 : codes ROME dominants parmi les offres dont le titre correspond au profil.
-    if (positive && positive.length > 0) {
+    if (!allMetiers && positive && positive.length > 0) {
       const romeCount = new Map<string, number>();
       let matched = 0;
       for (const j of allJobs.values()) {
@@ -177,7 +177,7 @@ export async function loadFranceTravailDiscoveredOffers(
   zone: Zone | undefined,
   ctx: SearchContext,
 ): Promise<DiscoveredOffer[]> {
-  const rawJobs = await fetchAndCacheFranceTravailJobs(ctx, filters.positive);
+  const rawJobs = await fetchAndCacheFranceTravailJobs(ctx, filters.positive, filters.allMetiers);
   const offers: DiscoveredOffer[] = [];
 
   for (const job of rawJobs) {
@@ -206,6 +206,7 @@ export async function loadFranceTravailDiscoveredOffers(
       url: ftOfferUrl(job),
       matchedKeyword: matchedField(job.intitule, filters),
       ...(notes.length ? { note: notes.join(" · ") } : {}),
+      ...(job.typeContrat || contrat ? { contract: job.typeContrat || contrat } : {}),
       ...fitField(job.intitule, roleTargets),
     });
   }

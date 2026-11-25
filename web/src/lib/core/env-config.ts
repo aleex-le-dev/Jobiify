@@ -1,6 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
 import { careerOpsRoot } from "@/lib/career-ops";
+import { validateEnvUpdates } from "@/lib/env-safety.mjs";
+
+// Écriture atomique (fichier temporaire puis renommage) : une coupure ne laisse jamais un .env tronqué.
+// Local à ce module : les tests des routes chargent ce fichier sans résolution d'extensions.
+function atomicWrite(file: string, content: string): void {
+  const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    fs.writeFileSync(tmp, content, "utf8");
+    fs.renameSync(tmp, file);
+  } catch (err) {
+    try { fs.rmSync(tmp, { force: true }); } catch { /* ignore */ }
+    throw err;
+  }
+}
 
 export function readEnvFile(): string {
   const envPath = path.join(careerOpsRoot(), ".env");
@@ -35,41 +49,44 @@ export function getEffectiveEnv(): Record<string, string> {
   return result;
 }
 
-export function saveApiKeys(updates: Record<string, string>): void {
+export function saveApiKeys(rawUpdates: Record<string, string>): void {
+  // Liste blanche de variables + valeurs sur une seule ligne : sinon une requête pourrait
+  // ajouter n'importe quelle ligne au .env (NODE_OPTIONS, PATH…), transmise ensuite aux scripts lancés.
+  const checked = validateEnvUpdates(rawUpdates);
+  if (!checked.ok) throw new Error(checked.error);
+  const updates = checked.clean;
   const root = careerOpsRoot();
   const envPath = path.join(root, ".env");
   let content = readEnvFile();
 
-  for (const [key, val] of Object.entries(updates)) {
-    const cleanVal = val.trim().replace(/^["']|["']$/g, "").trim();
+  for (const [key, cleanVal] of Object.entries(updates)) {
     process.env[key] = cleanVal;
 
     // Chercher une ligne existante (commentée ou non)
     // Exemple: # FRANCETRAVAIL_CLIENT_ID=... ou FRANCETRAVAIL_CLIENT_ID=...
     const lineRegex = new RegExp(`^(?:#\\s*)?(${key}\\s*=).*$`, "m");
     if (lineRegex.test(content)) {
-      content = content.replace(lineRegex, `${key}=${cleanVal}`);
+      content = content.replace(lineRegex, () => `${key}=${cleanVal}`); // fonction : « $& » dans une valeur reste littéral
     } else {
       content += `\n${key}=${cleanVal}`;
     }
   }
 
-  fs.writeFileSync(envPath, content, "utf8");
+  atomicWrite(envPath, content);
 
   // Synchroniser aussi avec web/.env.local pour Next.js dev server
   try {
     const webEnvLocal = path.join(root, "web", ".env.local");
     let localContent = fs.existsSync(webEnvLocal) ? fs.readFileSync(webEnvLocal, "utf8") : "";
-    for (const [key, val] of Object.entries(updates)) {
-      const cleanVal = val.trim();
+    for (const [key, cleanVal] of Object.entries(updates)) {
       const lineRegex = new RegExp(`^(?:#\\s*)?(${key}\\s*=).*$`, "m");
       if (lineRegex.test(localContent)) {
-        localContent = localContent.replace(lineRegex, `${key}=${cleanVal}`);
+        localContent = localContent.replace(lineRegex, () => `${key}=${cleanVal}`);
       } else {
         localContent += `\n${key}=${cleanVal}`;
       }
     }
-    fs.writeFileSync(webEnvLocal, localContent, "utf8");
+    atomicWrite(webEnvLocal, localContent);
   } catch {}
 }
 

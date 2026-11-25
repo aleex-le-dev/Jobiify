@@ -81,6 +81,22 @@ export async function fetchMeteojobInterim(ctx: SearchContext): Promise<Meteojob
   return jobs;
 }
 
+/** Offres Meteojob récentes de la zone, tous métiers (une centaine, cache 2 h) : base du panneau « Où sont les offres ». */
+export async function fetchMeteojobZone(ctx: SearchContext, pages = 5): Promise<MeteojobRawJob[]> {
+  const key = `meteojob-zone-${ctx.key}-${pages}`;
+  const cached = readCache<MeteojobRawJob>(key, 2 * 60 * 60 * 1000);
+  if (cached) return cached;
+  const all = new Map<string, MeteojobRawJob>();
+  try {
+    await fetchPages({}, ctx, pages, all);
+  } catch (err) {
+    console.error("Meteojob (zone) search failed:", err);
+  }
+  const jobs = Array.from(all.values());
+  if (jobs.length) writeCache(key, jobs);
+  return jobs;
+}
+
 export const meteojobUrl = (id: string) => `https://www.meteojob.com/jobs/${encodeURIComponent(id)}`;
 
 const CONTRACT_LABEL: Record<string, string> = {
@@ -99,7 +115,8 @@ export async function loadMeteojobDiscoveredOffers(
   zone: Zone | undefined,
   ctx: SearchContext,
 ): Promise<DiscoveredOffer[]> {
-  const raw = await fetchAndCacheMeteojobJobs(ctx, filters.positive);
+  // Tous les métiers : les offres les plus récentes de la zone (une dizaine de pages), sans mot-clé.
+  const raw = filters.allMetiers ? await fetchMeteojobZone(ctx, 10) : await fetchAndCacheMeteojobJobs(ctx, filters.positive);
   const offers: DiscoveredOffer[] = [];
   for (const job of raw) {
     if (!passesFilters({ title: job.title, location: job.locality, lat: job.lat, lon: job.lon }, filters, zone)) continue;
@@ -114,6 +131,7 @@ export async function loadMeteojobDiscoveredOffers(
       url: meteojobUrl(job.id),
       matchedKeyword: matchedField(job.title, filters),
       ...(contract ? { note: contract } : {}),
+      ...(job.contracts[0] ? { contract: job.contracts[0] } : {}),
       ...fitField(job.title, roleTargets),
     });
   }

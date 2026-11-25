@@ -16,6 +16,8 @@ import {
   type ScanEvent,
 } from "@/lib/explore";
 import type { SourceReport } from "@/lib/explore";
+import { applyMark, markOf, muteCompany, type Mark } from "@/lib/offer-marks.mjs";
+import { suggestExcludedWord, suggestMutedCompany } from "@/lib/dismiss-suggestions.mjs";
 import { makeAiStreamParser, type AiTraceChunk } from "@/lib/explore-ai";
 import { MAX_OFFER_LIMIT } from "@/lib/whats-new.mjs";
 import { isAbortError, isScannerMissing } from "@/lib/explore-error.mjs";
@@ -35,6 +37,11 @@ export type Phase =
   | "degraded" // scan completed but searched nothing (transient fetch/rate-limit) — not "all caught up"
   | "hunting" // AI search streaming
   | "blocked"; // AI search needs a CLI
+export type DismissSuggestion = {
+  offer: DiscoveredOffer;
+  company: { company: string; others: number } | null;
+  word: { word: string; count: number } | null;
+};
 export type AiCost = { searches: number; candidates: number; fetches: number };
 export type SourceState = {
   state: "queued" | "active" | "swept" | "noisy";
@@ -57,6 +64,15 @@ type ExploreCtx = {
   sources: Partial<Record<AtsSource, SourceState>>;
   /** Bilan de chaque source régionale après la dernière recherche. */
   sourceReports: SourceReport[];
+  /** Classement des offres par l'utilisateur (déjà postulé, pas intéressé). */
+  marks: Record<string, { mark: Mark; at: string; k?: string }>;
+  markOffers: (offers: DiscoveredOffer[], mark: Mark | null) => Promise<void>;
+  /** Message après un classement (ajout au suivi, annulation…), effacé tout seul. */
+  markNotice: { tone: "ok" | "warn"; text: string } | null;
+  /** Propositions affichées après « Pas intéressé » (masquer l'entreprise, exclure un mot). */
+  suggestion: DismissSuggestion | null;
+  applySuggestion: (kind: "company" | "word") => Promise<void>;
+  clearSuggestion: () => void;
   matchCount: number;
   companiesScanned: number;
   companiesAvailable: number;
@@ -139,6 +155,105 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
   const [offers, setOffers] = useState<DiscoveredOffer[]>([]);
   const [sources, setSources] = useState<Partial<Record<AtsSource, SourceState>>>({});
   const [sourceReports, setSourceReports] = useState<SourceReport[]>([]);
+  const [suggestion, setSuggestion] = useState<DismissSuggestion | null>(null);
+  const offersRef = useRef<DiscoveredOffer[]>([]);
+  const [markNotice, setMarkNotice] = useState<{ tone: "ok" | "warn"; text: string } | null>(null);
+  const [marks, setMarks] = useState<Record<string, { mark: Mark; at: string; k?: string }>>({});
+
+  // Classement enregistré côté serveur : il suit l'utilisateur d'une recherche à l'autre.
+  useEffect(() => {
+    fetch("/api/explore/marks")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { marks?: Record<string, { mark: Mark; at: string; k?: string }> } | null) => d?.marks && setMarks(d.marks))
+      .catch(() => {});
+  }, []);
+  const markOffers = useCallback(async (list: DiscoveredOffer[], mark: Mark | null) => {
+    const before = marks;
+    setMarks((m) => applyMark(m, list, mark)); // immédiat ; annulé si l'enregistrement échoue
+    try {
+      const res = await fetch("/api/explore/marks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ offers: list.map((o) => ({ url: o.url, title: o.title, company: o.company, location: o.location, source: o.source })), mark }),
+      });
+      const data = (await res.json()) as { marks?: Record<string, { mark: Mark; at: string; k?: string }>; tracked?: { added: number; updated: number; already: number; failed: number } };
+      if (!res.ok || !data.marks) throw new Error("save failed");
+      setMarks(data.marks);
+      const t = data.tracked;
+      let notice: { tone: "ok" | "warn"; text: string } | null = null;
+      if (t) {
+        const done = t.added + t.updated;
+        notice = t.failed > 0
+          ? { tone: "warn", text: `Classée « Déjà postulé », mais l'ajout à Mes candidatures a échoué pour ${t.failed} offre${t.failed > 1 ? "s" : ""}. Réessayez, ou ajoutez-la depuis Mes candidatures.` }
+          : done > 0
+            ? { tone: "ok", text: `${done > 1 ? `${done} offres ajoutées` : "Offre ajoutée"} à Mes candidatures (statut « Postulé »), à relancer au bon moment.` }
+            : { tone: "ok", text: "Classée. Cette candidature était déjà dans Mes candidatures." };
+      } else if (mark === null && list.some((o) => (before[`u:${o.url}`]?.mark ?? "") === "applied")) {
+        notice = { tone: "ok", text: "Remise dans les nouvelles. La candidature reste dans Mes candidatures." };
+      }
+      setMarkNotice(notice);
+      if (notice) window.setTimeout(() => setMarkNotice((n) => (n === notice ? null : n)), 8000);
+
+      // « Pas intéressé » sur une offre : propositions calculées sur les résultats affichés.
+      if (mark === "dismissed" && list.length === 1) {
+        const current = list[0];
+        const all = offersRef.current;
+        const dismissed = all.filter((o) => markOf(data.marks!, o) === "dismissed");
+        const others = all.filter((o) => o.url !== current.url && !markOf(data.marks!, o));
+        const f = filtersRef.current;
+        const company = suggestMutedCompany(current, others);
+        const word = suggestExcludedWord(current, dismissed.length ? dismissed : [current], f.positive, f.negative);
+        const next: DismissSuggestion | null = company || word ? { offer: current, company, word } : null;
+        setSuggestion(next);
+        if (next) window.setTimeout(() => setSuggestion((s) => (s === next ? null : s)), 20000);
+      } else {
+        setSuggestion(null);
+      }
+    } catch {
+      setMarks(before);
+      setMarkNotice({ tone: "warn", text: "Le classement n'a pas pu être enregistré." });
+    }
+  }, [marks]);
+
+  const clearSuggestion = useCallback(() => setSuggestion(null), []);
+  const applySuggestion = useCallback(
+    async (kind: "company" | "word") => {
+      const s = suggestion;
+      if (!s) return;
+      setSuggestion(null);
+      const say = (tone: "ok" | "warn", text: string) => {
+        const n = { tone, text };
+        setMarkNotice(n);
+        window.setTimeout(() => setMarkNotice((cur) => (cur === n ? null : cur)), 8000);
+      };
+      try {
+        if (kind === "company" && s.company) {
+          const o = s.offer;
+          const res = await fetch("/api/explore/marks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ offers: [{ url: o.url, title: o.title, company: o.company, location: o.location }], mark: "dismissed", muteCompany: true }),
+          });
+          const data = (await res.json()) as { marks?: Record<string, { mark: Mark; at: string; k?: string }> };
+          if (!res.ok || !data.marks) throw new Error("mute failed");
+          setMarks(data.marks);
+          say("ok", `Toutes les offres de ${s.company.company} sont masquées, aujourd'hui et aux prochaines recherches.`);
+        } else if (kind === "word" && s.word) {
+          const res = await fetch("/api/explore/exclude-word", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ word: s.word.word }) });
+          const data = (await res.json()) as { negative?: string[]; error?: string };
+          if (!res.ok || !data.negative) throw new Error(data.error || "exclude failed");
+          const next = { ...filtersRef.current, negative: data.negative };
+          touched.current = true;
+          filtersRef.current = next;
+          setFiltersState(next);
+          say("ok", `« ${s.word.word} » ajouté aux mots exclus de votre profil : ces offres ne reviendront plus.`);
+        }
+      } catch {
+        say("warn", "La modification n'a pas pu être enregistrée.");
+      }
+    },
+    [suggestion],
+  );
   const [matchCount, setMatchCount] = useState(0);
   const [companiesScanned, setCompaniesScanned] = useState(0);
   // Authoritative scan-health signals (scanner --json mode, #1199): tell a capped /
@@ -163,6 +278,7 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
   aiIntentRef.current = aiIntent;
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
+  offersRef.current = offers;
 
   const setFilters = useCallback((f: ExploreFilters) => {
     touched.current = true;
@@ -681,11 +797,11 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
     () => ({
       filters, setFilters, initFilters, phase,
       running: phase === "casting" || phase === "scanning" || phase === "revealing" || phase === "hunting",
-      offers, sources, sourceReports, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, status, partial, error, scannerMissing, added, adding, removed,
+      offers, sources, sourceReports, marks, markOffers, markNotice, suggestion, applySuggestion, clearSuggestion, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, status, partial, error, scannerMissing, added, adding, removed,
       discover, loadFresh, addToPipeline, removeFromPipeline, applyPatch, reset,
       mode, setMode, aiIntent, setAiIntent, discoverAI, aiTrace, aiCost,
     }),
-    [filters, setFilters, initFilters, phase, offers, sources, sourceReports, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, status, partial, error, scannerMissing, added, adding, removed, discover, loadFresh, addToPipeline, removeFromPipeline, applyPatch, reset, mode, setMode, aiIntent, discoverAI, aiTrace, aiCost],
+    [filters, setFilters, initFilters, phase, offers, sources, sourceReports, marks, markOffers, markNotice, suggestion, applySuggestion, clearSuggestion, matchCount, companiesScanned, companiesAvailable, capHit, droppedNoDate, status, partial, error, scannerMissing, added, adding, removed, discover, loadFresh, addToPipeline, removeFromPipeline, applyPatch, reset, mode, setMode, aiIntent, discoverAI, aiTrace, aiCost],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

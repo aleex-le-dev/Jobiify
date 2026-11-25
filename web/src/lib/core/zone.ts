@@ -119,7 +119,11 @@ export async function centreCommune(nom: string, dep = "62"): Promise<[number, n
   return [2.4178, 50.5539];
 }
 
-/** Calcule ou charge depuis le cache la zone isochrone (OpenRouteService ou rayon Haversine) */
+/**
+ * Calcule ou charge depuis le cache la zone de recherche. `minutes` est le rayon de la zone en KILOMÈTRES
+ * (cercle autour de la ville de départ). Seul un ORS_KEY (OpenRouteService, non documenté) le lit comme
+ * un temps de trajet en minutes.
+ */
 /** Centre d'une commune par son code INSEE (aucune ambiguïté entre homonymes). */
 async function centreByInsee(insee: string): Promise<[number, number] | null> {
   try {

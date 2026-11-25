@@ -271,6 +271,7 @@ export function filtersFromProfile(p: SearchProfile, base: ExploreFilters = DEFA
     originInsee: p.originInsee,
     commuteMinutes: p.commuteMinutes,
     remoteOnly: p.remoteOnly,
+    allMetiers: false, // un profil cherche ses postes ; « tous les métiers » est un choix de recherche, pas de profil
     sinceDays: p.sinceDays,
     ats: allowedSources(p.sources),
   };

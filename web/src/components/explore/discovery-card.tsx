@@ -1,11 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ExternalLink, Plus, Check, Loader2, Coins, MapPin, Calendar, Target } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ExternalLink, Plus, Check, CheckCheck, Loader2, Coins, MapPin, Calendar, Target, Undo2, ListPlus, ListMinus } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { type DiscoveredOffer, offerSourceLabel } from "@/lib/explore";
 import { useJobs } from "@/components/jobs/job-store";
 import { useExplore } from "./explore-provider";
+import { MoreMenu, type MoreMenuItem } from "./more-menu";
+import { markOf, MARK_LABEL, type Mark } from "@/lib/offer-marks.mjs";
+import { contractOf } from "@/lib/offer-match.mjs";
+import { isHttpUrl } from "@/lib/env-safety.mjs";
 import { formatLocationCity, formatPublicationDate } from "@/lib/format";
 
 import { useI18n } from "@/components/i18n-provider";
@@ -32,6 +36,24 @@ function Logo({ company }: { company: string }) {
   );
 }
 
+// Annonces ouvertes depuis Jobiify, en attente d'une réponse à « Avez-vous postulé ? ».
+const OPENED_KEY = "jobiify:opened-offers";
+function readOpened(): string[] {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(OPENED_KEY) || "[]");
+    return Array.isArray(v) ? v.filter((u): u is string => typeof u === "string") : [];
+  } catch {
+    return [];
+  }
+}
+function writeOpened(urls: string[]) {
+  try {
+    sessionStorage.setItem(OPENED_KEY, JSON.stringify(urls.slice(-200)));
+  } catch {
+    /* sans stockage : la question reste valable tant que la carte est affichée */
+  }
+}
+
 // What a running worker is doing on this exact posting → the live CTA label.
 const WORKER_LABEL_EN: Record<string, string> = { evaluate: "Evaluating…", pdf: "Preparing CV…", research: "Researching…", apply: "Filling…" };
 const WORKER_LABEL_FR: Record<string, string> = { evaluate: "Évaluation en cours…", pdf: "Génération CV…", research: "Recherche en cours…", apply: "Remplissage…" };
@@ -39,8 +61,22 @@ const WORKER_LABEL_FR: Record<string, string> = { evaluate: "Évaluation en cour
 export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: DiscoveredOffer; inPipeline: boolean; evaluatedN?: string }) {
   const { locale } = useI18n();
   const isFr = locale === "fr";
-  const { added, adding, removed, addToPipeline, removeFromPipeline } = useExplore();
+  const { added, adding, removed, addToPipeline, removeFromPipeline, marks, markOffers } = useExplore();
+  const mark = markOf(marks, offer) as Mark | undefined;
+  const contract = contractOf(offer);
+  const safeUrl = isHttpUrl(offer.url) ? offer.url : undefined; // jamais javascript: ou data: dans un lien
   const { jobs, startJob } = useJobs();
+  const [opened, setOpened] = useState(false);
+  useEffect(() => setOpened(readOpened().includes(offer.url)), [offer.url]);
+  const setOpenedPersist = (v: boolean) => {
+    setOpened(v);
+    const rest = readOpened().filter((u) => u !== offer.url);
+    writeOpened(v ? [...rest, offer.url] : rest);
+  };
+  // L'annonce s'ouvre sur le site de l'employeur : Jobiify demandera ensuite si vous avez postulé.
+  const onOpenAd = () => {
+    if (!mark) setOpenedPersist(true);
+  };
 
   // GLOBAL worker awareness: any worker acting on this URL drives the CTA, here
   // and on every other surface that renders this offer (the jobs store is global).
@@ -100,11 +136,19 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
     startJob({ title: `Evaluate · ${offer.company}`, subtitle: offer.title, kind: "evaluate", input: offer.url, page: "/explore" });
   };
 
+  const moreItems: MoreMenuItem[] = [
+    ...(mark !== "applied" ? [{ key: "applied", text: "Déjà postulé", icon: CheckCheck, onSelect: () => void markOffers([offer], "applied"), hint: "ajoute au suivi" }] : []),
+    inSel
+      ? { key: "unselect", text: "Retirer de ma sélection", icon: ListMinus, onSelect: () => void removeFromPipeline([offer.url]) }
+      : { key: "select", text: "Mettre de côté (ma sélection)", icon: ListPlus, onSelect: () => void addToPipeline([offer]) },
+    { key: "evaluate", text: "Évaluer avec l'IA", icon: Coins, onSelect: evaluate, hint: "jetons" },
+  ];
+
   return (
     <div className="co-rise group flex min-w-0 flex-col gap-2.5 rounded-xl border border-border bg-surface/40 p-3.5 text-left transition-all hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-sm">
       <div className="flex items-start gap-3">
         <Logo company={offer.company} />
-        <a href={offer.url} target="_blank" rel="noopener noreferrer" className="block min-w-0 flex-1 max-sm:min-h-[44px]">
+        <a href={safeUrl} target="_blank" rel="noopener noreferrer" onClick={onOpenAd} className="block min-w-0 flex-1 max-sm:min-h-[44px]">
           <h3 className="text-[14px] sm:text-[14.5px] font-semibold leading-snug break-words text-foreground transition-colors group-hover:text-brand">
             {displayTitle}
           </h3>
@@ -122,9 +166,10 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
           )}
         </a>
         <a
-          href={offer.url}
+          href={safeUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={onOpenAd}
           title="Ouvrir l'annonce"
           aria-label="Ouvrir l'annonce"
           className="-m-1 inline-flex shrink-0 items-center justify-center rounded p-1 text-faint transition-colors hover:text-foreground max-sm:min-h-[44px] max-sm:min-w-[44px]"
@@ -155,6 +200,14 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
         <span className="inline-flex items-center rounded-md border border-brand/20 bg-brand-soft/50 px-2 py-0.5 text-[11px] font-medium text-brand">
           {offerSourceLabel(offer, isFr)}
         </span>
+        {contract && !(offer.note || "").toLowerCase().includes(contract.toLowerCase()) && (
+          <span className="inline-flex items-center rounded-md border border-border bg-surface-hover/70 px-2 py-0.5 text-[11px] font-semibold text-foreground">{contract}</span>
+        )}
+        {mark && (
+          <span className="inline-flex items-center rounded-md border border-border bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-foreground">
+            {MARK_LABEL[mark]}
+          </span>
+        )}
         {offer.note && (
           <span className="inline-flex max-w-full items-center rounded-md border border-border bg-surface-hover/50 px-2 py-0.5 text-[11px] font-medium text-foreground/80" title={offer.note}>
             <span className="truncate">{offer.note}</span>
@@ -197,54 +250,71 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
             {statusLabel}
             <span className="text-brand/60">· {isFr ? "dans ma sélection" : "in selection"}</span>
           </div>
+        ) : opened && !mark ? (
+          <div className="rounded-md border border-brand/30 bg-brand-soft/40 px-3 py-2.5" role="group" aria-label="Avez-vous postulé ?">
+            <p className="text-[13px] font-medium text-foreground">Avez-vous postulé ?</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenedPersist(false);
+                  void markOffers([offer], "applied");
+                }}
+                className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-brand px-2.5 py-2 text-xs font-semibold text-brand-foreground transition hover:brightness-110 max-sm:min-h-[44px]"
+              >
+                <CheckCheck className="size-3.5" /> Oui, j&apos;ai postulé
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpenedPersist(false)}
+                className="inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-md border border-border px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-surface-hover max-sm:min-h-[44px]"
+              >
+                Pas encore
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={isAdding}
-              onClick={() => {
-                if (inSel) {
-                  void removeFromPipeline([offer.url]);
-                } else {
-                  void addToPipeline([offer]);
-                }
-              }}
-              title={
-                inSel
-                  ? (isFr ? "Cliquer pour retirer de ma sélection" : "Click to remove from selection")
-                  : (isFr ? "Ajouter à ma sélection" : "Add to selection")
-              }
-              className={cn(
-                "group/btn inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-2 text-xs font-medium transition-colors max-sm:min-h-[44px]",
-                inSel
-                  ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:border-rose-400/40 hover:bg-rose-500/10 hover:text-rose-600 dark:text-emerald-400 dark:hover:text-rose-400"
-                  : "bg-surface-hover text-foreground hover:bg-brand-soft hover:text-brand",
-              )}
-            >
-              {isAdding ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : inSel ? (
-                <>
-                  <Check className="size-3.5 group-hover/btn:hidden" />
-                  <span className="hidden text-xs font-bold leading-none group-hover/btn:inline text-rose-500">✕</span>
-                  <span className="group-hover/btn:hidden">{isFr ? "Dans ma sélection" : "In selection"}</span>
-                  <span className="hidden group-hover/btn:inline">{isFr ? "Retirer" : "Remove"}</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="size-3.5" />
-                  <span>{isFr ? "Ajouter à ma sélection" : "Add to selection"}</span>
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={evaluate}
-              title={isFr ? "Évaluation approfondie A–F (consomme des jetons IA)." : "In-depth A–F evaluation (uses AI tokens)."}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-brand/30 px-2.5 py-2 text-xs font-medium text-brand transition-colors hover:bg-brand-soft max-sm:min-h-[44px]"
-            >
-              {isFr ? "Évaluer" : "Evaluate"} <Coins className="size-3.5 text-amber-500" />
-            </button>
+            {mark ? (
+              <>
+                <a
+                  href={safeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-surface-hover px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-brand-soft hover:text-brand max-sm:min-h-[44px]"
+                >
+                  <ExternalLink className="size-3.5" /> Ouvrir l&apos;annonce
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void markOffers([offer], null)}
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-border px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:border-brand/40 hover:text-brand max-sm:min-h-[44px]"
+                >
+                  <Undo2 className="size-3.5" /> Remettre dans les nouvelles
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href={safeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={onOpenAd}
+                  title="Ouvre l'annonce sur le site de l'employeur"
+                  className="inline-flex flex-[1.4] items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-brand px-2.5 py-2 text-xs font-semibold text-brand-foreground shadow-sm transition hover:brightness-110 max-sm:min-h-[44px]"
+                >
+                  {isFr ? "Postuler" : "Apply"} <ExternalLink className="size-3.5" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void markOffers([offer], "dismissed")}
+                  className="inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-md border border-border px-2.5 py-2 text-xs font-medium text-muted transition-colors hover:border-rose-400/40 hover:text-rose-600 dark:hover:text-rose-400 max-sm:min-h-[44px]"
+                >
+                  {isFr ? "Pas intéressé" : "Not interested"}
+                </button>
+              </>
+            )}
+            <MoreMenu label={isFr ? "Autres actions" : "More actions"} items={moreItems} />
           </div>
         )}
       </div>

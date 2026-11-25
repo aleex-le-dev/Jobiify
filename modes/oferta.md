@@ -739,7 +739,7 @@ By default this scans the base `cv.md` — read it as a **pre-tailoring gap list
 
 ### 2. Record in tracker
 
-**ALWAYS** record the evaluation in the tracker, as a tracker-addition TSV that `node scripts/merge-tracker.mjs` merges. Never append or edit a row in `data/applications.md` yourself: a hand-written row skips the tracker lock the other writers share and the merge's duplicate check. Rule 9 in `modes/_shared.md` says where the TSV goes; AGENTS.md, "TSV Format for Tracker Additions", defines its header row and fields. Write one TSV for this evaluation, then run `node scripts/merge-tracker.mjs` (once, after the last evaluation, when several run as a batch).
+**ALWAYS** record the evaluation in the tracker, as a tracker-addition TSV that `node scripts/merge-tracker.mjs` merges. Never append or edit a row in `data/applications.md` yourself: a hand-written row skips the tracker lock the other writers share and the merge's duplicate check. Rule 9 in `modes/_shared.md` says where the TSV goes; modes/_tracker-reference.md, defines its header row and fields. Write one TSV for this evaluation, then run `node scripts/merge-tracker.mjs` (once, after the last evaluation, when several run as a batch).
 
 If this company+role is already in the tracker, never hand-write a second row. The merge matches a re-evaluation to the existing row instead of adding another, and a status or notes change on an existing row goes through `node scripts/set-status.mjs`.
 

@@ -354,7 +354,7 @@ function ProfileCard({
           <div className="flex items-center gap-1.5">
             <MapPin className="size-3.5 shrink-0" />
             <dt className="sr-only">Zone</dt>
-            <dd className="truncate">{p.remoteOnly ? "Télétravail" : `${p.originCity}${p.originPostalCode ? ` (${p.originPostalCode})` : ""} · ${p.commuteMinutes} min`}</dd>
+            <dd className="truncate">{p.remoteOnly ? "Télétravail" : `${p.originCity}${p.originPostalCode ? ` (${p.originPostalCode})` : ""} · ${p.commuteMinutes} km`}</dd>
           </div>
           <div className="flex items-center gap-1.5">
             <FileText className="size-3.5 shrink-0" />
@@ -456,8 +456,8 @@ function ProfileEditor({
         </label>
         <CityPicker value={city} onChange={setCity} />
         <label className="block text-[12px] text-muted">
-          Trajet maximum : {minutes} min
-          <input type="range" min={10} max={90} step={5} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="mt-3 w-full accent-[var(--brand)]" />
+          Distance maximale : {minutes} km
+          <input type="range" min={5} max={100} step={5} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="mt-3 w-full accent-[var(--brand)]" />
         </label>
       </div>
       <div className="flex flex-wrap gap-x-6 gap-y-2">

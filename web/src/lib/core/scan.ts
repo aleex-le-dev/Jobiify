@@ -10,6 +10,7 @@ import { resolveScanTimeoutMs, scanTimeoutMessage } from "./scan-timeout.mjs";
 import { ATS_LABEL, type AtsSource, type DiscoveredOffer, type ExploreFilters, type FitBand, type ScanEvent } from "@/lib/explore";
 import { mergeScanResults, timedOutMessage } from "./scan-merge.mjs";
 import { parseScanJsonStdout } from "./scan-json.mjs";
+import { isHttpUrl } from "@/lib/env-safety.mjs";
 
 export type { DiscoveredOffer, ScanEvent, AtsSource } from "@/lib/explore";
 export { ATS_SOURCES } from "@/lib/explore";
@@ -75,7 +76,7 @@ function ingestJsonOffer(
   zone?: Zone,
 ): void {
   const url = (o.url || "").trim();
-  if (!url || seen.has(url) || !o.company || !o.title) return;
+  if (!isHttpUrl(url) || seen.has(url) || !o.company || !o.title) return;
   if (!matchesTitle(o.title, filters.positive, filters.negative)) return;
 
   if (filters.remoteOnly && !looksRemote(o.location || "", o.title)) return;
@@ -402,6 +403,8 @@ function matchesTitle(title: string, positive?: string[], negative?: string[]): 
   return titlePasses(title, { positive, negative });
 }
 
+const MAX_OFFERS = 1500;
+
 /** Une source régionale : son identifiant, son nom affiché, les clés d'API qu'elle exige, son chargeur. */
 type RegionalSource = {
   id: string;
@@ -443,7 +446,10 @@ async function scanLocalPortals(
   const emit = (list: DiscoveredOffer[]): number => {
     let kept = 0;
     for (const offer of list) {
-      if (!offer.url || sink.seen.has(offer.url)) continue;
+      // Tous les métiers peut remonter des milliers d'offres : au-delà, la liste serait illisible.
+      if (sink.offers.length >= MAX_OFFERS) break;
+      // Un lien venant d'un portail n'est ouvrable que s'il est en http(s) (jamais javascript:, data:, file:).
+      if (!isHttpUrl(offer.url) || sink.seen.has(offer.url)) continue;
       const key = dedupeKey(offer);
       if (key && seenKeys.has(key)) continue;
       if (key) seenKeys.add(key);
@@ -458,6 +464,8 @@ async function scanLocalPortals(
   // Toutes les sources en parallèle, avec les mêmes filtres (profil + zone).
   // Chaque offre est diffusée dès qu'une source répond ; une source en panne
   // n'empêche jamais les autres de remonter leurs résultats.
+  // Jooble et Careerjet exigent un mot-clé : ils ne peuvent pas lister « tous les métiers ».
+  const needsKeyword = new Set(["jooble", "careerjet"]);
   const sources: RegionalSource[] = [
     { id: "portails", label: "Employeurs suivis", load: async () => (await loadPortalLiveOffers(filters, roleTargets, zone)).offers },
     {
@@ -478,7 +486,7 @@ async function scanLocalPortals(
   // JOBIIFY_SOURCES_OFF=wttj,jooble dans .env : sources à ne pas interroger.
   const off = new Set((getEnvVar("JOBIIFY_SOURCES_OFF") || "").split(",").map((v) => v.trim().toLowerCase()).filter(Boolean));
   await Promise.all(
-    sources.filter((src) => !off.has(src.id)).map(async ({ id, label, keys, load }) => {
+    sources.filter((src) => !off.has(src.id) && !(filters.allMetiers && needsKeyword.has(src.id))).map(async ({ id, label, keys, load }) => {
       if (keys && keys.some((k) => !getEnvVar(k))) {
         onEvent({ kind: "source", id, label, status: "needs-key", found: 0, kept: 0 });
         return;
@@ -529,7 +537,9 @@ async function scanLocalPortals(
 
 const NO_OUTPUT = "The scanner returned no readable output.";
 
-export async function runDiscovery(filters: ExploreFilters, onEvent: (e: ScanEvent) => void): Promise<DiscoveredOffer[]> {
+export async function runDiscovery(input: ExploreFilters, onEvent: (e: ScanEvent) => void): Promise<DiscoveredOffer[]> {
+  // Tous les métiers : aucun poste visé n'est exigé ; mots exclus, zone et lieux refusés s'appliquent toujours.
+  const filters: ExploreFilters = input.allMetiers ? { ...input, positive: [] } : input;
   let zone: Zone | undefined;
   let effectiveFilters = { ...filters };
   if (filters.commuteMinutes) {

@@ -86,7 +86,7 @@ export function getApisStatus(): ApiInfo[] {
       status: hasFt ? "configured" : "unconfigured",
       detail: hasFt
         ? "Clés actives · recherche autour de la commune de chaque profil, par mots-clés puis par code métier (ROME)"
-        : "Non configuré · Clés 100% gratuites sur francetravail.io (Espace Développeurs)",
+        : "Accès à l'API suspendu pour le moment (nouveaux identifiants indisponibles) · reprend dès que vos identifiants fonctionnent",
       free: true,
       docUrl: "https://francetravail.io",
       envKeys: ["FRANCETRAVAIL_CLIENT_ID", "FRANCETRAVAIL_CLIENT_SECRET"],

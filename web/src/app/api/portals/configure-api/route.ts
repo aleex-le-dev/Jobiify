@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getEffectiveEnv, saveApiKeys, verifyApiCredentials } from "@/lib/core/env-config";
 import { getApisStatus } from "@/lib/core/api-status";
 import { readJsonObject } from "@/lib/json-body";
+import { validateEnvUpdates } from "@/lib/env-safety.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,6 +51,8 @@ export async function POST(req: Request) {
     }
 
     if (Object.keys(toSave).length > 0) {
+      const checked = validateEnvUpdates(toSave);
+      if (!checked.ok) return NextResponse.json({ ok: false, error: checked.error }, { status: 400 });
       saveApiKeys(toSave);
     }
 

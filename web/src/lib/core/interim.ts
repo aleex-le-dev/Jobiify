@@ -63,7 +63,7 @@ function agencyName(...candidates: Array<string | undefined>): string {
 const looksInterim = (...texts: Array<string | undefined>) =>
   texts.some((t) => /int[ée]rim|mission|\btravail temporaire\b|\bett\b/i.test(t || ""));
 
-async function zoneFromProfile(): Promise<{ zone?: Zone; ville: string; minutes: number; ctx: SearchContext }> {
+export async function zoneFromProfile(): Promise<{ zone?: Zone; ville: string; minutes: number; ctx: SearchContext }> {
   const p = getActiveProfile();
   const ville = p?.originCity || "Lières";
   const minutes = p?.commuteMinutes || 30;
@@ -212,6 +212,7 @@ export async function loadInterimForProfile(filters: ExploreFilters, roleTargets
       source: `interim-${o.source}`,
       matchedKeyword: matched,
       note: `Intérim via ${o.agency}`,
+      contract: "Intérim",
       ...(fit ? { fit: { band: fit.band as "strong" | "related" | "weak", score: fit.score } } : {}),
     });
   }

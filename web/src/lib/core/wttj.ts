@@ -32,9 +32,9 @@ function parseEnvPayload(text: string): { appId: string; apiKey: string } {
  * fixe de métiers) : chaque mot-clé est cherché en France, puis la zone de
  * trajet du profil trie les résultats grâce aux coordonnées de chaque bureau.
  */
-export async function fetchAndCacheWttjJobs(ctx: SearchContext, positive?: string[]): Promise<WttjJob[]> {
-  const keywords = searchKeywords(positive, 10);
-  const key = cacheKey("wttj", keywords, ctx.key);
+export async function fetchAndCacheWttjJobs(ctx: SearchContext, positive?: string[], allMetiers = false): Promise<WttjJob[]> {
+  const keywords = allMetiers ? [""] : searchKeywords(positive, 10);
+  const key = cacheKey("wttj", allMetiers ? ["*tous*"] : keywords, ctx.key);
   const cached = readCache<WttjJob>(key, CACHE_TTL_MS);
   if (cached) return cached;
 
@@ -122,7 +122,7 @@ export async function loadWttjDiscoveredOffers(
   zone: Zone | undefined,
   ctx: SearchContext,
 ): Promise<DiscoveredOffer[]> {
-  const rawJobs = await fetchAndCacheWttjJobs(ctx, filters.positive);
+  const rawJobs = await fetchAndCacheWttjJobs(ctx, filters.positive, filters.allMetiers);
   const offers: DiscoveredOffer[] = [];
 
   for (const job of rawJobs) {

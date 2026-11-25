@@ -69,3 +69,9 @@ test("dedupeKey rapproche la même offre publiée par deux sources", () => {
   assert.notEqual(a, dedupeKey({ title: "Cariste (H/F)", company: "Adecco", location: "Lens (62)" }));
   assert.equal(dedupeKey({ title: "Cariste", company: "Entreprise non communiquée", location: "Béthune" }), "", "employeur inconnu : pas de fusion");
 });
+
+test("une expression ne correspond jamais à un morceau de mot", () => {
+  assert.ok(!matchesKeyword("Technicien microbiologiste", "technicien micro"));
+  assert.ok(matchesKeyword("Technicien micro-informatique", "technicien micro"));
+  assert.ok(matchesKeyword("Techniciens réseaux", "technicien réseau"));
+});

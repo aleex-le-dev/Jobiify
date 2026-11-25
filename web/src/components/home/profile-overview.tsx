@@ -208,7 +208,7 @@ export function ProfileOverview({
 
           <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-border pt-4 sm:grid-cols-4">
             <Fact icon={MapPin} label="Départ" value={active.remoteOnly ? "Télétravail" : `${active.originCity}${active.originPostalCode ? ` (${active.originPostalCode})` : ""}`} />
-            <Fact icon={CircleDashed} label="Trajet max." value={active.remoteOnly ? "—" : `${active.commuteMinutes} min`} />
+            <Fact icon={CircleDashed} label="Distance max." value={active.remoteOnly ? "—" : `${active.commuteMinutes} km`} />
             <Fact
               icon={Layers}
               label="Communes couvertes"

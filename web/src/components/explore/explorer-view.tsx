@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Compass, ChevronDown, RotateCcw, AlertTriangle, Sparkles, Settings, Clock, Coins } from "lucide-react";
+import { Compass, ChevronDown, RotateCcw, AlertTriangle, Sparkles, Settings, Clock, Coins, MapPin } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { displayFont } from "@/lib/fonts";
 import type { Application, InboxJob } from "@/lib/career-ops";
 import { normalizeTextKey } from "@/lib/core/normalize-text-key.mjs";
-import { paramsToFilters, paramsToAi, RECENCY_FR, RECENCY_EN, type ExploreFilters } from "@/lib/explore";
+import { paramsToFilters, paramsToAi, cleanChips, RECENCY_FR, RECENCY_EN, type ExploreFilters } from "@/lib/explore";
+import { expandTitles } from "@/lib/job-synonyms.mjs";
 import { isOfferWithinSinceDays } from "@/lib/format";
 import { ProfileSwitcher } from "./profile-switcher";
 import { DiscoveringState } from "./discovering-state";
@@ -16,6 +17,7 @@ import { ExploreModeToggle } from "./explore-mode-toggle";
 import { AiSearchBox } from "./ai-search-box";
 import { ResultsList, type EnrichedOffer } from "./results-list";
 import { SourcesPanel } from "./sources-panel";
+import { MarketPanel } from "./market-panel";
 import { useExplore } from "./explore-provider";
 import { useI18n } from "@/components/i18n-provider";
 
@@ -57,6 +59,8 @@ export function ExplorerView({
   const [profileName, setProfileName] = useState<string | null>(
     () => seed.seededFrom.map((x) => x.match(/^profil « (.+) »$/)?.[1]).find(Boolean) ?? null,
   );
+  // Recherche d'un autre métier que celui du profil (depuis l'accueil) : le profil n'est pas modifié.
+  const [customMetier, setCustomMetier] = useState<string | null>(null);
   const [cli, setCli] = useState<{ id: string | null; name?: string }>({ id: null });
   const [firstRun, setFirstRun] = useState(false);
 
@@ -89,8 +93,18 @@ export function ExplorerView({
       initFilters(seed.filters);
       void loadFresh();
     } else {
-      const hasSpecificFilterParams = sp.has("q") || sp.has("loc") || sp.has("ats") || sp.has("not") || sp.has("since");
-      initFilters(hasSpecificFilterParams ? paramsToFilters(sp) : seed.filters);
+      const hasSpecificFilterParams = sp.has("q") || sp.has("loc") || sp.has("ats") || sp.has("not") || sp.has("since") || sp.has("all");
+      let start = hasSpecificFilterParams ? paramsToFilters(sp, seed.filters) : seed.filters;
+      // Un lien de recherche avec ses propres postes n'est pas celui du profil : pas de pastille du profil.
+      if (sp.has("q") || sp.get("all") === "1") setProfileName(null);
+      const metier = (sp.get("metier") || "").trim().slice(0, 80);
+      if (metier.length >= 3) {
+        // Le métier saisi remplace les postes du profil ; zone de trajet, mots exclus et sources restent ceux du profil.
+        start = { ...seed.filters, positive: cleanChips([metier, ...(expandTitles([metier]) as string[])]) };
+        setCustomMetier(metier);
+        setProfileName(null);
+      }
+      initFilters(start);
       // Onboarding hand-off: ?run=1 auto-fires the free scan + flags the first-run
       // banner (the "matches found from your CV, free" reveal).
       if (sp.get("run") === "1") {
@@ -110,6 +124,17 @@ export function ExplorerView({
     }
   }, [seed.filters, initFilters, setMode, setAiIntent, discover, loadFresh, phase]);
 
+  // Distances proposées, plus celle du profil si elle n'en fait pas partie (35 km, par exemple).
+  const distanceOptions = useMemo(() => [...new Set([5, 10, 20, 30, 45, 60, 80, filters.commuteMinutes ?? 30])].sort((a, b) => a - b), [filters.commuteMinutes]);
+  const distanceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // Un clic sur une distance relance la recherche (petite attente si l'on clique plusieurs valeurs de suite).
+  const chooseDistance = (km: number) => {
+    setFilters({ ...filters, commuteMinutes: km });
+    clearTimeout(distanceTimer.current);
+    distanceTimer.current = setTimeout(() => void discover(), 700);
+  };
+  useEffect(() => () => clearTimeout(distanceTimer.current), []);
+
   const inboxUrls = useMemo(() => new Set(inboxSnapshot.map((j) => j.url)), [inboxSnapshot]);
   const enriched: EnrichedOffer[] = useMemo(
     () =>
@@ -118,6 +143,7 @@ export function ExplorerView({
         const c = norm(o.company);
         const t = norm(o.title);
         const ev = appsSnapshot.find((a) => {
+          if (!/\]\(/.test(a.report || "")) return false; // ligne sans rapport : pas « évaluée »
           if (norm(a.company) !== c) return false;
           const ar = norm(a.role);
           return ar.length > 3 && (t.includes(ar) || ar.includes(t.split(" ").slice(0, 3).join(" ")));
@@ -220,9 +246,41 @@ export function ExplorerView({
                 >
                   <Compass className="size-4 text-brand" />
                   <span>{isFr ? "Affiner la recherche" : "Refine search"}</span>
-                  {profileName && <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-semibold text-brand">{profileName}</span>}
+                  {(filters.allMetiers || profileName || customMetier) && <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-semibold text-brand">{filters.allMetiers ? "Tous les métiers" : (profileName ?? customMetier)}</span>}
                   <ChevronDown className={cn("size-4 text-muted transition-transform duration-200", refineOpen && "rotate-180")} />
                 </button>
+
+                {(customMetier || filters.allMetiers) && (
+                  <a href="/explore?run=1" className="text-[13px] font-medium text-brand hover:underline max-sm:min-h-11 max-sm:leading-[2.75rem]">
+                    Revenir à mon profil
+                  </a>
+                )}
+
+                {!isAi && !filters.remoteOnly && (
+                  <div className="inline-flex flex-wrap items-center gap-2 rounded-xl border border-border/80 bg-surface/50 px-3 py-1.5 text-xs" role="group" aria-label="Distance maximale">
+                    <span className="inline-flex items-center gap-1.5 font-medium text-muted">
+                      <MapPin className="size-3.5 text-brand" />
+                      Distance :
+                    </span>
+                    <div className="inline-flex flex-wrap rounded-lg border border-border/70 bg-background/60 p-0.5">
+                      {distanceOptions.map((km) => {
+                        const active = (filters.commuteMinutes ?? 30) === km;
+                        return (
+                          <button
+                            key={km}
+                            type="button"
+                            disabled={running}
+                            aria-pressed={active}
+                            onClick={() => chooseDistance(km)}
+                            className={cn("rounded-md px-2.5 py-1 text-xs font-medium tabular-nums transition-colors disabled:opacity-60 max-sm:min-h-11", active ? "bg-brand-soft text-brand font-semibold shadow-xs" : "text-muted hover:text-foreground")}
+                          >
+                            {km} km
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {!isAi && (
                   <div className="inline-flex flex-wrap items-center gap-2 rounded-xl border border-border/80 bg-surface/50 px-3 py-1.5 text-xs">
@@ -278,6 +336,20 @@ export function ExplorerView({
             {refineOpen && (
               <div className="space-y-4 rounded-xl border border-border bg-surface/30 p-4">
                 <ProfileSwitcher onApply={setFilters} onActiveName={setProfileName} />
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-background/60 px-3.5 py-3">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(filters.allMetiers)}
+                    onChange={(e) => setFilters({ ...filters, allMetiers: e.target.checked })}
+                    className="mt-0.5 size-4 accent-[var(--brand)]"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-foreground">Tous les métiers de ma zone</span>
+                    <span className="mt-0.5 block text-[12.5px] leading-relaxed text-muted">
+                      Aucun poste n'est exigé : toutes les offres autour de {filters.originCity || "chez vous"} ({filters.commuteMinutes || 30} km) sont listées, avec vos mots exclus. Jooble et Careerjet ne sont pas interrogés (ils exigent un mot-clé).
+                    </span>
+                  </span>
+                </label>
                 <DiscoverBar
                   canDiscover={canDiscover}
                   onDiscover={discover}
@@ -295,7 +367,9 @@ export function ExplorerView({
             )}
           </div>
 
-          {isResults && firstRun && (
+          <MarketPanel />
+
+          {isResults && firstRun && !filters.allMetiers && !customMetier && (
             <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
               <Coins className="mt-0.5 size-4 shrink-0 text-amber-500" />
               <p className="text-[13px] leading-relaxed text-foreground">

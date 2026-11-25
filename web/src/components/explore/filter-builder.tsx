@@ -320,9 +320,11 @@ function CityOriginInput({
 
 
 const COMMUTE_PRESETS = [
-  { minutes: 15, labelFr: "⏱️ 15 min", labelEn: "⏱️ 15 min", descFr: "< 15 min en voiture", descEn: "< 15 min driving" },
-  { minutes: 30, labelFr: "⏱️ 30 min", labelEn: "⏱️ 30 min", descFr: "~30 min (Bassin minier & Artois)", descEn: "~30 min (Artois & Basin)" },
-  { minutes: 45, labelFr: "⏱️ 45 min", labelEn: "⏱️ 45 min", descFr: "~45 min (+ Arras & alentours)", descEn: "~45 min (+ Arras area)" },
+  { minutes: 10, labelFr: "10 km", labelEn: "10 km", descFr: "Rayon de 10 km", descEn: "10 km radius" },
+  { minutes: 20, labelFr: "20 km", labelEn: "20 km", descFr: "Rayon de 20 km", descEn: "20 km radius" },
+  { minutes: 30, labelFr: "30 km", labelEn: "30 km", descFr: "Rayon de 30 km (Bassin minier & Artois)", descEn: "30 km radius" },
+  { minutes: 45, labelFr: "45 km", labelEn: "45 km", descFr: "Rayon de 45 km (+ Arras & alentours)", descEn: "45 km radius" },
+  { minutes: 60, labelFr: "60 km", labelEn: "60 km", descFr: "Rayon de 60 km", descEn: "60 km radius" },
 ];
 
 type FilterKey = "positive" | "negative" | "allow" | "alwaysAllow" | "block" | "blockHard";
@@ -576,7 +578,7 @@ export function FilterBuilder({
 
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[11px] font-medium text-muted mr-0.5">
-                {isFr ? "Temps de trajet :" : "Commute time:"}
+                {isFr ? "Distance :" : "Distance:"}
               </span>
               {COMMUTE_PRESETS.map((p) => {
                 const isActive = (filters.commuteMinutes ?? 30) === p.minutes;
@@ -620,8 +622,8 @@ export function FilterBuilder({
               <span className="size-1.5 rounded-full bg-emerald-500" />
               <span>
                 {isFr
-                  ? `Zone active : ${zoneFeedback.count} communes couvertes (~${zoneFeedback.km} km en voiture autour de ${zoneFeedback.city})`
-                  : `Active zone: ${zoneFeedback.count} municipalities covered (~${zoneFeedback.km} km driving around ${zoneFeedback.city})`}
+                  ? `Zone active : ${zoneFeedback.count} communes couvertes (rayon de ${zoneFeedback.km} km autour de ${zoneFeedback.city})`
+                  : `Active zone: ${zoneFeedback.count} municipalities covered (${zoneFeedback.km} km radius around ${zoneFeedback.city})`}
               </span>
               {zoneFeedback.loading ? (
                 <span className="text-[10px] text-muted animate-pulse">({isFr ? "calcul..." : "updating..."})</span>

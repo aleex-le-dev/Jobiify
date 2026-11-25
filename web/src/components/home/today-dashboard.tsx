@@ -20,6 +20,7 @@ import { companyPresentation } from "@/lib/company-presentation.mjs";
 import { resolveHeroState, mayClaimAllClear, missingSourceLabel, displayCounts } from "@/lib/home/hero-state.mjs";
 import { useI18n } from "@/components/i18n-provider";
 import { CountUp } from "@/components/ui/count-up";
+import { OtherSearchButton, OtherSearchForm } from "@/components/home/other-search";
 import { ProfileOverview, type SourceStatus } from "@/components/home/profile-overview";
 import type { CvSummary, SearchProfile } from "@/lib/search-profile-types";
 
@@ -62,6 +63,7 @@ export function TodayDashboard({
   const requestGeneration = useRef(0);
   const router = useRouter();
   const { locale } = useI18n();
+  const [otherOpen, setOtherOpen] = useState(false);
   const isFr = locale === "fr";
   const dateLabel = useMemo(() => new Date().toLocaleDateString(isFr ? "fr-FR" : "en-US", { weekday: "long", month: "short", day: "numeric" }), [isFr]);
 
@@ -221,22 +223,27 @@ export function TodayDashboard({
                   : summaryLine}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        {/* Bureau : une rangée à droite. Tablette : le bouton principal sur toute la largeur, puis deux boutons égaux. Mobile : une colonne. */}
+        <div className="flex flex-wrap gap-2 max-sm:w-full max-sm:flex-col sm:max-lg:grid sm:max-lg:w-full sm:max-lg:grid-cols-2">
           <Link
             href="/explore?run=1"
-            className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground shadow-sm transition hover:bg-brand-200 max-sm:min-h-[44px]"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground shadow-sm transition hover:bg-brand-200 max-sm:min-h-[44px] max-sm:w-full sm:max-lg:col-span-2"
           >
             <Search className="size-4" />
             {activeProfile ? (isFr ? "Rechercher avec ce profil" : "Search with this profile") : isFr ? "Découvrir des offres" : "Find new roles"}
           </Link>
+          <OtherSearchButton open={otherOpen} onToggle={() => setOtherOpen((v) => !v)} hasProfile={Boolean(activeProfile)} />
           <Link
             href="/pipeline"
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground shadow-xs transition hover:bg-surface-hover max-sm:min-h-[44px]"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground shadow-xs transition hover:bg-surface-hover max-sm:min-h-[44px] max-sm:w-full"
           >
             {isFr ? "Mes candidatures" : "My applications"}
           </Link>
         </div>
       </header>
+
+      {/* Une recherche pour un autre métier que celui du profil, sans le modifier. */}
+      {otherOpen && <OtherSearchForm hasProfile={Boolean(activeProfile)} onClose={() => setOtherOpen(false)} />}
 
       {/* ── Profil pris en compte + sources ── */}
       <div className="mt-6">

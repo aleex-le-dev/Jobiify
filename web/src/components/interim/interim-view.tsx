@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/cn";
 import { displayFont } from "@/lib/fonts";
 import type { DiscoveredOffer } from "@/lib/explore";
+import { isHttpUrl } from "@/lib/env-safety.mjs";
 
 type Offer = { url: string; title: string; agency: string; company: string; location: string; postedAt: string; source: string };
 type Source = { id: string; label: string; status: "ok" | "needs-key" | "error"; count: number };
@@ -325,7 +326,7 @@ export function InterimView() {
                   </p>
                   <div className="mt-auto flex flex-wrap gap-2 border-t border-border/70 pt-3">
                     <a
-                      href={o.url}
+                      href={isHttpUrl(o.url) ? o.url : undefined}
                       target="_blank"
                       rel="noreferrer"
                       className="group inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-[12.5px] font-semibold text-brand-foreground transition hover:bg-brand-200 max-sm:min-h-11"
